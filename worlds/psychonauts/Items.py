@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from .Names import ItemName
+from .Names import ItemName, ItemGroupName
 from .PsychoRandoItems import PSYCHORANDO_ITEM_TABLE
 
 # Offset added to Psychonauts IDs to produce AP IDs.
@@ -175,9 +175,9 @@ LOCAL_SET = {
 }
 
 ITEM_GROUPS: Dict[str, List[str]] = {
-    "Mind": list(MINDS.keys()),
-    "Brain": list(BRAIN_JARS.keys()),
-    "Scavenger Hunt": list(SCAVENGER_HUNT_ITEMS.keys()),
+    ItemGroupName.Minds: list(MINDS.keys()),
+    ItemGroupName.Brains: list(BRAIN_JARS.keys()),
+    ItemGroupName.ScavengerHunt: list(SCAVENGER_HUNT_ITEMS.keys()),
 }
 
 # Skip creating the set if assertions are disabled.

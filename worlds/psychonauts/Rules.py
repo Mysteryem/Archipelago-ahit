@@ -2,9 +2,9 @@ from typing import Dict, Callable, TYPE_CHECKING, Set
 
 from BaseClasses import CollectionState, Item
 from worlds.generic.Rules import add_item_rule, add_rule
-from .Items import BRAIN_JARS, LOCAL_SET
+from .Items import LOCAL_SET
 from .Locations import DEEP_ARROWHEAD_LOCATIONS, MENTAL_COBWEB_LOCATIONS
-from .Names import LocationName, ItemName, RegionName
+from .Names import LocationName, ItemName, RegionName, ItemGroupName
 
 # I don't know what is going on here, but it works???
 # Thanks Jared :)
@@ -414,7 +414,7 @@ class PsyRules:
              ItemName.LungfishCall, ItemName.Cake, ItemName.OarsmansBadge], self.player)
 
     def redeemed_brain_goal(self, state: CollectionState, amount) -> bool:
-        return amount <= sum([state.count(item_name, self.player) for item_name in BRAIN_JARS])
+        return state.has_group_unique(ItemGroupName.Brains, self.player, amount)
 
     def set_psy_rules(self) -> None:
         multiworld = self.world.multiworld
