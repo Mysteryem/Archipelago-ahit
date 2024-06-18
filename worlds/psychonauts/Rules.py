@@ -469,7 +469,7 @@ class PsyRules:
                 add_item_rule(location, forbid_local_only)
 
     def set_psy_goal(self):
-        oleander_boss_location = self.multiworld.get_location(LocationName.OleanderBossEvent, self.player)
+        oleander_boss_location = self.multiworld.get_location(LocationName.OleanderBrainTankBossEvent, self.player)
         oleander_boss_location.access_rule = self.has_oleander_boss_access
 
         redeemed_required_brains = self.multiworld.get_location(LocationName.RedeemedBrainsEvent, self.player)
@@ -477,7 +477,7 @@ class PsyRules:
         redeemed_required_brains.access_rule = lambda state: self.redeemed_brain_goal(state, brains_required)
 
         # The Meat Circus Final Boss can only be accessed after completing the other goals.
-        final_boss_location = self.multiworld.get_location(LocationName.FinalBossEvent, self.player)
+        final_boss_location = self.multiworld.get_location(LocationName.MeatCircusFinalBossEvent, self.player)
         # Brain Tank Boss
         if self.world.options.Goal == "braintank":
             final_boss_location.access_rule = oleander_boss_location.can_reach
