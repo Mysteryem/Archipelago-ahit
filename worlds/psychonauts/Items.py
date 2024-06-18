@@ -3,9 +3,6 @@ from typing import Dict, List
 from .Names import ItemName, ItemGroupName
 from .PsychoRandoItems import PSYCHORANDO_ITEM_TABLE
 
-# Offset added to Psychonauts IDs to produce AP IDs.
-AP_ITEM_OFFSET = 42690000
-
 PROPS = {
     ItemName.LungfishCall: 1,
     ItemName.GloriasTrophy: 2,

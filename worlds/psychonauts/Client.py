@@ -12,8 +12,8 @@ import ModuleUpdate
 ModuleUpdate.update()
 import Utils
 
-from .Items import AP_ITEM_OFFSET, REVERSE_ITEM_DICTIONARY
-from .Locations import AP_LOCATION_OFFSET, PSYCHOSEED_LOCATION_IDS
+from .Items import REVERSE_ITEM_DICTIONARY
+from .Locations import PSYCHOSEED_LOCATION_IDS
 from .PsychoSeed import gen_psy_ids, PSY_NON_LOCAL_ID_START
 from .PsychoRandoItems import PSYCHORANDO_ITEM_LOOKUP, PSYCHORANDO_BASE_ITEM_IDS
 
@@ -103,7 +103,7 @@ class PsychonautsContext(CommonContext):
         # Scout all local locations used in PsychoSeed generation so that the client can figure out the Psychonauts item
         # IDs of all locally placed items.
         # Note: Event locations cannot be scouted.
-        self.locations_scouted.update(location_id + AP_LOCATION_OFFSET for location_id in PSYCHOSEED_LOCATION_IDS)
+        self.locations_scouted.update(PSYCHOSEED_LOCATION_IDS)
 
         # These are read from self.locations_info after the response from the initial request of scouting all local
         # locations:
@@ -172,9 +172,8 @@ class PsychonautsContext(CommonContext):
         # Attempt to figure out the Psychonauts IDs for all locally placed items at locations used in PsychoSeed
         # generation.
         location_tuples = []
-        for psy_location_id in PSYCHOSEED_LOCATION_IDS:
-            ap_location_id = psy_location_id + AP_LOCATION_OFFSET
-            scouted_network_item = self.locations_info.get(ap_location_id)
+        for location_id in PSYCHOSEED_LOCATION_IDS:
+            scouted_network_item = self.locations_info.get(location_id)
             if scouted_network_item is None:
                 # Some or all of the requested location info has not been received yet.
                 # Generally, this shouldn't happen because sending a LocationScouts request for all local locations
@@ -182,10 +181,10 @@ class PsychonautsContext(CommonContext):
                 return False
             is_local_item = scouted_network_item.player == self.slot
             if is_local_item:
-                local_item_name = REVERSE_ITEM_DICTIONARY[scouted_network_item.item - AP_ITEM_OFFSET]
+                local_item_name = REVERSE_ITEM_DICTIONARY[scouted_network_item.item]
             else:
                 local_item_name = None
-            location_tuples.append((is_local_item, local_item_name, psy_location_id))
+            location_tuples.append((is_local_item, local_item_name, location_id))
 
         # All the information needed to figure out the Psychonaunts item IDs of locally placed items has been
         # acquired.
@@ -206,22 +205,21 @@ class PsychonautsContext(CommonContext):
 
         return True
 
-    def receive_local_item(self, index, ap_location_id, ap_item_id):
+    def receive_local_item(self, index, location_id, item_id):
         """
         Receive an item from the local world.
         """
         # Locally placed items must write the exact Psychonauts item ID they were placed as.
         # Writing locally placed items is required for resuming an in-progress slot from a new save file without having
         # to manually collect the local items again.
-        psy_location_id = ap_location_id - AP_LOCATION_OFFSET
-        if psy_location_id not in self.local_psy_location_to_local_psy_item_id:
-            print(f"Local item {ap_item_id} received from non-existent local location"
-                  f" {ap_location_id}. Sending as a non-local item instead.")
-            self.receive_non_local_item(index, ap_item_id)
+        if location_id not in self.local_psy_location_to_local_psy_item_id:
+            print(f"Local item {item_id} received from non-existent local location"
+                  f" {location_id}. Sending as a non-local item instead.")
+            self.receive_non_local_item(index, item_id)
             return
 
         # Get the Psychonauts item id for the item at this local location.
-        local_item_psy_id = self.local_psy_location_to_local_psy_item_id[psy_location_id]
+        local_item_psy_id = self.local_psy_location_to_local_psy_item_id[location_id]
 
         # If Psychonauts ran out of IDs to place the item locally and had to place the item as an AP placeholder, get
         # the item that should have been placed and send that as if it was a non-locally received item.
@@ -230,7 +228,7 @@ class PsychonautsContext(CommonContext):
             return
 
         # Check that the PsychoRando item at this location matches the item AP thinks is at this location.
-        ap_item_name = REVERSE_ITEM_DICTIONARY.get(ap_item_id - AP_ITEM_OFFSET)
+        ap_item_name = REVERSE_ITEM_DICTIONARY.get(item_id)
         expected_item_name = PSYCHORANDO_ITEM_LOOKUP.get(local_item_psy_id)
         if ap_item_name and ap_item_name == expected_item_name:
             # Tell Psychonauts it has received the item.
@@ -240,18 +238,17 @@ class PsychonautsContext(CommonContext):
             # This should not happen unless the scouted location data is incorrect or the Psychonauts item IDs have been
             # incorrectly calculated from the scouted location data.
             if ap_item_name is None:
-                ap_item_name = f"Unknown AP Item {ap_item_id - AP_ITEM_OFFSET}"
+                ap_item_name = f"Unknown AP Item {item_id}"
             if expected_item_name is None:
                 expected_item_name = f"Unknown PsychoRando Item {local_item_psy_id}"
             logger.error("Error: Tried to receive item '%s' from local location '%i', but the item should be '%s'"
-                         " according to scouted location info.", ap_item_name, ap_location_id, expected_item_name)
+                         " according to scouted location info.", ap_item_name, location_id, expected_item_name)
 
-    def receive_non_local_item(self, index, ap_item_id):
+    def receive_non_local_item(self, index, item_id):
         """
         Receive an item from another world.
         """
-        # Subtract the AP item offset and get the item name.
-        item_name = REVERSE_ITEM_DICTIONARY[ap_item_id - AP_ITEM_OFFSET]
+        item_name = REVERSE_ITEM_DICTIONARY[item_id]
         # Get the first PsychoRando ID for this item name. If there are duplicate PsychoRando IDs for this item, sending
         # any of them should work, but for consistency, we'll always send the first PsychoRando ID.
         base_psy_item_id = PSYCHORANDO_BASE_ITEM_IDS[item_name]
@@ -398,8 +395,8 @@ async def game_watcher(ctx: PsychonautsContext):
             collected_items = f.readlines()
             # Iterate over each line in the file
             for line in collected_items:
-                # Convert the line to an int, add the offset to convert to AP, and add it to the list and set
-                value = int(line.strip()) + AP_LOCATION_OFFSET
+                # Convert the line to an int, and add it to the list and set
+                value = int(line.strip())
                 # Keep track of already collected values to ensure there are no duplicates.
                 if value not in sending_set:
                     sending.append(value)

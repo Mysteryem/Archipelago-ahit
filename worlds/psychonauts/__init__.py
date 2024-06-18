@@ -17,9 +17,8 @@ from .Items import (
     USEFUL_SET,
     ITEM_GROUPS,
     ITEM_COUNT,
-    AP_ITEM_OFFSET
 )
-from .Locations import ALL_LOCATIONS, AP_LOCATION_OFFSET, DEEP_ARROWHEAD_LOCATIONS, MENTAL_COBWEB_LOCATIONS
+from .Locations import ALL_LOCATIONS, DEEP_ARROWHEAD_LOCATIONS, MENTAL_COBWEB_LOCATIONS
 from .Names import ItemName, LocationName
 from .Options import Goal, PsychonautsOptions, SLOT_DATA_OPTIONS
 from .PsychoSeed import gen_psy_seed
@@ -71,11 +70,11 @@ class PSYWorld(World):
     options_dataclass = PsychonautsOptions
     options: PsychonautsOptions
 
-    item_name_to_id = {item: id + AP_ITEM_OFFSET for item, id in ITEM_DICTIONARY.items()}
+    item_name_to_id = ITEM_DICTIONARY
 
     item_name_groups = ITEM_GROUPS
 
-    location_name_to_id = {item: id + AP_LOCATION_OFFSET for item, id in ALL_LOCATIONS.items()}
+    location_name_to_id = ALL_LOCATIONS
 
     def generate_early(self) -> None:
         """

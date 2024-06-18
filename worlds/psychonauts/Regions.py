@@ -9,7 +9,6 @@ from .Names import RegionName, ItemName
 from .Subclasses import PSYLocation
 from .Locations import (
     ALL_LOCATIONS,
-    AP_LOCATION_OFFSET,
     CAGP_DEEP_ARROWHEAD_CHECKS,
     CAMA_DEEP_ARROWHEAD_CHECKS,
     CARE_DEEP_ARROWHEAD_CHECKS,
@@ -633,7 +632,7 @@ def place_events(self: "PSYWorld"):
 def _add_locations_to_existing_region(multiworld: MultiWorld, player: int, region_name: str, locations: Iterable[str]):
     region = multiworld.get_region(region_name, player)
     region.locations.extend(
-        PSYLocation(player, name, ALL_LOCATIONS[name] + AP_LOCATION_OFFSET, region) for name in locations
+        PSYLocation(player, name, ALL_LOCATIONS[name], region) for name in locations
     )
 
 
@@ -705,7 +704,7 @@ def create_psyregions(world: MultiWorld, player: int):
     # Create all default regions.
     for region_name, location_names in DEFAULT_REGIONS.items():
         region = Region(region_name, player, world)
-        region.locations.extend(PSYLocation(player, loc_name, ALL_LOCATIONS[loc_name] + AP_LOCATION_OFFSET, region)
+        region.locations.extend(PSYLocation(player, loc_name, ALL_LOCATIONS[loc_name], region)
                                 for loc_name in location_names)
         world.regions.append(region)
 

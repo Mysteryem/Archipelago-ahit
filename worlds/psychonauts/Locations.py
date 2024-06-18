@@ -642,6 +642,3 @@ _FULLY_REMOTE_LOCATION_IDS = {
 # IDs of locations that place items into the game world, and are therefore used in PsychoSeed generation.
 PSYCHOSEED_LOCATION_IDS = set(ALL_FILLABLE_LOCATIONS.values())
 PSYCHOSEED_LOCATION_IDS.difference_update(_FULLY_REMOTE_LOCATION_IDS)
-
-# Offset added to Psychonauts IDs to produce AP IDs.
-AP_LOCATION_OFFSET = 42690000
