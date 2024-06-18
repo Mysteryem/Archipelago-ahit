@@ -5,6 +5,7 @@ from worlds.generic.Rules import add_item_rule, add_rule, CollectionRule
 from .Items import LOCAL_SET
 from .Locations import DEEP_ARROWHEAD_LOCATIONS, MENTAL_COBWEB_LOCATIONS
 from .Names import LocationName, ItemName, RegionName, ItemGroupName
+from .Options import Goal
 
 # I don't know what is going on here, but it works???
 # Thanks Jared :)
@@ -479,10 +480,10 @@ class PsyRules:
         # The Meat Circus Final Boss can only be accessed after completing the other goals.
         final_boss_location = self.multiworld.get_location(LocationName.MeatCircusFinalBossEvent, self.player)
         # Brain Tank Boss
-        if self.world.options.Goal == "braintank":
+        if self.world.options.Goal == Goal.option_braintank:
             final_boss_location.access_rule = oleander_boss_location.can_reach
         # Brain Hunt
-        elif self.world.options.Goal == "brainhunt":
+        elif self.world.options.Goal == Goal.option_brainhunt:
             final_boss_location.access_rule = redeemed_required_brains.can_reach
         # Brain Tank Boss AND Brain Hunt
         else:
