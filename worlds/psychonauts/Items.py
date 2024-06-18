@@ -1,9 +1,9 @@
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from .Names import ItemName, ItemGroupName
 from .PsychoRandoItems import PSYCHORANDO_ITEM_TABLE
 
-PROPS = {
+PROPS: Dict[str, int] = {
     ItemName.LungfishCall: 1,
     ItemName.GloriasTrophy: 2,
     ItemName.StraightJacket: 3,
@@ -34,7 +34,7 @@ PROPS = {
     ItemName.DowsingRod: 93,
 }
 
-MINDS = {
+MINDS: Dict[str, int] = {
     ItemName.SashaButton: 8,
     ItemName.CoachMind: 21,
     ItemName.SashaMind: 22,
@@ -47,7 +47,7 @@ MINDS = {
     ItemName.OlyMind: 29,
 }
 
-PSI_POWERS = {
+PSI_POWERS: Dict[str, int] = {
     ItemName.Marksmanship: 30,
     ItemName.Pyrokinesis: 31,
     ItemName.Confusion: 32,
@@ -58,7 +58,7 @@ PSI_POWERS = {
     ItemName.Shield: 37,
 }
 
-GENERAL_ITEMS = {
+GENERAL_ITEMS: Dict[str, int] = {
     ItemName.AmmoUp: 38,
     ItemName.MaxLivesUp: 39,
     ItemName.ConfusionUp: 40,
@@ -70,7 +70,7 @@ GENERAL_ITEMS = {
     ItemName.SuperPalmBomb: 94,
 }
 
-BRAIN_JARS = {
+BRAIN_JARS: Dict[str, int] = {
     ItemName.BrainJarElton: 46,
     ItemName.BrainJarBobby: 47,
     ItemName.BrainJarDogen: 48,
@@ -92,7 +92,7 @@ BRAIN_JARS = {
     ItemName.BrainJarChops: 64,
 }
 
-SCAVENGER_HUNT_ITEMS = {
+SCAVENGER_HUNT_ITEMS: Dict[str, int] = {
     ItemName.GoldDoubloon: 65,
     ItemName.EagleClaw: 66,
     ItemName.DiversHelmet: 67,
@@ -111,7 +111,7 @@ SCAVENGER_HUNT_ITEMS = {
     ItemName.GoldWatch: 80,
 }
 
-BAGGAGE_TAGS = {
+BAGGAGE_TAGS: Dict[str, int] = {
     ItemName.SuitcaseTag: 81,
     ItemName.PurseTag: 82,
     ItemName.HatboxTag: 83,
@@ -119,7 +119,7 @@ BAGGAGE_TAGS = {
     ItemName.DuffleTag: 85,
 }
 
-BAGGAGE = {
+BAGGAGE: Dict[str, int] = {
     ItemName.Suitcase: 86,
     ItemName.Purse: 87,
     ItemName.Hatbox: 88,
@@ -127,12 +127,12 @@ BAGGAGE = {
     ItemName.Dufflebag: 90,
 }
 
-OTHER_ITEMS = {
+OTHER_ITEMS: Dict[str, int] = {
     ItemName.Feather: 91,
     ItemName.WaterCan: 92,
 }
 
-ITEM_DICTIONARY = {
+ITEM_DICTIONARY: Dict[str, int] = {
     **PROPS,
     **MINDS,
     **PSI_POWERS,
@@ -147,15 +147,15 @@ ITEM_DICTIONARY = {
 assert max(ITEM_DICTIONARY.values()) == len(ITEM_DICTIONARY), "There should not be gaps in the AP item IDs"
 
 # Reverse mapping of all items, from item ID to item name.
-REVERSE_ITEM_DICTIONARY = {v: k for k, v in ITEM_DICTIONARY.items()}
+REVERSE_ITEM_DICTIONARY: Dict[int, str] = {v: k for k, v in ITEM_DICTIONARY.items()}
 
-PROGRESSION_SET = {
+PROGRESSION_SET: Set[int] = {
     *PROPS,
     *MINDS,
     *PSI_POWERS,
 }
 
-USEFUL_SET = {
+USEFUL_SET: Set[int] = {
     ItemName.Vault,
     ItemName.ChallengeMarker,
     ItemName.MaxLivesUp,
@@ -166,7 +166,7 @@ USEFUL_SET = {
     ItemName.SuperPalmBomb,
 }
 
-LOCAL_SET = {
+LOCAL_SET: Set[int] = {
     # Baggage must be local only
     *BAGGAGE,
 }
@@ -186,7 +186,7 @@ if __debug__:
 
 # The number of each AP item in the item pool, typically matching the maximum number of each item that can be placed
 # into the Psychonauts game world.
-ITEM_COUNT = {
+ITEM_COUNT: Dict[str, int] = {
     **PSYCHORANDO_ITEM_TABLE,
     # Automatically added as filler items, so none are added to the item pool directly.
     ItemName.PsiCard: 0,
