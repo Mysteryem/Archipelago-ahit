@@ -788,6 +788,40 @@ def can_defeat_enemy(state: CollectionState, player: int, enemy: str) -> bool:
 Only use LogicMixin if necessary. There are often other ways to achieve what it does, like making clever use of
 `state.prog_items`, using event items, pseudo-regions, etc.
 
+### Logic Dependent On Other Players
+
+Some worlds may want to connect different players' worlds together using logic rules that reference items/locations/etc.
+that belong to a different player. To do so, these worlds much register which other players their logic depends on with
+`multiworld.register_logic_dependency(world.player, dependent_on_player_or_players)`.
+
+All worlds start of logically dependent on themselves without needing to register themselves as logic dependencies.
+
+```python
+# __init__.py
+
+from worlds.generic.Rules import set_rule
+
+class MyGameWorld(World):
+    # ...
+    @classmethod
+    def stage_set_rules(cls, multiworld: MultiWorld) -> None:
+        # Consider a game where players in the multiworld can trade some items between each other, and where the logic
+        # accounts for the players trading items to help each other progress.
+        players = multiworld.get_game_players(cls.game)
+        
+        # Require any player of this game in the multiworld to have "Tradable Item".
+        def anyone_has_tradable(state: CollectionState) -> bool:
+            return any(state.has("Tradable Item", player_number) for player_number in players)
+
+        for player in players:
+            world = multiworld.worlds[player]
+            my_location = world.get_location("Requires Tradable Item Location")
+            set_rule(my_location, anyone_has_tradable)
+            # The logic for `my_location` depends on every player of this game, so the world's logic as a whole depends
+            # on every player of this game.
+            multiworld.register_logic_dependency(world.player, players)
+```
+
 #### pre_fill
 
 ```python
