@@ -51,7 +51,6 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
     # `reachable_items`, so ensure that a deque for each player exists.
     all_players = list(advancement_per_player.keys())
 
-    bulk_fill_state = base_state.copy()
     loc_iter = iter(locations)
     still_has_locations = True
     filled_locs = []
@@ -76,8 +75,9 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
             del advancement_per_player[player]
 
     start_num_placements = len(placements)
-
-    bulk_fill_state.sweep_for_events()
+    # Usually there won't be any remaining items because there are usually more locations than items.
+    remaining_items = [item for items in advancement_per_player.values() for item in items]
+    bulk_fill_state = sweep_from_pool(base_state, remaining_items)
     placed_item_ids = set()
     placed_locs = set()
     for loc in filled_locs:
