@@ -38,29 +38,27 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
         return (), 0, 0.0
     # Start with a bulk fill into all locations. Successful fill percentage varies depending on the games used,
     # typically between 10-30%.
-    # Sweep only collects from locations containing advancement items, so only try to bulk place advancement items.
     # Use the same item placement order as the later fill code, by picking one item from each player before picking
     # an item from the first player again.
-    advancement_per_player: typing.Dict[int, typing.List[Item]] = defaultdict(list)
+    items_per_player: typing.Dict[int, typing.List[Item]] = defaultdict(list)
     for item in item_pool:
-        if item.advancement:
-            advancement_per_player[item.player].append(item)
+        items_per_player[item.player].append(item)
 
     # Placed items are removed from `item_pool`, so if all items for a player get placed, no deque for that player
     # will be added to `reachable_items` in fill_restrictive, but swap may need to un-place one of those items back into
     # `reachable_items`, so ensure that a deque for each player exists.
-    all_players = list(advancement_per_player.keys())
+    all_players = list(items_per_player.keys())
 
     loc_iter = iter(locations)
     still_has_locations = True
-    filled_locs = []
-    while still_has_locations and advancement_per_player:
+    filled_locs: typing.List[Location] = []
+    while still_has_locations and items_per_player:
         empty_items = []
         # Attempt to place one item from each player before attempting to place an item from the first player again.
-        for player, items in advancement_per_player.items():
+        for player, items in items_per_player.items():
             item = items.pop()
             if not items:
-                # `advancement_per_player` can't be modified while iterating it, so store the players to remove from it
+                # `items_per_player` can't be modified while iterating it, so store the players to remove from it
                 # for later.
                 empty_items.append(player)
 
@@ -88,16 +86,22 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
                 break
 
         for player in empty_items:
-            del advancement_per_player[player]
+            del items_per_player[player]
 
     start_num_placements = len(placements)
     # Usually there won't be any remaining items because there are usually more locations than items.
-    remaining_items = [item for items in advancement_per_player.values() for item in items]
+    remaining_items = [item for items in items_per_player.values() for item in items]
     bulk_fill_state = sweep_from_pool(base_state, remaining_items)
     placed_item_ids = set()
     placed_locs = set()
     for loc in filled_locs:
-        if loc in bulk_fill_state.locations_checked:
+        if loc.advancement:
+            reachable = loc in bulk_fill_state.locations_checked
+        else:
+            # Sweep completely ignores locations that do not contain advancement items, so check reachability directly.
+            reachable = loc.can_reach(bulk_fill_state)
+
+        if reachable:
             # it was reachable, so consider it to be a successful placement
             placed_item_ids.add(id(loc.item))
             placements.append(loc)
