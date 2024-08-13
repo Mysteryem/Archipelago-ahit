@@ -56,20 +56,36 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
     filled_locs = []
     while still_has_locations and advancement_per_player:
         empty_items = []
+        # Attempt to place one item from each player before attempting to place an item from the first player again.
         for player, items in advancement_per_player.items():
             item = items.pop()
             if not items:
+                # `advancement_per_player` can't be modified while iterating it, so store the players to remove from it
+                # for later.
                 empty_items.append(player)
-            loc = next(loc_iter, None)
-            if loc is None:
+
+            # Iterate locations until finding a location that accepts the item.
+            # Any locations that refuse the item are stored so that the next item can try being filled at those
+            # locations to start with.
+            skipped_locations = []
+            while (loc := next(loc_iter, None)) is not None:
+                if loc.can_fill(base_state, item, check_access=False):
+                    loc.item = item
+                    filled_locs.append(loc)
+                    break
+                else:
+                    skipped_locations.append(loc)
+            if skipped_locations:
+                if loc is None:
+                    # The iterable was exhausted, but there are some skipped locations.
+                    loc_iter = iter(skipped_locations)
+                else:
+                    # Put any skipped locations back to the front of the iterable so the next item tries them first.
+                    loc_iter = itertools.chain(skipped_locations, loc_iter)
+            elif loc is None:
+                # There are also no skipped locations and the iterable was exhausted, so no locations remain
                 still_has_locations = False
                 break
-            # Slightly different to the main fill later on. Rather than iterating until a suitable location is
-            # found, skip placing the item entirely of the location is not suitable. This will often skip items with
-            # local or non-local requirements.
-            if loc.can_fill(bulk_fill_state, item, check_access=False):
-                loc.item = item
-                filled_locs.append(loc)
 
         for player in empty_items:
             del advancement_per_player[player]
