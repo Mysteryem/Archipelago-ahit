@@ -34,18 +34,20 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
                                 on_place: typing.Optional[typing.Callable[[Location], None]],
                                 name: str,
                                 placements: typing.List[Location]) -> typing.Tuple[typing.Iterable[int], int]:
+    """
+    Place as many items as possible while ignoring location accessibility and then un-place all items that were
+    unreachable.
+    """
     if not item_pool or not locations:
-    # Start with a bulk fill into all locations. Successful fill percentage varies depending on the games used,
-    # typically between 10-30%.
-    # Use the same item placement order as the later fill code, by picking one item from each player before picking
-    # an item from the first player again.
         return (), 0
+    # Use the same item placement order as fill_restrictive, by picking one item from each player before picking an item
+    # from the first player again.
     items_per_player: typing.Dict[int, typing.List[Item]] = defaultdict(list)
     for item in item_pool:
         items_per_player[item.player].append(item)
 
-    # Placed items are removed from `item_pool`, so if all items for a player get placed, no deque for that player
-    # will be added to `reachable_items` in fill_restrictive, but swap may need to un-place one of those items back into
+    # Placed items are removed from `item_pool`, so if all items for a player get placed, no deque for that player will
+    # be added to `reachable_items` in fill_restrictive, but swap may need to un-place one of those items back into
     # `reachable_items`, so ensure that a deque for each player exists.
     all_players = list(items_per_player.keys())
 
@@ -153,7 +155,9 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     :param allow_excluded: if true and placement fails, it is re-attempted while ignoring excluded on Locations
     :param name: name of this fill step for progress logging purposes
     :param initial_bulk_fill: start the fill by placing items in bulk while ignoring location reachability and then
-    un-placing any items that ended up unreachable.
+    un-placing any items that ended up unreachable. There is no guarantee that the items for each player will be placed
+    in the order they are found in item_pool, so this should not be used for highly restrictive fills that require items
+    to placed in a specific order to avoid fill errors.
     """
     unplaced_items: typing.List[Item] = []
     placements: typing.List[Location] = []
@@ -166,6 +170,7 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     placed = 0
 
     if initial_bulk_fill:
+        # Place as many items as possible at once and then un-place any that were unreachable.
         players, num_placed = _fill_restrictive_bulk_fill(base_state, locations, item_pool, lock, on_place, name,
                                                           placements)
         placed += num_placed
