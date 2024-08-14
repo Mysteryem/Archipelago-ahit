@@ -33,13 +33,13 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
                                 item_pool: typing.List[Item], lock: bool,
                                 on_place: typing.Optional[typing.Callable[[Location], None]],
                                 name: str,
-                                placements: typing.List[Location]) -> typing.Tuple[typing.Iterable[int], int, float]:
+                                placements: typing.List[Location]) -> typing.Tuple[typing.Iterable[int], int]:
     if not item_pool or not locations:
-        return (), 0, 0.0
     # Start with a bulk fill into all locations. Successful fill percentage varies depending on the games used,
     # typically between 10-30%.
     # Use the same item placement order as the later fill code, by picking one item from each player before picking
     # an item from the first player again.
+        return (), 0
     items_per_player: typing.Dict[int, typing.List[Item]] = defaultdict(list)
     for item in item_pool:
         items_per_player[item.player].append(item)
@@ -114,10 +114,10 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
             loc.item = None
 
     total = min(len(locations), len(item_pool))
-    num_placements = len(placements) - start_num_placements
-    percentage_placed = num_placements / total
-    logging.info(f"Current fill step ({name}) {num_placements}/{total} ({percentage_placed * 100:.3f}%)"
-                 f" items bulk placed.")
+    total_placements = len(placements)
+    num_new_placements = total_placements - start_num_placements
+    if start_num_placements < (total_placements - (total_placements % 1000)):
+        logging.info(f"Current fill step ({name}) at {total_placements}/{total} items placed in bulk.")
     item_indices_to_pop = []
     for i, item in enumerate(item_pool):
         if id(item) in placed_item_ids:
@@ -132,7 +132,7 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
     for i in reversed(loc_indices_to_pop):
         locations.pop(i)
 
-    return all_players, num_placements, percentage_placed
+    return all_players, num_new_placements
 
 
 def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locations: typing.List[Location],
@@ -166,16 +166,11 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     placed = 0
 
     if initial_bulk_fill:
-        players, num_placed, percentage_filled = _fill_restrictive_bulk_fill(base_state, locations, item_pool, lock,
-                                                                             on_place, name, placements)
+        players, num_placed = _fill_restrictive_bulk_fill(base_state, locations, item_pool, lock, on_place, name,
+                                                          placements)
         placed += num_placed
         for player in players:
             reachable_items[player] = deque()
-        # If the last bulk fill placed more than 10% of the items, try again.
-        while percentage_filled > 0.1:
-            _, num_placed, percentage_filled = _fill_restrictive_bulk_fill(base_state, locations, item_pool, lock,
-                                                                           on_place, name, placements)
-            placed += num_placed
 
     for item in item_pool:
         reachable_items.setdefault(item.player, deque()).append(item)
