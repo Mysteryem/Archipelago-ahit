@@ -33,13 +33,25 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
                                 item_pool: typing.List[Item], lock: bool,
                                 on_place: typing.Optional[typing.Callable[[Location], None]],
                                 name: str,
-                                placements: typing.List[Location]) -> typing.Tuple[typing.Iterable[int], int]:
+                                placements: typing.List[Location]
+                                ) -> typing.List[int]:
     """
     Place as many items as possible while ignoring location accessibility and then un-place all items that were
     unreachable.
+    :param base_state: The base state to sweep from when determining which placed items were unreachable.
+    :param locations: Locations to be filled with item_pool, gets mutated by removing locations that get filled.
+    :param item_pool: Items to fill into the locations, gets mutated by removing items that get placed.
+    :param on_place: callback that is called when a placement happens
+    :param name: name of this fill step for progress logging purposes
+    :param placements: Mutated by appending all locations where items have been successfully placed.
+    :returns: List of all players with an item in item_pool to start with, in first occurrence order.
     """
     if not item_pool or not locations:
-        return (), 0
+        return []
+
+    # Used in logging.
+    start_num_placements = len(placements)
+
     # Use the same item placement order as fill_restrictive, by picking one item from each player before picking an item
     # from the first player again.
     items_per_player: typing.Dict[int, typing.List[Item]] = defaultdict(list)
@@ -47,9 +59,10 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
         items_per_player[item.player].append(item)
 
     # Placed items are removed from `item_pool`, so if all items for a player get placed, no deque for that player will
-    # be added to `reachable_items` in fill_restrictive, but swap may need to un-place one of those items back into
-    # `reachable_items`, so ensure that a deque for each player exists.
-    all_players = list(items_per_player.keys())
+    # be added to `reachable_items` in fill_restrictive, but if it runs out of reachable locations and has to swap items
+    # around, it may need to un-place one of those items back into its `reachable_items`, so return the list of all
+    # players, in their original iteration order, so that a deque for each player can be added to `reachable_items`.
+    all_players_in_first_occurrence_order = list(items_per_player.keys())
 
     loc_iter = iter(locations)
     still_has_locations = True
@@ -90,12 +103,13 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
         for player in empty_items:
             del items_per_player[player]
 
-    start_num_placements = len(placements)
     # Usually there won't be any remaining items because there are usually more locations than items.
-    remaining_items = [item for items in items_per_player.values() for item in items]
+    remaining_items: typing.List[Item] = [item for items in items_per_player.values() for item in items]
     bulk_fill_state = sweep_from_pool(base_state, remaining_items)
-    placed_item_ids = set()
-    placed_locs = set()
+    # There may be duplicate items in the pool, but not duplicate item instances, so a set of object identifies must be
+    # used, rather than a set of items.
+    placed_item_ids: typing.Set[int] = set()
+    placed_locs: typing.Set[Location] = set()
     for loc in filled_locs:
         if loc.advancement:
             reachable = loc in bulk_fill_state.locations_checked
@@ -104,29 +118,33 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
             reachable = loc.can_reach(bulk_fill_state)
 
         if reachable:
-            # it was reachable, so consider it to be a successful placement
-            placed_item_ids.add(id(loc.item))
+            # It was reachable, so consider it to be a successful placement.
             placements.append(loc)
+            placed_item_ids.add(id(loc.item))
             placed_locs.add(loc)
             if on_place is not None:
                 on_place(loc)
             loc.lock = lock
         else:
-            # it was not reachable
+            # It was not reachable, so un-place the item.
             loc.item = None
 
     total = min(len(locations), len(item_pool))
     total_placements = len(placements)
-    num_new_placements = total_placements - start_num_placements
+    # Log a message if there was a multiple of 1000 between the starting number of placements and the new total number
+    # of placements.
     if start_num_placements < (total_placements - (total_placements % 1000)):
         logging.info(f"Current fill step ({name}) at {total_placements}/{total} items placed in bulk.")
+
+    # Remove all placed items from `item_pool`.
     item_indices_to_pop = []
-    for i, item in enumerate(item_pool):
-        if id(item) in placed_item_ids:
+    for i, item_id in enumerate(map(id, item_pool)):
+        if item_id in placed_item_ids:
             item_indices_to_pop.append(i)
     for i in reversed(item_indices_to_pop):
         item_pool.pop(i)
 
+    # Remove all placed locations from `locations`.
     loc_indices_to_pop = []
     for i, loc in enumerate(locations):
         if loc in placed_locs:
@@ -134,7 +152,7 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
     for i in reversed(loc_indices_to_pop):
         locations.pop(i)
 
-    return all_players, num_new_placements
+    return all_players_in_first_occurrence_order
 
 
 def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locations: typing.List[Location],
@@ -171,10 +189,11 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
 
     if initial_bulk_fill:
         # Place as many items as possible at once and then un-place any that were unreachable.
-        players, num_placed = _fill_restrictive_bulk_fill(base_state, locations, item_pool, lock, on_place, name,
-                                                          placements)
-        placed += num_placed
-        for player in players:
+        all_players = _fill_restrictive_bulk_fill(base_state, locations, item_pool, lock, on_place, name, placements)
+        placed += len(placements)
+        # Bulk fill could have placed all items belonging to a player, but a deque must be created for each player so
+        # that swap is able to un-place that player's items.
+        for player in all_players:
             reachable_items[player] = deque()
 
     for item in item_pool:
