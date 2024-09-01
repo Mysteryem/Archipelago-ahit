@@ -4,6 +4,7 @@ import logging
 import typing
 from collections import Counter, deque
 
+import Utils
 from BaseClasses import CollectionState, Item, Location, LocationProgressType, MultiWorld
 from Options import Accessibility
 
@@ -58,6 +59,17 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     for item in item_pool:
         reachable_items.setdefault(item.player, deque()).append(item)
 
+    single_player: typing.Optional[int] = None
+    if single_player_placement:
+        num_players = len(reachable_items)
+        if num_players > 1:
+            Utils.deprecate(f"single_player_placement=True can no longer be used with an item_pool containing items"
+                            f" belonging to more than one player. Require items to be placed locally if they should"
+                            f" only be placed in the world they belong to.")
+            single_player_placement = False
+        elif num_players == 1:
+            single_player = next(iter(reachable_items.keys()))
+
     # for progress logging
     total = min(len(item_pool), len(locations))
     placed = 0
@@ -72,7 +84,7 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
                     item_pool.pop(p)
                     break
         maximum_exploration_state = sweep_from_pool(
-            base_state, item_pool + unplaced_items, multiworld.get_filled_locations(item.player)
+            base_state, item_pool + unplaced_items, multiworld.get_filled_locations(single_player)
             if single_player_placement else None)
 
         has_beaten_game = multiworld.has_beaten_game(maximum_exploration_state)
@@ -88,14 +100,13 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
 
             # if minimal accessibility, only check whether location is reachable if game not beatable
             if multiworld.worlds[item_to_place.player].options.accessibility == Accessibility.option_minimal:
-                perform_access_check = not multiworld.has_beaten_game(maximum_exploration_state,
-                                                                 item_to_place.player) \
+                perform_access_check = not multiworld.has_beaten_game(maximum_exploration_state, single_player) \
                     if single_player_placement else not has_beaten_game
             else:
                 perform_access_check = True
 
             for i, location in enumerate(locations):
-                if (not single_player_placement or location.player == item_to_place.player) \
+                if (not single_player_placement or location.player == single_player) \
                         and location.can_fill(maximum_exploration_state, item_to_place, perform_access_check):
                     # popping by index is faster than removing by content,
                     spot_to_fill = locations.pop(i)
@@ -120,7 +131,7 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
                         location.item = None
                         placed_item.location = None
                         swap_state = sweep_from_pool(base_state, [placed_item, *item_pool] if unsafe else item_pool,
-                                                     multiworld.get_filled_locations(item.player)
+                                                     multiworld.get_filled_locations(single_player)
                                                      if single_player_placement else None)
                         # unsafe means swap_state assumes we can somehow collect placed_item before item_to_place
                         # by continuing to swap, which is not guaranteed. This is unsafe because there is no mechanic
@@ -180,7 +191,7 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     if cleanup_required:
         # validate all placements and remove invalid ones
         state = sweep_from_pool(
-            base_state, [], multiworld.get_filled_locations(item.player)
+            base_state, [], multiworld.get_filled_locations(single_player)
             if single_player_placement else None)
         for placement in placements:
             if multiworld.worlds[placement.item.player].options.accessibility != "minimal" and not placement.can_reach(state):
