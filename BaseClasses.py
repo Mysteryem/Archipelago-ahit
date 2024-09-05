@@ -1357,7 +1357,7 @@ class Spoiler:
         # in the second phase, we cull each sphere such that the game is still beatable,
         # reducing each range of influence to the bare minimum required inside it
         restore_later: Dict[Location, Item] = {}
-        required_spheres: List[Tuple[Location, ...]] = []
+        required_spheres: List[Set[Location]] = []
         for num, sphere in reversed(tuple(enumerate(collection_spheres))):
             for location in tuple(sphere):
                 # we remove the item at location and check if game is still beatable
@@ -1380,30 +1380,75 @@ class Spoiler:
 
                 # Iterate through higher spheres, checking that all locations required to beat the game are reachable.
                 # Later spheres are at the start, so iterate in reverse.
+                # Any locations in a previous sphere that could not be reached might be possible to reach at a later
+                # sphere instead.
+                original_spheres: Dict[Location, Set[Location]] = {}
+                missing_required_locations: List[Location] = []
+                move_location_to_new_sphere: List[Tuple[Location, Set[Location]]] = []
                 for required_sphere in reversed(required_spheres):
-                    if not all(loc.can_reach(state) for loc in required_sphere):
-                        # A required location to beat the game is not reachable, so the game is not beatable without the
-                        # item at this location.
+                    missing_sphere_locations: List[Location] = []
+                    reached_sphere_locations = []
+                    for loc in missing_required_locations:
+                        if not loc.can_reach(state):
+                            missing_sphere_locations.append(loc)
+                        else:
+                            reached_sphere_locations.append(loc)
+                            move_location_to_new_sphere.append((loc, required_sphere))
+
+                    for loc in required_sphere:
+                        if not loc.can_reach(state):
+                            missing_sphere_locations.append(loc)
+                            original_spheres[loc] = required_sphere
+                        else:
+                            reached_sphere_locations.append(loc)
+
+                    if not reached_sphere_locations:
+                        # If no locations could be reached, then it is not possible to reach any higher spheres, so the
+                        # item at this location is needed to beat the game.
                         location.item = old_item
                         sphere.add(location)
                         break
-                    # All the required locations in the sphere were reachable, so collect the items in the sphere and
-                    # move on to the next sphere.
-                    for loc in required_sphere:
+
+                    # Collect the items from the reachable locations and move on to the next sphere.
+                    for loc in reached_sphere_locations:
                         state.collect(loc.item, True, loc)
+                    missing_required_locations = missing_sphere_locations
                 else:
-                    # All locations required to beat the game could be reached. Finally, check if the game is beaten.
-                    if multiworld.has_beaten_game(state):
-                        # The item at this location is not needed to beat the game.
-                        restore_later[location] = old_item
+                    while missing_required_locations:
+                        still_missing_locations = []
+                        reached_locations = []
+                        for loc in missing_required_locations:
+                            if loc.can_reach(state):
+                                reached_locations.append(loc)
+                            else:
+                                still_missing_locations.append(loc)
+                        for loc in reached_locations:
+                            state.collect(loc.item, True, loc)
+                        if not reached_locations:
+                            # None of the remaining locations could be reached, so the item at this location is needed to
+                            # beat the game.
+                            location.item = old_item
+                            sphere.add(location)
+                            break
+                        missing_required_locations = still_missing_locations
                     else:
-                        # The item at this location is needed to beat the game.
-                        location.item = old_item
-                        sphere.add(location)
+                        # All locations required to beat the game could be reached. Finally, check if the game is beaten.
+                        if multiworld.has_beaten_game(state):
+                            # The item at this location is not needed to beat the game.
+                            restore_later[location] = old_item
+                            # Update any locations that have moved spheres due to culling the item.
+                            for loc, new_sphere in move_location_to_new_sphere:
+                                original_sphere = original_spheres[loc]
+                                original_sphere.remove(loc)
+                                new_sphere.add(loc)
+                        else:
+                            # The item at this location is needed to beat the game.
+                            location.item = old_item
+                            sphere.add(location)
 
             if sphere:
                 # Append the sphere to the list of required spheres.
-                required_spheres.append(tuple(sphere))
+                required_spheres.append(sphere)
 
         # second phase, sphere 0
         removed_precollected: List[Item] = []
@@ -1412,25 +1457,70 @@ class Spoiler:
             multiworld.precollected_items[item.player].remove(item)
             multiworld.state.remove(item)
             state = CollectionState(multiworld)
+            # Iterate through higher spheres, checking that all locations required to beat the game are reachable.
             # Later spheres are at the start, so iterate in reverse.
+            # Any locations in a previous sphere that could not be reached might be possible to reach at a later sphere
+            # instead.
+            original_spheres: Dict[Location, Set[Location]] = {}
+            missing_required_locations: List[Location] = []
+            move_location_to_new_sphere: List[Tuple[Location, Set[Location]]] = []
             for required_sphere in reversed(required_spheres):
-                if not all(loc.can_reach(state) for loc in required_sphere):
-                    # A required location to beat the game is not reachable, so the game is not beatable without the
-                    # precollected item.
+                missing_sphere_locations: List[Location] = []
+                reached_sphere_locations = []
+                for loc in missing_required_locations:
+                    if not loc.can_reach(state):
+                        missing_sphere_locations.append(loc)
+                    else:
+                        reached_sphere_locations.append(loc)
+                        move_location_to_new_sphere.append((loc, required_sphere))
+
+                for loc in required_sphere:
+                    if not loc.can_reach(state):
+                        missing_sphere_locations.append(loc)
+                        original_spheres[loc] = required_sphere
+                    else:
+                        reached_sphere_locations.append(loc)
+
+                if not reached_sphere_locations:
+                    # If no locations could be reached, then it is not possible to reach any higher spheres, so the
+                    # precollected item is needed to beat the game.
                     multiworld.push_precollected(item)
                     break
-                # All the required locations in the sphere were reachable, so collect the items in the sphere and move
-                # on to the next sphere.
-                for loc in required_sphere:
+
+                # Collect the items from the reachable locations and move on to the next sphere.
+                for loc in reached_sphere_locations:
                     state.collect(loc.item, True, loc)
+                missing_required_locations = missing_sphere_locations
             else:
-                # All locations required to beat the game could be reached. Finally, check if the game is beaten.
-                if multiworld.has_beaten_game(state):
-                    # The precollected item is not needed to beat the game.
-                    removed_precollected.append(item)
+                while missing_required_locations:
+                    still_missing_locations = []
+                    reached_locations = []
+                    for loc in missing_required_locations:
+                        if loc.can_reach(state):
+                            reached_locations.append(loc)
+                        else:
+                            still_missing_locations.append(loc)
+                    for loc in reached_locations:
+                        state.collect(loc.item, True, loc)
+                    if not reached_locations:
+                        # None of the remaining locations could be reached, so the precollected item is needed to beat the
+                        # game.
+                        multiworld.push_precollected(item)
+                        break
+                    missing_required_locations = still_missing_locations
                 else:
-                    # The precollected item is needed to beat the game.
-                    multiworld.push_precollected(item)
+                    # All locations required to beat the game could be reached. Finally, check if the game is beaten.
+                    if multiworld.has_beaten_game(state):
+                        # The precollected item is not needed to beat the game.
+                        removed_precollected.append(item)
+                        # Update any locations that have moved spheres due to culling the item.
+                        for loc, new_sphere in move_location_to_new_sphere:
+                            original_sphere = original_spheres[loc]
+                            original_sphere.remove(loc)
+                            new_sphere.add(loc)
+                    else:
+                        # The precollected item is needed to beat the game.
+                        multiworld.push_precollected(item)
 
         # we are now down to just the required progress items in collection_spheres. Unfortunately
         # the previous pruning stage could potentially have made certain items dependant on others
