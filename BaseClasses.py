@@ -1042,7 +1042,8 @@ class CollectionState():
 
         changed = self.multiworld.worlds[item.player].collect(self, item)
 
-        self.stale[item.player] = True
+        for dependent_player in self.multiworld.get_players_logically_dependent_on(item.player):
+            self.stale[dependent_player] = True
 
         if changed and not prevent_sweep:
             self.sweep_for_advancements()
@@ -1052,10 +1053,11 @@ class CollectionState():
     def remove(self, item: Item):
         changed = self.multiworld.worlds[item.player].remove(self, item)
         if changed:
-            # invalidate caches, nothing can be trusted anymore now
-            self.reachable_regions[item.player] = set()
-            self.blocked_connections[item.player] = set()
-            self.stale[item.player] = True
+            for dependent_player in self.multiworld.get_players_logically_dependent_on(item.player):
+                # invalidate caches, nothing can be trusted anymore now
+                self.reachable_regions[dependent_player] = set()
+                self.blocked_connections[dependent_player] = set()
+                self.stale[dependent_player] = True
 
 
 class EntranceType(IntEnum):
