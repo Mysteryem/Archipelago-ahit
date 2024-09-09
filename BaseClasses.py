@@ -95,6 +95,7 @@ class MultiWorld():
     _recursive_logic_dependents: Mapping[int, Set[int]]
     _recursive_logic_dependencies: Mapping[int, Set[int]]
     _direct_logic_dependencies: Mapping[int, Set[int]]
+    _logic_dependencies_frozen: bool
 
     plando_item_blocks: Dict[int, List[PlandoItemBlock]]
 
@@ -180,6 +181,7 @@ class MultiWorld():
         self._recursive_logic_dependents = {player: {player} for player in range(1, players + 1)}
         self._recursive_logic_dependencies = {player: {player} for player in range(1, players + 1)}
         self._direct_logic_dependencies = {player: {player} for player in range(1, players + 1)}
+        self._logic_dependencies_frozen = False
 
         for player in range(1, players + 1):
             def set_player_attr(attr: str, val) -> None:
@@ -728,9 +730,16 @@ class MultiWorld():
     def get_players_logically_dependent_on(self, player: int) -> AbstractSet[int]:
         return self._recursive_logic_dependents[player]
 
+    def freeze_logic_dependencies(self):
+        self._logic_dependencies_frozen = True
+
     def register_logic_dependency(self, world: "AutoWorld.World", dependent_on_world: "AutoWorld.World"):
         player = world.player
         dependent_on_player = dependent_on_world.player
+        if self._logic_dependencies_frozen:
+            raise RuntimeError(f"Attempted to register a logic dependency for player {player} depending on player"
+                               f" {dependent_on_player} too late. Logic dependencies have been frozen and cannot be"
+                               f" modified.")
         direct_dependencies = self._direct_logic_dependencies[player]
         if dependent_on_player in direct_dependencies:
             # The world has already been registered, so there's nothing to do.
