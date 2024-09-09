@@ -92,6 +92,9 @@ class MultiWorld():
     start_hints: Dict[int, Options.StartHints]
     start_location_hints: Dict[int, Options.StartLocationHints]
     item_links: Dict[int, Options.ItemLinks]
+    _recursive_logic_dependents: Mapping[int, Set[int]]
+    _recursive_logic_dependencies: Mapping[int, Set[int]]
+    _direct_logic_dependencies: Mapping[int, Set[int]]
 
     plando_item_blocks: Dict[int, List[PlandoItemBlock]]
 
@@ -173,6 +176,10 @@ class MultiWorld():
         self.indirect_connections = {}
         self.start_inventory_from_pool: Dict[int, Options.StartInventoryPool] = {}
         self.plando_item_blocks = {}
+        # Each player's logic depends only on their own world to begin with.
+        self._recursive_logic_dependents = {player: {player} for player in range(1, players + 1)}
+        self._recursive_logic_dependencies = {player: {player} for player in range(1, players + 1)}
+        self._direct_logic_dependencies = {player: {player} for player in range(1, players + 1)}
 
         for player in range(1, players + 1):
             def set_player_attr(attr: str, val) -> None:
@@ -717,6 +724,36 @@ class MultiWorld():
                 return True
 
         return False
+
+    def get_players_logically_dependent_on(self, player: int) -> AbstractSet[int]:
+        return self._recursive_logic_dependents[player]
+
+    def register_logic_dependency(self, world: "AutoWorld.World", dependent_on_world: "AutoWorld.World"):
+        player = world.player
+        dependent_on_player = dependent_on_world.player
+        direct_dependencies = self._direct_logic_dependencies[player]
+        if dependent_on_player in direct_dependencies:
+            # The world has already been registered, so there's nothing to do.
+            return
+
+        direct_dependencies.add(dependent_on_player)
+
+        if player == dependent_on_player:
+            self._recursive_logic_dependencies[player].add(player)
+            self._recursive_logic_dependents[player].add(player)
+        else:
+            self._recursive_logic_dependencies[player].add(dependent_on_player)
+
+            all_dependents_on_new_dependent = self._recursive_logic_dependents[dependent_on_player]
+            all_dependents_on_new_dependent.add(player)
+
+            # Get all players dependent on `player`. These players are now also dependent on dependent_on_player.
+            recursive_dependents_of_player = self._recursive_logic_dependents[player]
+
+            for logic_dependent in recursive_dependents_of_player:
+                if logic_dependent != player:
+                    self._recursive_logic_dependencies[logic_dependent].add(dependent_on_player)
+                all_dependents_on_new_dependent.add(logic_dependent)
 
 
 PathValue = Tuple[str, Optional["PathValue"]]
