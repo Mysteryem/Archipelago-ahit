@@ -588,7 +588,7 @@ class MultiWorld():
         # All players must be checked to start with.
         players_to_check: Set[int] = set(prog_locations_per_player.keys())
         while prog_locations_per_player:
-            sphere: Set[Location] = set()
+            sphere: List[List[Location]] = []
             # build up spheres of collection radius.
             # Everything in each sphere is independent from each other in dependencies and only depends on lower spheres
             for player in players_to_check:
@@ -596,21 +596,23 @@ class MultiWorld():
                     continue
                 player_locations = prog_locations_per_player[player]
                 reachable_player_locations = [location for location in player_locations if location.can_reach(state)]
-                sphere.update(reachable_player_locations)
-                player_locations.difference_update(reachable_player_locations)
-                if not player_locations:
-                    del prog_locations_per_player[player]
+                if reachable_player_locations:
+                    sphere.append(reachable_player_locations)
+                    player_locations.difference_update(reachable_player_locations)
+                    if not player_locations:
+                        del prog_locations_per_player[player]
 
             if not sphere:
                 # ran out of places and did not finish yet, quit
                 return False
 
             state_changed_players = set()
-            for location in sphere:
-                item = location.item
-                if state.collect(item, True, location):
-                    # State changed, so there may be players that can reach additional locations in the next sphere.
-                    state_changed_players.add(item.player)
+            for reachable_locations in sphere:
+                for location in reachable_locations:
+                    item = location.item
+                    if state.collect(item, True, location):
+                        # State changed, so there may be players that can reach additional locations in the next sphere.
+                        state_changed_players.add(item.player)
 
             if self.has_beaten_game(state):
                 return True
