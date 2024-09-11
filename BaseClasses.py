@@ -576,28 +576,49 @@ class MultiWorld():
             state = CollectionState(self)
             if self.has_beaten_game(state):
                 return True
-        prog_locations = {location for location in self.get_locations() if location.item
-                          and location.item.advancement and location not in state.locations_checked}
 
-        while prog_locations:
+        checked_locations = state.locations_checked
+        prog_locations_per_player: Dict[int, Set[Location]] = {}
+        for player in self.get_all_ids():
+            player_locations = {location for location in self.get_locations(player)
+                                if location.item and location.item.advancement and location not in checked_locations}
+            if player_locations:
+                prog_locations_per_player[player] = player_locations
+
+        # All players must be checked to start with.
+        players_to_check: Set[int] = set(prog_locations_per_player.keys())
+        while prog_locations_per_player:
             sphere: Set[Location] = set()
             # build up spheres of collection radius.
             # Everything in each sphere is independent from each other in dependencies and only depends on lower spheres
-            for location in prog_locations:
-                if location.can_reach(state):
-                    sphere.add(location)
+            for player in players_to_check:
+                if player not in prog_locations_per_player:
+                    continue
+                player_locations = prog_locations_per_player[player]
+                reachable_player_locations = [location for location in player_locations if location.can_reach(state)]
+                sphere.update(reachable_player_locations)
+                player_locations.difference_update(reachable_player_locations)
+                if not player_locations:
+                    del prog_locations_per_player[player]
 
             if not sphere:
                 # ran out of places and did not finish yet, quit
                 return False
 
+            state_changed_players = set()
             for location in sphere:
-                state.collect(location.item, True, location)
-            prog_locations -= sphere
+                item = location.item
+                if state.collect(item, True, location):
+                    # State changed, so there may be players that can reach additional locations in the next sphere.
+                    state_changed_players.add(item.player)
 
             if self.has_beaten_game(state):
                 return True
 
+            players_to_check = {player for received_advancement_player in state_changed_players
+                                for player in self.get_players_logically_dependent_on(received_advancement_player)}
+
+        # Ran out of locations before the game was beaten.
         return False
 
     def get_spheres(self) -> Iterator[Set[Location]]:
