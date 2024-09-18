@@ -678,6 +678,7 @@ class CollectionState():
     stale: Dict[int, bool]
     additional_init_functions: List[Callable[[CollectionState, MultiWorld], None]] = []
     additional_copy_functions: List[Callable[[CollectionState, CollectionState], CollectionState]] = []
+    _recursive_reachable_regions: List[Entrance]
 
     def __init__(self, parent: MultiWorld):
         self.prog_items = {player: Counter() for player in parent.get_all_ids()}
@@ -693,6 +694,7 @@ class CollectionState():
         for items in parent.precollected_items.values():
             for item in items:
                 self.collect(item, True)
+        self._recursive_reachable_regions = []
 
     def update_reachable_regions(self, player: int):
         self.stale[player] = False
@@ -721,18 +723,22 @@ class CollectionState():
             new_region = connection.connected_region
             if new_region in reachable_regions:
                 blocked_connections.remove(connection)
-            elif connection.can_reach(self):
-                assert new_region, f"tried to search through an Entrance \"{connection}\" with no connected Region"
-                reachable_regions.add(new_region)
-                blocked_connections.remove(connection)
-                blocked_connections.update(new_region.exits)
-                queue.extend(new_region.exits)
-                self.path[new_region] = (new_region.name, self.path.get(connection, None))
+            else:
+                self._recursive_reachable_regions.append(connection)
+                reachable = connection.can_reach(self)
+                self._recursive_reachable_regions.pop()
+                if reachable:
+                    assert new_region, f"tried to search through an Entrance \"{connection}\" with no connected Region"
+                    reachable_regions.add(new_region)
+                    blocked_connections.remove(connection)
+                    blocked_connections.update(new_region.exits)
+                    queue.extend(new_region.exits)
+                    self.path[new_region] = (new_region.name, self.path.get(connection, None))
 
-                # Retry connections if the new region can unblock them
-                for new_entrance in self.multiworld.indirect_connections.get(new_region, set()):
-                    if new_entrance in blocked_connections and new_entrance not in queue:
-                        queue.append(new_entrance)
+                    # Retry connections if the new region can unblock them
+                    for new_entrance in self.multiworld.indirect_connections.get(new_region, set()):
+                        if new_entrance in blocked_connections and new_entrance not in queue:
+                            queue.append(new_entrance)
 
     def _update_reachable_regions_auto_indirect_conditions(self, player: int, queue: deque):
         reachable_regions = self.reachable_regions[player]
@@ -976,6 +982,7 @@ class Region:
     exits: List[Entrance]
     locations: List[Location]
     entrance_type: ClassVar[Type[Entrance]] = Entrance
+    _indirect_condition_errors: Set[Tuple[Entrance, Region]] = set()
 
     class Register(MutableSequence):
         region_manager: MultiWorld.RegionManager
@@ -1059,6 +1066,32 @@ class Region:
     exits = property(get_exits, set_exits)
 
     def can_reach(self, state: CollectionState) -> bool:
+        recursive_reachable_regions = state._recursive_reachable_regions
+        if recursive_reachable_regions:
+            last_entrance = state._recursive_reachable_regions[-1]
+            if last_entrance.parent_region is not self:
+                key = (last_entrance, self)
+                if key not in self._indirect_condition_errors:
+                    self._indirect_condition_errors.add(key)
+                    if last_entrance not in state.multiworld.indirect_connections.get(self, ()):
+                        # Technically, worlds can have an entrance to a region that is only accessible once the player
+                        # already has access to that region, e.g. entering the region unlocks a shortcut back to it, but
+                        # this entrance is logically irrelevant because the path used to gain access to the region will
+                        # always use a different entrance.
+                        if last_entrance.connected_region is self:
+                            print(f"Warning: Self-locked recursive region call to {self} from {state._recursive_reachable_regions}"
+                                  f"\n  parent_regions: {[entrance.parent_region for entrance in state._recursive_reachable_regions]}"
+                                  f"\n  connecting_regions: {[entrance.connected_region for entrance in state._recursive_reachable_regions]}")
+                        else:
+                            print(f"Recursive region call to {self} from {state._recursive_reachable_regions}"
+                                  f"\n  parent_regions: {[entrance.parent_region for entrance in state._recursive_reachable_regions]}"
+                                  f"\n  connecting_regions: {[entrance.connected_region for entrance in state._recursive_reachable_regions]}")
+                            import traceback
+                            traceback.print_stack()
+                    # else:
+                    #     print(f"OK Recursive region call to {self} from {state._recursive_reachable_regions}")
+        # if recursive_reachable_regions and state._recursive_reachable_regions[-1].parent_region is not self:
+        #     print(f"Recursive region call to {self} from {state._recursive_reachable_regions}")
         if state.stale[self.player]:
             state.update_reachable_regions(self.player)
         return self in state.reachable_regions[self.player]
