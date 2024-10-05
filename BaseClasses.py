@@ -178,9 +178,9 @@ class MultiWorld():
         self.start_inventory_from_pool: Dict[int, Options.StartInventoryPool] = {}
         self.plando_item_blocks = {}
         # Each player's logic depends only on their own world to begin with.
-        self._recursive_logic_dependents = {player: {player} for player in range(1, players + 1)}
-        self._recursive_logic_dependencies = {player: {player} for player in range(1, players + 1)}
-        self._direct_logic_dependencies = {player: {player} for player in range(1, players + 1)}
+        self._recursive_logic_dependents = {player: {player} for player in self.player_ids}
+        self._recursive_logic_dependencies = {player: {player} for player in self.player_ids}
+        self._direct_logic_dependencies = {player: {player} for player in self.player_ids}
         self._logic_dependencies_frozen = False
 
         for player in range(1, players + 1):
