@@ -92,9 +92,9 @@ class MultiWorld():
     start_hints: Dict[int, Options.StartHints]
     start_location_hints: Dict[int, Options.StartLocationHints]
     item_links: Dict[int, Options.ItemLinks]
-    _recursive_logic_dependents: Mapping[int, Set[int]]
-    _recursive_logic_dependencies: Mapping[int, Set[int]]
-    _direct_logic_dependencies: Mapping[int, Set[int]]
+    _recursive_logic_dependents: Dict[int, Set[int]]
+    _recursive_logic_dependencies: Dict[int, Set[int]]
+    _direct_logic_dependencies: Dict[int, Set[int]]
     _logic_dependencies_frozen: bool
 
     plando_item_blocks: Dict[int, List[PlandoItemBlock]]
@@ -217,6 +217,9 @@ class MultiWorld():
         self.worlds[new_id].collect = AutoWorld.World.collect.__get__(self.worlds[new_id])
         self.worlds[new_id].remove = AutoWorld.World.remove.__get__(self.worlds[new_id])
         self.player_name[new_id] = name
+        self._recursive_logic_dependents[new_id] = {new_id}
+        self._recursive_logic_dependencies[new_id] = {new_id}
+        self._direct_logic_dependencies[new_id] = {new_id}
 
         new_group = self.groups[new_id] = Group(name=name, game=game, players=players,
                                                 world=self.worlds[new_id])
