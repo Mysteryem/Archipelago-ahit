@@ -772,12 +772,20 @@ class MultiWorld():
         return False
 
     def get_players_logically_dependent_on(self, player: int) -> AbstractSet[int]:
+        """Get the set of player IDs whose logic depends on `player`'s World."""
         return self._recursive_logic_dependents[player]
 
     def freeze_logic_dependencies(self):
+        """Called by the generator to freeze logic dependencies once all rules should have been set."""
         self._logic_dependencies_frozen = True
 
     def register_logic_dependency(self, world: "AutoWorld.World", dependent_on_world: "AutoWorld.World"):
+        """
+        Register that a world is logically dependent on another world. If an access rule belonging to `world`, or the
+        `world`'s completion condition checks for being able to reach a Location/Entrance/Region belonging to another
+        World instance, or checks for state having items belonging to another World instance, that other World instance
+        must be registered as a logic dependency of `world`.
+        """
         player = world.player
         dependent_on_player = dependent_on_world.player
         if self._logic_dependencies_frozen:
