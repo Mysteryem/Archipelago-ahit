@@ -494,16 +494,18 @@ class HKWorld(World):
             # These players need to collect all of their grubs in the multiworld for their goal, including extras that
             # could have been added by item plando, item links with `replacement_item: Grub` or any other sources.
             grubs_per_player = Counter(grub.player for grub in grubs)
-            for player in all_grub_players:
-                grub_count = grubs_per_player[player]
-                multiworld.worlds[player].grub_count = grub_count
-                set_goal(player, lambda state, p=player, c=grub_count: state.has("Grub", p, c))
+        else:
+            # The number of grubs per player will be read from the world's options.
+            grubs_per_player = None
 
         for world in worlds:
-            if world.player not in all_grub_players:
-                world.grub_count = world.options.GrubHuntGoal.value
-                player = world.player
-                set_goal(player, lambda state, p=player, c=world.grub_count: state.has("Grub", p, c))
+            player = world.player
+            if player not in all_grub_players:
+                grub_count = world.options.GrubHuntGoal.value
+            else:
+                grub_count = grubs_per_player[player]
+            world.grub_count = grub_count
+            set_goal(player, lambda state, p=player, c=grub_count: state.has("Grub", p, c))
 
     def fill_slot_data(self):
         slot_data = {}
