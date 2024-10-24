@@ -487,11 +487,10 @@ class HKWorld(World):
                 multiworld.completion_condition[player] = lambda state: old_rule(state) and grub_rule(state)
 
         worlds = [world for world in multiworld.get_game_worlds(cls.game) if world.options.Goal in ["any", "grub_hunt"]]
-        if worlds:
-            grubs = [item for item in multiworld.get_items() if item.name == "Grub"]
         all_grub_players = [world.player for world in worlds if world.options.GrubHuntGoal == GrubHuntGoal.special_range_names["all"]]
 
         if all_grub_players:
+            grubs = [item for item in multiworld.get_items() if item.name == "Grub"]
             # These players need to collect all of their grubs in the multiworld for their goal, including extras that
             # could have been added by item plando, item links with `replacement_item: Grub` or any other sources.
             grubs_per_player = Counter(grub.player for grub in grubs)
