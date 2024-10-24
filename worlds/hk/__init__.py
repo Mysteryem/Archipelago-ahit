@@ -490,12 +490,13 @@ class HKWorld(World):
         all_grub_players = {world.player for world in worlds if world.options.GrubHuntGoal == GrubHuntGoal.special_range_names["all"]}
 
         if all_grub_players:
-            # Some players need to collect all of their grubs in the multiworld for their goal, including extras that
-            # could have been added by item plando, item links with `replacement_item: Grub` or any other sources.
+            # Some players need to collect all their grubs in the multiworld for their goal, including extras that could
+            # have been added by item plando, item links with `replacement_item: Grub` or any other sources, excluding
+            # starting inventory.
             all_grub_counts = Counter(item.player for item in multiworld.get_items()
                                       if item.name == "Grub" and item.player in all_grub_players)
         else:
-            # The number of grubs per player will be read from the world's options.
+            # For all players, the number of grubs required for their goal will be read from the world's options.
             all_grub_counts = None
 
         for world in worlds:
