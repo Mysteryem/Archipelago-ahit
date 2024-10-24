@@ -492,34 +492,13 @@ class HKWorld(World):
         all_grub_players = [world.player for world in worlds if world.options.GrubHuntGoal == GrubHuntGoal.special_range_names["all"]]
 
         if all_grub_players:
-            group_lookup = defaultdict(set)
-            for group_id, group in multiworld.groups.items():
-                for player in group["players"]:
-                    group_lookup[group_id].add(player)
-
-            grub_count_per_player = Counter()
-            per_player_grubs_per_player = defaultdict(Counter)
-
-            for grub in grubs:
-                player = grub.player
-                if player in group_lookup:
-                    for real_player in group_lookup[player]:
-                        per_player_grubs_per_player[real_player][player] += 1
-                else:
-                    per_player_grubs_per_player[player][player] += 1
-
-                if grub.location and grub.location.player in group_lookup.keys():
-                    for real_player in group_lookup[grub.location.player]:
-                        grub_count_per_player[real_player] += 1
-                else:
-                    grub_count_per_player[player] += 1
-
-            for player, count in grub_count_per_player.items():
-                multiworld.worlds[player].grub_count = count
-
-            for player, grub_player_count in per_player_grubs_per_player.items():
-                if player in all_grub_players:
-                    set_goal(player, lambda state, g=grub_player_count: all(state.has("Grub", owner, count) for owner, count in g.items()))
+            # These players need to collect all of their grubs in the multiworld for their goal, including extras that
+            # could have been added by item plando, item links with `replacement_item: Grub` or any other sources.
+            grubs_per_player = Counter(grub.player for grub in grubs)
+            for player in all_grub_players:
+                grub_count = grubs_per_player[player]
+                multiworld.worlds[player].grub_count = grub_count
+                set_goal(player, lambda state, p=player, c=grub_count: state.has("Grub", p, c))
 
         for world in worlds:
             if world.player not in all_grub_players:
