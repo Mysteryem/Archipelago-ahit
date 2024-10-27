@@ -1,5 +1,6 @@
 from typing import Dict, List, Any, Tuple, TypedDict, ClassVar, Union
 from logging import warning
+from threading import Lock
 from BaseClasses import Region, Location, Item, Tutorial, ItemClassification, MultiWorld
 from .items import item_name_to_id, item_table, item_name_groups, fool_tiers, filler_items, slot_data_item_names
 from .locations import location_table, location_name_groups, location_name_to_id, hexagon_locations
@@ -87,6 +88,8 @@ class TunicWorld(World):
     # if these are locations instead of their info, it gives a memory leak error
     item_link_locations: Dict[int, Dict[str, List[Tuple[int, str]]]] = {}
     player_item_link_locations: Dict[str, List[Location]]
+    fill_slot_data_ready: bool = False
+    fill_slot_data_lock: Lock = Lock()
 
     def generate_early(self) -> None:
         if self.options.logic_rules >= LogicRules.option_no_major_glitches:
@@ -404,19 +407,27 @@ class TunicWorld(World):
                     f"Using a potentially incorrect location name instead.")
             return location.name, location.player
 
-    @classmethod
-    def stage_generate_output(cls, multiworld: MultiWorld, output_directory: str = "") -> None:
-        tunic_worlds: Tuple[TunicWorld] = multiworld.get_game_worlds("TUNIC")
-        # figure out our groups and the items in them
-        for tunic in tunic_worlds:
-            for group in multiworld.get_player_groups(tunic.player):
-                cls.item_link_locations.setdefault(group, {})
-        for location in multiworld.get_locations():
-            if location.item.player in cls.item_link_locations.keys():
-                cls.item_link_locations[location.item.player].setdefault(location.item.name, [])
-                cls.item_link_locations[location.item.player][location.item.name].append((location.player, location.name))
-
     def fill_slot_data(self) -> Dict[str, Any]:
+        # There is no stage_ world method run before fill_slot_data and run after stage_post_fill that is run in a
+        # single-threaded context, so a lock is used such that the first TUNIC world instance to call fill_slot_data
+        # runs code like a stage_ method and other TUNIC world instances will wait for this to be completed.
+        cls = type(self)
+        # Acquire the lock and release it when exiting the context manager.
+        with cls.fill_slot_data_lock:
+            # Once the first TUNIC world has run fill_slot_data, fill_slot_data_ready will be set True, so only the
+            # first TUNIC world to runs fill_slot_data will run the code within this conditional branch.
+            if not cls.fill_slot_data_ready:
+                tunic_worlds: Tuple[TunicWorld] = self.multiworld.get_game_worlds(self.game)
+                # figure out our groups and the items in them
+                for tunic in tunic_worlds:
+                    for group in self.multiworld.get_player_groups(tunic.player):
+                        cls.item_link_locations.setdefault(group, {})
+                for location in self.multiworld.get_locations():
+                    if location.item.player in cls.item_link_locations.keys():
+                        cls.item_link_locations[location.item.player].setdefault(location.item.name, [])
+                        cls.item_link_locations[location.item.player][location.item.name].append((location.player, location.name))
+                cls.fill_slot_data_ready = True
+
         slot_data: Dict[str, Any] = {
             "seed": self.random.randint(0, 2147483647),
             "start_with_sword": self.options.start_with_sword.value,
