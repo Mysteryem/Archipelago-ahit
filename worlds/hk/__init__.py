@@ -530,6 +530,10 @@ class HKWorld(World):
             for player, grub_player_count in per_player_grubs_per_player.items():
                 if player in all_grub_players:
                     multiworld.worlds[player].grub_player_count = grub_player_count
+                    # multiworld.register_logic_dependency(player, (other_player for other_player, count in grub_player_count.items() if count > 0))
+                    for other_player, grub_count in grub_player_count:
+                        if other_player != player and grub_count > 0:
+                            multiworld.register_logic_dependency(player, other_player)
 
         for world in worlds:
             if world.player not in all_grub_players:
