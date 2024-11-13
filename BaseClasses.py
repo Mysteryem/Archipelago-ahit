@@ -571,13 +571,18 @@ class MultiWorld():
             return all((self.has_beaten_game(state, p) for p in range(1, self.players + 1)))
 
     def can_beat_game(self, starting_state: Optional[CollectionState] = None) -> bool:
+        unbeaten_game_players: List[int]
         if starting_state:
-            if self.has_beaten_game(starting_state):
+            unbeaten_game_players = [player for player in self.player_ids
+                                     if not self.has_beaten_game(starting_state, player)]
+            if not unbeaten_game_players:
                 return True
             state = starting_state.copy()
         else:
             state = CollectionState(self)
-            if self.has_beaten_game(state):
+            unbeaten_game_players = [player for player in self.player_ids
+                                     if not self.has_beaten_game(state, player)]
+            if not unbeaten_game_players:
                 return True
 
         checked_locations = state.locations_checked
@@ -617,11 +622,15 @@ class MultiWorld():
                         # State changed, so there may be players that can reach additional locations in the next sphere.
                         state_changed_players.add(item.player)
 
-            if self.has_beaten_game(state):
-                return True
-
             players_to_check = {player for received_advancement_player in state_changed_players
                                 for player in self.get_players_logically_dependent_on(received_advancement_player)}
+
+            # Update the list of players that have yet to beat their game.
+            unbeaten_game_players = [player for player in unbeaten_game_players
+                                     if not (player in players_to_check and self.has_beaten_game(state, player))]
+            if not unbeaten_game_players:
+                # All players have beaten their games.
+                return True
 
         # Ran out of locations before the game was beaten.
         return False
