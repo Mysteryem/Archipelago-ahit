@@ -781,10 +781,17 @@ class MultiWorld():
 
     def register_logic_dependency(self, world: "AutoWorld.World", dependent_on_world: "AutoWorld.World"):
         """
-        Register that a world is logically dependent on another world. If an access rule belonging to `world`, or the
-        `world`'s completion condition checks for being able to reach a Location/Entrance/Region belonging to another
-        World instance, or checks for state having items belonging to another World instance, that other World instance
-        must be registered as a logic dependency of `world`.
+        Register that `world` has access rules and/or completion condition that are logically dependent on
+        `dependent_on_world`.
+
+        If an access rule belonging to `world`, or `world`'s completion condition, checks for being able to reach a
+        Location/Entrance/Region belonging to `dependent_on_world`, or checks for CollectionState having items belonging
+        to `dependent_on_world`, `dependent_on_world` must be registered as a logic dependency of `world`.
+
+        Entrance access rules belonging to `world` cannot check for being able to reach a Location/Entrance/Region
+        belonging to `dependent_on_world` because indirect conditions do not work across worlds.
+
+        All logic dependencies must be registered before the end of `generate_basic()`/`stage_generate_basic()`.
         """
         player = world.player
         dependent_on_player = dependent_on_world.player
