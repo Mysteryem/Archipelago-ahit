@@ -211,15 +211,15 @@ class MultiWorld():
         self.regions.add_group(new_id)
         self.game[new_id] = game
         self.player_types[new_id] = NetUtils.SlotType.group
+        self._recursive_logic_dependents[new_id] = {new_id}
+        self._recursive_logic_dependencies[new_id] = {new_id}
+        self._direct_logic_dependencies[new_id] = {new_id}
         world_type = AutoWorld.AutoWorldRegister.world_types[game]
         self.worlds[new_id] = world_type.create_group(self, new_id, players)
         self.worlds[new_id].collect_item = AutoWorld.World.collect_item.__get__(self.worlds[new_id])
         self.worlds[new_id].collect = AutoWorld.World.collect.__get__(self.worlds[new_id])
         self.worlds[new_id].remove = AutoWorld.World.remove.__get__(self.worlds[new_id])
         self.player_name[new_id] = name
-        self._recursive_logic_dependents[new_id] = {new_id}
-        self._recursive_logic_dependencies[new_id] = {new_id}
-        self._direct_logic_dependencies[new_id] = {new_id}
 
         new_group = self.groups[new_id] = Group(name=name, game=game, players=players,
                                                 world=self.worlds[new_id])
@@ -803,9 +803,9 @@ class MultiWorld():
         All logic dependencies must be registered before the end of `generate_basic()`/`stage_generate_basic()`.
         """
         # Protect against putting invalid IDs into the dictionaries.
-        if player not in self.worlds:
+        if player not in self._direct_logic_dependencies:
             raise KeyError(f"No world found for player {player}")
-        if dependent_on_player not in self.worlds:
+        if dependent_on_player not in self._direct_logic_dependencies:
             raise KeyError(f"No world found for dependent_on_player {dependent_on_player}")
 
         if self._logic_dependencies_frozen:
