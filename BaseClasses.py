@@ -788,41 +788,47 @@ class MultiWorld():
         """Called by the generator to freeze logic dependencies once all rules should have been set."""
         self._logic_dependencies_frozen = True
 
-    def register_logic_dependency(self, player: int, dependent_on_player: int):
+    def register_logic_dependency(self, player: int, dependent_on_players: Union[int, Iterable[int]]):
         """
         Register that `player`'s world has access rules and/or completion condition that are logically dependent on
-        `dependent_on_player`'s world.
+        `dependent_on_players`' worlds.
 
         If an access rule belonging to `player`, or `player`'s completion condition, checks for being able to reach a
-        Location/Entrance/Region belonging to `dependent_on_player`, or checks for CollectionState having items
-        belonging to `dependent_on_player`, `dependent_on_player` must be registered as a logic dependency of `player`.
+        Location/Entrance/Region belonging to a different player, or checks for CollectionState having items belonging
+        to a different player, that different player must be registered as a logic dependency of `player`.
 
         Entrance access rules belonging to `player` cannot check for being able to reach a Location/Entrance/Region
-        belonging to `dependent_on_player` because indirect conditions do not work across worlds.
+        belonging to a different player because indirect conditions do not work across worlds.
 
         All logic dependencies must be registered before the end of `generate_basic()`/`stage_generate_basic()`.
         """
-        # Protect against putting invalid IDs into the dictionaries.
         if player not in self._direct_logic_dependencies:
             raise KeyError(f"No world found for player {player}")
-        if dependent_on_player not in self._direct_logic_dependencies:
-            raise KeyError(f"No world found for dependent_on_player {dependent_on_player}")
+
+        if isinstance(dependent_on_players, int):
+            dependent_on_players = [dependent_on_players]
 
         if self._logic_dependencies_frozen:
-            raise RuntimeError(f"Attempted to register a logic dependency for player {player} depending on player"
-                               f" {dependent_on_player} too late. Logic dependencies have been frozen and cannot be"
+            raise RuntimeError(f"Attempted to register a logic dependency for player {player} depending on players"
+                               f" {dependent_on_players} too late. Logic dependencies have been frozen and cannot be"
                                f" modified.")
-        direct_dependencies = self._direct_logic_dependencies[player]
-        if dependent_on_player in direct_dependencies:
-            # The world has already been registered, so there's nothing to do.
-            return
 
-        direct_dependencies.add(dependent_on_player)
+        for dependent_on_player in dependent_on_players:
+            if dependent_on_player == player:
+                # All players are logically dependent on themselves from the start.
+                continue
 
-        if player == dependent_on_player:
-            self._recursive_logic_dependencies[player].add(player)
-            self._recursive_logic_dependents[player].add(player)
-        else:
+            # Protect against putting invalid IDs into the dictionaries.
+            if dependent_on_player not in self._direct_logic_dependencies:
+                raise KeyError(f"No world found for dependent_on_player {dependent_on_player}")
+
+            direct_dependencies = self._direct_logic_dependencies[player]
+            if dependent_on_player in direct_dependencies:
+                # The world has already been registered, so there's nothing to do.
+                return
+
+            direct_dependencies.add(dependent_on_player)
+
             self._recursive_logic_dependencies[player].add(dependent_on_player)
 
             all_dependents_on_new_dependent = self._recursive_logic_dependents[dependent_on_player]
