@@ -986,8 +986,8 @@ class CollectionState():
         # since the loop has a good chance to run more than once, only filter the advancements once
         if locations is None:
             locations_per_player = {}
-            for player in self.multiworld.get_all_ids():
-                player_locations = {loc for loc in self.multiworld.get_locations(player)
+            for player, locations_dict in self.multiworld.regions.location_cache.items():
+                player_locations = {loc for loc in locations_dict.values()
                                     if loc.advancement and loc not in self.advancements}
                 if player_locations:
                     locations_per_player[player] = player_locations
