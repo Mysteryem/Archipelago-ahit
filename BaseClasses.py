@@ -10,7 +10,7 @@ from collections import Counter, deque, defaultdict
 from collections.abc import Collection, MutableSequence
 from enum import IntEnum, IntFlag
 from typing import (AbstractSet, Any, Callable, ClassVar, Dict, Iterable, Iterator, List, Literal, Mapping, NamedTuple,
-                    Optional, Protocol, Set, Tuple, Union, TYPE_CHECKING)
+                    Optional, Protocol, Set, Tuple, Union, TYPE_CHECKING, FrozenSet)
 import dataclasses
 
 from typing_extensions import NotRequired, TypedDict
@@ -92,7 +92,7 @@ class MultiWorld():
     start_hints: Dict[int, Options.StartHints]
     start_location_hints: Dict[int, Options.StartLocationHints]
     item_links: Dict[int, Options.ItemLinks]
-    _recursive_logic_dependents: Dict[int, Set[int]]
+    _recursive_logic_dependents: Dict[int, FrozenSet[int]]
     _recursive_logic_dependencies: Dict[int, Set[int]]
     _direct_logic_dependencies: Dict[int, Set[int]]
     _logic_dependencies_frozen: bool
@@ -178,7 +178,7 @@ class MultiWorld():
         self.start_inventory_from_pool: Dict[int, Options.StartInventoryPool] = {}
         self.plando_item_blocks = {}
         # Each player's logic depends only on their own world to begin with.
-        self._recursive_logic_dependents = {player: {player} for player in self.player_ids}
+        self._recursive_logic_dependents = {player: frozenset({player}) for player in self.player_ids}
         self._recursive_logic_dependencies = {player: {player} for player in self.player_ids}
         self._direct_logic_dependencies = {player: {player} for player in self.player_ids}
         self._logic_dependencies_frozen = False
@@ -211,7 +211,7 @@ class MultiWorld():
         self.regions.add_group(new_id)
         self.game[new_id] = game
         self.player_types[new_id] = NetUtils.SlotType.group
-        self._recursive_logic_dependents[new_id] = {new_id}
+        self._recursive_logic_dependents[new_id] = frozenset({new_id})
         self._recursive_logic_dependencies[new_id] = {new_id}
         self._direct_logic_dependencies[new_id] = {new_id}
         world_type = AutoWorld.AutoWorldRegister.world_types[game]
@@ -831,16 +831,16 @@ class MultiWorld():
 
             self._recursive_logic_dependencies[player].add(dependent_on_player)
 
-            all_dependents_on_new_dependent = self._recursive_logic_dependents[dependent_on_player]
-            all_dependents_on_new_dependent.add(player)
-
             # Get all players dependent on `player`. These players are now also dependent on dependent_on_player.
             recursive_dependents_of_player = self._recursive_logic_dependents[player]
 
+            recursive_logic_dependents_to_add = {player}
             for logic_dependent in recursive_dependents_of_player:
                 if logic_dependent != player:
                     self._recursive_logic_dependencies[logic_dependent].add(dependent_on_player)
-                all_dependents_on_new_dependent.add(logic_dependent)
+                recursive_logic_dependents_to_add.add(logic_dependent)
+
+            self._recursive_logic_dependents[dependent_on_player] |= recursive_logic_dependents_to_add
 
 
 PathValue = Tuple[str, Optional["PathValue"]]
