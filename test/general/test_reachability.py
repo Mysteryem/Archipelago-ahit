@@ -2,10 +2,17 @@ import unittest
 
 from BaseClasses import CollectionState
 from worlds.AutoWorld import AutoWorldRegister
+from worlds import ensure_all_worlds_loaded
 from . import setup_solo_multiworld
 
 
 class TestBase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        ensure_all_worlds_loaded()
+
     gen_steps = ["generate_early", "create_regions", "create_items", "set_rules", "generate_basic", "pre_fill"]
 
     default_settings_unreachable_regions = {
