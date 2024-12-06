@@ -137,9 +137,6 @@ def main(args, seed=None, baked_server_options: Optional[Dict[str, object]] = No
     AutoWorld.call_all(multiworld, "connect_entrances")
     AutoWorld.call_all(multiworld, "generate_basic")
 
-    # All rules should be set by here, so freeze logic dependencies.
-    multiworld.freeze_logic_dependencies()
-
     # remove starting inventory from pool items.
     # Because some worlds don't actually create items during create_items this has to be as late as possible.
     fallback_inventory = StartInventoryPool({})

@@ -95,7 +95,6 @@ class MultiWorld():
     _recursive_logic_dependents: Dict[int, FrozenSet[int]]
     _recursive_logic_dependencies: Dict[int, Set[int]]
     _direct_logic_dependencies: Dict[int, Set[int]]
-    _logic_dependencies_frozen: bool
 
     plando_item_blocks: Dict[int, List[PlandoItemBlock]]
 
@@ -181,7 +180,6 @@ class MultiWorld():
         self._recursive_logic_dependents = {player: frozenset({player}) for player in self.player_ids}
         self._recursive_logic_dependencies = {player: {player} for player in self.player_ids}
         self._direct_logic_dependencies = {player: {player} for player in self.player_ids}
-        self._logic_dependencies_frozen = False
 
         for player in range(1, players + 1):
             def set_player_attr(attr: str, val) -> None:
@@ -784,10 +782,6 @@ class MultiWorld():
         """Get the set of player IDs whose logic depends on `player`'s World."""
         return self._recursive_logic_dependents[player]
 
-    def freeze_logic_dependencies(self):
-        """Called by the generator to freeze logic dependencies once all rules should have been set."""
-        self._logic_dependencies_frozen = True
-
     def register_logic_dependency(self, player: int, dependent_on_players: Union[int, Iterable[int]]):
         """
         Register that `player`'s world has access rules and/or completion condition that are logically dependent on
@@ -807,11 +801,6 @@ class MultiWorld():
 
         if isinstance(dependent_on_players, int):
             dependent_on_players = [dependent_on_players]
-
-        if self._logic_dependencies_frozen:
-            raise RuntimeError(f"Attempted to register a logic dependency for player {player} depending on players"
-                               f" {dependent_on_players} too late. Logic dependencies have been frozen and cannot be"
-                               f" modified.")
 
         for dependent_on_player in dependent_on_players:
             if dependent_on_player == player:
