@@ -9,6 +9,7 @@ from argparse import Namespace
 from collections import Counter, deque, defaultdict
 from collections.abc import Collection, MutableSequence
 from enum import IntEnum, IntFlag
+from operator import itemgetter
 from typing import (AbstractSet, Any, Callable, ClassVar, Dict, Iterable, Iterator, List, Literal, Mapping, NamedTuple,
                     Optional, Protocol, Set, Tuple, Union, TYPE_CHECKING)
 import dataclasses
@@ -620,8 +621,7 @@ class MultiWorld():
                         # State changed, so there may be players that can reach additional locations in the next sphere.
                         state_changed_players.add(item.player)
 
-            players_to_check = {player for received_advancement_player in state_changed_players
-                                for player in self.get_players_logically_dependent_on(received_advancement_player)}
+            players_to_check = self.get_players_logically_dependent_on_players(state_changed_players)
 
             # Update the list of players that have yet to beat their game.
             unbeaten_game_players = [player for player in unbeaten_game_players
@@ -675,8 +675,7 @@ class MultiWorld():
                     # State changed, so there may be players that can reach additional locations in the next sphere.
                     state_changed_players.add(item.player)
 
-            players_to_check = {player for received_advancement_player in state_changed_players
-                                for player in self.get_players_logically_dependent_on(received_advancement_player)}
+            players_to_check = self.get_players_logically_dependent_on_players(state_changed_players)
 
     def get_sendable_spheres(self) -> Iterator[Set[Location]]:
         """
@@ -777,6 +776,24 @@ class MultiWorld():
                 return True
 
         return False
+
+    def get_players_logically_dependent_on_players(self, players: AbstractSet[int]) -> set[int]:
+        """Get a set of all player IDs whose logic depends on any worlds belonging to a player in `players`"""
+        # This function can be called a lot, so has been optimized.
+        # It is expected that the vast majority of players will only be logically dependent on themselves, so the
+        # individual sets in `self._recursive_logic_dependencies` will almost always have a length of 1.
+        if len(players) < 4:
+            # Naive solution is best at low player counts due to minimal overhead.
+            # `itemgetter()` also requires at least one argument and needs to be passed at least 2 arguments to return a
+            # tuple, so any `len(players) < 2` needs to use this conditional branch anyway.
+            logic_dependencies = self._recursive_logic_dependencies
+            return {p for player in players
+                    for p in logic_dependencies[player]}
+        else:
+            getter = itemgetter(*players)
+            to_return: set[int] = set()
+            to_return.update(*getter(self._recursive_logic_dependents))
+            return to_return
 
     def get_players_logically_dependent_on(self, player: int) -> frozenset[int]:
         """Get the set of player IDs whose logic depends on `player`'s World."""
@@ -1020,8 +1037,7 @@ class CollectionState():
                         # State changed, so there may be players that can reach additional locations in the next sphere.
                         state_changed_players.add(item.player)
 
-            players_to_check = {player for received_advancement_player in state_changed_players
-                                for player in self.multiworld.get_players_logically_dependent_on(received_advancement_player)}
+            players_to_check = self.multiworld.get_players_logically_dependent_on_players(state_changed_players)
 
     # item name related
     def has(self, item: str, player: int, count: int = 1) -> bool:
