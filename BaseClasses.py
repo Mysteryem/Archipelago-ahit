@@ -10,7 +10,7 @@ from collections import Counter, deque, defaultdict
 from collections.abc import Collection, MutableSequence
 from enum import IntEnum, IntFlag
 from typing import (AbstractSet, Any, Callable, ClassVar, Dict, Iterable, Iterator, List, Literal, Mapping, NamedTuple,
-                    Optional, Protocol, Set, Tuple, Union, TYPE_CHECKING, FrozenSet)
+                    Optional, Protocol, Set, Tuple, Union, TYPE_CHECKING)
 import dataclasses
 
 from typing_extensions import NotRequired, TypedDict
@@ -92,9 +92,9 @@ class MultiWorld():
     start_hints: Dict[int, Options.StartHints]
     start_location_hints: Dict[int, Options.StartLocationHints]
     item_links: Dict[int, Options.ItemLinks]
-    _recursive_logic_dependents: Dict[int, FrozenSet[int]]
-    _recursive_logic_dependencies: Dict[int, Set[int]]
-    _direct_logic_dependencies: Dict[int, Set[int]]
+    _recursive_logic_dependents: dict[int, frozenset[int]]
+    _recursive_logic_dependencies: dict[int, set[int]]
+    _direct_logic_dependencies: dict[int, set[int]]
 
     plando_item_blocks: Dict[int, List[PlandoItemBlock]]
 
@@ -569,7 +569,7 @@ class MultiWorld():
             return all((self.has_beaten_game(state, p) for p in range(1, self.players + 1)))
 
     def can_beat_game(self, starting_state: Optional[CollectionState] = None) -> bool:
-        unbeaten_game_players: List[int]
+        unbeaten_game_players: list[int]
         if starting_state:
             unbeaten_game_players = [player for player in self.player_ids
                                      if not self.has_beaten_game(starting_state, player)]
@@ -584,7 +584,7 @@ class MultiWorld():
                 return True
 
         checked_locations = state.locations_checked
-        prog_locations_per_player: Dict[int, Set[Location]] = {}
+        prog_locations_per_player: dict[int, set[Location]] = {}
         for player in self.get_all_ids():
             player_locations = {location for location in self.get_locations(player)
                                 if location.item and location.item.advancement and location not in checked_locations}
@@ -594,7 +594,7 @@ class MultiWorld():
         # All players must be checked to start with.
         players_to_check: Set[int] = set(prog_locations_per_player.keys())
         while prog_locations_per_player:
-            sphere: List[List[Location]] = []
+            sphere: list[list[Location]] = []
             # build up spheres of collection radius.
             # Everything in each sphere is independent from each other in dependencies and only depends on lower spheres
             for player in players_to_check:
@@ -642,15 +642,15 @@ class MultiWorld():
         unreachable locations.
         """
         state = CollectionState(self)
-        locations_per_player: Dict[int, Set[Location]] = {}
+        locations_per_player: dict[int, set[Location]] = {}
         for player in self.get_all_ids():
             player_locations = set(self.get_filled_locations(player))
             if player_locations:
                 locations_per_player[player] = player_locations
 
-        players_to_check: Set[int] = set(locations_per_player.keys())
+        players_to_check: set[int] = set(locations_per_player.keys())
         while locations_per_player:
-            sphere: Set[Location] = set()
+            sphere: set[Location] = set()
 
             for player in players_to_check:
                 if player not in locations_per_player:
@@ -668,7 +668,7 @@ class MultiWorld():
                     yield {loc for locations in locations_per_player.values() for loc in locations}
                 break
 
-            state_changed_players = set()
+            state_changed_players: set[int] = set()
             for location in sphere:
                 item = location.item
                 if state.collect(location.item, True, location):
@@ -778,11 +778,11 @@ class MultiWorld():
 
         return False
 
-    def get_players_logically_dependent_on(self, player: int) -> AbstractSet[int]:
+    def get_players_logically_dependent_on(self, player: int) -> frozenset[int]:
         """Get the set of player IDs whose logic depends on `player`'s World."""
         return self._recursive_logic_dependents[player]
 
-    def register_logic_dependency(self, player: int, dependent_on_players: Union[int, Iterable[int]]):
+    def register_logic_dependency(self, player: int, dependent_on_players: int | Iterable[int]):
         """
         Register that `player`'s world has access rules and/or completion condition that are logically dependent on
         `dependent_on_players`' worlds.
@@ -977,7 +977,7 @@ class CollectionState():
         return self.sweep_for_advancements(locations)
 
     def sweep_for_advancements(self, locations: Optional[Iterable[Location]] = None) -> None:
-        locations_per_player: Dict[int, Set[Location]]
+        locations_per_player: dict[int, set[Location]]
         # since the loop has a good chance to run more than once, only filter the advancements once
         if locations is None:
             locations_per_player = {}
@@ -992,7 +992,7 @@ class CollectionState():
                 if loc.advancement and loc not in self.advancements:
                     locations_per_player[loc.player].add(loc)
 
-        players_to_check: Set[int] = set(locations_per_player.keys())
+        players_to_check: set[int] = set(locations_per_player.keys())
         while locations_per_player:
             reachable_advancements_list: List[List[Location]] = []
 
@@ -1010,7 +1010,7 @@ class CollectionState():
             if not reachable_advancements_list:
                 break
 
-            state_changed_players = set()
+            state_changed_players: set[int] = set()
             for reachable_advancements in reachable_advancements_list:
                 for advancement in reachable_advancements:
                     self.advancements.add(advancement)
