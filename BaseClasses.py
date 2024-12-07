@@ -779,21 +779,9 @@ class MultiWorld():
 
     def get_players_logically_dependent_on_players(self, players: AbstractSet[int]) -> set[int]:
         """Get a set of all player IDs whose logic depends on any worlds belonging to a player in `players`"""
-        # This function can be called a lot, so has been optimized.
-        # It is expected that the vast majority of players will only be logically dependent on themselves, so the
-        # individual sets in `self._recursive_logic_dependencies` will almost always have a length of 1.
-        if len(players) < 4:
-            # Naive solution is best at low player counts due to minimal overhead.
-            # `itemgetter()` also requires at least one argument and needs to be passed at least 2 arguments to return a
-            # tuple, so any `len(players) < 2` needs to use this conditional branch anyway.
-            logic_dependencies = self._recursive_logic_dependencies
-            return {p for player in players
-                    for p in logic_dependencies[player]}
-        else:
-            getter = itemgetter(*players)
-            to_return: set[int] = set()
-            to_return.update(*getter(self._recursive_logic_dependents))
-            return to_return
+        recursive_logic_dependencies = self._recursive_logic_dependencies
+        return {dependent_player for player in players
+                for dependent_player in recursive_logic_dependencies[player]}
 
     def get_players_logically_dependent_on(self, player: int) -> frozenset[int]:
         """Get the set of player IDs whose logic depends on `player`'s World."""
