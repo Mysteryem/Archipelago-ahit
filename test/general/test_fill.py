@@ -343,6 +343,57 @@ class TestFillRestrictive(unittest.TestCase):
         self.assertEqual(player2.locations[0].item, player1.prog_items[0])
         self.assertEqual(player2.locations[1].item, player1.prog_items[1])
 
+    def test_multiplayer_cross_world_rules_fill(self):
+        """Test that fill across worlds with cross-world logic satisfies the rules"""
+        multiworld = generate_test_multiworld(2)
+        player1 = generate_player_data(multiworld, 1, prog_item_count=25)
+        player2 = generate_player_data(multiworld, 2, prog_item_count=25)
+        player1_items = player1.prog_items.copy()
+        player2_items = player2.prog_items.copy()
+        # Each player's completion condition requires all their own progression items and the first 3 progression items
+        # belonging to the other player.
+        multiworld.completion_condition[player1.id] = lambda state: state.has_all(
+            names(player1.prog_items), player1.id) and state.has_all(names(player2.prog_items), player2.id)
+        multiworld.completion_condition[player2.id] = lambda state: state.has_all(
+            names(player2.prog_items), player2.id) and state.has_all(names(player1.prog_items), player1.id)
+
+        multiworld.register_logic_dependency(1, 2)
+        multiworld.register_logic_dependency(2, 1)
+
+        r1p1 = player1.generate_region(player1.menu, 5)
+        r1p2 = player2.generate_region(player2.menu, 5)
+
+        # 5 items needed per Region connection is pushing the capabilities of swap
+
+        # For the second region, each player requires their own items.
+        r2p1 = player1.generate_region(r1p1, 5, lambda state: state.has_all(
+            names(player1_items[0:5]), player1.id))
+        r2p2 = player2.generate_region(r1p2, 5, lambda state: state.has_all(
+            names(player2_items[0:5]), player2.id))
+
+        # For the third region, each player requires the other's items.
+        r3p1 = player1.generate_region(r2p1, 5, lambda state: state.has_all(
+            names(player2_items[5:10]), player2.id))
+        r3p2 = player2.generate_region(r2p2, 5, lambda state: state.has_all(
+            names(player1_items[5:10]), player1.id))
+
+        # For the fourth region, each player requires player1's items.
+        r4p1 = player1.generate_region(r3p1, 5, lambda state: state.has_all(
+            names(player1_items[10:15]), player1.id))
+        r4p2 = player2.generate_region(r3p2, 5, lambda state: state.has_all(
+            names(player1_items[10:15]), player1.id))
+
+        # For the fifth region, each player requires player2's items.
+        player1.generate_region(r4p1, 5, lambda state: state.has_all(
+            names(player2_items[15:20]), player2.id))
+        player2.generate_region(r4p2, 5, lambda state: state.has_all(
+            names(player2_items[15:20]), player2.id))
+
+        locations = multiworld.get_unfilled_locations()
+
+        fill_restrictive(multiworld, multiworld.state,
+                         locations, player1.prog_items + player2.prog_items)
+
     def test_restrictive_progress(self):
         """Test that various spheres with different requirements can be filled"""
         multiworld = generate_test_multiworld()
