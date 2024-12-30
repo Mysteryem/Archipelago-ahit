@@ -92,8 +92,9 @@ class WorldSource:
             print(f"Could not load world {self}:", file=file_like)
             traceback.print_exc(file=file_like)
             file_like.seek(0)
-            logging.exception(file_like.read())
-            failed_world_loads.append(os.path.basename(self.path).rsplit(".", 1)[0])
+            s = file_like.read()
+            logging.exception(s)
+            failed_world_loads.append(os.path.basename(self.path).rsplit(".", 1)[0] + f": {s}")
             return False
 
 
