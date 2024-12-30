@@ -230,6 +230,8 @@ class TestDeterministicGeneration(TestCase):
 
         May be called on a separate Python process.
         """
+        if game not in worlds.AutoWorldRegister.world_types:
+            raise RuntimeError(f"No world loaded for game '{game}'. Failed world loads: {worlds.failed_world_loads}")
         world_type = worlds.AutoWorldRegister.world_types[game]
         multiworld = setup_multiworld(world_type, gen_steps, seed=seed)
         itempool_copy = multiworld.itempool.copy()
