@@ -146,6 +146,17 @@ class TWWWorld(World):
 
     set_rules = set_rules
 
+    logic_rematch_bosses_skipped: bool
+    logic_in_swordless_mode: bool
+    logic_in_required_bosses_mode: bool
+    logic_obscure_1: bool
+    logic_obscure_2: bool
+    logic_obscure_3: bool
+    logic_precise_1: bool
+    logic_precise_2: bool
+    logic_precise_3: bool
+    logic_tuner_logic_enabled: bool
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -251,6 +262,18 @@ class TWWWorld(World):
                     self.dungeon_specific_item_names |= self.item_name_groups[option.item_name_group]
                 else:
                     self.options.local_items.value |= self.dungeon_local_item_names
+
+        # Resolve logic options and set them onto the world instance for faster lookup in logic rules.
+        self.logic_rematch_bosses_skipped = bool(self.options.skip_rematch_bosses.value)
+        self.logic_in_swordless_mode = self.options.sword_mode in ("swords_optional", "swordless")
+        self.logic_in_required_bosses_mode = bool(self.options.required_bosses.value)
+        self.logic_obscure_1 = self.options.logic_obscurity in ("normal", "hard", "very_hard")
+        self.logic_obscure_2 = self.options.logic_obscurity in ("hard", "very_hard")
+        self.logic_obscure_3 = self.options.logic_obscurity == "very_hard"
+        self.logic_precise_1 = self.options.logic_precision in ("normal", "hard", "very_hard")
+        self.logic_precise_2 = self.options.logic_precision in ("hard", "very_hard")
+        self.logic_precise_3 = self.options.logic_precision == "very_hard"
+        self.logic_tuner_logic_enabled = bool(self.options.enable_tuner_logic.value)
 
     create_dungeons = create_dungeons
 
