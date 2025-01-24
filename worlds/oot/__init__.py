@@ -755,11 +755,14 @@ class OOTWorld(World):
         self.multiworld.regions.append(menu)
         self.load_regions_from_json(overworld_data_path)
         self.load_regions_from_json(bosses_data_path)
+        # player = self.player
         if self.starting_age == "child":
             start_child = OOTEntrance(self.player, self.multiworld, 'New Game (Child)', menu)
             menu.exits.append(start_child)
             start_child.connect(self.get_region('Root as Child'))
             time_travel = OOTEntrance(self.player, self.multiworld, 'Time Travel (Child -> Adult)', menu)
+            # Not needed?
+            # time_travel.access_rule = lambda state: state.has("Time Travel", player)
             menu.exits.append(time_travel)
             time_travel.connect(self.get_region('Root as Adult'))
         else:
@@ -767,6 +770,8 @@ class OOTWorld(World):
             menu.exits.append(start_adult)
             start_adult.connect(self.get_region('Root as Adult'))
             time_travel = OOTEntrance(self.player, self.multiworld, 'Time Travel (Adult -> Child)', menu)
+            # Not needed?
+            # time_travel.access_rule = lambda state: state.has("Time Travel", player)
             menu.exits.append(time_travel)
             time_travel.connect(self.get_region('Root as Child'))
         create_dungeons(self)
