@@ -11,13 +11,13 @@ from string import printable
 logger = logging.getLogger("Ocarina of Time")
 
 from .Location import OOTLocation, LocationFactory, location_name_to_id, build_location_name_groups
-from .Entrance import OOTEntrance
+from .Entrance import OOTEntrance, OOTProxyEntrance
 from .EntranceShuffle import shuffle_random_entrances, entrance_shuffle_table, EntranceShuffleError
 from .HintList import getRequiredHints
 from .Hints import HintArea, HintAreaNotFound, hint_dist_keys, get_hint_area, buildWorldGossipHints
 from .Items import OOTItem, item_table, oot_data_to_ap_id, oot_is_item_of_type
 from .ItemPool import generate_itempool, get_junk_item, get_junk_pool
-from .Regions import OOTRegion, TimeOfDay
+from .Regions import OOTRegion, TimeOfDay, OOTAdultRegion, OOTChildRegion
 from .Rules import set_rules, set_shop_rules, set_entrances_based_rules
 from .RuleParser import Rule_AST_Transformer
 from .Options import OoTOptions, oot_option_groups
@@ -192,11 +192,12 @@ class OOTWorld(World):
     }
 
     location_name_groups = build_location_name_groups()
-
+    entrance_proxy_cache: dict[str, OOTProxyEntrance]
 
     def __init__(self, world, player):
         self.hint_data_available = threading.Event()
         self.collectible_flags_available = threading.Event()
+        self.entrance_proxy_cache = {}
         super(OOTWorld, self).__init__(world, player)
 
 
@@ -227,7 +228,6 @@ class OOTWorld(World):
             setattr(self, option_name, option_value)
 
         self.regions = []  # internal caches of regions for this world, used later
-        self._regions_cache = {}
 
         self.shop_prices = {}
         self.remove_from_start_inventory = []  # some items will be precollected but not in the inventory
@@ -583,18 +583,22 @@ class OOTWorld(World):
                         new_location.show_in_spoiler = False
             if 'exits' in region:
                 for exit, rule in region['exits'].items():
-                    new_exit = OOTEntrance(self.player, self.multiworld, '%s -> %s' % (new_region.name, exit), new_region)
+                    if new_region.name.startswith("Jabu Jabus Belly Main"):
+                        print()
+                    new_exit = OOTProxyEntrance(self.player, self.multiworld, '%s -> %s' % (new_region.name, exit), new_region)
                     new_exit.vanilla_connected_region = exit
                     new_exit.rule_string = rule
                     self.parser.parse_spot_rule(new_exit)
                     if new_exit.never:
                         logger.debug('Dropping unreachable exit: %s', new_exit.name)
                     else:
-                        new_region.exits.append(new_exit)
+                        new_region.child_region.exits.append(new_exit.child_entrance)
+                        new_region.adult_region.exits.append(new_exit.adult_entrance)
 
             self.multiworld.regions.append(new_region)
+            self.multiworld.regions.append(new_region.child_region)
+            self.multiworld.regions.append(new_region.adult_region)
             self.regions.append(new_region)
-            self._regions_cache[new_region.name] = new_region
 
 
     # Sets deku scrub prices
@@ -739,7 +743,6 @@ class OOTWorld(World):
             location.internal = True
         return item
 
-
     # Create regions, locations, and entrances
     def create_regions(self):
         if self.logic_rules == 'glitchless' or self.logic_rules == 'no_logic':  # enables ER + NL
@@ -749,12 +752,23 @@ class OOTWorld(World):
         overworld_data_path = data_path(world_type, 'Overworld.json')
         bosses_data_path = data_path(world_type, 'Bosses.json')
         menu = OOTRegion('Menu', self.player, self.multiworld)
-        start = OOTEntrance(self.player, self.multiworld, 'New Game', menu)
-        menu.exits.append(start)
         self.multiworld.regions.append(menu)
         self.load_regions_from_json(overworld_data_path)
         self.load_regions_from_json(bosses_data_path)
-        start.connect(self.get_region('Root'))
+        if self.starting_age == "child":
+            start_child = OOTEntrance(self.player, self.multiworld, 'New Game (Child)', menu)
+            menu.exits.append(start_child)
+            start_child.connect(self.get_region('Root as Child'))
+            time_travel = OOTEntrance(self.player, self.multiworld, 'Time Travel (Child -> Adult)', menu)
+            menu.exits.append(time_travel)
+            time_travel.connect(self.get_region('Root as Adult'))
+        else:
+            start_adult = OOTEntrance(self.player, self.multiworld, 'New Game (Adult)', menu)
+            menu.exits.append(start_adult)
+            start_adult.connect(self.get_region('Root as Adult'))
+            time_travel = OOTEntrance(self.player, self.multiworld, 'Time Travel (Adult -> Child)', menu)
+            menu.exits.append(time_travel)
+            time_travel.connect(self.get_region('Root as Child'))
         create_dungeons(self)
         self.parser.create_delayed_rules()
 
@@ -763,10 +777,34 @@ class OOTWorld(World):
         self.set_scrub_prices()
 
         # Bind entrances to vanilla
+        seen_proxies = set()
         for region in self.regions:
+            for exit in region.child_region.exits:
+                if isinstance(exit, OOTEntrance):
+                    # The proxy connects both the child and adult regions, and sets the .connected_region on the proxy.
+                    exit.proxy.connect(self.get_region(exit.vanilla_connected_region))
+            if __debug__:
+                for exit in region.adult_region.exits:
+                    if isinstance(exit, OOTEntrance):
+                        proxy = exit.proxy
+                        if proxy not in seen_proxies:
+                            exit.proxy.connect(self.get_region(exit.vanilla_connected_region))
+                        else:
+                            raise RuntimeError(f"Got extra adult-only exit for proxy {proxy.name}")
             for exit in region.exits:
+                if region.name != "Menu":
+                    raise RuntimeError(f"Found base region not called Menu or Beyond Door of Time: {region}")
                 exit.connect(self.get_region(exit.vanilla_connected_region))
 
+        # Instead of connecting Time Travel directly at the root, it could be connected at Beyond Door of Time instead.
+        # However, this does add the entire path to Master Sword Pedestal to the path to any location in the playthrough
+        # that requires a specific age to reach.
+        # if self.starting_age == "child":
+        #     self.get_region("Beyond Door of Time").connect(self.get_region("Root as Adult"), "Time Travel To Adult",
+        #                                                    lambda state: state.has("Time Travel", self.player))
+        # else:
+        #     self.get_region("Beyond Door of Time").connect(self.get_region("Root as Child"), "Time Travel To Child",
+        #                                                    lambda state: state.has("Time Travel", self.player))
 
     # Create items, starting item handling, boss prize fill (before entrance randomizer)
     def create_items(self):
@@ -1311,7 +1349,6 @@ class OOTWorld(World):
     # the appropriate number of keys in the collection state when they are
     # picked up.
     def collect(self, state: CollectionState, item: OOTItem) -> bool:
-        state._oot_stale[self.player] = True
         if item.advancement and item.special and item.special.get('alias', False):
             alt_item_name, count = item.special.get('alias')
             state.prog_items[self.player][alt_item_name] += count
@@ -1324,21 +1361,8 @@ class OOTWorld(World):
             state.prog_items[self.player][alt_item_name] -= count
             if state.prog_items[self.player][alt_item_name] < 1:
                 del (state.prog_items[self.player][alt_item_name])
-            # invalidate caches, nothing can be trusted anymore now
-            state.child_reachable_regions[self.player] = set()
-            state.child_blocked_connections[self.player] = set()
-            state.adult_reachable_regions[self.player] = set()
-            state.adult_blocked_connections[self.player] = set()
-            state._oot_stale[self.player] = True
             return True
         changed = super().remove(state, item)
-        if changed:
-            # invalidate caches, nothing can be trusted anymore now
-            state.child_reachable_regions[self.player] = set()
-            state.child_blocked_connections[self.player] = set()
-            state.adult_reachable_regions[self.player] = set()
-            state.adult_blocked_connections[self.player] = set()
-            state._oot_stale[self.player] = True
         return changed
 
 
@@ -1351,11 +1375,11 @@ class OOTWorld(World):
         except HintAreaNotFound:
             return False
 
-    def get_shufflable_entrances(self, type=None, only_primary=False):
-        return [entrance for entrance in self.get_entrances() if ((type == None or entrance.type == type)
-            and (not only_primary or entrance.primary))]
+    def get_shufflable_entrances(self, type=None, only_primary=False) -> list[OOTProxyEntrance]:
+        return [entrance for entrance in self.entrance_proxy_cache.values()
+                if ((type is None or entrance.type == type) and (not only_primary or entrance.primary))]
 
-    def get_shuffled_entrances(self, type=None, only_primary=False):
+    def get_shuffled_entrances(self, type=None, only_primary=False) -> list[OOTProxyEntrance]:
         return [entrance for entrance in self.get_shufflable_entrances(type=type, only_primary=only_primary) if
                 entrance.shuffled]
 
@@ -1364,6 +1388,9 @@ class OOTWorld(World):
 
     def get_entrances(self):
         return self.multiworld.get_entrances(self.player)
+
+    def get_entrance_proxy(self, name: str):
+        return self.entrance_proxy_cache[name]
 
     def is_major_item(self, item: OOTItem):
         if item.type == 'Token':
@@ -1400,7 +1427,6 @@ class OOTWorld(World):
         # If free_scarecrow give Scarecrow Song
         if self.free_scarecrow:
             all_state.collect(self.create_item("Scarecrow Song"), prevent_sweep=True)
-        all_state._oot_stale[self.player] = True
 
         return all_state
 

@@ -1032,7 +1032,7 @@ def update_warp_song_text(messages, world):
     if world.logic_rules != "glitched": # Entrances not set on glitched logic so following code will error
         for id, entr in msg_list.items():
             if 'warp_songs' in world.misc_hints or not world.warp_songs:
-                destination = world.get_entrance(entr).connected_region
+                destination = world.get_entrance_proxy(entr).connected_region
                 destination_name = HintArea.at(destination)
                 color = COLOR_MAP[destination_name.color]
                 if destination_name.preposition(True) is not None:

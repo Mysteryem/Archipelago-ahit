@@ -1,25 +1,18 @@
-from collections import deque
 import logging
 import typing
 
 from .Regions import TimeOfDay
-from .DungeonList import dungeon_table
-from .Hints import HintArea
 from .Items import oot_is_item_of_type
-from .LocationList import dungeon_song_locations
 
 from BaseClasses import CollectionState, MultiWorld
-from worlds.generic.Rules import set_rule, add_rule, add_item_rule, forbid_item
+from worlds.generic.Rules import add_rule, add_item_rule, forbid_item
 from worlds.AutoWorld import LogicMixin
+
+if typing.TYPE_CHECKING:
+    from . import OOTWorld
 
 
 class OOTLogic(LogicMixin):
-    def init_mixin(self, parent: MultiWorld):
-        # Separate stale state for OOTRegion.can_reach() to use because CollectionState.update_reachable_regions() sets
-        # `self.state[player] = False` for all players without updating OOT's age region accessibility.
-        self._oot_stale = {player: True for player, world in parent.worlds.items()
-                           if parent.worlds[player].game == "Ocarina of Time"}
-
     def _oot_has_stones(self, count, player): 
         return self.has_group("stones", player, count)
 
@@ -53,18 +46,16 @@ class OOTLogic(LogicMixin):
     def _oot_region_has_shortcuts(self, player, regionname):
         return self.multiworld.worlds[player].region_has_shortcuts(regionname)
 
-
-    # This function operates by assuming different behavior based on the "level of recursion", handled manually. 
-    # If it's called while self.age[player] is None, then it will set the age variable and then attempt to reach the region. 
-    # If self.age[player] is not None, then it will compare it to the 'age' parameter, and return True iff they are equal. 
-    #   This lets us fake the OOT accessibility check that cares about age. Unfortunately it's still tied to the ground region. 
-    def _oot_reach_as_age(self, regionname, age, player): 
-        if self.age[player] is None: 
-            self.age[player] = age
-            can_reach = self.multiworld.get_region(regionname, player).can_reach(self)
-            self.age[player] = None
-            return can_reach
-        return self.age[player] == age
+    # todo: Could remove this now
+    def _oot_reach_as_age(self: CollectionState, regionname, age, player):
+        if age == "adult":
+            region = self.multiworld.get_region(regionname + " as Adult", player)
+        elif age == "child":
+            region = self.multiworld.get_region(regionname + " as Child", player)
+        else:
+            # The adult and child regions always provide access to this region.
+            region = self.multiworld.get_region(regionname, player)
+        return region.can_reach(self)
 
     def _oot_reach_at_time(self, regionname, tod, already_checked, player):
         name_map = {
@@ -96,40 +87,9 @@ class OOTLogic(LogicMixin):
                 return True
         return False
 
-    # Store the age before calling this!
-    def _oot_update_age_reachable_regions(self, player):
-        self._oot_stale[player] = False
-        for age in ['child', 'adult']:
-            self.age[player] = age
-            rrp = getattr(self, f'{age}_reachable_regions')[player]
-            bc = getattr(self, f'{age}_blocked_connections')[player]
-            queue = deque(getattr(self, f'{age}_blocked_connections')[player])
-            start = self.multiworld.get_region('Menu', player)
-
-            # init on first call - this can't be done on construction since the regions don't exist yet
-            if not start in rrp:
-                rrp.add(start)
-                bc.update(start.exits)
-                queue.extend(start.exits)
-
-            # run BFS on all connections, and keep track of those blocked by missing items
-            while queue:
-                connection = queue.popleft()
-                new_region = connection.connected_region
-                if new_region is None: 
-                    continue
-                if new_region in rrp:
-                    bc.remove(connection)
-                elif connection.can_reach(self):
-                    rrp.add(new_region)
-                    bc.remove(connection)
-                    bc.update(new_region.exits)
-                    queue.extend(new_region.exits)
-                    self.path[new_region] = (new_region.name, self.path.get(connection, None))
-
 
 # Sets extra rules on various specific locations not handled by the rule parser.
-def set_rules(ootworld):
+def set_rules(ootworld: "OOTWorld"):
     logger = logging.getLogger('')
 
     multiworld = ootworld.multiworld
@@ -172,6 +132,8 @@ def set_rules(ootworld):
 
     for name in ootworld.always_hints:
         add_rule(multiworld.get_location(name, player), guarantee_hint)
+
+
 
     # TODO: re-add hints once they are working
     # if location.type == 'HintStone' and ootworld.hints == 'mask':

@@ -1,16 +1,16 @@
 import ast
 from collections import defaultdict
-from inspect import signature, _ParameterKind
 import logging
 import re
 
 from .Items import item_table
 from .Location import OOTLocation
+from .Entrance import OOTProxyEntrance
 from .Regions import TimeOfDay, OOTRegion
 from BaseClasses import CollectionState as State
 from .Utils import data_path, read_json
 
-from worlds.generic.Rules import set_rule
+from worlds.generic.Rules import set_rule, CollectionRule
 
 
 escaped_items = {}
@@ -64,7 +64,7 @@ class Rule_AST_Transformer(ast.NodeTransformer):
         if not rule_aliases:
             load_aliases()
         # final rule cache
-        self.rule_cache = {}
+        self.rule_cache: dict[str, CollectionRule] = {}
         self.kwarg_defaults = kwarg_defaults.copy()  # otherwise this gets contaminated between players
         self.kwarg_defaults['player'] = self.player
 
@@ -385,11 +385,13 @@ class Rule_AST_Transformer(ast.NodeTransformer):
             self.current_spot = event
             # This could, in theory, create further subrules.
             access_rule = self.make_access_rule(self.visit(node))
+            # FIXME: Broken, see #3993
             if access_rule is self.rule_cache.get('NameConstant(False)'):
                 event.access_rule = None
                 event.never = True
                 logging.getLogger('').debug('Dropping unreachable delayed event: %s', event.name)
             else:
+                # FIXME: Broken, see #3993
                 if access_rule is self.rule_cache.get('NameConstant(True)'):
                     event.always = True
                 set_rule(event, access_rule)
@@ -400,7 +402,7 @@ class Rule_AST_Transformer(ast.NodeTransformer):
         self.delayed_rules.clear()
 
 
-    def make_access_rule(self, body):
+    def make_access_rule(self, body) -> CollectionRule:
         rule_str = ast.dump(body, False)
         if rule_str not in self.rule_cache:
             # requires consistent iteration on dicts
@@ -477,7 +479,7 @@ class Rule_AST_Transformer(ast.NodeTransformer):
 
     # Parse entry point
     # If spot is None, here() rules won't work.
-    def parse_rule(self, rule_string, spot=None):
+    def parse_rule(self, rule_string, spot=None) -> CollectionRule:
         self.current_spot = spot
         return self.make_access_rule(self.visit(ast.parse(rule_string, mode='eval').body))
 
@@ -485,7 +487,11 @@ class Rule_AST_Transformer(ast.NodeTransformer):
         rule = spot.rule_string.split('#', 1)[0].strip()
 
         access_rule = self.parse_rule(rule, spot)
-        set_rule(spot, access_rule)
+        if isinstance(spot, OOTProxyEntrance):
+            spot.set_rule(access_rule)
+        else:
+            set_rule(spot, access_rule)
+        # FIXME: These are broken, see #3993
         if access_rule is self.rule_cache.get('NameConstant(False)'):
             spot.never = True
         elif access_rule is self.rule_cache.get('NameConstant(True)'):
@@ -494,11 +500,13 @@ class Rule_AST_Transformer(ast.NodeTransformer):
     # Hijacking functions
     def current_spot_child_access(self, node): 
         r = self.current_spot if type(self.current_spot) == OOTRegion else self.current_spot.parent_region
-        return ast.parse(f"state._oot_reach_as_age('{r.name}', 'child', {self.player})", mode='eval').body
+        return ast.parse(f"state.can_reach_region('{r.name} as Child', {self.player})", mode="eval").body
+        # return ast.parse(f"state._oot_reach_as_age('{r.name}', 'child', {self.player})", mode='eval').body
 
     def current_spot_adult_access(self, node): 
         r = self.current_spot if type(self.current_spot) == OOTRegion else self.current_spot.parent_region
-        return ast.parse(f"state._oot_reach_as_age('{r.name}', 'adult', {self.player})", mode='eval').body
+        return ast.parse(f"state.can_reach_region('{r.name} as Adult', {self.player})", mode="eval").body
+        # return ast.parse(f"state._oot_reach_as_age('{r.name}', 'adult', {self.player})", mode='eval').body
 
     def current_spot_starting_age_access(self, node): 
         return self.current_spot_child_access(node) if self.world.starting_age == 'child' else self.current_spot_adult_access(node)

@@ -12,7 +12,8 @@ class Dungeon(object):
         self.dungeon_items = []
 
         for region in world.multiworld.regions:
-            if region.player == world.player and region.dungeon == self.name:
+            # FIXME: Use isinstance class, or add the `dungeon` attribute to child/adult regions
+            if region.player == world.player and hasattr(region, "dungeon") and region.dungeon == self.name:
                 region.dungeon = self
                 self.regions.append(region)                
 

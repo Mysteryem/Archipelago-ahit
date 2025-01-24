@@ -1603,7 +1603,9 @@ def patch_rom(world, rom):
     if world.logic_rules == 'glitched':
         location = world.get_location('Barinade')
     else:
-        jabu_reward_regions = {world.get_entrance('Jabu Jabus Belly Boss Door -> Barinade Boss Room').connected_region}
+        jabu_reward_regions = [world.get_entrance_proxy('Jabu Jabus Belly Boss Door -> Barinade Boss Room').connected_region]
+        if jabu_reward_regions[0] is None:
+            assert jabu_reward_regions[0] is not None
         already_checked = set()
         location = None
         while jabu_reward_regions:
@@ -1621,12 +1623,24 @@ def patch_rom(world, rom):
                 location = world.hint_rng.choice(list(filter(lambda loc: loc.type == best_type, locations)))
                 break
             already_checked |= jabu_reward_regions
-            jabu_reward_regions = [
-                exit.connected_region
-                for region in jabu_reward_regions
-                for exit in region.exits
-                if exit.connected_region.dungeon != 'Jabu Jabus Belly' and exit.connected_region.name not in already_checked
-            ]
+
+            # TODO: Clean up
+            jabu_reward_regions = []
+            for region in jabu_reward_regions:
+                for sub_region in (region.child_region, region.adult_region):
+                    for exit in sub_region.exits:
+                        connected_region = exit.connected_region
+                        real_connected_region = connected_region.parent_region
+                        if real_connected_region.dungeon != "Jabu Jabus Belly" and real_connected_region.name not in already_checked:
+                            jabu_reward_regions.append(real_connected_region)
+            #     for exit in region.exits:
+            # jabu_reward_regions = [
+            #     exit.connected_region
+            #     for region in jabu_reward_regions
+            #     for sub_region in (region.child_region, region.adult_region)
+            #     for exit in sub_region.exits
+            #     if exit.connected_region.dungeon != 'Jabu Jabus Belly' and exit.connected_region.name not in already_checked
+            # ]
 
     if location is None:
         jabu_item = None
@@ -2204,7 +2218,7 @@ def patch_rom(world, rom):
                     area = HintArea.at(vanilla_reward_location).text(world.hint_rng, world.clearer_hints, preposition=True)
                     compass_message = "\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for %s\x05\x40!\x01The %s can be found\x01%s!\x09" % (dungeon_name, vanilla_reward, area)
                 else:
-                    boss_location = next(filter(lambda loc: loc.type == 'Boss', world.get_entrance(f'{dungeon} Boss Door -> {boss_name} Boss Room').connected_region.locations))
+                    boss_location = next(filter(lambda loc: loc.type == 'Boss', world.get_entrance_proxy(f'{dungeon} Boss Door -> {boss_name} Boss Room').connected_region.locations))
                     dungeon_reward = reward_list[boss_location.item.name]
                     compass_message = "\x13\x75\x08You found the \x05\x41Compass\x05\x40\x01for %s\x05\x40!\x01It holds the %s!\x09" % (dungeon_name, dungeon_reward)
                 update_message_by_id(messages, compass_id, compass_message)

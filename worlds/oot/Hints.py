@@ -1,21 +1,15 @@
-import io
-import hashlib
 import logging
 import os
-import struct
-import random
-from collections import OrderedDict
-import urllib.request
-from urllib.error import URLError, HTTPError
-import json
+from collections import OrderedDict, deque
 from enum import Enum
 
-from BaseClasses import Region
+from BaseClasses import Region, Entrance, Location
 from .Items import OOTItem
-from .HintList import getHint, getHintGroup, Hint, hintExclusions, \
+from .HintList import getHint, getHintGroup, hintExclusions, \
     misc_item_hint_table, misc_location_hint_table
 from .Messages import COLOR_MAP, update_message_by_id
-from .TextBox import line_wrap, character_table, rom_safe_text
+from .Regions import OOTRegion, OOTChildRegion, OOTAdultRegion
+from .TextBox import line_wrap, rom_safe_text
 from .Utils import data_path, read_json
 
 
@@ -360,10 +354,15 @@ class HintArea(Enum):
             else:
                 parent_region = current_spot.parent_region
 
-            if parent_region.hint and (original_parent.name == 'Root' or parent_region.name != 'Root'):
-                if use_alt_hint and parent_region.alt_hint:
-                    return parent_region.alt_hint
-                return parent_region.hint
+            if isinstance(parent_region, (OOTAdultRegion, OOTChildRegion)):
+                real_parent_region = parent_region.parent_region
+            else:
+                real_parent_region = parent_region
+
+            if real_parent_region.hint and (original_parent.name == 'Root' or real_parent_region.name != 'Root'):
+                if use_alt_hint and real_parent_region.alt_hint:
+                    return real_parent_region.alt_hint
+                return real_parent_region.hint
 
             spot_queue.extend(filter(lambda ent: ent not in already_checked, parent_region.entrances))
 
@@ -447,21 +446,33 @@ class HintArea(Enum):
 # Peforms a breadth first search to find the closest hint area from a given spot (location or entrance)
 # May fail to find a hint if the given spot is only accessible from the root and not from any other region with a hint area
 # Returns the name of the location if the spot is not in OoT
-def get_hint_area(spot):
+def get_hint_area(spot: Entrance | Location):
     if spot.game == 'Ocarina of Time':
+        # print(f"## Finding hint area for {spot.name}")
         already_checked = []
-        spot_queue = [spot]
+        spot_queue = deque([spot])
 
         while spot_queue:
-            current_spot = spot_queue.pop(0)
+            current_spot = spot_queue.popleft()
             already_checked.append(current_spot)
 
             parent_region = current_spot.parent_region
+
+            # print(f"Got parent region: {parent_region.name}({type(parent_region)})")
+
+            assert isinstance(parent_region, (OOTRegion, OOTAdultRegion, OOTChildRegion))
+
+            if isinstance(parent_region, (OOTAdultRegion, OOTChildRegion)):
+                real_parent_region = parent_region.parent_region
+            else:
+                real_parent_region = parent_region
+
+            # print(f"Checking real parent region: {real_parent_region.name}({type(real_parent_region)})")
         
-            if parent_region.dungeon:
-                return parent_region.dungeon.hint_text
-            elif parent_region.hint and (spot.parent_region.name == 'Root' or parent_region.name != 'Root'):
-                return parent_region.hint_text
+            if real_parent_region.dungeon:
+                return real_parent_region.dungeon.hint_text
+            elif real_parent_region.hint and (spot.parent_region.name == 'Root' or real_parent_region.name != 'Root'):
+                return real_parent_region.hint_text
 
             spot_queue.extend(list(filter(lambda ent: ent not in already_checked, parent_region.entrances)))
 
@@ -703,18 +714,18 @@ def get_entrance_hint(world, checked):
         return None
 
     entrance_hints = list(filter(lambda hint: hint.name not in checked[world.player], getHintGroup('entrance', world)))
-    shuffled_entrance_hints = list(filter(lambda entrance_hint: world.get_entrance(entrance_hint.name).shuffled, entrance_hints))
+    shuffled_entrance_hints = list(filter(lambda entrance_hint: world.get_entrance_proxy(entrance_hint.name).shuffled, entrance_hints))
 
     regions_with_hint = [hint.name for hint in getHintGroup('region', world)]
     valid_entrance_hints = list(filter(lambda entrance_hint:
-                                       (world.get_entrance(entrance_hint.name).connected_region.name in regions_with_hint or
-                                        world.get_entrance(entrance_hint.name).connected_region.dungeon), shuffled_entrance_hints))
+                                       (world.get_entrance_proxy(entrance_hint.name).connected_region.name in regions_with_hint or
+                                        world.get_entrance_proxy(entrance_hint.name).connected_region.dungeon), shuffled_entrance_hints))
 
     if not valid_entrance_hints:
         return None
 
     entrance_hint = world.hint_rng.choice(valid_entrance_hints)
-    entrance = world.get_entrance(entrance_hint.name)
+    entrance = world.get_entrance_proxy(entrance_hint.name)
     checked[world.player].add(entrance.name)
 
     entrance_text = entrance_hint.text

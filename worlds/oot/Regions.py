@@ -1,7 +1,8 @@
 from enum import unique, Enum
+from typing import Optional
 
 from BaseClasses import Region, MultiWorld
-from .Hints import HintArea
+from . import Hints
 
 
 # copied from OoT-Randomizer/Region.py
@@ -27,9 +28,8 @@ class TimeOfDay(object):
     ALL = DAY | DAMPE
 
 
-
-
 class OOTRegion(Region):
+    is_internal = False
     game: str = "Ocarina of Time"
 
     def __init__(self, name: str, player: int, multiworld: MultiWorld):
@@ -44,6 +44,8 @@ class OOTRegion(Region):
         self.pretty_name = None
         self.font_color = None
         self.is_boss_room = False
+        self.child_region = OOTChildRegion(self, name, player, multiworld)
+        self.adult_region = OOTAdultRegion(self, name, player, multiworld)
 
     # This is too generic of a name to risk not breaking in the future.
     # This lets us possibly switch it out later if AP starts using it.
@@ -63,21 +65,30 @@ class OOTRegion(Region):
         else: 
             return None
 
-    def can_reach(self, state):
-        if state._oot_stale[self.player]:
-            stored_age = state.age[self.player]
-            state._oot_update_age_reachable_regions(self.player)
-            state.age[self.player] = stored_age
-        if state.age[self.player] == 'child': 
-            return self in state.child_reachable_regions[self.player]
-        elif state.age[self.player] == 'adult': 
-            return self in state.adult_reachable_regions[self.player]
-        else: # we don't care about age
-            return self in state.child_reachable_regions[self.player] or self in state.adult_reachable_regions[self.player]
-
     def set_hint_data(self, hint):
         if self.dungeon:
-            self._oot_hint = HintArea.for_dungeon(self.dungeon)
+            self._oot_hint = Hints.HintArea.for_dungeon(self.dungeon)
         else:
-            self._oot_hint = HintArea[hint]
+            self._oot_hint = Hints.HintArea[hint]
         self._hint_text = str(self._oot_hint)
+
+
+# TODO: Can we just make these OOTRegion with some different attributes?
+class OOTChildRegion(Region):
+    is_internal = True
+    parent_region: OOTRegion
+
+    def __init__(self, parent_region: OOTRegion, name: str, player: int, multiworld: MultiWorld, hint: Optional[str] = None):
+        super().__init__(name + " as Child", player, multiworld, hint)
+        self.parent_region = parent_region
+        self.connect(parent_region)
+
+
+class OOTAdultRegion(Region):
+    is_internal = True
+    parent_region: OOTRegion
+
+    def __init__(self, parent_region: OOTRegion, name: str, player: int, multiworld: MultiWorld, hint: Optional[str] = None):
+        super().__init__(name + " as Adult", player, multiworld, hint)
+        self.parent_region = parent_region
+        self.connect(parent_region)
