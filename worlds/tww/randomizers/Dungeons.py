@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, Optional
 
 from BaseClasses import CollectionState, Item, Location, MultiWorld
-from Fill import fill_restrictive
+from Fill import fill_restrictive, remaining_fill, FillError
 
 from ..Items import item_factory
 
@@ -204,60 +204,111 @@ def fill_dungeons_restrictive(multiworld: MultiWorld) -> None:
 
     :param multiworld: The MultiWorld instance.
     """
-    localized: set[tuple[int, str]] = set()
     dungeon_specific: set[tuple[int, str]] = set()
+    subworld: "TWWWorld"
+    in_dungeon_items_per_player: dict[int, list[Item]] = {}
     for subworld in multiworld.get_game_worlds("The Wind Waker"):
         player = subworld.player
         if player not in multiworld.groups:
-            localized |= {(player, item_name) for item_name in subworld.dungeon_local_item_names}
             dungeon_specific |= {(player, item_name) for item_name in subworld.dungeon_specific_item_names}
 
-    if localized:
-        in_dungeon_items = [item for item in get_dungeon_item_pool(multiworld) if (item.player, item.name) in localized]
-        if in_dungeon_items:
-            locations = [location for location in get_unfilled_dungeon_locations(multiworld)]
-            modify_dungeon_location_rules(locations, dungeon_specific)
+            dungeon_local_item_names = subworld.dungeon_local_item_names
+            dungeon_items = [item for item in get_dungeon_item_pool_player(subworld) if item.name in dungeon_local_item_names]
+            if dungeon_items:
+                in_dungeon_items_per_player[player] = dungeon_items
 
-            multiworld.random.shuffle(locations)
+    if in_dungeon_items_per_player:
+        dungeon_locations = [location for location in get_unfilled_dungeon_locations(multiworld)]
+        modify_dungeon_location_rules(dungeon_locations, dungeon_specific)
+
+        all_state_base = CollectionState(multiworld)
+        for item in multiworld.itempool:
+            multiworld.worlds[item.player].collect(all_state_base, item)
+        for player in multiworld.player_ids:
+            player_pre_fill_items = multiworld.worlds[player].get_pre_fill_items()
+            if player not in in_dungeon_items_per_player:
+                # Collect pre_fill items belonging to other players.
+                for item in player_pre_fill_items:
+                    if item.advancement:
+                        all_state_base.collect(item, True)
+            else:
+                dungeon_items = in_dungeon_items_per_player[player]
+                # Remove dungeon items, so they do not get collected twice.
+                player_pre_fill_items = player_pre_fill_items.copy()
+                for item in dungeon_items:
+                    player_pre_fill_items.remove(item)
+                # Collect whatever pre_fill items are left that are not dungeon items.
+                for item in player_pre_fill_items:
+                    if item.advancement:
+                        all_state_base.collect(item, True)
+
+
+        all_state_base.sweep_for_advancements()
+        # Get the remaining filled advancement locations for faster sweeps.
+        remaining_filled_advancements = [loc for loc in multiworld.get_locations()
+                                         if loc.advancement and loc not in all_state_base.advancements]
+
+        # Remove the completion condition so that minimal-accessibility words place keys correctly.
+        for player in in_dungeon_items_per_player.keys():
+            if all_state_base.has("Victory", player):
+                all_state_base.remove(multiworld.worlds[player].create_item("Victory"))
+
+        # Items sorted last are placed first. Place the most difficult to place items first.
+        sort_order = {"Big Key": 3, "Small Key": 2}
+
+        def sort_item_for_placement(item: Item):
+            value = sort_order.get(item.type, 1)
+            if (item.player, item.name) in dungeon_specific:
+                value += 5
+            return value
+
+        # We can skip a sweep on the last player.
+        last_player = next(reversed(in_dungeon_items_per_player.keys()))
+
+        for player, items_to_place in in_dungeon_items_per_player.items():
+            placing_all_state = all_state_base.copy()
+            # Collect the pre_fill items belonging to other players that we're going to place after this player.
+            for other_player, other_player_items in in_dungeon_items_per_player.items():
+                if other_player != player:
+                    for item in other_player_items:
+                        if item.advancement:
+                            placing_all_state.collect(item, True)
+
+            # Get the unfilled dungeon locations for this player.
+            dungeon_locations = [loc for loc in multiworld.get_locations(player) if loc.dungeon and loc.item is None]
+
+            # Check that excessive item plando (or rarely pre_fill from other worlds) has not filled too many dungeon
+            # locations.
+            if len(items_to_place) > len(dungeon_locations):
+                raise FillError(f"{len(items_to_place)} in-dungeon items to place for"
+                                f" {multiworld.get_player_name(player)}, but only {len(dungeon_locations)} empty"
+                                f"dungeon locations.")
+
+            multiworld.random.shuffle(dungeon_locations)
 
             # Dungeon-locked items have to be placed first so as not to run out of space for dungeon-locked items.
             # Subsort in the order Big Key, Small Key, Other before placing dungeon items.
-            sort_order = {"Big Key": 3, "Small Key": 2}
-            in_dungeon_items.sort(
-                key=lambda item: sort_order.get(item.type, 1)
-                + (5 if (item.player, item.name) in dungeon_specific else 0)
-            )
+            items_to_place.sort(key=sort_item_for_placement)
 
-            # Construct a partial `all_state` that contains only the items from `get_pre_fill_items` that aren't in a
-            # dungeon.
-            in_dungeon_player_ids = {item.player for item in in_dungeon_items}
-            all_state_base = CollectionState(multiworld)
-            for item in multiworld.itempool:
-                multiworld.worlds[item.player].collect(all_state_base, item)
-            pre_fill_items = []
-            for player in in_dungeon_player_ids:
-                pre_fill_items += multiworld.worlds[player].get_pre_fill_items()
-            for item in in_dungeon_items:
-                try:
-                    pre_fill_items.remove(item)
-                except ValueError:
-                    # `pre_fill_items` should be a subset of `in_dungeon_items`, but just in case.
-                    pass
-            for item in pre_fill_items:
-                multiworld.worlds[item.player].collect(all_state_base, item)
-            all_state_base.sweep_for_advancements()
+            if any(item.advancement for item in items_to_place):
+                # fill_restrictive removes the items placed from `items_to_place`, so the next player's
+                # `placing_all_state` will find it empty when it goes to collect the items.
+                fill_restrictive(multiworld, placing_all_state, dungeon_locations.copy(), items_to_place,
+                                 single_player_placement=True,
+                                 name=f"TWW Dungeon Items for {multiworld.get_player_name(player)}")
+            else:
+                # Faster fill if we're not placing any progression items.
+                # remaining_fill removes the items placed from `items_to_place`, so the next player's
+                # `placing_all_state` will find it empty when it goes to collect the items.
+                remaining_fill(multiworld, dungeon_locations.copy(), items_to_place,
+                               check_location_can_fill=not all(item.excludable for item in items_to_place),
+                               name=f"TWW Dungeon Items for {multiworld.get_player_name(player)}")
 
-            # Remove the completion condition so that minimal-accessibility words place keys correctly.
-            for player in (item.player for item in in_dungeon_items):
-                if all_state_base.has("Victory", player):
-                    all_state_base.remove(multiworld.worlds[player].create_item("Victory"))
+            if player != last_player:
+                # Add the advancement locations we just filled
+                placed_advancements = [loc for loc in dungeon_locations if loc.advancement]
+                if placed_advancements:
+                    remaining_filled_advancements.extend(placed_advancements)
+                    # Sweep to pick up placed keys into the all state, and any items that were locked behind them.
+                    all_state_base.sweep_for_advancements(remaining_filled_advancements)
 
-            fill_restrictive(
-                multiworld,
-                all_state_base,
-                locations,
-                in_dungeon_items,
-                lock=True,
-                allow_excluded=True,
-                name="TWW Dungeon Items",
-            )
