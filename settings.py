@@ -674,6 +674,16 @@ class GeneratorOptions(Group):
         start_inventory -> Move remaining items to start_inventory, generate additional filler items to fill locations.
         """
 
+    class BulkFill(IntEnum):
+        """
+        Start progression and priority fill with an initial bulk fill. This can greatly speed up generation of large
+        multiworlds, but, for a low number of players, it is known to result in a small bias towards earlier locations.
+        The effect of this bias might be reduced the more players there are in the multiworld, but this is pending
+        investigation (Work-In-Progress).
+        """
+        OFF = 0
+        ON = 1
+
     enemizer_path: EnemizerPath = EnemizerPath("EnemizerCLI/EnemizerCLI.Core")  # + ".exe" is implied on Windows
     player_files_path: PlayerFilesPath = PlayerFilesPath("Players")
     players: Players = Players(0)
@@ -683,6 +693,7 @@ class GeneratorOptions(Group):
     race: Race = Race(0)
     plando_options: PlandoOptions = PlandoOptions("bosses, connections, texts")
     panic_method: PanicMethod = PanicMethod("swap")
+    bulk_fill: BulkFill = BulkFill(0)
     loglevel: str = "info"
     logtime: bool = False
 
