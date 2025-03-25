@@ -33,11 +33,177 @@ def sweep_from_pool(base_state: CollectionState, itempool: typing.Sequence[Item]
     return new_state
 
 
+def _fill_restrictive_bulk_fill(base_state: CollectionState,
+                                locations: typing.List[Location],
+                                item_pool: typing.List[Item], lock: bool,
+                                on_place: typing.Optional[typing.Callable[[Location], None]],
+                                name: str,
+                                placements: typing.List[Location]) -> typing.Tuple[typing.Iterable[int], int]:
+    """
+    Start with a bulk fill into all locations. Successful fill percentage varies depending on the games used, typically
+    between 10-30%.
+    Use the same item placement order as the later fill code, by picking one item from each player before picking an
+    item from the first player again.
+    """
+    if not item_pool or not locations:
+        return (), 0
+
+    remaining_items = item_pool.copy()
+
+    # Placed items are removed from `item_pool`, so if all items for a player get placed, no deque for that player
+    # will be added to `reachable_items` in fill_restrictive, but swap may need to un-place one of those items back into
+    # `reachable_items`, so ensure that a deque for each player exists.
+    all_players = {item.player for item in remaining_items}
+
+    multiworld = base_state.multiworld
+
+    base_checked_advancements = base_state.advancements
+    filled_advancements_to_check = {loc for loc in multiworld.get_locations()
+                                    if loc.advancement and loc not in base_checked_advancements}
+    filled_locs: typing.List[Location] = []
+
+    remaining_locations = locations.copy()
+    remaining_locations.reverse()
+
+    while remaining_items:
+        item = remaining_items.pop()
+
+        # Iterate locations until finding a location that accepts the item.
+        # Any locations that refuse the item are stored so that the next item can try being filled at those
+        # locations to start with.
+        skipped_locations = []
+        while remaining_locations:
+            loc = remaining_locations.pop()
+            if loc.can_fill(base_state, item, check_access=False):
+                loc.item = item
+                filled_locs.append(loc)
+                if item.advancement:
+                    filled_advancements_to_check.add(loc)
+                break
+            else:
+                skipped_locations.append(loc)
+        if skipped_locations:
+            # Reverse skipped locations to that the first skipped locations go to the end.
+            reversed_skipped_locations_iter = reversed(skipped_locations)
+            # Put any skipped locations to the back of remaining_locations, so the next item tries them first.
+            remaining_locations.extend(reversed_skipped_locations_iter)
+        if not remaining_locations:
+            # There are no remaining locations
+            break
+
+    start_num_placements = len(placements)
+    bulk_fill_state = sweep_from_pool(base_state, remaining_items)
+    placed_item_ids = set()
+    placed_locs = set()
+    filled_advancements_to_check.difference_update(bulk_fill_state.advancements)
+
+    current_placements = len(filled_locs)
+    total = min(len(locations), len(item_pool))
+
+    _log_fill_progress(name + " (bulk: undoing invalid placements)", current_placements, total)
+    unplaced_since_last_sweep_count = 0
+    # Sweeping for every item unplaced and collected into the state is far too slow, so sweeps are only performed for
+    # every 0.2% of the total items to place, that get unplaced.
+    # This reduces placement accuracy, but is significantly faster and manages to place many more items on average than
+    # not sweeping at all.
+    percent_total_unplaced_to_sweep = total // 500
+
+    # Minimal players that have beaten their game ignore location reachability for placements.
+    minimal_players_remaining = {player for player in all_players
+                                 if multiworld.worlds[player].options.accessibility == "minimal"}
+    minimal_game_beaten_players = {player for player in minimal_players_remaining
+                                   if multiworld.has_beaten_game(bulk_fill_state, player)}
+    minimal_players_remaining.difference_update(minimal_game_beaten_players)
+
+    while filled_locs:
+        loc = filled_locs.pop()
+        item = loc.item
+        if item.player in minimal_game_beaten_players:
+            # If a minimal player has beaten their game, we don't care about the reachability of the location.
+            check_access = False
+        else:
+            check_access = True
+
+        if loc.advancement:
+            if loc in bulk_fill_state.locations_checked:
+                # TODO: The location could be filled with this item when checking reachability was skipped, so is it
+                #  safe to assume that it can still be filled here? Maybe we need to always re-check loc.can_fill here
+                #  because a location subclass could override .can_fill or have an item rule that can return False in
+                #  weird circumstances.
+                placement_ok = True
+            else:
+                # The location is not accessible, but we need to check again as part of allowing placement of
+                # 'always_allow' items or a location overriding .can_fill to return True even when the accessibility
+                # check would fail.
+                placement_ok = loc.can_fill(bulk_fill_state, item, check_access)
+        else:
+            # Sweep completely ignores locations that do not contain advancement items, so reachability must be
+            # checked directly.
+            # The placement is also allowed if the location always allows the item to be placed here.
+            placement_ok = loc.can_fill(bulk_fill_state, item, check_access)
+
+        if placement_ok:
+            # It was reachable or the item belonged to a minimal player that has completed their game, so consider it to
+            # be a successful placement
+            placed_item_ids.add(id(loc.item))
+            placements.append(loc)
+            placed_locs.add(loc)
+            if on_place is not None:
+                on_place(loc)
+            loc.locked = lock
+        else:
+            # The placement was unsuccessful, so un-place the item into the state's inventory.
+            item = loc.item
+            loc.item = None
+            current_placements -= 1
+            if current_placements % 1000 == 0:
+                _log_fill_progress(name + " (bulk: undoing invalid placements)", current_placements, total)
+            if item.advancement and loc in filled_advancements_to_check:
+                # Collect the item into the state and sometimes sweep while updating minimal players that have beaten
+                # their game.
+                filled_advancements_to_check.remove(loc)
+                # Collect the item into the state.
+                bulk_fill_state.collect(item, True)
+                unplaced_since_last_sweep_count += 1
+                if unplaced_since_last_sweep_count >= percent_total_unplaced_to_sweep:
+                    # Sweep so that it may be possible to reach more of the placed items.
+                    unplaced_since_last_sweep_count = 0
+                    bulk_fill_state.sweep_for_advancements(filled_advancements_to_check)
+                    # Update the minimal players that have beaten their games.
+                    newly_beaten_minimal_players = {player for player in minimal_players_remaining
+                                                    if multiworld.has_beaten_game(bulk_fill_state, player)}
+                    minimal_players_remaining.difference_update(newly_beaten_minimal_players)
+                    minimal_game_beaten_players.update(newly_beaten_minimal_players)
+
+    total_placements = len(placements)
+    num_new_placements = total_placements - start_num_placements
+    # todo: Currently always logging so it can be seen how many items the bulk fill managed to place.
+    if True or (start_num_placements < (total_placements - (total_placements % 1000))):
+        _log_fill_progress(name + " (bulk)", current_placements, total)
+
+    # Update the item_pool and locations lists.
+    item_indices_to_pop = []
+    for i, item in enumerate(item_pool):
+        if id(item) in placed_item_ids:
+            item_indices_to_pop.append(i)
+    for i in reversed(item_indices_to_pop):
+        item_pool.pop(i)
+
+    loc_indices_to_pop = []
+    for i, loc in enumerate(locations):
+        if loc in placed_locs:
+            loc_indices_to_pop.append(i)
+    for i in reversed(loc_indices_to_pop):
+        locations.pop(i)
+
+    return all_players, num_new_placements
+
+
 def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locations: typing.List[Location],
                      item_pool: typing.List[Item], single_player_placement: bool = False, lock: bool = False,
                      swap: bool = True, on_place: typing.Optional[typing.Callable[[Location], None]] = None,
                      allow_partial: bool = False, allow_excluded: bool = False, one_item_per_player: bool = True,
-                     name: str = "Unknown") -> None:
+                     name: str = "Unknown", initial_bulk_fill: bool = False) -> None:
     """
     :param multiworld: Multiworld to be filled.
     :param base_state: State assumed before fill.
@@ -50,18 +216,29 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     :param allow_partial: only place what is possible. Remaining items will be in the item_pool list.
     :param allow_excluded: if true and placement fails, it is re-attempted while ignoring excluded on Locations
     :param name: name of this fill step for progress logging purposes
+    :param initial_bulk_fill: Start the fill by performing a fast, initial bulk fill of the locations. This additionally
+    helps speed up item placement when sizes of the item pools of each player vary greatly. Item placement order is not
+    guaranteed when using initial bulk fill.
     """
     unplaced_items: typing.List[Item] = []
     placements: typing.List[Location] = []
     cleanup_required = False
     swapped_items: typing.Counter[typing.Tuple[int, str, bool]] = Counter()
     reachable_items: typing.Dict[int, typing.Deque[Item]] = {}
-    for item in item_pool:
-        reachable_items.setdefault(item.player, deque()).append(item)
 
     # for progress logging
     total = min(len(item_pool), len(locations))
     placed = 0
+
+    if initial_bulk_fill:
+        players, num_placed = _fill_restrictive_bulk_fill(base_state, locations, item_pool, lock, on_place, name,
+                                                          placements)
+        placed += num_placed
+        for player in players:
+            reachable_items[player] = deque()
+
+    for item in item_pool:
+        reachable_items.setdefault(item.player, deque()).append(item)
 
     while any(reachable_items.values()) and locations:
         if one_item_per_player:
@@ -456,7 +633,8 @@ def distribute_early_items(multiworld: MultiWorld,
 
 
 def distribute_items_restrictive(multiworld: MultiWorld,
-                                 panic_method: typing.Literal["swap", "raise", "start_inventory"] = "swap") -> None:
+                                 panic_method: typing.Literal["swap", "raise", "start_inventory"] = "swap",
+                                 do_bulk_fill: bool = False) -> None:
     fill_locations = sorted(multiworld.get_unfilled_locations())
     multiworld.random.shuffle(fill_locations)
     # get items to distribute
@@ -503,7 +681,7 @@ def distribute_items_restrictive(multiworld: MultiWorld,
         maximum_exploration_state = sweep_from_pool(multiworld.state)
         fill_restrictive(multiworld, maximum_exploration_state, prioritylocations, progitempool,
                          single_player_placement=single_player, swap=False, on_place=mark_for_locking,
-                         name="Priority", one_item_per_player=True, allow_partial=True)
+                         name="Priority", one_item_per_player=True, allow_partial=True, initial_bulk_fill=do_bulk_fill)
 
         if prioritylocations:
             # retry with one_item_per_player off because some priority fills can fail to fill with that optimization
@@ -519,13 +697,14 @@ def distribute_items_restrictive(multiworld: MultiWorld,
         maximum_exploration_state = sweep_from_pool(multiworld.state)
         if panic_method == "swap":
             fill_restrictive(multiworld, maximum_exploration_state, defaultlocations, progitempool, swap=True,
-                             name="Progression", single_player_placement=single_player)
+                             name="Progression", single_player_placement=single_player, initial_bulk_fill=do_bulk_fill)
         elif panic_method == "raise":
             fill_restrictive(multiworld, maximum_exploration_state, defaultlocations, progitempool, swap=False,
-                             name="Progression", single_player_placement=single_player)
+                             name="Progression", single_player_placement=single_player, initial_bulk_fill=do_bulk_fill)
         elif panic_method == "start_inventory":
             fill_restrictive(multiworld, maximum_exploration_state, defaultlocations, progitempool, swap=False,
-                             allow_partial=True, name="Progression", single_player_placement=single_player)
+                             allow_partial=True, name="Progression", single_player_placement=single_player,
+                             initial_bulk_fill=do_bulk_fill)
             if progitempool:
                 for item in progitempool:
                     logging.debug(f"Moved {item} to start_inventory to prevent fill failure.")
