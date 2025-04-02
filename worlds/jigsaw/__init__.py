@@ -138,7 +138,6 @@ class JigsawWorld(World):
         
         merges = 0
         clusters = []
-        added_piece_count = 0
         
         self.precollected_pieces = []
         self.itempool_pieces = []
@@ -159,8 +158,8 @@ class JigsawWorld(World):
                     elif self.options.piece_order == PieceOrder.option_every_piece_fits:
                         for i in range(len(pieces)):
                             p = pieces[i]
-                            c, m = add_piece(clusters, p, self.nx, self.ny, added_piece_count)
-                            if first_piece or m > merges:
+                            c, m = add_piece(clusters, p, self.nx, self.ny)
+                            if first_piece or m > 0:
                                 pieces.remove(p)
                                 break
                         else:
@@ -171,14 +170,14 @@ class JigsawWorld(World):
                         best_result = 5
                         for i in range(len(pieces)):
                             p = pieces[i]
-                            c, m = add_piece(clusters, p, self.nx, self.ny, added_piece_count)
-                            if first_piece or m - merges <= best_result_ever:
+                            c, m = add_piece(clusters, p, self.nx, self.ny)
+                            if first_piece or m <= best_result_ever:
                                 best_piece = p
                                 best_result = 0
                                 break
-                            if m - merges < best_result:
+                            if m < best_result:
                                 best_piece = p
-                                best_result = m - merges
+                                best_result = m
                                 
                         p = best_piece
                         best_result_ever = best_result
@@ -193,8 +192,8 @@ class JigsawWorld(World):
                 else:
                     self.precollected_pieces.append(p)  # if no merges left, add piece to start_inventory
                     
-                clusters, merges = add_piece(clusters, p, self.nx, self.ny, added_piece_count)  # update number of merges left
-                added_piece_count += 1
+                clusters, m = add_piece(clusters, p, self.nx, self.ny)  # update number of merges left
+                merges += m
                 
                 first_piece = False
                     
@@ -202,21 +201,20 @@ class JigsawWorld(World):
         self.actual_possible_merges = [0]
         merges = 0
         clusters = []
-        added_piece_count = 0
         
         for p in self.precollected_pieces:
-            clusters, merges = add_piece(clusters, p, self.nx, self.ny, added_piece_count)
+            clusters, m = add_piece(clusters, p, self.nx, self.ny)
+            merges += m
             self.possible_merges.append(merges - self.options.number_of_checks_out_of_logic.value) 
             self.actual_possible_merges.append(merges)
-            added_piece_count += 1
         for c, p in enumerate(self.itempool_pieces):
-            clusters, merges = add_piece(clusters, p, self.nx, self.ny, added_piece_count)
+            clusters, m = add_piece(clusters, p, self.nx, self.ny)
+            merges += m
             if len(self.itempool_pieces) - c < 10:
                 self.possible_merges.append(merges)   
             else:
                 self.possible_merges.append(merges - self.options.number_of_checks_out_of_logic.value)   
             self.actual_possible_merges.append(merges)
-            added_piece_count += 1
         
         self.pieces_needed_per_merge = [0]
         for i in range(1, self.npieces):

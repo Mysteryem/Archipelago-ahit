@@ -7,7 +7,7 @@ from BaseClasses import MultiWorld
 from worlds.generic.Rules import set_rule
 
 
-def add_piece(previous_solution, piece, nx, ny, added_piece_count):
+def add_piece(previous_solution, piece, nx, ny):
     pieces_to_merge = set()
     if piece <= nx * (ny - 1):
         pieces_to_merge.add(piece + nx)
@@ -20,17 +20,19 @@ def add_piece(previous_solution, piece, nx, ny, added_piece_count):
     
     merged_group = {piece}
     new_solution = []
-    
+
+    merge_count = 0
     for group in previous_solution:
         if not pieces_to_merge.isdisjoint(group):
             merged_group.update(group)
+            merge_count += 1
         else:
             new_solution.append(group)
     
     new_solution.append(merged_group)
-    return new_solution, added_piece_count + 1 - len(new_solution)
+    return new_solution, merge_count
 
-def remove_piece(previous_solution, piece, nx, ny, added_piece_count):
+def remove_piece(previous_solution, piece, nx, ny):
     # Find the group in previous_solution that piece is in
     group_to_remove = None
     for group in previous_solution:
@@ -39,17 +41,18 @@ def remove_piece(previous_solution, piece, nx, ny, added_piece_count):
             break
     
     if not group_to_remove:
-        return previous_solution, added_piece_count - len(previous_solution)  # Piece not found in any group
+        return previous_solution, 0  # Piece not found in any group
     
     # Remove piece from that group and then remove that group in total (but keep it in memory)
+    starting_merge_count = sum(map(len, previous_solution)) - len(previous_solution)
     group_to_remove.remove(piece)
     previous_solution.remove(group_to_remove)
     
     # Re-add the remaining pieces in the removed group
     partial_solution = []
-    for partial_piece_count, remaining_piece in enumerate(group_to_remove):
-        partial_solution, _ = add_piece(partial_solution, remaining_piece, nx, ny, partial_piece_count)
+    for remaining_piece in group_to_remove:
+        partial_solution, _ = add_piece(partial_solution, remaining_piece, nx, ny)
     
     new_solution = previous_solution + partial_solution
     
-    return new_solution, added_piece_count - 1 - len(new_solution)
+    return new_solution, sum(map(len, new_solution)) - len(new_solution) - starting_merge_count
