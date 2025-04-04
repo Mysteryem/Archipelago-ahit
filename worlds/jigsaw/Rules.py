@@ -100,6 +100,10 @@ class PuzzleBoard:
         self.width = width
 
         pieces = range(width * height)
+        # todo: Figure out the maximum number of IDs needed for a specific board size/shape, so that the list of unused
+        #  IDs can be made as small as possible, making it faster to copy in copy_mixin.
+        #  Maybe it would be possible to use an iterator instead of a list. To copy the iterator would be to
+        #  itertools.tee() it, and to extend the iterator would be to itertools.chain() it.
         self._unused_ids = list(pieces)
         self.board = [None] * len(pieces)
 
@@ -204,7 +208,7 @@ class PuzzleBoard:
         else:
             # Multiple connecting groups, return the number of real groups.
             group_to_real_group = self.group_to_real_group
-            return len({group_to_real_group[found_group] for found_group in found_groups if found_group})
+            return len({group_to_real_group[found_group] for found_group in found_groups})
 
     def remove_piece(self, piece_idx: int):
         """
