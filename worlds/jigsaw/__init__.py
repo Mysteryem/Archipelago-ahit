@@ -187,7 +187,7 @@ class JigsawWorld(World):
                     board = self.base_board.copy()
                     state._jigsaw_boards[self.player] = board
 
-                board.add_piece(item.piece_nr - 1)
+                board.add_piece(item.piece_nr)
         return change
 
     def remove(self, state: CollectionState, item: Item) -> bool:
@@ -202,5 +202,5 @@ class JigsawWorld(World):
                     # board = self.base_board.copy()
                     # state._jigsaw_boards[self.player] = board
 
-                board.remove_piece(item.piece_nr - 1)
+                board.remove_piece(item.piece_nr)
         return change

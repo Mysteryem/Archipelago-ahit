@@ -20,7 +20,7 @@ class JigsawItem(Item):
         self.location = None
         self.piece_nr = piece_nr
 
-item_table = {f"Puzzle Piece {i}": ItemData(234782000+i, ItemClassification.progression_skip_balancing, i) for i in range(1, 1601)}
+item_table = {f"Puzzle Piece {i}": ItemData(234782000+i, ItemClassification.progression_skip_balancing, i - 1) for i in range(1, 1601)}
 item_table["Squawks"] = ItemData(234781999, ItemClassification.filler, -111111)
 
 # item groups for better hinting
