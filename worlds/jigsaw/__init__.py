@@ -1,15 +1,14 @@
 import math
-from typing import Dict
 
-from BaseClasses import CollectionState, Entrance, Item, ItemClassification, Location, Region, Tutorial
+from BaseClasses import CollectionState, Entrance, Item, Region, Tutorial, MultiWorld
 
-from worlds.AutoWorld import WebWorld, World
+from worlds.AutoWorld import WebWorld, World, LogicMixin
 
 from .Items import JigsawItem, item_table
 from .Locations import JigsawLocation, location_table
 
 from .Options import JigsawOptions, OrientationOfImage
-from .Rules import add_piece, remove_piece, set_jigsaw_rules
+from .Rules import set_jigsaw_rules, PuzzleBoard
 from worlds.generic.Rules import set_rule
 
 
@@ -24,6 +23,15 @@ class JigsawWeb(WebWorld):
             ["Spineraks"],
         )
     ]
+
+
+class JigsawMixin(LogicMixin):
+    def init_mixin(self, parent: MultiWorld):
+        self._jigsaw_boards = {}
+
+    def copy_mixin(self, ret: CollectionState) -> CollectionState:
+        ret._jigsaw_boards = {player: board.copy() for player, board in self._jigsaw_boards.items()}
+        return ret
 
 
 class JigsawWorld(World):
@@ -84,8 +92,8 @@ class JigsawWorld(World):
                     optimal_nx, optimal_ny = nch, ncv
 
         return optimal_nx, optimal_ny
-        
-    def generate_early(self):        
+
+    def generate_early(self):
         self.orientation = 1
         if self.options.orientation_of_image == OrientationOfImage.option_landscape:
             self.orientation = 1.5
@@ -93,31 +101,34 @@ class JigsawWorld(World):
             self.orientation = 0.8
         self.nx, self.ny = self.calculate_optimal_nx_and_ny(self.options.number_of_pieces.value, self.orientation)
         self.npieces = self.nx * self.ny
+        self.base_board = PuzzleBoard(self.nx, self.ny)
         
         self.pool_pieces = [i for i in range(1, self.npieces + 1)]
         self.multiworld.random.shuffle(self.pool_pieces)
-        
+
+        board = PuzzleBoard(self.nx, self.ny)
+
         start_pieces = []
-        start_clusters = []
-        merges = 0
-        while merges < max(3, math.pow(self.nx * self.ny, 0.4)):
+        max_merges = max(3, math.pow(self.nx * self.ny, 0.4))
+        while board.merges_count < max_merges:
             p = self.pool_pieces.pop(0)
             start_pieces.append(p)
-            start_clusters, merges = add_piece(start_clusters, p, self.nx, self.ny)
-                
-        self.pool_pieces = [f"Puzzle Piece {i}" for i in self.pool_pieces]                
-        
+            board.add_piece(p - 1)
+
+        self.pool_pieces = [f"Puzzle Piece {i}" for i in self.pool_pieces]
+
         for i in start_pieces:
             self.multiworld.push_precollected(self.create_item(f"Puzzle Piece {i}"))
             
         self.pool_pieces += ["Squawks"] * (self.npieces - len(self.pool_pieces) - 2)
+
             
 
     def create_items(self):
         self.multiworld.itempool += [self.create_item(name) for name in self.pool_pieces]
 
     def create_regions(self):
-        
+
         # simple menu-board construction
         menu = Region("Menu", self.player, self.multiworld)
         board = Region("Board", self.player, self.multiworld)
@@ -141,13 +152,13 @@ class JigsawWorld(World):
         """
         set rules per location, and add the rule for beating the game
         """
-    
-        set_jigsaw_rules(self.multiworld, self.player, self.nx, self.ny)
-        
+
+        set_jigsaw_rules(self.multiworld, self.player)
+
         self.multiworld.completion_condition[self.player] = lambda state: all(
             state.has(f"Puzzle Piece {i}", self.player) for i in range(1, self.npieces + 1)
         )
-        
+
     def create_item(self, name: str) -> Item:
         item_data = item_table[name]
         item = JigsawItem(name, item_data.classification, item_data.code, self.player, item_data.piece_nr)
@@ -167,24 +178,29 @@ class JigsawWorld(World):
     # We overwrite these function to monitor when states have changed. See also dice_simulation in Rules.py
     def collect(self, state: CollectionState, item: Item) -> bool:
         change = super().collect(state, item)
-        if change:  # if something changed
-            if state.prog_items[self.player]["clusters"] == 0:  # initialize clusters if it's not ini'd yet
-                state.prog_items[self.player]["clusters"] = []
-                
-            # update clusters and number of merges
-            state.prog_items[self.player]["clusters"], state.prog_items[self.player]["merges"] = \
-                add_piece(state.prog_items[self.player]["clusters"], item.piece_nr, self.nx, self.ny)
-            # print(state.prog_items[self.player], state.prog_items[self.player]["clusters"], state.prog_items[self.player]["merges"])
+        if change:
+            if state.prog_items[self.player][item.name] == 1:
+                # The piece is new, so add it to the board.
+                board = state._jigsaw_boards.get(self.player)
+                if board is None:
+                    # Initialize board if it has not been initialized yet.
+                    board = self.base_board.copy()
+                    state._jigsaw_boards[self.player] = board
+
+                board.add_piece(item.piece_nr - 1)
         return change
 
     def remove(self, state: CollectionState, item: Item) -> bool:
         change = super().remove(state, item)
-        if change:  # if something changed
-            if state.prog_items[self.player]["clusters"] == 0:  # initialize clusters if it's not ini'd yet
-                state.prog_items[self.player]["clusters"] = []
-                
-            # update clusters and number of merges
-            state.prog_items[self.player]["clusters"], state.prog_items[self.player]["merges"] = \
-                remove_piece(state.prog_items[self.player]["clusters"], item.piece_nr, self.nx, self.ny)
-            # print(state.prog_items[self.player], state.prog_items[self.player]["clusters"], state.prog_items[self.player]["merges"])
+        if change:
+            if state.prog_items[self.player][item.name] == 0:
+                # The piece has been removed, so remove it from the board.
+                board = state._jigsaw_boards.get(self.player)
+                if board is None:
+                    raise RuntimeError("Removed a piece, but there is no board???")
+                    # # Initialize board if it has not been initialized yet.
+                    # board = self.base_board.copy()
+                    # state._jigsaw_boards[self.player] = board
+
+                board.remove_piece(item.piece_nr - 1)
         return change
