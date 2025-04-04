@@ -31,8 +31,8 @@ class PuzzleBoard:
     Optimized for efficient adding pieces to the board and calculating the number of new merges that would be made when
     adding a piece.
 
-    The pieces in each group are not tracked because this makes adding pieces more expensive, so piece removal is more
-    expensive.
+    The pieces in each group are not tracked because this makes adding pieces more expensive, this makes piece removal
+    more expensive, however, the removal of pieces is not expected to occur often.
 
     A board stores a group ID value for each piece placed on the board, where `None` indicates an empty space on the
     board.
@@ -80,7 +80,9 @@ class PuzzleBoard:
     # The width of the puzzle board.
     width: int
     # The puzzle board itself. A 1D list used to represent a 2D board.
-    # todo: Note, an array.array is faster to copy, but a list is faster to subscript.
+    # todo: An array.array is faster to copy (for copy_mixin), but a list is faster to subscript (for adding pieces).
+    #  Which is better for jigsaw logic that uses specific pieces as items? An array.array would have to use -1 or
+    #  another value outside the range of the board as its empty value, since it cannot use `None`.
     board: list[int | None]
     # A lookup of the adjacent pieces of each piece, used like a dict[int, tuple[int, ...]].
     adjacent_pieces: tuple[tuple[int, ...], ...]
@@ -137,6 +139,11 @@ class PuzzleBoard:
         return copy_no_init
 
     def add_piece(self, piece_index: int):
+        """
+        Add a piece to the board.
+
+        The behavior of attempting to add a piece which is already present in the board is undefined.
+        """
         board = self.board
 
         # Get all adjacent group IDs.
@@ -205,6 +212,8 @@ class PuzzleBoard:
 
         This is an expensive operation because the board does not store collections of pieces keyed by real group IDs,
         meaning that all pieces within the real group of the removed piece have to be found.
+
+        Attempting to remove a piece that is not present in the board will error.
         """
         board = self.board
         group_id = board[piece_idx]
@@ -216,7 +225,7 @@ class PuzzleBoard:
         other_indices_in_real_group: list[int] = []
         checked_indices: set[int] = {piece_idx}
 
-        # Find all indices in this real group. There is probably a more performant way to do this.
+        # Flood fill to find all indices in this real group. There is probably a more performant way to do this.
         adjacent_pieces = self.adjacent_pieces
         indices_to_check = list(adjacent_pieces[piece_idx])
         while indices_to_check:
@@ -249,6 +258,7 @@ class PuzzleBoard:
             self.add_piece(i)
 
     def print_board(self):
+        """Debugging helper."""
         lines = [[] for _ in range(len(self.board) // self.width)]
         for i in range(len(self.board)):
             y = i // self.width
