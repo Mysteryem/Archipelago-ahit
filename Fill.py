@@ -76,6 +76,7 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
             loc = remaining_locations.pop()
             if loc.can_fill(base_state, item, check_access=False):
                 loc.item = item
+                item.location = loc
                 filled_locs.append(loc)
                 if item.advancement:
                     filled_advancements_to_check.add(loc)
@@ -115,71 +116,75 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
                                    if multiworld.has_beaten_game(bulk_fill_state, player)}
     minimal_players_remaining.difference_update(minimal_game_beaten_players)
 
-    while filled_locs:
-        loc = filled_locs.pop()
-        item = loc.item
-        if item.player in minimal_game_beaten_players:
-            # If a minimal player has beaten their game, we don't care about the reachability of the location.
-            check_access = False
-        else:
-            check_access = True
-
-        if loc.advancement:
-            if loc in bulk_fill_state.locations_checked:
-                # TODO: The location could be filled with this item when checking reachability was skipped, so is it
-                #  safe to assume that it can still be filled here? Maybe we need to always re-check loc.can_fill here
-                #  because a location subclass could override .can_fill or have an item rule that can return False in
-                #  weird circumstances.
-                placement_ok = True
-            else:
-                # The location is not accessible, but we need to check again as part of allowing placement of
-                # 'always_allow' items or a location overriding .can_fill to return True even when the accessibility
-                # check would fail.
-                placement_ok = loc.can_fill(bulk_fill_state, item, check_access)
-        else:
-            # Sweep completely ignores locations that do not contain advancement items, so reachability must be
-            # checked directly.
-            # The placement is also allowed if the location always allows the item to be placed here.
-            placement_ok = loc.can_fill(bulk_fill_state, item, check_access)
-
-        if placement_ok:
-            # It was reachable or the item belonged to a minimal player that has completed their game, so consider it to
-            # be a successful placement
-            placed_item_ids.add(id(loc.item))
-            placements.append(loc)
-            placed_locs.add(loc)
-            if on_place is not None:
-                on_place(loc)
-            loc.locked = lock
-        else:
-            # The placement was unsuccessful, so un-place the item into the state's inventory.
+    # Because items are un-placed in the reverse to the order they were placed, a later placed item might only be
+    # allowed because of a specific item being placed in an earlier location. If the earlier placed item is determined
+    # to be invalid, this could make the later placement also invalid after the point at which the later placement was
+    # determined to be valid, so it is necessary to re-check the validity of placements if any had to be un-placed.
+    # Un-placing items in the same order that they were placed would avoid this, but it is preferable for the first
+    # placed items to be the items that are least likely to need to be un-placed.
+    # Circumstances where the placements need to be re-checked more than once are expected to be extremely rare and only
+    # caused by unusual item_rule or always_allow rules, or overridden can_fill methods on locations that depend on what
+    # items are placed at other locations.
+    recheck_locations = True
+    pending_placements: typing.Iterable[Location] = reversed(filled_locs)
+    while recheck_locations:
+        recheck_locations = False
+        updated_pending_placements: list[Location] = []
+        for loc in pending_placements:
             item = loc.item
-            loc.item = None
-            current_placements -= 1
-            if current_placements % 1000 == 0:
-                _log_fill_progress(name + " (bulk: undoing invalid placements)", current_placements, total)
-            if item.advancement and loc in filled_advancements_to_check:
-                # Collect the item into the state and sometimes sweep while updating minimal players that have beaten
-                # their game.
-                filled_advancements_to_check.remove(loc)
-                # Collect the item into the state.
-                bulk_fill_state.collect(item, True)
-                unplaced_since_last_sweep_count += 1
-                if unplaced_since_last_sweep_count >= percent_total_unplaced_to_sweep:
-                    # Sweep so that it may be possible to reach more of the placed items.
-                    unplaced_since_last_sweep_count = 0
-                    bulk_fill_state.sweep_for_advancements(filled_advancements_to_check)
-                    # Update the minimal players that have beaten their games.
-                    newly_beaten_minimal_players = {player for player in minimal_players_remaining
-                                                    if multiworld.has_beaten_game(bulk_fill_state, player)}
-                    minimal_players_remaining.difference_update(newly_beaten_minimal_players)
-                    minimal_game_beaten_players.update(newly_beaten_minimal_players)
+            if item.player in minimal_game_beaten_players:
+                # If a minimal player has beaten their game, we don't care about the reachability of the location.
+                check_access = False
+            else:
+                check_access = True
+
+            # Re-check that the placement is valid.
+            if loc.can_fill(bulk_fill_state, item, check_access):
+                # It was reachable or the item belonged to a minimal player that has completed their game, so consider
+                # it to be a successful placement for now.
+                placed_item_ids.add(id(loc.item))
+                updated_pending_placements.append(loc)
+            else:
+                # The placement was unsuccessful, so un-place the item into the state's inventory.
+                item = loc.item
+                loc.item = None
+                item.location = None
+                current_placements -= 1
+                # In rare circumstances, un-placing this item could have made a placement invalid, that was already
+                # checked in this loop and determined to be valid.
+                recheck_locations = True
+                if current_placements % 1000 == 0:
+                    _log_fill_progress(name + " (bulk: undoing invalid placements)", current_placements, total)
+                if item.advancement and loc in filled_advancements_to_check:
+                    # Collect the item into the state and sometimes sweep while updating minimal players that have beaten
+                    # their game.
+                    filled_advancements_to_check.remove(loc)
+                    # Collect the item into the state.
+                    bulk_fill_state.collect(item, True)
+                    unplaced_since_last_sweep_count += 1
+                    if unplaced_since_last_sweep_count >= percent_total_unplaced_to_sweep:
+                        # Sweep so that it may be possible to reach more of the placed items.
+                        unplaced_since_last_sweep_count = 0
+                        bulk_fill_state.sweep_for_advancements(filled_advancements_to_check)
+                        # Update the minimal players that have beaten their games.
+                        newly_beaten_minimal_players = {player for player in minimal_players_remaining
+                                                        if multiworld.has_beaten_game(bulk_fill_state, player)}
+                        minimal_players_remaining.difference_update(newly_beaten_minimal_players)
+                        minimal_game_beaten_players.update(newly_beaten_minimal_players)
+        pending_placements = updated_pending_placements
+
+    # Finalize the placements.
+    for loc in pending_placements:
+        if on_place is not None:
+            on_place(loc)
+        loc.locked = lock
+        placements.append(loc)
+        placed_locs.add(loc)
 
     total_placements = len(placements)
     num_new_placements = total_placements - start_num_placements
-    # todo: Currently always logging so it can be seen how many items the bulk fill managed to place.
-    if True or (start_num_placements < (total_placements - (total_placements % 1000))):
-        _log_fill_progress(name + " (bulk)", current_placements, total)
+    # Always log, so it can be seen how many items the bulk fill managed to place.
+    _log_fill_progress(name + " (bulk: complete)", current_placements, total)
 
     # Update the item_pool and locations lists.
     item_indices_to_pop = []
