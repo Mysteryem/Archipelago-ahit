@@ -760,20 +760,22 @@ class OOTWorld(World):
             start_child = OOTEntrance(self.player, self.multiworld, 'New Game (Child)', menu)
             menu.exits.append(start_child)
             start_child.connect(self.get_region('Root as Child'))
-            time_travel = OOTEntrance(self.player, self.multiworld, 'Time Travel (Child -> Adult)', menu)
-            # Not needed?
-            # time_travel.access_rule = lambda state: state.has("Time Travel", player)
-            menu.exits.append(time_travel)
-            time_travel.connect(self.get_region('Root as Adult'))
+            # For shorter playthrough paths, connect Time Travel from Menu
+            # time_travel = OOTEntrance(self.player, self.multiworld, 'Time Travel (Child -> Adult)', menu)
+            # # Not needed?
+            # # time_travel.access_rule = lambda state: state.has("Time Travel", player)
+            # menu.exits.append(time_travel)
+            # time_travel.connect(self.get_region('Root as Adult'))
         else:
             start_adult = OOTEntrance(self.player, self.multiworld, 'New Game (Adult)', menu)
             menu.exits.append(start_adult)
             start_adult.connect(self.get_region('Root as Adult'))
-            time_travel = OOTEntrance(self.player, self.multiworld, 'Time Travel (Adult -> Child)', menu)
-            # Not needed?
-            # time_travel.access_rule = lambda state: state.has("Time Travel", player)
-            menu.exits.append(time_travel)
-            time_travel.connect(self.get_region('Root as Child'))
+            # For shorter playthrough paths, connect Time Travel from Menu
+            # time_travel = OOTEntrance(self.player, self.multiworld, 'Time Travel (Adult -> Child)', menu)
+            # # Not needed?
+            # # time_travel.access_rule = lambda state: state.has("Time Travel", player)
+            # menu.exits.append(time_travel)
+            # time_travel.connect(self.get_region('Root as Child'))
         create_dungeons(self)
         self.parser.create_delayed_rules()
 
@@ -801,15 +803,15 @@ class OOTWorld(World):
                     raise RuntimeError(f"Found base region not called Menu or Beyond Door of Time: {region}")
                 exit.connect(self.get_region(exit.vanilla_connected_region))
 
-        # Instead of connecting Time Travel directly at the root, it could be connected at Beyond Door of Time instead.
-        # However, this does add the entire path to Master Sword Pedestal to the path to any location in the playthrough
-        # that requires a specific age to reach.
-        # if self.starting_age == "child":
-        #     self.get_region("Beyond Door of Time").connect(self.get_region("Root as Adult"), "Time Travel To Adult",
-        #                                                    lambda state: state.has("Time Travel", self.player))
-        # else:
-        #     self.get_region("Beyond Door of Time").connect(self.get_region("Root as Child"), "Time Travel To Child",
-        #                                                    lambda state: state.has("Time Travel", self.player))
+        # Instead of connecting Time Travel directly at the root, connect it at Beyond Door of Time instead.
+        # This adds the entire path to Master Sword Pedestal to the path to any location in the playthrough that
+        # requires the non-starting age to reach.
+        if self.starting_age == "child":
+            self.get_region("Beyond Door of Time").connect(self.get_region("Root as Adult"), "Time Travel To Adult",
+                                                           lambda state: state.has("Time Travel", self.player))
+        else:
+            self.get_region("Beyond Door of Time").connect(self.get_region("Root as Child"), "Time Travel To Child",
+                                                           lambda state: state.has("Time Travel", self.player))
 
     # Create items, starting item handling, boss prize fill (before entrance randomizer)
     def create_items(self):
@@ -883,6 +885,21 @@ class OOTWorld(World):
 
         set_rules(self)
         set_entrances_based_rules(self)
+
+        # FIXME: Remove the weirdness of accessing Child Spawn as Adult and Adult Spawn as Child. These regions seem to
+        #  be technically correct for logic purposes, and removing them seems to result in the same output for fixed
+        #  seeds, but playthrough paths using these regions is very weird.
+        if self.starting_age == "child":
+            for entrance in self.get_region("Child Spawn as Adult").entrances.copy():
+                entrance.parent_region.exits.remove(entrance)
+                entrance.connected_region.entrances.remove(entrance)
+                entrance.access_rule = lambda state: False
+        else:
+            for entrance in self.get_region("Adult Spawn as Child").entrances.copy():
+                entrance.parent_region.exits.remove(entrance)
+                entrance.connected_region.entrances.remove(entrance)
+                entrance.access_rule = lambda state: False
+
 
 
     def generate_basic(self):  # mostly killing locations that shouldn't exist by settings
