@@ -807,10 +807,12 @@ class OOTWorld(World):
         # This adds the entire path to Master Sword Pedestal to the path to any location in the playthrough that
         # requires the non-starting age to reach.
         if self.starting_age == "child":
+            # Cannot connect to "Beyond Door of Time as Adult", there seems to be some one-way connections from Root as
+            # Adult that cannot be reached otherwise.
             self.get_region("Beyond Door of Time").connect(self.get_region("Root as Adult"), "Time Travel To Adult",
                                                            lambda state: state.has("Time Travel", self.player))
         else:
-            self.get_region("Beyond Door of Time").connect(self.get_region("Root as Child"), "Time Travel To Child",
+            self.get_region("Beyond Door of Time").connect(self.get_region("Beyond Door of Time as Child"), "Time Travel To Child",
                                                            lambda state: state.has("Time Travel", self.player))
 
     # Create items, starting item handling, boss prize fill (before entrance randomizer)
