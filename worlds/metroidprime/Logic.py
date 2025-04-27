@@ -19,6 +19,43 @@ class CombatLogicDifficulty(Enum):
     MINIMAL = 1
 
 
+# Pre-create lists used in logic for better performance.
+POWER_BOMB_ITEMS = [SuitUpgrade.Power_Bomb_Expansion.value, SuitUpgrade.Morph_Ball.value]
+MAIN_POWER_BOMB_ITEMS = [SuitUpgrade.Morph_Ball.value, SuitUpgrade.Main_Power_Bomb.value]
+BOOST_ITEMS = [SuitUpgrade.Morph_Ball.value, SuitUpgrade.Boost_Ball.value]
+BOMB_ITEMS = [SuitUpgrade.Morph_Ball.value, SuitUpgrade.Morph_Ball_Bomb.value]
+POWER_BEAM_ITEMS = [SuitUpgrade.Power_Beam.value, ProgressiveUpgrade.Progressive_Power_Beam.value]
+SPIDER_ITEMS = [SuitUpgrade.Spider_Ball.value, SuitUpgrade.Morph_Ball.value]
+SUPER_MISSILE_ITEMS1 = [SuitUpgrade.Charge_Beam.value, SuitUpgrade.Super_Missile.value]
+WAVE_BEAM_ITEMS = [SuitUpgrade.Wave_Beam.value, ProgressiveUpgrade.Progressive_Wave_Beam.value]
+ICE_BEAM_ITEMS = [SuitUpgrade.Ice_Beam.value, ProgressiveUpgrade.Progressive_Ice_Beam.value]
+PLASMA_BEAM_ITEMS = [SuitUpgrade.Plasma_Beam.value, ProgressiveUpgrade.Progressive_Plasma_Beam.value]
+CHARGE_BEAM_ITEMS2 = {upgrade.value: 2 for upgrade in ProgressiveUpgrade}
+HEAT_ITEMS1 = [SuitUpgrade.Varia_Suit.value, SuitUpgrade.Phazon_Suit.value, SuitUpgrade.Gravity_Suit.value]
+
+COMBAT_LABS_ROOMS = [RoomName.East_Tower.value, RoomName.Save_Station_B.value, RoomName.Quarantine_Monitor.value]
+THARDUS_ROOMS = [RoomName.Quarantine_Monitor.value, RoomName.Save_Station_B.value]
+
+SAVE_ROOMS = [
+    RoomName.Landing_Site.value,
+    RoomName.Save_Station_1.value,
+    RoomName.Save_Station_2.value,
+    RoomName.Save_Station_3.value,
+    RoomName.Save_Station_Magmoor_A.value,
+    RoomName.Save_Station_Magmoor_B.value,
+    RoomName.Save_Station_A.value,
+    RoomName.Save_Station_B.value,
+    RoomName.Save_Station_C.value,
+    RoomName.Save_Station_D.value,
+    RoomName.Cargo_Freight_Lift_to_Deck_Gamma.value,
+    RoomName.Save_Station_Mines_A.value,
+    RoomName.Save_Station_Mines_B.value,
+    RoomName.Save_Station_Mines_C.value,
+]
+
+COMBAT_BEAM_PIRATES_DIFFICULTIES = [CombatLogicDifficulty.NO_LOGIC.value, CombatLogicDifficulty.MINIMAL.value]
+
+
 class Logic:
     def __init__(self, world: "MetroidPrimeWorld"):
         self.can_power_bomb: Callable[["MetroidPrimeWorld", CollectionState], bool] = (
@@ -39,7 +76,7 @@ class Logic:
         self, world: "MetroidPrimeWorld", state: CollectionState
     ) -> bool:
         return state.has_all(
-            [SuitUpgrade.Power_Bomb_Expansion.value, SuitUpgrade.Morph_Ball.value],
+            POWER_BOMB_ITEMS,
             world.player,
         )
 
@@ -47,7 +84,7 @@ class Logic:
         self, world: "MetroidPrimeWorld", state: CollectionState
     ) -> bool:
         return state.has_all(
-            [SuitUpgrade.Morph_Ball.value, SuitUpgrade.Main_Power_Bomb.value],
+            MAIN_POWER_BOMB_ITEMS,
             world.player,
         )
 
@@ -58,12 +95,12 @@ class Logic:
 
     def can_boost(self, world: "MetroidPrimeWorld", state: CollectionState) -> bool:
         return state.has_all(
-            [SuitUpgrade.Morph_Ball.value, SuitUpgrade.Boost_Ball.value], world.player
+            BOOST_ITEMS, world.player
         )
 
     def can_bomb(self, world: "MetroidPrimeWorld", state: CollectionState) -> bool:
         return state.has_all(
-            [SuitUpgrade.Morph_Ball.value, SuitUpgrade.Morph_Ball_Bomb.value],
+            BOMB_ITEMS,
             world.player,
         )
 
@@ -71,16 +108,13 @@ class Logic:
         self, world: "MetroidPrimeWorld", state: CollectionState
     ) -> bool:
         return state.has_any(
-            [
-                SuitUpgrade.Power_Beam.value,
-                ProgressiveUpgrade.Progressive_Power_Beam.value,
-            ],
+            POWER_BEAM_ITEMS,
             world.player,
         )
 
     def can_spider(self, world: "MetroidPrimeWorld", state: CollectionState) -> bool:
         return state.has_all(
-            [SuitUpgrade.Spider_Ball.value, SuitUpgrade.Morph_Ball.value], world.player
+            SPIDER_ITEMS, world.player
         )
 
     def _can_missile_launcher(
@@ -117,7 +151,7 @@ class Logic:
             and self.can_missile(world, state, 1)
             and (
                 state.has_all(
-                    [SuitUpgrade.Charge_Beam.value, SuitUpgrade.Super_Missile.value],
+                    SUPER_MISSILE_ITEMS1,
                     world.player,
                 )
                 or state.has(
@@ -128,16 +162,13 @@ class Logic:
 
     def can_wave_beam(self, world: "MetroidPrimeWorld", state: CollectionState) -> bool:
         return state.has_any(
-            [
-                SuitUpgrade.Wave_Beam.value,
-                ProgressiveUpgrade.Progressive_Wave_Beam.value,
-            ],
+            WAVE_BEAM_ITEMS,
             world.player,
         )
 
     def can_ice_beam(self, world: "MetroidPrimeWorld", state: CollectionState) -> bool:
         return state.has_any(
-            [SuitUpgrade.Ice_Beam.value, ProgressiveUpgrade.Progressive_Ice_Beam.value],
+            ICE_BEAM_ITEMS,
             world.player,
         )
 
@@ -145,10 +176,7 @@ class Logic:
         self, world: "MetroidPrimeWorld", state: CollectionState
     ) -> bool:
         return state.has_any(
-            [
-                SuitUpgrade.Plasma_Beam.value,
-                ProgressiveUpgrade.Progressive_Plasma_Beam.value,
-            ],
+            PLASMA_BEAM_ITEMS,
             world.player,
         )
 
@@ -229,7 +257,7 @@ class Logic:
         return state.has(
             SuitUpgrade.Charge_Beam.value, world.player
         ) or state.has_any_count(
-            {upgrade.value: 2 for upgrade in ProgressiveUpgrade}, world.player
+            CHARGE_BEAM_ITEMS2, world.player
         )
 
     def can_beam_combo(
@@ -272,11 +300,7 @@ class Logic:
             return state.has(SuitUpgrade.Varia_Suit.value, world.player)
         else:
             return state.has_any(
-                [
-                    SuitUpgrade.Varia_Suit.value,
-                    SuitUpgrade.Phazon_Suit.value,
-                    SuitUpgrade.Gravity_Suit.value,
-                ],
+                HEAT_ITEMS1,
                 world.player,
             )
 
@@ -319,22 +343,6 @@ class Logic:
     def can_warp_to_start(
         self, world: "MetroidPrimeWorld", state: CollectionState
     ) -> bool:
-        SAVE_ROOMS = [
-            RoomName.Landing_Site.value,
-            RoomName.Save_Station_1.value,
-            RoomName.Save_Station_2.value,
-            RoomName.Save_Station_3.value,
-            RoomName.Save_Station_Magmoor_A.value,
-            RoomName.Save_Station_Magmoor_B.value,
-            RoomName.Save_Station_A.value,
-            RoomName.Save_Station_B.value,
-            RoomName.Save_Station_C.value,
-            RoomName.Save_Station_D.value,
-            RoomName.Cargo_Freight_Lift_to_Deck_Gamma.value,
-            RoomName.Save_Station_Mines_A.value,
-            RoomName.Save_Station_Mines_B.value,
-            RoomName.Save_Station_Mines_C.value,
-        ]
         for room in SAVE_ROOMS:
             if state.can_reach_region(room, world.player):
                 return True
@@ -369,20 +377,13 @@ class Logic:
     def can_combat_labs(
         self, world: "MetroidPrimeWorld", state: CollectionState
     ) -> bool:
-        return world.starting_room_name in [
-            RoomName.East_Tower.value,
-            RoomName.Save_Station_B.value,
-            RoomName.Quarantine_Monitor.value,
-        ] or self._can_combat_generic(world, state, 1, 0, False)
+        return world.starting_room_name in COMBAT_LABS_ROOMS or self._can_combat_generic(world, state, 1, 0, False)
 
     def can_combat_thardus(
         self, world: "MetroidPrimeWorld", state: CollectionState
     ) -> bool:
         """Require charge and plasma or power for thardus on normal"""
-        if world.starting_room_name in [
-            RoomName.Quarantine_Monitor.value,
-            RoomName.Save_Station_B.value,
-        ]:
+        if world.starting_room_name in THARDUS_ROOMS:
             return (
                 self.can_plasma_beam(world, state)
                 or self.can_power_beam(world, state)
@@ -451,9 +452,6 @@ class Logic:
     def can_combat_beam_pirates(
         self, world: "MetroidPrimeWorld", state: CollectionState, beam_type: SuitUpgrade
     ) -> bool:
-        if world.options.combat_logic_difficulty.value in [
-            CombatLogicDifficulty.NO_LOGIC.value,
-            CombatLogicDifficulty.MINIMAL.value,
-        ]:
+        if world.options.combat_logic_difficulty.value in COMBAT_BEAM_PIRATES_DIFFICULTIES:
             return True
         return state.has(get_item_for_options(world, beam_type).value, world.player)
