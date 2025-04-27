@@ -816,9 +816,9 @@ class ChozoRuinsAreaData(AreaData):
                     ),
                     PickupData(
                         "Chozo Ruins: Sunchamber - Ghosts",
-                        rule_func=lambda world, state: self.can_flaahgra(world, state)
-                        and self.logic.can_combat_ghosts(world, state)
-                        and self.can_climb_sun_tower(world, state),
+                        rule_func=lambda world, state: self.logic.can_combat_ghosts(world, state)
+                        and self.can_climb_sun_tower(world, state)
+                        and self.can_flaahgra(world, state),
                     ),
                 ],
             ),
