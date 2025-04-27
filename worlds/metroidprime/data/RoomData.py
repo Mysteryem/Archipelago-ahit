@@ -431,9 +431,14 @@ class AreaData:
         if base_rule is not None:
             add_rule(location, lambda state: base_rule(world, state))
         if eligible_trick_rules:
+            def trick_rules(state: CollectionState):
+                for rule in eligible_trick_rules:
+                    if rule(world, state):
+                        return True
+                return False
             add_rule(
                 location,
-                lambda state: any(rule(world, state) for rule in eligible_trick_rules),
+                trick_rules,
                 "or",
             )
 
