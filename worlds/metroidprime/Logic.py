@@ -1,4 +1,3 @@
-from enum import Enum
 from BaseClasses import CollectionState
 from .data.RoomNames import RoomName
 from .Items import (
@@ -7,16 +6,12 @@ from .Items import (
     get_item_for_options,
     get_progressive_upgrade_for_item,
 )
+from .Enum import CombatLogicDifficulty
+from .PrimeOptions import RemoveThermalRequirements, RemoveXrayRequirements
 from typing import TYPE_CHECKING, Callable, Optional
 
 if TYPE_CHECKING:
     from . import MetroidPrimeWorld
-
-
-class CombatLogicDifficulty(Enum):
-    NO_LOGIC = -1
-    NORMAL = 0
-    MINIMAL = 1
 
 
 # Pre-create lists used in logic for better performance.
@@ -206,7 +201,7 @@ class Logic:
             return state.has(SuitUpgrade.X_Ray_Visor.value, world.player)
         if (
             usually_required
-            and world.options.remove_xray_requirements == "remove_all_but_omega_pirate"
+            and world.options.remove_xray_requirements.value == RemoveXrayRequirements.option_remove_all_but_omega_pirate
         ):
             return True
         if usually_required:
@@ -226,7 +221,7 @@ class Logic:
             return state.has(SuitUpgrade.Thermal_Visor.value, world.player)
         if (
             usually_required
-            and world.options.remove_thermal_requirements == "remove_all"
+            and world.options.remove_thermal_requirements.value == RemoveThermalRequirements.option_remove_all
         ):
             return True
         if usually_required:

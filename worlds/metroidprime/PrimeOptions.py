@@ -13,9 +13,7 @@ from Options import (
 )
 from dataclasses import dataclass
 
-from .Logic import CombatLogicDifficulty
-
-from .Enum import StartRoomDifficulty
+from .Enum import StartRoomDifficulty, CombatLogicDifficulty
 from .data.Tricks import TrickInfo, Tricks
 
 
