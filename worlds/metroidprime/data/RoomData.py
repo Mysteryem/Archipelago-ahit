@@ -452,8 +452,8 @@ class AreaData:
     ) -> bool:
         """Determines if the player can open the door based on the lock type as well as whether they can reach it or not"""
         max_difficulty = world.options.trick_difficulty.value
-        allow_list = world.options.trick_allow_list
-        deny_list = world.options.trick_deny_list
+        allow_list = world.options.trick_allow_list.value
+        deny_list = world.options.trick_deny_list.value
 
         if not self._can_open_door(world, state, door_data):
             return False
