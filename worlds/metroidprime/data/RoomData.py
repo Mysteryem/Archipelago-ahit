@@ -8,7 +8,7 @@ from BaseClasses import (
     LocationProgressType,
     Region,
 )
-from ...generic.Rules import add_rule
+from worlds.generic.Rules import add_rule, CollectionRule
 from ..PrimeOptions import DoorColorRandomization
 from ..BlastShieldRando import BlastShieldType
 from ..DoorRando import DoorLockType
@@ -165,6 +165,16 @@ class RoomData:
         return None
 
 
+def _always(*_args, **_kwargs) -> bool:
+    """Helper function used to represent a rule that always returns True."""
+    return True
+
+
+def _never(*_args, **_kwargs) -> bool:
+    """Helper function used to represent a rule that always returns False."""
+    return False
+
+
 class AreaData:
 
     def __init__(self, world: "MetroidPrimeWorld", area_name: str):
@@ -315,15 +325,24 @@ class AreaData:
                 target_region = world.get_region(
                     door_data.get_destination_region_name()
                 )
-                entrance = region.connect(
-                    target_region,
-                    get_connection_name(door_data),
-                    lambda state, w=world, dd=door_data: self._can_access_door(
-                        w, state, dd
-                    ),
-                )
+                entrance_rule = self._make_can_access_door_collection_rule(world, door_data)
+                if entrance_rule is _always:
+                    # Skip specifying a rule.
+                    entrance = region.connect(
+                        target_region,
+                        get_connection_name(door_data),
+                    )
+                elif entrance_rule is _never:
+                    # Skip creating the entrance.
+                    entrance = None
+                else:
+                    entrance = region.connect(
+                        target_region,
+                        get_connection_name(door_data),
+                        entrance_rule,
+                    )
 
-                if door_data.indirect_condition_rooms:
+                if door_data.indirect_condition_rooms and entrance is not None:
                     for indirect_condition_room in door_data.indirect_condition_rooms:
                         world.multiworld.register_indirect_condition(
                             world.get_region(indirect_condition_room.value), entrance
@@ -372,6 +391,7 @@ class AreaData:
                         ),
                     )
 
+    # TODO: Fully replace this with _make_can_open_door_func
     def _can_open_door(
         self, world: "MetroidPrimeWorld", state: CollectionState, door_data: DoorData
     ) -> bool:
@@ -389,6 +409,28 @@ class AreaData:
             if not blast_shield_func(world, state):
                 return False
         return True
+
+    def _make_can_open_door_func(self, door_data: DoorData) -> "Callable[[MetroidPrimeWorld, CollectionState], bool]":
+        blast_shield = door_data.blast_shield
+        if blast_shield is BlastShieldType.Disabled:
+            return _never
+
+        blast_shield_func = None
+        if blast_shield is not None and blast_shield is not BlastShieldType.No_Blast_Shield:
+            blast_shield_func = self.blast_shield_rules[blast_shield]
+
+        lock = door_data.lock or door_data.defaultLock
+        lock_func = self.door_lock_rules.get(lock)
+
+        if blast_shield_func is None:
+            if lock_func is None:
+                return _always
+            return lock_func
+        else:
+            if lock_func is None:
+                return blast_shield_func
+            else:
+                return lambda world, state: lock_func(world, state) and blast_shield_func(world, state)
 
     def _set_pickup_rule(
         self,
@@ -429,6 +471,7 @@ class AreaData:
                     "or",
                 )
 
+    # TODO: Fully replace this with _make_can_access_door_collection_rule
     def _can_access_door(
         self, world: "MetroidPrimeWorld", state: CollectionState, door_data: DoorData
     ) -> bool:
@@ -453,3 +496,56 @@ class AreaData:
             return True
 
         return False
+
+    def _make_can_access_door_collection_rule(self, world: "MetroidPrimeWorld", door_data: DoorData) -> CollectionRule:
+        """
+        Create a CollectionRule that determines if the player can open the door based on the lock type as well as
+        whether they can reach it or not.
+
+        Returns False if the door can never be opened.
+        Returns True if the door can always be opened."""
+        can_open_door = self._make_can_open_door_func(door_data)
+        if can_open_door is _never:
+            return _never
+
+        if door_data.rule_func is None:
+            if can_open_door is _always:
+                return _always
+            else:
+                return lambda state: can_open_door(world, state)
+
+        any_rules: List[Callable[[MetroidPrimeWorld, CollectionState], bool]] = [door_data.rule_func]
+
+        max_difficulty = world.options.trick_difficulty.value
+        allow_list = world.options.trick_allow_list.value
+        deny_list = world.options.trick_deny_list.value
+
+        for trick in door_data.tricks:
+            if trick.name not in allow_list and (
+                trick.difficulty.value > max_difficulty or trick.name in deny_list
+            ):
+                continue
+            any_rules.append(trick.rule_func)
+
+        if len(any_rules) == 1:
+            rule = any_rules[0]
+            if can_open_door is _always:
+                return lambda state: rule(world, state)
+            else:
+                return lambda state: can_open_door(world, state) and rule(world, state)
+        else:
+            if can_open_door is _always:
+                def can_access_door_function(state: CollectionState) -> bool:
+                    for any_rule in any_rules:
+                        if any_rule(world, state):
+                            return True
+                    return False
+            else:
+                def can_access_door_function(state: CollectionState) -> bool:
+                    if not self._can_open_door(world, state, door_data):
+                        return False
+                    for any_rule in any_rules:
+                        if any_rule(world, state):
+                            return True
+                    return False
+            return can_access_door_function
