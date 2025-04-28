@@ -172,6 +172,28 @@ class AreaData:
         self.area_name: str = area_name
         self.logic = world.logic
         self.tricks = world.tricks
+
+        self.door_lock_rules: dict[DoorLockType, Callable[[MetroidPrimeWorld, CollectionState], bool]] = {
+            DoorLockType.Wave: self.logic.can_wave_beam,
+            DoorLockType.Ice: self.logic.can_ice_beam,
+            DoorLockType.Plasma: self.logic.can_plasma_beam,
+            DoorLockType.Power_Beam: self.logic.can_power_beam,
+            DoorLockType.Missile: self.logic.can_missile,  # note: type does not match, but the functions have default args
+            DoorLockType.Bomb: self.logic.can_bomb,
+        }
+
+        can_beam_combo = self.logic.can_beam_combo
+
+        self.blast_shield_rules: dict[BlastShieldType, Callable[[MetroidPrimeWorld, CollectionState], bool]] = {
+            BlastShieldType.Bomb: self.logic.can_bomb,
+            BlastShieldType.Missile: self.logic.can_missile,  # note: type does not match
+            BlastShieldType.Power_Bomb: self.logic.can_power_bomb,
+            BlastShieldType.Charge_Beam: self.logic.can_charge_beam,
+            BlastShieldType.Super_Missile: self.logic.can_super_missile,
+            BlastShieldType.Wavebuster: lambda world, state: can_beam_combo(world, state, SuitUpgrade.Wave_Beam),
+            BlastShieldType.Ice_Spreader: lambda world, state: can_beam_combo(world, state, SuitUpgrade.Ice_Beam),
+            BlastShieldType.Flamethrower: lambda world, state: can_beam_combo(world, state, SuitUpgrade.Plasma_Beam),
+        }
         # Setting here so options are not needed in the actual functions
 
     def _init_room_names_and_areas(self):
@@ -353,60 +375,20 @@ class AreaData:
     def _can_open_door(
         self, world: "MetroidPrimeWorld", state: CollectionState, door_data: DoorData
     ) -> bool:
-        can_color = False
-        can_blast_shield = False
         lock = door_data.lock or door_data.defaultLock
-        if lock:
-            if lock == DoorLockType.None_:
-                can_color = True
-            elif lock == DoorLockType.Blue:
-                can_color = True
-            elif lock == DoorLockType.Wave:
-                can_color = self.logic.can_wave_beam(world, state)
-            elif lock == DoorLockType.Ice:
-                can_color = self.logic.can_ice_beam(world, state)
-            elif lock == DoorLockType.Plasma:
-                can_color = self.logic.can_plasma_beam(world, state)
-            elif lock == DoorLockType.Power_Beam:
-                can_color = self.logic.can_power_beam(world, state)
-            elif lock == DoorLockType.Missile:
-                can_color = self.logic.can_missile(world, state, 1)
-            elif lock == DoorLockType.Bomb:
-                can_color = self.logic.can_bomb(world, state)
-        else:
-            can_color = True
+        if lock is not None and lock is not DoorLockType.None_ and lock is not DoorLockType.Blue:
+            if not self.door_lock_rules[lock](world, state):
+                return False
 
-        if door_data.blast_shield is not None:
-            if door_data.blast_shield == BlastShieldType.Bomb:
-                can_blast_shield = self.logic.can_bomb(world, state)
-            elif door_data.blast_shield == BlastShieldType.Missile:
-                can_blast_shield = self.logic.can_missile(world, state, 1)
-            elif door_data.blast_shield == BlastShieldType.Power_Bomb:
-                can_blast_shield = self.logic.can_power_bomb(world, state)
-            elif door_data.blast_shield == BlastShieldType.Charge_Beam:
-                can_blast_shield = self.logic.can_charge_beam(world, state)
-            elif door_data.blast_shield == BlastShieldType.Super_Missile:
-                can_blast_shield = self.logic.can_super_missile(world, state)
-            elif door_data.blast_shield == BlastShieldType.Wavebuster:
-                can_blast_shield = self.logic.can_beam_combo(
-                    world, state, SuitUpgrade.Wave_Beam
-                )
-            elif door_data.blast_shield == BlastShieldType.Ice_Spreader:
-                can_blast_shield = self.logic.can_beam_combo(
-                    world, state, SuitUpgrade.Ice_Beam
-                )
-            elif door_data.blast_shield == BlastShieldType.Flamethrower:
-                can_blast_shield = self.logic.can_beam_combo(
-                    world, state, SuitUpgrade.Plasma_Beam
-                )
-            elif door_data.blast_shield == BlastShieldType.Disabled:
-                can_blast_shield = False
-            elif door_data.blast_shield == BlastShieldType.No_Blast_Shield:
-                can_blast_shield = True
-        else:
-            can_blast_shield = True
-
-        return can_color and can_blast_shield
+        blast_shield = door_data.blast_shield
+        if blast_shield is not None and blast_shield is not BlastShieldType.No_Blast_Shield:
+            blast_shield_func = self.blast_shield_rules.get(blast_shield)
+            if blast_shield_func is None:
+                assert blast_shield is BlastShieldType.Disabled
+                return False
+            if not blast_shield_func(world, state):
+                return False
+        return True
 
     def _set_pickup_rule(
         self,

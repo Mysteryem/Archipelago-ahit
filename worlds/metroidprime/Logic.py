@@ -8,7 +8,7 @@ from .Items import (
 )
 from .Enum import CombatLogicDifficulty
 from .PrimeOptions import RemoveThermalRequirements, RemoveXrayRequirements
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional, Protocol
 
 if TYPE_CHECKING:
     from . import MetroidPrimeWorld
@@ -51,6 +51,17 @@ SAVE_ROOMS = [
 COMBAT_BEAM_PIRATES_DIFFICULTIES = [CombatLogicDifficulty.NO_LOGIC.value, CombatLogicDifficulty.MINIMAL.value]
 
 
+class _CanMissileFunc(Protocol):
+    """
+    Provides more accurate typing for Logic.can_missile, so that it can be correctly typed as both
+      `Callable[[MetroidPrimeWorld, CollectionState], bool]`
+    and
+      `Callable[[MetroidPrimeWorld, CollectionState, int], bool]`
+    depending on how it is needed.
+    """
+    def __call__(self, world: "MetroidPrimeWorld", state: CollectionState, num_expansions: int = 1) -> bool: ...
+
+
 class Logic:
     def __init__(self, world: "MetroidPrimeWorld"):
         self.can_power_bomb: Callable[["MetroidPrimeWorld", CollectionState], bool] = (
@@ -59,9 +70,7 @@ class Logic:
             else self._can_power_bomb
         )
 
-        self.can_missile: Callable[
-            ["MetroidPrimeWorld", CollectionState, int], bool
-        ] = (
+        self.can_missile: _CanMissileFunc = (
             self._can_missile_launcher
             if world.options.missile_launcher
             else self._can_missile
