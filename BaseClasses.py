@@ -764,43 +764,81 @@ class CollectionState():
         self.stale[player] = False
         world: AutoWorld.World = self.multiworld.worlds[player]
         reachable_regions = self.reachable_regions[player]
-        queue = deque(self.blocked_connections[player])
         start: Region = world.get_region(world.origin_region_name)
 
         # init on first call - this can't be done on construction since the regions don't exist yet
         if start not in reachable_regions:
             reachable_regions.add(start)
             self.blocked_connections[player].update(start.exits)
-            queue.extend(start.exits)
 
         if world.explicit_indirect_conditions:
-            self._update_reachable_regions_explicit_indirect_conditions(player, queue)
+            self._update_reachable_regions_explicit_indirect_conditions(player)
         else:
+            queue = deque(self.blocked_connections[player])
             self._update_reachable_regions_auto_indirect_conditions(player, queue)
 
-    def _update_reachable_regions_explicit_indirect_conditions(self, player: int, queue: deque):
-        reachable_regions = self.reachable_regions[player]
-        blocked_connections = self.blocked_connections[player]
-        # run BFS on all connections, and keep track of those blocked by missing items
-        while queue:
-            connection = queue.popleft()
-            new_region = connection.connected_region
-            if new_region in reachable_regions:
-                blocked_connections.remove(connection)
-            elif connection.can_reach(self):
-                if self.allow_partial_entrances and not new_region:
-                    continue
-                assert new_region, f"tried to search through an Entrance \"{connection}\" with no connected Region"
-                reachable_regions.add(new_region)
-                blocked_connections.remove(connection)
-                blocked_connections.update(new_region.exits)
-                queue.extend(new_region.exits)
-                self.path[new_region] = (new_region.name, self.path.get(connection, None))
+    def _update_reachable_regions_explicit_indirect_conditions(self, player: int) -> None:
+        """
+        Run a Breadth-first search on all currently blocked connections, and update the set of blocked connections for
+        any connections that have become accessible or logically irrelevant.
 
-                # Retry connections if the new region can unblock them
-                for new_entrance in self.multiworld.indirect_connections.get(new_region, set()):
-                    if new_entrance in blocked_connections and new_entrance not in queue:
-                        queue.append(new_entrance)
+        :param player: The ID of the player whose reachable regions cache should be updated.
+        """
+        reachable_regions = self.reachable_regions[player]
+        path = self.path
+        indirect_connections = self.multiworld.indirect_connections
+
+        updated_blocked_connections: set[Entrance] = set()
+
+        connections_to_check = list(self.blocked_connections[player])
+
+        while connections_to_check:
+            next_connections_to_check: list[Entrance] = []
+            for connection in connections_to_check:
+                new_region = connection.connected_region
+                if new_region in reachable_regions:
+                    # `new_region` became accessible through a different entrance, so `connection` can be ignored.
+                    continue
+                if connection.can_reach(self):
+                    if new_region is None and self.allow_partial_entrances:
+                        # The entrance is unconnected, so consider it blocked so that it will be retried again the
+                        # next time reachable regions are updated, where the entrance might no longer be unconnected.
+                        #
+                        # The reason this check is not done before `if connection.can_reach(self):` is because it is
+                        # expected that `new_region` will almost always not be `None`, so checking this would be a waste
+                        # of time in most cases. `new_region` should only be `None` before entrance randomization has
+                        # been applied.
+                        updated_blocked_connections.add(connection)
+                        continue
+                    assert new_region, f"tried to search through an Entrance \"{connection}\" with no connected Region"
+                    # Updating `reachable_regions` immediately is required because checking if an Entrance is reachable
+                    # also checks if its .parent_region is reachable. Updating `reachable_regions` also means that if
+                    # there is another connection to check that connects to `new_region`, checking whether that other
+                    # connection is reachable can be skipped because it also connects to `new_region`, which is now
+                    # known to be reachable.
+                    reachable_regions.add(new_region)
+                    # `extend_list()` provides a more efficient extension than
+                    # `next_connections_to_check.extend(new_region.exits)`.
+                    new_region.exits.extend_list(next_connections_to_check)
+                    path[new_region] = (new_region.name, path.get(connection, None))
+
+                    # Retry connections if the new region can unblock them
+                    possible_entrances_to_retry = indirect_connections.get(new_region)
+                    if possible_entrances_to_retry is not None:
+                        # Find the entrances that have already been checked and determined to be blocked, that should
+                        # be retried.
+                        entrances_to_retry = possible_entrances_to_retry.intersection(updated_blocked_connections)
+                        # Remove the entrances to be retried from the blocked connections.
+                        updated_blocked_connections.difference_update(entrances_to_retry)
+                        # Add the entrances to next_connections_to_check so that they will be tried next iteration.
+                        next_connections_to_check.extend(entrances_to_retry)
+                else:
+                    # The connection is not accessible, so add it to the set of connections that are blocked.
+                    updated_blocked_connections.add(connection)
+            connections_to_check = next_connections_to_check
+
+        # Update the blocked connections.
+        self.blocked_connections[player] = updated_blocked_connections
 
     def _update_reachable_regions_auto_indirect_conditions(self, player: int, queue: deque):
         reachable_regions = self.reachable_regions[player]
@@ -1283,6 +1321,20 @@ class Region:
 
         def copy(self):
             return self._list.copy()
+
+        def extend_list(self, to_extend: list) -> None:
+            """
+            Call to_extend.extend() with the internal list of this Register as the argument.
+
+            In the case of list subclasses that override `extend()`, the internal list of this Register must not be
+            modified by this extend operation.
+
+            The purpose of this method, compared to simply using `to_extend.extend(self)`, is that CPython has highly
+            optimised C code for extending a list by another list, increasing performance.
+
+            :param to_extend: The list to extend.
+            """
+            to_extend.extend(self._list)
 
     class LocationRegister(Register):
         def __delitem__(self, index: int) -> None:
