@@ -796,6 +796,12 @@ that belong to a different player. To do so, these worlds much register which ot
 
 All worlds start of logically dependent on themselves without needing to register themselves as logic dependencies.
 
+There are some limitations to logic dependent on other players:
+- Entrances cannot logically require access to a Region in another world because reachable region updates occur one 
+world at a time.
+- Generic Entrance Randomization cannot use logic dependent on other players because GER only operates on one world at a
+time.
+
 ```python
 # __init__.py
 
