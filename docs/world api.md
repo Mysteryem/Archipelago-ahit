@@ -790,15 +790,20 @@ Only use LogicMixin if necessary. There are often other ways to achieve what it 
 
 ### Logic Dependent On Other Players
 
-Some worlds may want to connect different players' worlds together using logic rules that reference items/locations/etc.
-that belong to a different player. To do so, these worlds much register which other players their logic depends on with
-`multiworld.register_logic_dependency(world.player, dependent_on_player_or_players)`.
+Some worlds may want to connect other players of the same game's worlds together using logic rules that reference
+items/locations/etc. that belong to a different player of that same game. To do so, these worlds must register which
+other players their logic depends on with
+`self.multiworld.register_logic_dependency(self.player, dependent_on_player_number)` or 
+`self.multiworld.register_logic_dependency(self.player, dependent_on_player_numbers)`.
 
 All worlds start of logically dependent on themselves without needing to register themselves as logic dependencies.
 
+Logic dependencies cannot be removed, so only register them if they are needed.
+
 There are some limitations to logic dependent on other players:
-- Entrances cannot logically require access to a Region in another world because reachable region updates occur one 
-world at a time.
+- Indirect conditions, whether explicit or automatic, only work when the Entrance and Region belong to the same world.
+So, Entrance access rules cannot require access to a Region in another world, or access to a Location or Entrance in
+another world because Locations and Entrances check for their parent Region being accessible.
 - Generic Entrance Randomization cannot use logic dependent on other players because GER only operates on one world at a
 time.
 
