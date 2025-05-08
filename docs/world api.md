@@ -811,7 +811,10 @@ class MyGameWorld(World):
         
         # Require any player of this game in the multiworld to have "Tradable Item".
         def anyone_has_tradable(state: CollectionState) -> bool:
-            return any(state.has("Tradable Item", player_number) for player_number in players)
+            for player_number in players:
+                if state.has("Tradable Item", player_number):
+                    return True
+            return False
 
         for player in players:
             world = multiworld.worlds[player]
