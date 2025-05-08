@@ -593,7 +593,7 @@ class MultiWorld():
                 prog_locations_per_player[player] = player_locations
 
         # All players must be checked to start with.
-        players_to_check: Set[int] = set(prog_locations_per_player.keys())
+        players_to_check: AbstractSet[int] = set(prog_locations_per_player.keys())
         while prog_locations_per_player:
             sphere: list[list[Location]] = []
             # build up spheres of collection radius.
@@ -648,7 +648,7 @@ class MultiWorld():
             if player_locations:
                 locations_per_player[player] = player_locations
 
-        players_to_check: set[int] = set(locations_per_player.keys())
+        players_to_check: AbstractSet[int] = set(locations_per_player.keys())
         while locations_per_player:
             sphere: set[Location] = set()
 
@@ -777,17 +777,30 @@ class MultiWorld():
 
         return False
 
-    def get_players_logically_dependent_on_players(self, players: AbstractSet[int]) -> set[int]:
-        """Get a set of all player IDs whose logic depends on any worlds belonging to a player in `players`"""
+    # Rather than one method with a `*players: int` argument, separate methods are used for 1 player/many players for
+    # better performance.
+    def get_players_logically_dependent_on_players(self, players: Iterable[int]) -> AbstractSet[int]:
+        """
+        Get a set of all player IDs whose logic depends on any worlds belonging to a player in `players`
+
+        :param players: Players IDs to get the logical dependents of.
+        :return: A set of all player IDs logically dependent on any of the player IDs in `players`.
+        """
+        # This function is optimised for the typical case of each world only logically depending on themselves.
         recursive_logic_dependencies = self._recursive_logic_dependencies
         return {dependent_player for player in players
                 for dependent_player in recursive_logic_dependencies[player]}
 
-    def get_players_logically_dependent_on(self, player: int) -> frozenset[int]:
-        """Get the set of player IDs whose logic depends on `player`'s World."""
+    def get_players_logically_dependent_on(self, player: int) -> AbstractSet[int]:
+        """
+        Get the set of player IDs whose logic depends on `player`'s World.
+
+        :param: The player ID to get the logical dependents of.
+        :return: The set of all player IDs logically dependent on `player`.
+        """
         return self._recursive_logic_dependents[player]
 
-    def register_logic_dependency(self, player: int, dependent_on_players: int | Iterable[int]):
+    def register_logic_dependency(self, player: int, dependent_on_players: int | Iterable[int]) -> None:
         """
         Register that `player`'s world has access rules and/or completion condition that are logically dependent on
         `dependent_on_players`' worlds.
@@ -800,6 +813,9 @@ class MultiWorld():
         belonging to a different player because indirect conditions do not work across worlds.
 
         All logic dependencies must be registered before the end of `generate_basic()`/`stage_generate_basic()`.
+
+        :param player: The player ID that is registering their logical dependency
+        :param dependent_on_players: The player IDs to register that `player` logically depends on.
         """
         if player not in self._direct_logic_dependencies:
             raise KeyError(f"No world found for player {player}")
@@ -813,8 +829,11 @@ class MultiWorld():
                 continue
 
             # Protect against putting invalid IDs into the dictionaries.
+            # `self._direct_logic_dependencies` starts with every player ID being directly logically dependent on
+            # itself, so if `dependent_on_player` is not present in `self._direct_logic_dependencies`, then
+            # `dependent_on_player` is not a valid player ID.
             if dependent_on_player not in self._direct_logic_dependencies:
-                raise KeyError(f"No world found for dependent_on_player {dependent_on_player}")
+                raise KeyError(f"No world found for dependent on player ID {dependent_on_player}")
 
             direct_dependencies = self._direct_logic_dependencies[player]
             if dependent_on_player in direct_dependencies:
@@ -997,7 +1016,7 @@ class CollectionState():
                 if loc.advancement and loc not in self.advancements:
                     locations_per_player[loc.player].add(loc)
 
-        players_to_check: set[int] = set(locations_per_player.keys())
+        players_to_check: AbstractSet[int] = set(locations_per_player.keys())
         while locations_per_player:
             reachable_advancements_list: List[List[Location]] = []
 
