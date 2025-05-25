@@ -811,7 +811,7 @@ class MultiWorld():
         Entrance access rules belonging to `player` cannot check for being able to reach a Location/Entrance/Region
         belonging to a different player because indirect conditions do not work across worlds.
 
-        All logic dependencies must be registered before the end of `generate_basic()`/`stage_generate_basic()`.
+        Any required logic dependencies should be registered before the end of `set_rules()`/`stage_set_rules()`.
 
         :param player: The player ID that is registering their logical dependency
         :param dependent_on_players: The player IDs to register that `player` logically depends on.
