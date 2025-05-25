@@ -209,6 +209,8 @@ class MultiWorld():
         self.regions.add_group(new_id)
         self.game[new_id] = game
         self.player_types[new_id] = NetUtils.SlotType.group
+        # The group ID is added to the logic dependency sets before creating the group world to avoid crashing if the
+        # group world tries to register a logic dependency during its __init__().
         self._recursive_logic_dependents[new_id] = frozenset({new_id})
         self._recursive_logic_dependencies[new_id] = {new_id}
         self._direct_logic_dependencies[new_id] = {new_id}
