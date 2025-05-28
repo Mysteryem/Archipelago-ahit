@@ -33,19 +33,34 @@ def sweep_from_pool(base_state: CollectionState, itempool: typing.Sequence[Item]
     return new_state
 
 
-def _fill_restrictive_bulk_fill(base_state: CollectionState,
-                                locations: typing.List[Location],
-                                item_pool: typing.List[Item], lock: bool,
-                                on_place: typing.Optional[typing.Callable[[Location], None]],
-                                name: str,
-                                placements: typing.List[Location]) -> typing.Tuple[typing.Iterable[int], int]:
+def _restrictive_bulk_fill(base_state: CollectionState,
+                           locations: list[Location],
+                           item_pool: list[Item],
+                           lock: bool,
+                           on_place: typing.Callable[[Location], None] | None,
+                           name: str,
+                           placements: typing.List[Location]) -> tuple[typing.Iterable[int], int]:
     """
-    Start with a bulk fill into all locations. Successful fill percentage varies depending on the games and options
-    used, typically between 50-80%.
+    Place each item onto the first location that will accept it without checking reachability, then undo all placements
+    that were invalid.
+
+    The percentage of items successful placed varies depending on the games and options used, typically between 50-80%.
+    The items that could not be placed will need to be filled using another fill function if all items need to be
+    placed.
 
     The bulk fill uses the same general item placement order as the later fill_restrictive code, placing items from the
     end of the item pool first, but does not guarantee this exact placement order because some placements will be
-    invalid and will be undone, requiring the items placed in those invalid placements to be placed later.
+    invalid and will be undone.
+
+    :param base_state: The base state to fill from.
+    :param locations: The locations to fill. Filled locations will be removed from this list.
+    :param item_pool: The items to place. Placed items will be removed from this list.
+    :param lock: Whether to lock locations after filling them.
+    :param on_place: An optional callback on each placement.
+    :param name: The name of the fill, used in logging.
+    :param placements: Successful placements are appended to this list.
+
+    :return: A tuple of: An iterable of all player IDs that had items to place, and the number of new placements made.
     """
     if not item_pool or not locations:
         return (), 0
@@ -240,8 +255,7 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     placed = 0
 
     if initial_bulk_fill:
-        players, num_placed = _fill_restrictive_bulk_fill(base_state, locations, item_pool, lock, on_place, name,
-                                                          placements)
+        players, num_placed = _restrictive_bulk_fill(base_state, locations, item_pool, lock, on_place, name, placements)
         placed += num_placed
         for player in players:
             reachable_items[player] = deque()
