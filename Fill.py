@@ -40,10 +40,12 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
                                 name: str,
                                 placements: typing.List[Location]) -> typing.Tuple[typing.Iterable[int], int]:
     """
-    Start with a bulk fill into all locations. Successful fill percentage varies depending on the games used, typically
-    between 10-30%.
-    Use the same item placement order as the later fill code, by picking one item from each player before picking an
-    item from the first player again.
+    Start with a bulk fill into all locations. Successful fill percentage varies depending on the games and options
+    used, typically between 50-80%.
+
+    The bulk fill uses the same general item placement order as the later fill_restrictive code, placing items from the
+    end of the item pool first, but does not guarantee this exact placement order because some placements will be
+    invalid and will be undone, requiring the items placed in those invalid placements to be placed later.
     """
     if not item_pool or not locations:
         return (), 0
@@ -120,8 +122,10 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
     # allowed because of a specific item being placed in an earlier location. If the earlier placed item is determined
     # to be invalid, this could make the later placement also invalid after the point at which the later placement was
     # determined to be valid, so it is necessary to re-check the validity of placements if any had to be un-placed.
+
     # Un-placing items in the same order that they were placed would avoid this, but it is preferable for the first
     # placed items to be the items that are least likely to need to be un-placed.
+
     # Circumstances where the placements need to be re-checked more than once are expected to be extremely rare and only
     # caused by unusual item_rule or always_allow rules, or overridden can_fill methods on locations that depend on what
     # items are placed at other locations.
@@ -131,36 +135,36 @@ def _fill_restrictive_bulk_fill(base_state: CollectionState,
         recheck_locations = False
         updated_pending_placements: list[Location] = []
         for loc in pending_placements:
-            item = loc.item
-            if item.player in minimal_game_beaten_players:
+            placed_item = loc.item
+            assert placed_item is not None
+            if placed_item.player in minimal_game_beaten_players:
                 # If a minimal player has beaten their game, we don't care about the reachability of the location.
                 check_access = False
             else:
                 check_access = True
 
             # Re-check that the placement is valid.
-            if loc.can_fill(bulk_fill_state, item, check_access):
+            if loc.can_fill(bulk_fill_state, placed_item, check_access):
                 # It was reachable or the item belonged to a minimal player that has completed their game, so consider
                 # it to be a successful placement for now.
                 placed_item_ids.add(id(loc.item))
                 updated_pending_placements.append(loc)
             else:
                 # The placement was unsuccessful, so un-place the item into the state's inventory.
-                item = loc.item
                 loc.item = None
-                item.location = None
+                placed_item.location = None
                 current_placements -= 1
                 # In rare circumstances, un-placing this item could have made a placement invalid, that was already
                 # checked in this loop and determined to be valid.
                 recheck_locations = True
                 if current_placements % 1000 == 0:
                     _log_fill_progress(name + " (bulk: undoing invalid placements)", current_placements, total)
-                if item.advancement and loc in filled_advancements_to_check:
-                    # Collect the item into the state and sometimes sweep while updating minimal players that have beaten
-                    # their game.
+                if placed_item.advancement and loc in filled_advancements_to_check:
+                    # Collect the item into the state and sometimes sweep while updating minimal players that have
+                    # beaten their game.
                     filled_advancements_to_check.remove(loc)
                     # Collect the item into the state.
-                    bulk_fill_state.collect(item, True)
+                    bulk_fill_state.collect(placed_item, True)
                     unplaced_since_last_sweep_count += 1
                     if unplaced_since_last_sweep_count >= percent_total_unplaced_to_sweep:
                         # Sweep so that it may be possible to reach more of the placed items.
