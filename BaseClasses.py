@@ -1270,9 +1270,6 @@ class Region:
         def __iter__(self):
             return iter(self._list)
 
-        def __iter__(self):
-            return iter(self._list)
-
         # This seems to not be needed, but that's a bit suspicious.
         # def __del__(self):
         #     self.clear()
