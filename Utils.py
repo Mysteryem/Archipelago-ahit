@@ -478,6 +478,53 @@ class RestrictedUnpickler(pickle.Unpickler):
         raise pickle.UnpicklingError(f"global '{module}.{name}' is forbidden")
 
 
+class RestrictedPickler(pickle.Pickler):
+    """
+    Pickler that pickles unrecognised, int/str subclasses directly as int and str.
+    Intended usage:
+        `pickled_multidata: bytes = RestrictedPickler.dumps(multidata)`
+    """
+    # Classes, and their exact instances, that should be pickled normally.
+    pickle_normally: set[type]
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        # Lazy imports because the modules may import the Utils module.
+        import Options
+        import NetUtils
+        from worlds.generic import PlandoItem
+        self.pickle_normally = {
+            NetUtils.ClientStatus,
+            NetUtils.SlotType,
+            NetUtils.HintStatus,
+            NetUtils.Hint,
+            NetUtils.NetworkSlot,
+            NetUtils.NetworkItem,
+            # Plando is unpickled by WebHost -> Generate
+            PlandoItem,
+            collections.Counter,
+        }
+        self.allowed_option_subclasses = (Options.Option, Options.PlandoConnection, Options.PlandoText)
+
+    def reducer_override(self, obj):
+        if obj in self.pickle_normally:
+            # Fall back to `.dispatch_table` or per-object serialization.
+            return NotImplemented
+
+        obj_type = type(obj)
+        if obj_type in self.pickle_normally:
+            # Fall back to `.dispatch_table` or per-object serialization.
+            return NotImplemented
+
+        module = obj_type.__module__
+        # Options are unpickled by WebHost -> Generate
+        if module.lower().endswith("options") and issubclass(obj_type, self.allowed_option_subclasses):
+            # Fall back to `.dispatch_table` or per-object serialization.
+            return NotImplemented
+
+        raise pickle.PickleError(f"Pickling {obj} ({obj_type}) is not allowed.")
+
+
 def restricted_loads(s: bytes) -> Any:
     """Helper function analogous to pickle.loads()."""
     return RestrictedUnpickler(io.BytesIO(s)).load()
@@ -485,14 +532,9 @@ def restricted_loads(s: bytes) -> Any:
 
 def restricted_dumps(obj: Any) -> bytes:
     """Helper function analogous to pickle.dumps()."""
-    s = pickle.dumps(obj)
-    # Assert that the string can be successfully loaded by restricted_loads
-    try:
-        restricted_loads(s)
-    except pickle.UnpicklingError as e:
-        raise pickle.PicklingError(e) from e
-
-    return s
+    with io.BytesIO() as f:
+        RestrictedPickler(f).dump(obj)
+        return f.getvalue()
 
 
 class ByValue:
