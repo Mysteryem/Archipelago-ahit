@@ -516,36 +516,36 @@ class RestrictedPickler(pickle.Pickler):
         self.allowed_option_subclasses = (Options.Option, Options.PlandoConnection, Options.PlandoText)
         self.convert_to_base_types = convert_to_base_types
         if self.convert_to_base_types:
-            # str and int are present to allow pickling str and int subclasses as str and int
+            # str, int and dict are present to allow pickling str, int and dict subclasses as str, int and dict.
             self.pickle_normally.add(str)
             self.pickle_normally.add(int)
-            self.pickle_normally.add(tuple)
             self.pickle_normally.add(dict)
+            # tuple is present to allow pickling tuple, list, set and frozenset subclasses as tuple.
+            self.pickle_normally.add(tuple)
 
     def reducer_override(self, obj):
         if obj in self.pickle_normally:
-            # Fall back to `.dispatch_table` or per-object serialization.
+            # Use `.dispatch_table` or per-object serialization.
             return NotImplemented
 
         obj_type = type(obj)
         if obj_type in self.pickle_normally:
-            # Fall back to `.dispatch_table` or per-object serialization.
+            # Use `.dispatch_table` or per-object serialization.
             return NotImplemented
 
         module = obj_type.__module__
         # Options are unpickled by WebHost -> Generate
         if module.lower().endswith("options") and issubclass(obj_type, self.allowed_option_subclasses):
-            # Fall back to `.dispatch_table` or per-object serialization.
+            # Use `.dispatch_table` or per-object serialization.
             return NotImplemented
 
         if self.convert_to_base_types:
-            # Plain int, str, list, tuple, set, frozenset and dict instances are pickled specially, so
-            # `reducer_override` will never see plain instances, only subclasses.
+            # Plain int, str, list, tuple, set, frozenset and dict instances are pickled specially, so the
+            # `reducer_override` method will never see plain instances, only subclasses.
+            # Because these plain types are usually pickled specially, it can be awkward to pickle the subclasses as the
+            # plain types because the plain types often do not implement __reduce__().
 
             # Convert int and str subclasses to plain int and str.
-            # Plain int and str instances are usually handled specially rather than being pickled using __reduce__ or
-            # __reduce_ex__, so it is a little awkward to pickle int and str subclasses as if they were instead plain
-            # int or str.
             if isinstance(obj, str):
                 # reconstructor, reconstructor_args
                 return str, str(obj).__getnewargs__()
@@ -558,7 +558,7 @@ class RestrictedPickler(pickle.Pickler):
                 return tuple, tuple(obj).__getnewargs__()
             # Convert dict subclasses to dict.
             if isinstance(obj, dict):
-                # There is no dict.__getnewargs__, so we do dict(*(dict(obj),)) instead.
+                # There is no dict.__getnewargs__, so do dict(*(dict(obj),)) instead.
                 # reconstructor, reconstructor_args
                 return dict, (dict(obj),)
 
