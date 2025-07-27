@@ -436,6 +436,13 @@ def get_unique_identifier():
 safe_builtins = frozenset((
     'set',
     'frozenset',
+    # For unpickling str/int subclasses that were pickled as str/int instead.
+    'str',
+    'int',
+    # For unpickling dict subclasses that were pickled as dict instead.
+    'dict',
+    # For unpickling tuple/list/set/frozenset subclasses that were pickled as tuple instead.
+    'tuple',
 ))
 
 
@@ -487,7 +494,9 @@ class RestrictedPickler(pickle.Pickler):
     # Classes, and their exact instances, that should be pickled normally.
     pickle_normally: set[type]
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    convert_to_base_types: bool
+
+    def __init__(self, convert_to_base_types: bool, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         # Lazy imports because the modules may import the Utils module.
         import Options
@@ -505,6 +514,13 @@ class RestrictedPickler(pickle.Pickler):
             collections.Counter,
         }
         self.allowed_option_subclasses = (Options.Option, Options.PlandoConnection, Options.PlandoText)
+        self.convert_to_base_types = convert_to_base_types
+        if self.convert_to_base_types:
+            # str and int are present to allow pickling str and int subclasses as str and int
+            self.pickle_normally.add(str)
+            self.pickle_normally.add(int)
+            self.pickle_normally.add(tuple)
+            self.pickle_normally.add(dict)
 
     def reducer_override(self, obj):
         if obj in self.pickle_normally:
@@ -522,6 +538,30 @@ class RestrictedPickler(pickle.Pickler):
             # Fall back to `.dispatch_table` or per-object serialization.
             return NotImplemented
 
+        if self.convert_to_base_types:
+            # Plain int, str, list, tuple, set, frozenset and dict instances are pickled specially, so
+            # `reducer_override` will never see plain instances, only subclasses.
+
+            # Convert int and str subclasses to plain int and str.
+            # Plain int and str instances are usually handled specially rather than being pickled using __reduce__ or
+            # __reduce_ex__, so it is a little awkward to pickle int and str subclasses as if they were instead plain
+            # int or str.
+            if isinstance(obj, str):
+                # reconstructor, reconstructor_args
+                return str, str(obj).__getnewargs__()
+            if isinstance(obj, int):
+                # reconstructor, reconstructor_args
+                return int, int(obj).__getnewargs__()
+            # Convert tuple, list, set and frozenset subclasses to tuple.
+            if isinstance(obj, (tuple, list, set, frozenset)):
+                # reconstructor, reconstructor_args
+                return tuple, tuple(obj).__getnewargs__()
+            # Convert dict subclasses to dict.
+            if isinstance(obj, dict):
+                # There is no dict.__getnewargs__, so we do dict(*(dict(obj),)) instead.
+                # reconstructor, reconstructor_args
+                return dict, (dict(obj),)
+
         raise pickle.PickleError(f"Pickling {obj} ({obj_type}) is not allowed.")
 
 
@@ -530,10 +570,15 @@ def restricted_loads(s: bytes) -> Any:
     return RestrictedUnpickler(io.BytesIO(s)).load()
 
 
-def restricted_dumps(obj: Any) -> bytes:
-    """Helper function analogous to pickle.dumps()."""
+def restricted_dumps(obj: Any, convert_to_base_types: bool = False) -> bytes:
+    """
+    Helper function analogous to pickle.dumps().
+
+    :param obj: The object to dump.
+    :param convert_to_base_types: True to convert subclasses of builtin types to their base types.
+    """
     with io.BytesIO() as f:
-        RestrictedPickler(f).dump(obj)
+        RestrictedPickler(convert_to_base_types, f).dump(obj)
         return f.getvalue()
 
 
