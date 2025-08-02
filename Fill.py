@@ -64,15 +64,12 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     placed = 0
 
     while any(reachable_items.values()) and locations:
-        if one_item_per_player:
-            # grab one item per player
-            items_to_place = [items.pop()
-                              for items in reachable_items.values() if items]
-        else:
-            next_player = multiworld.random.choice([player for player, items in reachable_items.items() if items])
-            items_to_place = []
-            if item_pool:
-                items_to_place.append(reachable_items[next_player].pop())
+        # grab one item per player
+        items_to_place = [items.pop() for items in reachable_items.values() if items]
+
+        if not one_item_per_player and len(items_to_place) > 1:
+            # Shuffle to improve fairness when only one item is placed from `items_to_place` at a time.
+            multiworld.random.shuffle(items_to_place)
 
         for item in items_to_place:
             # The items added into `reachable_items` are placed starting from the end of each deque in
@@ -82,11 +79,25 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
                     del item_pool[-p]
                     break
 
-        maximum_exploration_state = sweep_from_pool(
+        exploration_state = sweep_from_pool(
             base_state, item_pool + unplaced_items, multiworld.get_filled_locations(item.player)
             if single_player_placement else None)
 
-        has_beaten_game = multiworld.has_beaten_game(maximum_exploration_state)
+        if one_item_per_player:
+            # Placement of each item in `items_to_place` will be made as if `exploration_state` represents all reachable
+            # items, except the item being placed.
+            # `exploration_state` does not actually represent all reachable items because it will not have collected
+            # any of the other items in `items_to_place`. `exploration_state` cannot reach any locations that require
+            # the other items in `items_to_place` to reach, which results in a forwards bias to placements, however,
+            # only sweeping once per `items_to_place` significantly improves fill performance with larger numbers of
+            # players, so the forwards bias is deemed a necessary sacrifice for the sake of performance.
+            maximum_exploration_state = exploration_state
+            has_beaten_game = multiworld.has_beaten_game(maximum_exploration_state)
+        else:
+            # Whether the game is beaten and what the `maximum_exploration_state` is, will not be known until after the
+            # individual item to place has been removed from `items_to_place`.
+            has_beaten_game = False
+            maximum_exploration_state = None
 
         while items_to_place:
             # if we have run out of locations to fill,break out of this loop
@@ -94,6 +105,19 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
                 unplaced_items += items_to_place
                 break
             item_to_place = items_to_place.pop(0)
+
+            if not one_item_per_player:
+                # Collect the items remaining in `items_to_place`, and sweep to produce `maximum_exploration_state` that
+                # has collected all reachable items except `item_to_place`.
+                if items_to_place:
+                    maximum_exploration_state = sweep_from_pool(exploration_state, items_to_place)
+                else:
+                    # There are no other items to place in this loop, so `exploration_state` is already
+                    # `maximum_exploration_state`.
+                    maximum_exploration_state = exploration_state
+                has_beaten_game = multiworld.has_beaten_game(maximum_exploration_state)
+            # `maximum_exploration_state` must now always be non-None, but type checkers may not be able to deduce this.
+            assert maximum_exploration_state is not None
 
             spot_to_fill: typing.Optional[Location] = None
 
