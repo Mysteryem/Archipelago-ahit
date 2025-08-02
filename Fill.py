@@ -903,7 +903,7 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
             else:
                 perform_access_check = True
 
-            if not perform_access_check:
+            if not perform_access_check and multiworld.random.random() <= 0.5:
                 unreachables = (t for t in enumerate(locations) if not t[1].can_reach(maximum_exploration_state))
                 all_locs = enumerate(locations)
                 locations_iter = itertools.chain(unreachables, all_locs)
