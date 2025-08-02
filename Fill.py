@@ -903,7 +903,14 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
             else:
                 perform_access_check = True
 
-            for i, location in enumerate(locations):
+            if not perform_access_check:
+                unreachables = (t for t in enumerate(locations) if not t[1].can_reach(maximum_exploration_state))
+                all_locs = enumerate(locations)
+                locations_iter = itertools.chain(unreachables, all_locs)
+            else:
+                locations_iter = enumerate(locations)
+
+            for i, location in locations_iter:
                 if (not single_player_placement or location.player == item_to_place.player) \
                         and location.can_fill(maximum_exploration_state, item_to_place, perform_access_check):
                     # popping by index is faster than removing by content,

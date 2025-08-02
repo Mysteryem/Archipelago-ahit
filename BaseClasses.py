@@ -1989,11 +1989,15 @@ class Spoiler:
                 outfile.write("\n\nStarting Items:\n\n")
                 outfile.write("\n".join([item for item in precollected_items]))
 
-            locations = [(str(location), str(location.item) if location.item is not None else "Nothing")
+            state = CollectionState(self.multiworld)
+            state.sweep_for_advancements()
+            reachables = {loc for loc in self.multiworld.get_filled_locations() if loc.can_reach(state)}
+            locations = [(str(location), str(location.item) if location.item is not None else "Nothing", location in reachables)
                          for location in self.multiworld.get_locations() if location.show_in_spoiler]
             outfile.write('\n\nLocations:\n\n')
             outfile.write('\n'.join(
-                ['%s: %s' % (location, item) for location, item in locations]))
+                [('%s: %s' if reachable else '%s: %s !UNREACHABLE!') % (location, item)
+                 for location, item, reachable in locations]))
 
             outfile.write('\n\nPlaythrough:\n\n')
             outfile.write('\n'.join(['%s: {\n%s\n}' % (sphere_nr, '\n'.join(
