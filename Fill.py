@@ -868,7 +868,7 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     # the start of each batch, rather than having to sweep from `base_state`.
     # The batcher manages all the batches internally, creating new batches automatically when the current batch runs out
     # of items to place.
-    batcher = _RestrictiveFillBatcher(base_state, reachable_items, item_pool, one_item_per_player)
+    batcher = _RestrictiveFillBatcher(base_state, reachable_items, item_pool, True)
     # The batcher is responsible for modifying these from this point onwards.
     del item_pool
     del reachable_items
@@ -882,9 +882,14 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
 
         explore_locations = multiworld.get_filled_locations(item.player) if single_player_placement else None
 
-        maximum_exploration_state = batcher.get_maximum_exploration_state(explore_locations, unplaced_items)
+        maximum_exploration_state_ = batcher.get_maximum_exploration_state(explore_locations, unplaced_items)
+        maximum_exploration_state = maximum_exploration_state_
 
-        has_beaten_game = multiworld.has_beaten_game(maximum_exploration_state)
+        if one_item_per_player:
+            has_beaten_game = multiworld.has_beaten_game(maximum_exploration_state)
+        else:
+            # Overwritten later
+            has_beaten_game = False
 
         while items_to_place:
             # if we have run out of locations to fill,break out of this loop
@@ -892,6 +897,10 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
                 unplaced_items += items_to_place
                 break
             item_to_place = items_to_place.pop(0)
+
+            if not one_item_per_player:
+                maximum_exploration_state = sweep_from_pool(maximum_exploration_state_, items_to_place)
+                has_beaten_game = multiworld.has_beaten_game(maximum_exploration_state)
 
             spot_to_fill: typing.Optional[Location] = None
 
@@ -1374,7 +1383,7 @@ def distribute_items_restrictive(multiworld: MultiWorld,
         priority_fill_state = sweep_from_pool(multiworld.state, deprioritized_progression)
         fill_restrictive(multiworld, priority_fill_state, prioritylocations, regular_progression,
                          single_player_placement=single_player, swap=False, on_place=mark_for_locking,
-                         name="Priority", one_item_per_player=True, allow_partial=True)
+                         name="Priority", one_item_per_player=False, allow_partial=True)
 
         if prioritylocations and regular_progression:
             # retry with one_item_per_player off because some priority fills can fail to fill with that optimization
@@ -1413,7 +1422,7 @@ def distribute_items_restrictive(multiworld: MultiWorld,
         maximum_exploration_state = sweep_from_pool(multiworld.state)
         if panic_method == "swap":
             fill_restrictive(multiworld, maximum_exploration_state, defaultlocations, progitempool, swap=True,
-                             name="Progression", single_player_placement=single_player)
+                             name="Progression", single_player_placement=single_player, one_item_per_player=False)
         elif panic_method == "raise":
             fill_restrictive(multiworld, maximum_exploration_state, defaultlocations, progitempool, swap=False,
                              name="Progression", single_player_placement=single_player)
