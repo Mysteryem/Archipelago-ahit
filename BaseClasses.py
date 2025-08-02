@@ -1999,6 +1999,47 @@ class Spoiler:
                 [('%s: %s' if reachable else '%s: %s !UNREACHABLE!') % (location, item)
                  for location, item, reachable in locations]))
 
+            reachable_non_events_per_player: dict[int, list[Location]] = {
+                player: [] for player in self.multiworld.player_ids
+            }
+            unreachable_non_events_per_player: dict[int, list[Location]] = {
+                player: [] for player in self.multiworld.player_ids
+            }
+            for loc in self.multiworld.get_locations():
+                if loc.is_event:
+                    continue
+                if loc in reachables:
+                    reachable_non_events_per_player[loc.player].append(loc)
+                else:
+                    unreachable_non_events_per_player[loc.player].append(loc)
+            unreachable_data = []
+            for player in self.multiworld.player_ids:
+                player_name = self.multiworld.get_player_name(player)
+                reachable_count = len(reachable_non_events_per_player[player])
+                unreachable_count = len(unreachable_non_events_per_player[player])
+                total_count = reachable_count + unreachable_count
+                unreachable_percentage = 0.0 if total_count == 0 else unreachable_count / total_count
+                t = (player, player_name, unreachable_count, total_count, unreachable_percentage)
+                unreachable_data.append(t)
+            # sort by largest unreachable percentage first
+            unreachable_data.sort(reverse=True, key=lambda t: t[4])
+            outfile.write('\n\nUnreachable Locations Info:\n\n')
+            lines = []
+            total_reachable = sum(map(len, reachable_non_events_per_player.values()))
+            total_unreachable = sum(map(len, unreachable_non_events_per_player.values()))
+            total_locations = total_reachable + total_unreachable
+            total_unreachable_percent = total_unreachable / total_locations
+            overview = (f"{total_unreachable_percent*100:2f} unreachable locations"
+                        f" ({total_unreachable}/{total_locations})")
+            logging.info(overview)
+            lines.append(overview)
+            for player, player_name, unreachable_count, total_count, unreachable_percentage in unreachable_data:
+                line = (f"{player_name} ({player}) has {unreachable_percentage*100:2f} unreachable locations"
+                        f" ({unreachable_count}/{total_count})")
+                lines.append(line)
+                logging.info(line)
+            outfile.write("\n".join(lines))
+
             outfile.write('\n\nPlaythrough:\n\n')
             outfile.write('\n'.join(['%s: {\n%s\n}' % (sphere_nr, '\n'.join(
                 [f"  {location}: {item}" for (location, item) in sphere.items()] if isinstance(sphere, dict) else
