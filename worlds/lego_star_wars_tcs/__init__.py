@@ -122,6 +122,7 @@ class LegoStarWarsTCSWorld(World):
     enabled_episodes: set[int]
     enabled_bonuses: set[str]
     enabled_bosses: set[str]
+    short_name_to_boss_character: dict[str, str]
 
     starting_chapter: str = "1-1"
     starting_episode: int = 1
@@ -142,6 +143,7 @@ class LegoStarWarsTCSWorld(World):
         self.enabled_episodes = set()
         self.enabled_bonuses = set()
         self.character_chapter_access_counts = Counter()
+        self.short_name_to_boss_character = {}
 
     def _log_info(self, message: str, *args) -> None:
         logger.info("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
@@ -567,6 +569,7 @@ class LegoStarWarsTCSWorld(World):
             else:
                 maximum_unique_boss_characters = -1
                 short_name_to_boss_character = {}
+            self.short_name_to_boss_character = short_name_to_boss_character
 
             # If the starting chapter cannot be a boss chapter, then the maximum possible number of bosses is 1 fewer.
             starting_chapter_cannot_be_a_boss = allowed_starting_chapters.isdisjoint(allowed_boss_chapters)
@@ -1527,7 +1530,8 @@ class LegoStarWarsTCSWorld(World):
                     loc_name = f"{chapter.short_name} Defeat {chapter.boss}"
                     boss_event_location = LegoStarWarsTCSLocation(self.player, loc_name, None, chapter_region)
                     if self.options.only_unique_bosses_count:
-                        boss_event_item = self.create_event(chapter.boss_character_defeated_event_item_name)
+                        boss_event_item = self.create_event(
+                            f"{self.short_name_to_boss_character[chapter.short_name]} Defeated")
                     else:
                         boss_event_item = self.create_event("Boss Defeated")
                     boss_event_location.place_locked_item(boss_event_item)
@@ -1801,8 +1805,8 @@ class LegoStarWarsTCSWorld(World):
         goal_boss_count = self.options.defeat_bosses_goal_amount.value
         if goal_boss_count > 0:
             if self.options.only_unique_bosses_count:
-                boss_items = sorted({SHORT_NAME_TO_CHAPTER_AREA[chapter].boss_character_defeated_event_item_name
-                                     for chapter in self.enabled_bosses})
+                bosses = {self.short_name_to_boss_character[chapter] for chapter in self.enabled_bosses}
+                boss_items = sorted(f"{boss} Defeated" for boss in bosses)
                 assert goal_boss_count <= len(boss_items)
                 add_rule(
                     victory, (
