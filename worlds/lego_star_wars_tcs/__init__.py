@@ -441,6 +441,25 @@ class LegoStarWarsTCSWorld(World):
             # Act as if there was no filtering of allowed chapter types.
             self.options.allowed_chapter_types.set_from_string("all")
 
+            # Compute boss names when unique bosses are enabled.
+            unique_bosses_only = (
+                    self.options.only_unique_bosses_count != OnlyUniqueBossesCountTowardsGoal.option_disabled)
+            unique_bosses_anakin_as_darth_vader = (
+                    self.options.only_unique_bosses_count
+                    == OnlyUniqueBossesCountTowardsGoal.option_enabled_and_count_anakin_as_vader
+            )
+            if unique_bosses_only:
+                short_name_to_boss_character: dict[str, str] = {}
+                for chapter in self.enabled_bosses:
+                    boss_character = SHORT_NAME_TO_CHAPTER_AREA[chapter].boss
+                    if unique_bosses_anakin_as_darth_vader and boss_character == "Anakin Skywalker":
+                        boss_character = "Darth Vader"
+                    assert boss_character is not None
+                    short_name_to_boss_character[chapter] = boss_character
+            else:
+                short_name_to_boss_character = {}
+            self.short_name_to_boss_character = short_name_to_boss_character
+
         # Normal options parsing.
         else:
             options = self.options
