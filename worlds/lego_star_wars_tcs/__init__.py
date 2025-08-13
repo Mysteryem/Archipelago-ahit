@@ -1155,7 +1155,8 @@ class LegoStarWarsTCSWorld(World):
             ok_to_replace_extras_count = max(0, reserved_power_brick_location_count - required_extras_count)
             total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
             if needed > total_replaceable:
-                self._option_error("There are not enough locations to fit all required items. Enabled")
+                self._option_error("There are not enough locations to fit all required items. Enable additional"
+                                   " locations or increase the Minikit Bundle Size to free up more locations.")
             character_percentage = ok_to_replace_character_count / total_replaceable
             character_subtract = min(needed, round(character_percentage * needed))
             extra_subtract = needed - character_subtract

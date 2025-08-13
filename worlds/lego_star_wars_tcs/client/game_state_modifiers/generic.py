@@ -37,9 +37,6 @@ BONUS_CHARACTER_REQUIREMENTS: Mapping[int, AbstractSet[int]] = {
 
 BONUSES_BASE_ADDRESS = 0x86E4E4
 
-# Goal progress is written into Custom Character 2's name until a better place for this information is found.
-CUSTOM_CHARACTER2_NAME_OFFSET = 0x86E524 + 0x14  # string[15]
-
 
 logger = logging.getLogger("Client")
 

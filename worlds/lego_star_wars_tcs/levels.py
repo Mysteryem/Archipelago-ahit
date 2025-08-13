@@ -125,13 +125,6 @@ class ChapterArea:
             return None
         return f"{boss} ({self.short_name})"
 
-    @property
-    def boss_character_defeated_event_item_name(self) -> str:
-        boss = self.boss
-        if boss is None:
-            raise ValueError(f"{self} does not have a boss")
-        return f"{boss} Defeated"
-
 
 @dataclass(frozen=True)
 class BonusArea:

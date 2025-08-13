@@ -56,8 +56,7 @@ class TextId(IntEnum):
     AUTO_HINT_11_HOW_TO_USE_GRAPPLE_POINTS = 610
     AUTO_HINT_12_HOW_TO_RIDE_CREATURES = 611
 
-    # Likely the "Paused" text displayed below the name of the player that paused the game. This would be an excellent
-    # place to write goal information.
+    # The "Paused" text displayed below the name of the player that paused the game. Goal information is appended here.
     PAUSED = 705
 
 

@@ -11,9 +11,6 @@ from . import GameStateUpdater
 
 MINIKIT_ITEMS: Mapping[int, int] = {item.code: count for count, item in MINIKITS_BY_COUNT.items()}
 
-# Goal progress is written into Custom Character 2's name until a better place for this information is found.
-CUSTOM_CHARACTER2_NAME_OFFSET = 0x86E524 + 0x14  # string[15]
-
 
 logger = logging.getLogger("Client")
 
