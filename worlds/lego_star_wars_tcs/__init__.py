@@ -1001,29 +1001,22 @@ class LegoStarWarsTCSWorld(World):
             self.push_precollected(self.create_item(starting_jedi.name))
             del possible_pool_character_items[starting_jedi.name]
 
-        effective_item_classifications, effective_item_collect_extras = (
-            self._get_effective_item_data(starting_abilities)
-        )
-        if hasattr(self.multiworld, "generation_is_fake"):
-            # Universal Tracker appears to delete the items added to precollected_items by create_items, instead later
-            # creating all items with create_item(), but starting characters need to be created before
-            # self.starting_character_abilities is set to `starting_abilities` otherwise the starting characters will
-            # lose all their abilities. To work around this, Universal Tracker is made to pretend that the starting
-            # characters had no abilities, so no abilities will be stripped from any characters created later on with
-            # create_item().
-            self.starting_character_abilities = CharacterAbility.NONE
-        else:
-            self.starting_character_abilities = starting_abilities
-
         # Determine what abilities must be supplied by the item pool for all locations to be reachable with all items in
         # the item pool.
         required_character_abilities_in_pool = CharacterAbility.NONE
+        optional_character_abilities = CharacterAbility.NONE
         for shortname in self.enabled_chapters:
             power_brick_abilities = POWER_BRICK_REQUIREMENTS[shortname][1]
             if power_brick_abilities is not None:
                 if isinstance(power_brick_abilities, tuple):
                     # Pick any one of the required abilities at random.
-                    required_character_abilities_in_pool |= self.random.choice(power_brick_abilities)
+                    picked = self.random.randint(0, len(power_brick_abilities))
+                    required_character_abilities_in_pool |= power_brick_abilities[picked]
+                    # Mark the others as optional.
+                    for i, other_ability in enumerate(power_brick_abilities):
+                        if i == picked:
+                            continue
+                        optional_character_abilities |= other_ability
                 else:
                     required_character_abilities_in_pool |= power_brick_abilities
             required_character_abilities_in_pool |= ALL_MINIKITS_REQUIREMENTS[shortname]
@@ -1035,6 +1028,26 @@ class LegoStarWarsTCSWorld(World):
         for name in level_access_character_counts.keys():
             required_character_abilities_in_pool &= ~CHARACTERS_AND_VEHICLES_BY_NAME[name].abilities
         required_character_abilities_in_pool &= ~starting_abilities
+
+        # If an ability is not relevant to logic at all, then it is undesirable for that ability to be in collects, and
+        # any characters with only irrelevant abilities should lose their progression classification.
+        logically_irrelevant_abilities = (
+                starting_abilities | ~(required_character_abilities_in_pool | optional_character_abilities)
+        )
+
+        effective_item_classifications, effective_item_collect_extras = (
+            self._get_effective_item_data(logically_irrelevant_abilities)
+        )
+        if hasattr(self.multiworld, "generation_is_fake"):
+            # Universal Tracker appears to delete the items added to precollected_items by create_items, instead later
+            # creating all items with create_item(), but starting characters need to be created before
+            # self.starting_character_abilities is set to `starting_abilities` otherwise the starting characters will
+            # lose all their abilities. To work around this, Universal Tracker is made to pretend that the starting
+            # characters had no abilities, so no abilities will be stripped from any characters created later on with
+            # create_item().
+            self.starting_character_abilities = CharacterAbility.NONE
+        else:
+            self.starting_character_abilities = starting_abilities
 
         remaining_abilities_to_fulfil = required_character_abilities_in_pool
 
