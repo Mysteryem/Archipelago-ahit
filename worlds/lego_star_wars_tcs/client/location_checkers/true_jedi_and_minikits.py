@@ -33,6 +33,7 @@ CURRENT_AREA_MINIKIT_COUNT_ADDRESS = 0x951238
 # CURRENT_AREA_CURRENT_SESSION_MINIKIT_ARRAY = 0x955FD0
 
 # Set to 1 when True Jedi is completed, in either Story mode or Free Play, 0 otherwise.
+# This is used by the game when deciding whether it needs to write True Jedi completion to the save data.
 CURRENT_AREA_TRUE_JEDI_COMPLETE_STORY_OR_FREE_PLAY_ADDRESS = 0x87B980
 # There is a second byte that only gets set from Free Play.
 # Completing True Jedi in either Story or Free Play sets both True Jedi bytes in the save data, so there is not much
