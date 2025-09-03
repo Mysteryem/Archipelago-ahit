@@ -443,6 +443,7 @@ BOSS_CHARACTERS_BY_SHORTNAME: dict[str, str] = {
     "3-2": "Count Dooku",
     "3-3": "General Grievous",
     "3-6": "Anakin Skywalker",
+    "4-3": "Imperial Spy",
     "4-6": "Death Star",
     "5-4": "Darth Vader",
     "5-5": "Darth Vader",

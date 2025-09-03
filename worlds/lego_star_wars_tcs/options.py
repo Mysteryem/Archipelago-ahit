@@ -132,6 +132,7 @@ class AllowedBosses(OptionSet):
       - Count Dooku (3-2) # Chancellor In Peril
       - General Grievous (3-3) # General Grievous
       - Anakin Skywalker (3-6) # Darth Vader
+      - Imperial Spy (4-3) # Mos Eisley Spaceport
       - Death Star (4-6) # Rebel Attack
       - Darth Vader (5-4) # Dagobah
       - Darth Vader (5-5) # Cloud City Trap
@@ -151,8 +152,8 @@ class OnlyUniqueBossesCountTowardsGoal(ChoiceFromStringExtension):
     When enabled, only unique bosses will count towards your goal. Defeating the same boss character in two separate
     Chapters will only count as one boss kill.
 
-    When unique bosses are enabled, the maximum number of bosses that can count towards the goal will be reduced to 12,
-    or 11 when Anakin Skywalker counts as the same boss as Darth Vader.
+    When unique bosses are enabled, the maximum number of bosses that can count towards the goal will be reduced to 13,
+    or 12 when Anakin Skywalker counts as the same boss as Darth Vader.
     """
     display_name = "Only Count Unique Bosses"
     option_disabled = 0
