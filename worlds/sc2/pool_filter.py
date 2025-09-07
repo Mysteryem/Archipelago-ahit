@@ -1,7 +1,7 @@
 import logging
-from typing import Callable, Dict, List, Set, Tuple, TYPE_CHECKING, Iterable
+from typing import Callable, Dict, List, Set, Tuple, TYPE_CHECKING, Optional, Iterator
 
-from BaseClasses import Location, ItemClassification
+from BaseClasses import Location, ItemClassification, CollectionState, Item
 from .item import StarcraftItem, ItemFilterFlags, item_names, item_parents, item_groups
 from .item.item_tables import item_table, TerranItemType, ZergItemType, spear_of_adun_calldowns, \
     spear_of_adun_castable_passives
@@ -105,18 +105,17 @@ def copy_item(item: StarcraftItem) -> StarcraftItem:
     return StarcraftItem(item.name, item.classification, item.code, item.player, item.filter_flags)
 
 
-class ValidInventory:
+class ValidInventory(CollectionState):
     def __init__(self, world: 'SC2World', item_pool: List[StarcraftItem]) -> None:
-        self.multiworld = world.multiworld
+        super().__init__(world.multiworld)
         self.player = world.player
         self.world: 'SC2World' = world
         # Track all Progression items and those with complex rules for filtering
-        self.logical_inventory: Dict[str, int] = {}
+        self.logical_inventory = self.prog_items[world.player]
         for item in item_pool:
             if not item_table[item.name].is_important_for_filtering():
                 continue
-            self.logical_inventory.setdefault(item.name, 0)
-            self.logical_inventory[item.name] += 1
+            self.collect(item, prevent_sweep=True)
         self.item_pool = item_pool
         self.item_name_to_item: Dict[str, List[StarcraftItem]] = {}
         self.item_name_to_child_items: Dict[str, List[StarcraftItem]] = {}
@@ -125,29 +124,28 @@ class ValidInventory:
             for parent_item in item_parents.child_item_to_parent_items.get(item.name, []):
                 self.item_name_to_child_items.setdefault(parent_item, []).append(item)
 
-    def has(self, item: str, player: int, count: int = 1) -> bool:
-        return self.logical_inventory.get(item, 0) >= count
-
-    def has_any(self, items: Set[str], player: int) -> bool:
-        return any(self.logical_inventory.get(item) for item in items)
-
-    def has_all(self, items: Set[str], player: int) -> bool:
-        return all(self.logical_inventory.get(item) for item in items)
-
-    def has_group(self, item_group: str, player: int, count: int = 1) -> bool:
+    def has_group(self, *args, **kwargs) -> bool:
         return False  # Deliberately fails here, as item pooling is not aware about mission layout
 
-    def count_group(self, item_name_group: str, player: int) -> int:
+    def count_group(self, *args, **kwargs) -> int:
         return 0  # For item filtering assume no missions are beaten
 
-    def count(self, item: str, player: int) -> int:
-        return self.logical_inventory.get(item, 0)
+    def sweep_for_advancements(self, *args, **kwargs) -> Optional[Iterator[None]]:
+        raise AssertionError("ValidInventory should never be swept because a CollectionState that has swept and then"
+                             " had items removed might no longer be able to reach all the items that were collected"
+                             " by sweeping.")
 
-    def count_from_list(self, items: Iterable[str], player: int) -> int:
-        return sum(self.logical_inventory.get(item, 0) for item in items)
+    def collect(self, item: Item, prevent_sweep: bool = False, location: Optional[Location] = None) -> bool:
+        if not item.advancement:
+            # Filtering also needs to track some non-advancement items.
+            self.add_item(item.name, item.player)
+        return super().collect(item, prevent_sweep, location)
 
-    def count_from_list_unique(self, items: Iterable[str], player: int) -> int:
-        return sum(item in self.logical_inventory for item in items)
+    def remove(self, item: Item):
+        if not item.advancement:
+            # Filtering also needs to track some non-advancement items.
+            self.remove_item(item.name, item.player)
+        return super().remove(item)
 
     def generate_reduced_inventory(self, inventory_size: int, filler_amount: int, mission_requirements: List[Tuple[str, Callable]]) -> List[StarcraftItem]:
         """Attempts to generate a reduced inventory that can fulfill the mission requirements."""
@@ -171,16 +169,14 @@ class ValidInventory:
             else returns a string containing failed locations and applies ItemFilterFlags.LogicLocked
             """
             # Only run logic checks when removing logic items
-            if self.logical_inventory.get(item.name, 0) > 0:
-                self.logical_inventory[item.name] -= 1
+            if self.has(item.name, self.player):
+                self.remove(item)
                 failed_rules = [name for name, requirement in mission_requirements if not requirement(self)]
                 if failed_rules:
                     # If item cannot be removed, lock and revert
-                    self.logical_inventory[item.name] += 1
+                    self.collect(item, prevent_sweep=True)
                     item.filter_flags |= ItemFilterFlags.LogicLocked
                     return f"{len(failed_rules)} rules starting with \"{failed_rules[0]}\""
-                if not self.logical_inventory[item.name]:
-                    del self.logical_inventory[item.name]
             item.filter_flags |= remove_flag
             return ""
         
@@ -409,7 +405,7 @@ class ValidInventory:
 
         # Removing extra dependencies
         # Transport Hook
-        if not self.logical_inventory.get(item_names.MEDIVAC):
+        if not self.has(item_names.MEDIVAC, self.player):
             # Don't allow L2 Siege Tank Transport Hook without Medivac
             inventory_transport_hooks = [item for item in inventory if item.name == item_names.SIEGE_TANK_PROGRESSIVE_TRANSPORT_HOOK]
             removable_transport_hooks = [item for item in inventory_transport_hooks if not (ItemFilterFlags.Unexcludable & item.filter_flags)]
