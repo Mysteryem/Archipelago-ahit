@@ -54,6 +54,13 @@ class MinikitGoalAmount(NamedRange):
     """
     The number of Minikits required to goal.
 
+    Once the required number of Minikit items have been received/collected, the Minikit goal is completed by interacting
+    with the Minikits display in the outside junkyard area of the Cantina.
+
+    The number of Minikits required to goal is shown in the Hints shop in the Cantina.
+
+    Current progress towards the goal can be seen on the Pause screen.
+
     If set to zero, Minikits will not be part of the goal, but will still be in the item pool as filler items if Minikit
     locations are enabled.
 
@@ -98,6 +105,11 @@ class DefeatBossesGoalAmount(Range):
     If set to zero, bosses will not be part of the goal.
 
     The Chapter a boss is in must be completed for defeating the boss to count.
+
+    The bosses that count towards your goal are shown in the Hints shop in the Cantina.
+
+    Current progress towards the goal can be seen on the Pause screen. Individual progress within an Episode can be seen
+    by standing in front of the door to that Episode once the door is unlocked.
     """
     display_name = "Defeat Bosses Goal Amount"
     range_start = 0
@@ -106,7 +118,10 @@ class DefeatBossesGoalAmount(Range):
 
 class EnabledBossesCount(Range):
     """
-    Choose the number of bosses that will be present in the world.
+    Choose the number of bosses that will be present in the world and count towards your goal.
+
+    More chapters containing bosses than this count can end up in the generated world. If this happens, some of them
+    will not count towards the goal.
 
     This will automatically be set at least as high as the number of bosses required to goal.
     This will automatically be set no higher than the maximum of the number of allowed bosses in allowed Chapters.
@@ -415,13 +430,15 @@ class ChapterUnlockRequirement(ChoiceFromStringExtension):
     The requirements to access your starting Chapter will be given to you at the start.
 
     - Story Characters: A Chapter unlocks once its Story mode characters have been unlocked.
-    - Chapter Item: A Chapter unlocks after receiving an unlock item specific to that Chapter, e.g.
-    "Chapter 2-3 Unlock".
+    - Chapter Item (not implemented): A Chapter unlocks after receiving an unlock item specific to that Chapter,
+    e.g. "Chapter 2-3 Unlock".
+    - Random Characters (not implemented): Each Chapter requires randomly chosen characters to unlock.
+    - Open (not implemented): All chapters within an Episode are unlocked as soon as the Episode is unlocked.
     """
     display_name = "Chapter Unlock Requirements"
     option_story_characters = 0
-    option_chapter_item = 1
-    # option_random_characters = 2
+    # option_chapter_item = 1  # Needs logic rewrite
+    # option_random_characters = 2  # Needs logic rewrite + some way to display what characters are needed in-game.
     # option_open = 3  # Needs the ability to limit characters to only being usable within a specific episode/
     default = 0
 
@@ -429,7 +446,10 @@ class ChapterUnlockRequirement(ChoiceFromStringExtension):
 class EpisodeUnlockRequirement(ChoiceFromStringExtension):
     """Choose how Episodes are unlocked.
 
-    Note: An Episode door in the Cantina will only unlock when a Chapter within that Episode has been unlocked.
+    Note: If an Episode is unlocked, but no Chapters within that Episode are unlocked, the Episode's door in the Cantina
+    will remain locked until one of the Chapters is unlocked.
+    Note: If an Episode's door unlocks while you are in the same room of the Cantina as the Episode doors, the light
+    above the Episode door that unlocked will remain red until the room is reloaded, but the door will open normally.
 
     The Episode of your starting Chapter will always be unlocked from the start.
 
@@ -754,7 +774,7 @@ class FillerWeightJunk(Range):
 class MostExpensivePurchaseWithNoScoreMultiplier(NamedRange):
     """
     The most expensive individual purchase the player can be expected to make without any score multipliers, *in
-    thousands of Studs*.
+    thousands of Studs* (number of Blue Studs).
 
     For example, an option value of 100 means that purchases up to 100,000 studs in price can be expected to be
     purchased without any score multipliers.
@@ -844,7 +864,7 @@ class LogicDifficulty(ChoiceFromStringExtension):
       - No glitches expected.
       - Players that have played most of the vanilla game should be able to play with this difficulty.
       - Expects more platforming that probably wasn't developer intended, but it generally quite obvious and simple.
-      - Logic starts expecting the use of Extras:
+      - Logic expects the use of Extras:
         - Self Destruct, Exploding Blaster Bolts, and Super Ewok Catapult can be expected for destroying Silver Brick
         objects.
         - Force Grapple Leap can be expected to use Grapple points.
@@ -857,7 +877,7 @@ class LogicDifficulty(ChoiceFromStringExtension):
       - Simpler glitches expected.
       - Players that play the AP randomizer often should be able to perform all tricks in this difficulty efficiency,
       after some practice and/or learning.
-      - Slam triple jumps included in logic.
+      - Slam-jumps, e.g. Jedi-Triple-Jump included in logic.
       - Expects more platforming off of terrain
       - (incomplete, most levels will use None difficulty logic)
     - Hard:
@@ -907,8 +927,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     # Logic.
     # logic_difficulty: LogicDifficulty
     episode_unlock_requirement: EpisodeUnlockRequirement
-    # todo: Requires logic rewrite
-    # chapter_unlock_requirement: ChapterUnlockRequirement
+    chapter_unlock_requirement: ChapterUnlockRequirement
     most_expensive_purchase_with_no_multiplier: MostExpensivePurchaseWithNoScoreMultiplier
     all_episodes_character_purchase_requirements: AllEpisodesCharacterPurchaseRequirements
 
@@ -957,6 +976,7 @@ OPTION_GROUPS: list[OptionGroup] = [
     ]),
     OptionGroup("Logic Options", [
         EpisodeUnlockRequirement,
+        ChapterUnlockRequirement,
         MostExpensivePurchaseWithNoScoreMultiplier,
         AllEpisodesCharacterPurchaseRequirements,
     ]),
