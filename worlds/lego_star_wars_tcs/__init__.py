@@ -1012,7 +1012,7 @@ class LegoStarWarsTCSWorld(World):
                     # Pick any one of the required abilities at random.
                     picked = self.random.randint(0, len(power_brick_abilities))
                     required_character_abilities_in_pool |= power_brick_abilities[picked]
-                    # Mark the others as optional.
+                    # Mark the others as optional, these won't be guaranteed by the item pool.
                     for i, other_ability in enumerate(power_brick_abilities):
                         if i == picked:
                             continue
@@ -1026,14 +1026,18 @@ class LegoStarWarsTCSWorld(World):
         # Remove counts <= 0.
         level_access_character_counts = +self.character_chapter_access_counts
         for name in level_access_character_counts.keys():
-            required_character_abilities_in_pool &= ~CHARACTERS_AND_VEHICLES_BY_NAME[name].abilities
+            abilities_provided_by_level_access = CHARACTERS_AND_VEHICLES_BY_NAME[name].abilities
+            required_character_abilities_in_pool &= ~abilities_provided_by_level_access
+            # Characters with these abilities do not need to be explicitly added to the item pool because these
+            # abilities are provided by a character that is required to unlock a chapter.
+            optional_character_abilities |= abilities_provided_by_level_access
         required_character_abilities_in_pool &= ~starting_abilities
+        optional_character_abilities &= ~starting_abilities
 
         # If an ability is not relevant to logic at all, then it is undesirable for that ability to be in collects, and
         # any characters with only irrelevant abilities should lose their progression classification.
-        logically_irrelevant_abilities = (
-                starting_abilities | ~(required_character_abilities_in_pool | optional_character_abilities)
-        )
+        # In larger worlds, it is unlikely for there to be any logically irrelevant abilities.
+        logically_irrelevant_abilities = ~(required_character_abilities_in_pool | optional_character_abilities)
 
         effective_item_classifications, effective_item_collect_extras = (
             self._get_effective_item_data(logically_irrelevant_abilities)
