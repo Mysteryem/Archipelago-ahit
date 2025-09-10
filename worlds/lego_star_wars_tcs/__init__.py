@@ -1009,14 +1009,18 @@ class LegoStarWarsTCSWorld(World):
             power_brick_abilities = POWER_BRICK_REQUIREMENTS[shortname][1]
             if power_brick_abilities is not None:
                 if isinstance(power_brick_abilities, tuple):
-                    # Pick any one of the required abilities at random.
-                    picked = self.random.randint(0, len(power_brick_abilities))
-                    required_character_abilities_in_pool |= power_brick_abilities[picked]
-                    # Mark the others as optional, these won't be guaranteed by the item pool.
-                    for i, other_ability in enumerate(power_brick_abilities):
-                        if i == picked:
-                            continue
-                        optional_character_abilities |= other_ability
+                    at_least_one_already_required = False
+                    for abilities in power_brick_abilities:
+                        if abilities in required_character_abilities_in_pool:
+                            at_least_one_already_required = True
+                        # Mark the abilities as optional. They will be included in logic, but won't necessarily be
+                        # guaranteed to be provided by the item pool.
+                        optional_character_abilities |= abilities
+
+                    if not at_least_one_already_required:
+                        # Pick any one of the abilities to be required to be provided by the item pool.
+                        picked = self.random.choice(power_brick_abilities)
+                        required_character_abilities_in_pool |= picked
                 else:
                     required_character_abilities_in_pool |= power_brick_abilities
             required_character_abilities_in_pool |= ALL_MINIKITS_REQUIREMENTS[shortname]
@@ -1027,9 +1031,9 @@ class LegoStarWarsTCSWorld(World):
         level_access_character_counts = +self.character_chapter_access_counts
         for name in level_access_character_counts.keys():
             abilities_provided_by_level_access = CHARACTERS_AND_VEHICLES_BY_NAME[name].abilities
-            required_character_abilities_in_pool &= ~abilities_provided_by_level_access
             # Characters with these abilities do not need to be explicitly added to the item pool because these
             # abilities are provided by a character that is required to unlock a chapter.
+            required_character_abilities_in_pool &= ~abilities_provided_by_level_access
             optional_character_abilities |= abilities_provided_by_level_access
         required_character_abilities_in_pool &= ~starting_abilities
         optional_character_abilities &= ~starting_abilities
