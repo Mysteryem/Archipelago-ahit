@@ -1954,10 +1954,12 @@ class LegoStarWarsTCSWorld(World):
             )
         }
 
+    @classmethod
+    def stage_write_spoiler_header(cls, multiworld: MultiWorld, spoiler_handle: TextIO):
+        spoiler_handle.write(f"Generated with {cls.game} Apworld version {constants.AP_WORLD_VERSION}\n")
+
     def write_spoiler_header(self, spoiler_handle: TextIO) -> None:
         super().write_spoiler_header(spoiler_handle)
-
-        spoiler_handle.write(f"Apworld version: {constants.AP_WORLD_VERSION}\n")
 
         spoiler_handle.write(f"Starting Chapter: {self.starting_chapter}\n")
 
