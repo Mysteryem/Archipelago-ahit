@@ -12,6 +12,7 @@ from Options import (
     DefaultOnToggle,
     Toggle,
     OptionGroup,
+    DeathLink,
 )
 
 from .levels import BOSS_UNIQUE_NAME_TO_CHAPTER
@@ -896,6 +897,18 @@ class LogicDifficulty(ChoiceFromStringExtension):
     # option_super_expert = 5
 
 
+# Not using DeathLinkMixin currently because the docstring needs to be different.
+class LegoStarWarsTCSDeathLink(DeathLink):
+    """When you die, everyone who enabled death link dies. Of course, the reverse is true too.
+    Known issues:
+      - Studs are not dropped when receiving a death.
+      - Dying in 3-1 does not send deaths.
+      - Death Link behaviour in other Vehicle levels could also be weird, please report any issues.
+    """
+    display_name = "Death Link"
+    rich_text_doc = True
+
+
 @dataclass
 class LegoStarWarsTCSOptions(PerGameCommonOptions):
     start_inventory_from_pool: StartInventoryPool
@@ -944,6 +957,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     # Client behaviour.
     received_item_messages: ReceivedItemMessages
     checked_location_messages: CheckedLocationMessages
+    death_link: LegoStarWarsTCSDeathLink
     # Future options, not implemented yet.
     # random_starting_level_max_starting_characters: RandomStartingLevelMaxStartingCharacters
 
@@ -994,5 +1008,6 @@ OPTION_GROUPS: list[OptionGroup] = [
     OptionGroup("Client Options", [
         ReceivedItemMessages,
         CheckedLocationMessages,
+        LegoStarWarsTCSDeathLink,
     ])
 ]

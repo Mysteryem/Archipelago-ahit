@@ -573,6 +573,15 @@ STATUS_LEVEL_IDS = (
         {area.status_level_id for area in CHAPTER_AREAS} | {area.status_level_id for area in BONUS_AREAS
                                                             if area.status_level_id != -1}
 )
+AREA_ID_TO_BONUS_AREA = {area.area_id: area for area in BONUS_AREAS}
+
+VEHICLE_BONUS_AREA_NAMES: frozenset[str] = frozenset({
+    "Mos Espa Pod Race (Original)",
+    "Anakin's Flight",
+    "Gunship Cavalry (Original)",
+})
+
+assert all(name in BONUS_NAME_TO_BONUS_AREA for name in VEHICLE_BONUS_AREA_NAMES)
 
 VEHICLE_CHAPTER_SHORTNAMES: frozenset[str] = frozenset({
     "1-4",

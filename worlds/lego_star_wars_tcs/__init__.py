@@ -1950,6 +1950,7 @@ class LegoStarWarsTCSWorld(World):
                 "defeat_bosses_goal_amount",
                 "enable_minikit_locations",
                 "enable_true_jedi_locations",
+                "death_link",
             )
         }
 

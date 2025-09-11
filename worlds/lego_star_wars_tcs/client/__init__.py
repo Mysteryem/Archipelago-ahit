@@ -31,6 +31,7 @@ from .location_checkers.true_jedi_and_minikits import TrueJediAndMinikitChecker
 from .location_checkers.shop_purchases import PurchasedExtrasChecker, PurchasedCharactersChecker
 from .game_state_modifiers.extras import AcquiredExtras
 from .game_state_modifiers.characters import AcquiredCharacters
+from .game_state_modifiers.death_link_manager import DeathLinkManager
 from .game_state_modifiers.generic import AcquiredGeneric
 from .game_state_modifiers.goal_manager import GoalManager
 from .game_state_modifiers.levels import UnlockedChapterManager
@@ -335,6 +336,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
     # Game-state only.
     text_replacer: TextReplacer
+    death_link_manager: DeathLinkManager
 
     # Customizable client behaviour
     received_item_messages: bool = True
@@ -361,6 +363,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.goal_manager = GoalManager()
 
         self.text_display = InGameTextDisplay()
+        self.death_link_manager = DeathLinkManager()
 
         # It is not ideal to leak `self` in __init__. The TextReplacer methods could be updated to include a TCSContext
         # parameter if needed, instead of leaking `self`. Alternatively, the TextReplacer could be created only when
@@ -493,6 +496,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.unlocked_chapter_manager.init_from_slot_data(self, slot_data)
         self.acquired_minikits.init_from_slot_data(self, slot_data)
         self.text_display.init_from_slot_data(self, slot_data)
+        self.death_link_manager.init_from_slot_data(self, slot_data)
 
         self.true_jedi_and_minikit_checker.init_from_slot_data(self, slot_data)
         self.free_play_completion_checker.init_from_slot_data(self, slot_data)
@@ -652,6 +656,15 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             completed_minikit_goal = keys.get(self._get_datastorage_key(MINIKIT_GOAL_SUBMITTED_PREFIX))
             if completed_minikit_goal:
                 self.goal_manager.complete_minikit_goal_from_datastorage(self)
+
+    def on_deathlink(self, data: typing.Dict[str, typing.Any]) -> None:
+        text = data.get("cause", "")
+        if text:
+            text = f"DeathLink: {text}"
+        else:
+            text = f"DeathLink: Received from {data['source']}"
+        self.death_link_manager.on_deathlink(self, text)
+        super().on_deathlink(data)
 
     def _update_datastorage_area_ids(self, key_prefix: str, area_ids: list[int], log_name: str):
         if self.server_version < (0, 6, 2):
@@ -853,6 +866,9 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
     def read_byte(self, address: int, raw=False) -> bytes:
         return self._game_process.read_bytes(address if raw else self._adjust_address(address), 1)
+
+    def read_float(self, address: int, raw=False) -> float:
+        return self._game_process.read_float(address if raw else self._adjust_address(address))
 
     def read_uchar(self, address: int, raw=False) -> int:
         return self._game_process.read_uchar(address if raw else self._adjust_address(address))
@@ -1317,6 +1333,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         if clear_text_display_queue:
             self.text_display.message_queue.clear()
 
+        self.death_link_manager = DeathLinkManager()
+
     def reset_client_received_items(self):
         """
         Reset the items that the client thinks it has received.
@@ -1563,6 +1581,7 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                     await ctx.acquired_minikits.update_game_state(ctx)
                     await ctx.unlocked_chapter_manager.update_game_state(ctx)
                     await ctx.text_display.update_game_state(ctx)
+                    await ctx.death_link_manager.update_game_state(ctx)
 
                     # Only queue the message if everything else worked so far.
                     msg = "The client is now fully connected to the game, receiving items and checking locations."

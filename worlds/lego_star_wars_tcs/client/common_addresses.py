@@ -1,6 +1,12 @@
 from enum import IntEnum, IntFlag
 
+from .common import StaticUChar
 from .type_aliases import TCSContext
+
+
+# It looks like AREA IDs tend to use 4 bytes, even though they only need 1 byte.
+CURRENT_AREA_ADDRESS = StaticUChar(0x7fd2c1)
+
 
 CHARACTERS_SHOP_START = 0x86E4A8  # See CHARACTER_SHOP_SLOTS in items.py for the mapping
 EXTRAS_SHOP_START = 0x86E4B8
@@ -143,3 +149,37 @@ class CustomSaveFlags1(IntFlag):
 # The Extras shop uses 6 bytes, but appears to have 16 bytes allocated.
 # The Hints shop uses 2 bytes, but appears to have 12 bytes allocated.
 # The Characters shop uses 13 bytes, but appears to have 16 bytes allocated.
+
+
+# -- Game state addresses.
+
+# This value is slightly unstable and occasionally changes to 0 while playing. It is also set to 2 in Mos Espa Pod Race
+# for some reason.
+# Importantly, this value is *not* 0 when watching a Story cutscene, and is instead 1.
+PAUSED_OR_STATUS_WHEN_0_ADDRESS = 0x9737D8
+# This address is usually -1/255 while playing or paused, 1 while tabbed out and 0 while both paused and tabbed out.
+# It is a more unstable than the previous value, while playing, however.
+TABBED_OUT_WHEN_1_ADDRESS = 0x9868C4
+
+# 0 when playing, 1 when in a cutscene, same-level door transition, Indy trailer and title crawl.
+# Rarely unstable and seen as -1 briefly while playing
+IS_PLAYING_WHEN_0_ADDRESS = 0x297C0AC
+
+
+def is_actively_playing(ctx: TCSContext):
+    """
+    Return True if the player is actively playing the game.
+
+    Returns False in cases like having a menu open, having the game paused, or having the game tabbed out.
+    """
+    return (
+            # Handles pause and status screens.
+            ctx.read_uchar(PAUSED_OR_STATUS_WHEN_0_ADDRESS) != 0
+            # Handles tabbing out.
+            and ctx.read_uchar(TABBED_OUT_WHEN_1_ADDRESS) != 1
+            # Handles pause menu and other menus.
+            and ctx.read_uchar(OPENED_MENU_DEPTH_ADDRESS) == 0
+            # Handles same-level screen transitions.
+            and ctx.read_uchar(IS_PLAYING_WHEN_0_ADDRESS) == 0
+            and GameState1.is_playing(ctx)
+    )

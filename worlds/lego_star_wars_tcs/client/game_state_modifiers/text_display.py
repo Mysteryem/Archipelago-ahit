@@ -4,7 +4,7 @@ from time import perf_counter_ns
 from typing import Any
 
 from . import GameStateUpdater
-from ..common_addresses import OPENED_MENU_DEPTH_ADDRESS, GameState1
+from ..common_addresses import is_actively_playing
 from ..type_aliases import TCSContext
 from .text_replacer import TextId
 
@@ -17,20 +17,6 @@ DOUBLE_SCORE_ZONE_TIMER_ADDRESS = 0x925040
 
 WAIT_BETWEEN_MESSAGES_SECONDS = 2
 WAIT_BETWEEN_MESSAGES_NS = WAIT_BETWEEN_MESSAGES_SECONDS * 1_000_000_000
-
-# -- Game state addresses.
-
-# This value is slightly unstable and occasionally changes to 0 while playing. It is also set to 2 in Mos Espa Pod Race
-# for some reason.
-# Importantly, this value is *not* 0 when watching a Story cutscene, and is instead 1.
-PAUSED_OR_STATUS_WHEN_0_ADDRESS = 0x9737D8
-# This address is usually -1/255 while playing or paused, 1 while tabbed out and 0 while both paused and tabbed out.
-# It is a more unstable than the previous value, while playing, however.
-TABBED_OUT_WHEN_1_ADDRESS = 0x9868C4
-
-# 0 when playing, 1 when in a cutscene, same-level door transition, Indy trailer and title crawl.
-# Rarely unstable and seen as -1 briefly while playing
-IS_PLAYING_WHEN_0_ADDRESS = 0x297C0AC
 
 
 class InGameTextDisplay(GameStateUpdater):
@@ -90,15 +76,5 @@ class InGameTextDisplay(GameStateUpdater):
                 self.memory_dirty = False
         else:
             # Don't display a new message if the game is paused, in a cutscene, in a status screen, or tabbed out.
-            if (
-                    # Handles pause and status screens.
-                    ctx.read_uchar(PAUSED_OR_STATUS_WHEN_0_ADDRESS) != 0
-                    # Handles tabbing out.
-                    and ctx.read_uchar(TABBED_OUT_WHEN_1_ADDRESS) != 1
-                    # Handles pause menu and other menus.
-                    and ctx.read_uchar(OPENED_MENU_DEPTH_ADDRESS) == 0
-                    # Handles same-level screen transitions.
-                    and ctx.read_uchar(IS_PLAYING_WHEN_0_ADDRESS) == 0
-                    and GameState1.is_playing(ctx)
-            ):
+            if is_actively_playing(ctx):
                 self._display_message(ctx, self.message_queue.popleft())
