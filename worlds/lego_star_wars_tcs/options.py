@@ -772,6 +772,33 @@ class FillerWeightJunk(Range):
     default = 30
 
 
+class JunkWeightPurpleStud(Range):
+    """The weight of Purple Stud items in the Junk items pool.
+
+    Purple Studs give 10000 studs when received.
+
+    If all Junk Weights are set to zero, the weight of Purple Studs will be forced to 1.
+    """
+    display_name = "Purple Stud Weight"
+    range_start = 0
+    range_end = 100
+    default = 50
+
+
+class JunkWeightPowerUp(Range):
+    """The weight of Power Up items in the Junk items pool.
+
+    Power Up items give 20 seconds of invincibility, 2x score multiplier, and a number of other beneficial effects.
+
+    Power Up items will not be used while in the Cantina, LEGO City, New Town or Battle Over Coruscant (3-1).
+
+    Unused Power Up items do not carry over to the next play session."""
+    display_name = "Purple Stud Weight"
+    range_start = 0
+    range_end = 100
+    default = 10
+
+
 class MostExpensivePurchaseWithNoScoreMultiplier(NamedRange):
     """
     The most expensive individual purchase the player can be expected to make without any score multipliers, *in
@@ -953,6 +980,8 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     filler_weight_characters: FillerWeightCharacters
     filler_weight_extras: FillerWeightExtras
     filler_weight_junk: FillerWeightJunk
+    junk_weight_purple_stud: JunkWeightPurpleStud
+    junk_weight_power_up: JunkWeightPowerUp
 
     # Client behaviour.
     received_item_messages: ReceivedItemMessages
@@ -1004,6 +1033,8 @@ OPTION_GROUPS: list[OptionGroup] = [
         FillerWeightCharacters,
         FillerWeightExtras,
         FillerWeightJunk,
+        JunkWeightPurpleStud,
+        JunkWeightPowerUp,
     ]),
     OptionGroup("Client Options", [
         ReceivedItemMessages,

@@ -23,7 +23,10 @@ def player_character_entity_iter(ctx: TCSContext):
 
 
 # It looks like AREA IDs tend to use 4 bytes, even though they only need 1 byte.
+# This first address seems to be part of a larger struct in memory and is not referenced, by address, directly.
 CURRENT_AREA_ADDRESS = StaticUChar(0x7fd2c1)
+# This second address is referenced directly, so could be a better choice.
+# CURRENT_AREA_ADDRESS = StaticUChar(0x803784)
 
 
 CHARACTERS_SHOP_START = 0x86E4A8  # See CHARACTER_SHOP_SLOTS in items.py for the mapping

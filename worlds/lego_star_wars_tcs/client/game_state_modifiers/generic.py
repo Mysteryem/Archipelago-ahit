@@ -11,8 +11,14 @@ from ...items import (
 )
 from . import ItemReceiver
 
+
+_SEPARATELY_HANDLED_GENERIC = {
+    "Purple Stud",
+    "Power Up"
+}
 RECEIVABLE_GENERIC_BY_AP_ID: Mapping[int, GenericItemData] = {
-    item.code: item for item in GENERIC_BY_NAME.values() if item.code != -1 and not item.name.endswith("Stud")
+    item.code: item for item in GENERIC_BY_NAME.values()
+    if item.code != -1 and item.name not in _SEPARATELY_HANDLED_GENERIC
 }
 EPISODE_UNLOCKS: Mapping[int, int] = {
     GENERIC_BY_NAME[f"Episode {i} Unlock"].code: i for i in range(1, 6+1)

@@ -746,6 +746,11 @@ class LegoStarWarsTCSWorld(World):
                     + self.options.filler_weight_junk == 0):
                 self._option_error("At least one Filler Weight option must be set greater than zero")
 
+            # Sanity check Junk Weights options, and force Purple Studs weight to 1 if all are zero.
+            if self.options.junk_weight_power_up + self.options.junk_weight_purple_stud == 0:
+                self._log_warning("All Junk Weights were zero. The Junk Weight of Purple Stud items has been set to 1.")
+                self.options.junk_weight_purple_stud.value = 1
+
         # Calculate goal_minikit_count when set to a percentage of the available minikits.
         if self.options.minikit_goal_amount == MinikitGoalAmount.special_range_names["use_percentage_option"]:
             self.goal_minikit_count = max(1, round(
@@ -1388,14 +1393,16 @@ class LegoStarWarsTCSWorld(World):
             leftover_choices.append(leftover_extra_items)
             leftover_weights.append(extras_weight)
 
+        junk_names_and_weights: dict[str, int] = {
+            "Purple Stud": self.options.junk_weight_purple_stud.value,
+            "Power Up": self.options.junk_weight_power_up.value,
+        }
+        junk_names = tuple(junk_names_and_weights.keys())
+        junk_weights = tuple(junk_names_and_weights.values())
+
         def create_excludable_junk_items(count: int):
-            # Only Purple Studs currently.
-            # names = self.random.choices(
-            #     ["Purple Stud", "Power Up", "Upgrade Studs"],
-            #     [100, 5, 5],
-            #     k=count)
-            # return [create_item(name) for name in names]
-            return [create_item("Purple Stud") for _ in range(count)]
+            names = self.random.choices(junk_names, junk_weights, k=count)
+            return [create_item(name) for name in names]
 
         junk_weight = self.options.filler_weight_junk.value
         if junk_weight:

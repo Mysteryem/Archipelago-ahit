@@ -36,6 +36,7 @@ from .game_state_modifiers.generic import AcquiredGeneric
 from .game_state_modifiers.goal_manager import GoalManager
 from .game_state_modifiers.levels import UnlockedChapterManager
 from .game_state_modifiers.minikits import AcquiredMinikits
+from .game_state_modifiers.power_ups import PowerUpReceiver
 from .game_state_modifiers.studs import STUDS_AP_ID_TO_VALUE, give_studs
 from .game_state_modifiers.text_display import InGameTextDisplay
 from .game_state_modifiers.text_replacer import TextReplacer
@@ -325,6 +326,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     unlocked_chapter_manager: UnlockedChapterManager
     text_display: InGameTextDisplay
     goal_manager: GoalManager
+    power_up_receiver: PowerUpReceiver
     client_expected_idx: int
 
     # Location checkers.
@@ -361,6 +363,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.acquired_generic = AcquiredGeneric()
         self.acquired_minikits = AcquiredMinikits()
         self.goal_manager = GoalManager()
+        self.power_up_receiver = PowerUpReceiver()
 
         self.text_display = InGameTextDisplay()
         self.death_link_manager = DeathLinkManager()
@@ -1281,6 +1284,12 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             if not self.is_in_game():
                 return False
             give_studs(self, code)
+        elif code in self.power_up_receiver.receivable_ap_ids:
+            # Power Ups are directly given to the player as they are received, with a buffer of extra Power Ups kept
+            # only in the current client session.
+            if not self.is_in_game():
+                return False
+            self.power_up_receiver.give_power_up()
         else:
             self.receive_item(code)
         return True
@@ -1298,7 +1307,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             self.unlocked_chapter_manager.on_character_or_episode_unlocked(code)
         elif code in self.acquired_extras.receivable_ap_ids:
             self.acquired_extras.receive_extra(code)
-        elif code in STUDS_AP_ID_TO_VALUE:
+        elif code in STUDS_AP_ID_TO_VALUE or code in self.power_up_receiver.receivable_ap_ids:
             # The client may be resetting its state after a save data rollback or after connecting to an existing seed.
             pass
         else:
@@ -1329,6 +1338,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.bonus_area_completion_checker = BonusAreaCompletionChecker()
 
         self.goal_manager = GoalManager()
+        self.power_up_receiver = PowerUpReceiver()
 
         if clear_text_display_queue:
             self.text_display.message_queue.clear()
@@ -1345,6 +1355,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.acquired_characters.clear_received_items()
         self.acquired_generic.clear_received_items()
         self.acquired_minikits.clear_received_items()
+        self.power_up_receiver.clear_received_items()
 
         self.client_expected_idx = 0
 
@@ -1581,6 +1592,7 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                     await ctx.acquired_minikits.update_game_state(ctx)
                     await ctx.unlocked_chapter_manager.update_game_state(ctx)
                     await ctx.text_display.update_game_state(ctx)
+                    await ctx.power_up_receiver.update_game_state(ctx)
                     await ctx.death_link_manager.update_game_state(ctx)
 
                     # Only queue the message if everything else worked so far.
