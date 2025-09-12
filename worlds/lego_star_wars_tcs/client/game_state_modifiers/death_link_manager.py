@@ -255,7 +255,7 @@ class DeathLinkManager(GameStateUpdater):
         if not self.death_link_enabled or not ctx.is_in_game() or not is_actively_playing(ctx):
             return
 
-        if time.time() < ctx.last_death_link + 2.0:
+        if time.time() < ctx.last_death_link + 2.25:
             # Respawn is typically 2.0s, so ignore any deaths to send and delay any received within just above this
             # time.
             # If something goes horrendously wrong with this Death Link implementation, this has the added benefit of
