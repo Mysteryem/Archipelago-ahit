@@ -4,6 +4,24 @@ from .common import StaticUChar
 from .type_aliases import TCSContext
 
 
+PLAYER_CHARACTER_POINTERS_ARRAY_ADDRESS = 0x93d7f0
+
+
+class CharacterFlags1(IntFlag):
+    PLAYER_CONTROLLED = 0x80
+
+    @classmethod
+    def get(cls, ctx: TCSContext, character_address: int):
+        return cls(ctx.read_uchar(character_address + 0x1fc, raw=True))
+
+
+def player_character_entity_iter(ctx: TCSContext):
+    for i in range(0, 2):
+        character_address = ctx.read_uint(PLAYER_CHARACTER_POINTERS_ARRAY_ADDRESS + i * 4)
+        if character_address != 0 and CharacterFlags1.PLAYER_CONTROLLED in CharacterFlags1.get(ctx, character_address):
+            yield i + 1, character_address
+
+
 # It looks like AREA IDs tend to use 4 bytes, even though they only need 1 byte.
 CURRENT_AREA_ADDRESS = StaticUChar(0x7fd2c1)
 

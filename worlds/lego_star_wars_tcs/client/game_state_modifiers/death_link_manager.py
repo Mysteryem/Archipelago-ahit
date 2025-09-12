@@ -1,12 +1,13 @@
+import asyncio
 import logging
 import time
-from enum import IntEnum, IntFlag
+from enum import IntEnum
 from typing import Any
 
 from Utils import async_start
 
 from . import GameStateUpdater
-from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing
+from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing, player_character_entity_iter
 from ..type_aliases import TCSContext
 from ...levels import (
     AREA_ID_TO_CHAPTER_AREA,
@@ -16,6 +17,7 @@ from ...levels import (
 )
 
 logger = logging.getLogger("Client")
+debug_logger = logging.getLogger("TCS Debug")
 
 
 # There are a maximum of 8 playable characters in a level, pointers to their 'character entity' objects are in an
@@ -23,12 +25,9 @@ logger = logging.getLogger("Client")
 PLAYER_CHARACTER_POINTERS_ARRAY_ADDRESS = 0x93d7f0
 
 
-CHARACTER_DATA_ARRAY_PTR = 0x29130e4
-
-
 class CharacterState(IntEnum):
     # # Original name "NoContext" is converted to NO_CONTEXT for enum names. Other names follow the same pattern.
-    # NO_CONTEXT = 0x0
+    NO_CONTEXT = 0x0
     # LAND_JUMP = 0x1  # Landing from a normal jump
     # LAND_JUMP_2 = 0x2
     # LAND_FLIP = 0x3
@@ -163,14 +162,6 @@ class CharacterState(IntEnum):
         ctx.write_byte(character_address + 0x7b5, self.value, raw=True)
 
 
-class CharacterFlags1(IntFlag):
-    PLAYER_CONTROLLED = 0x80
-
-    @classmethod
-    def get(cls, ctx: TCSContext, character_address: int):
-        return cls(ctx.read_uchar(character_address + 0x1fc, raw=True))
-
-
 class CharacterDeathState(IntEnum):
     ALIVE = 0
     UNKNOWN_BUT_ALSO_DEAD = 1
@@ -220,30 +211,32 @@ class DeathLinkManager(GameStateUpdater):
 
     @staticmethod
     async def _kill_player_controlled_characters(ctx: TCSContext) -> bool:
-        killed_at_least_one = False
         kill_state = DeathLinkManager._get_kill_state_to_set(ctx)
-        for i in range(2):
-            character_address = ctx.read_uint(PLAYER_CHARACTER_POINTERS_ARRAY_ADDRESS + i * 4)
-            if character_address == 0:
-                continue
-            if CharacterFlags1.PLAYER_CONTROLLED not in CharacterFlags1.get(ctx, character_address):
-                continue
+        expecting_death = []
+        for player_number, character_address in player_character_entity_iter(ctx):
             if CharacterDeathState.get(ctx, character_address) == CharacterDeathState.ALIVE:
-                killed_at_least_one = True
+                expecting_death.append((player_number, character_address))
                 kill_state.set(ctx, character_address)
-                # if kill_state is CharacterState.THROWN_BY_FORCE_LIGHTNING_OR_CHOKE_:
-                #     for _ in range(3):
-                #         # Wait 5ms and check if the character is actually dead.
-                #         await asyncio.sleep(0.005)
-                #         if CharacterDeathState.get(ctx, character_address) == CharacterDeathState.ALIVE:
-                #             kill_state.set(ctx, character_address)
-                #         else:
-                #             break
-                #     else:
-                #         # If the character is still not dead, forcefully set them as dead.
-                #         CharacterDeathState.DEAD.set(ctx, character_address)
-                # else:
-                #     pass
+
+        killed_at_least_one = len(expecting_death) > 0
+
+        if kill_state != CharacterState.DOOMED:
+            # The THROWN_BY_FORCE_LIGHTNING_OR_CHOKE_ state can take some time before it actually kills, especially for
+            # Player 2 who sometimes ignores the state entirely for some reason.
+            await asyncio.sleep(0.05)
+            for player_number, character_address in expecting_death:
+                if CharacterDeathState.get(ctx, character_address) == CharacterDeathState.ALIVE:
+                    # Use the more forceful DOOMED death state because it is better at interrupting current actions,
+                    # especially for Player 2.
+                    CharacterState.DOOMED.set(ctx, character_address)
+                    debug_logger.info("Retrying killing player %i with DOOMED", player_number)
+
+            # Force kill implementation if needed.
+            # if expecting_death:
+            #     # Force kill characters that were still alive even after the check attempts.
+            #     for player_number, character_address in expecting_death:
+            #         debug_logger.info("Force killing player %i", player_number)
+            #         CharacterDeathState.DEAD.set(ctx, character_address)
 
         return killed_at_least_one
 
@@ -253,14 +246,9 @@ class DeathLinkManager(GameStateUpdater):
 
     @staticmethod
     def _find_dead_player_controlled_character(ctx: TCSContext) -> tuple[bool, int]:
-        for i in range(2):
-            character_address = ctx.read_uint(PLAYER_CHARACTER_POINTERS_ARRAY_ADDRESS + i * 4)
-            if character_address == 0:
-                continue
-            if CharacterFlags1.PLAYER_CONTROLLED not in CharacterFlags1.get(ctx, character_address):
-                continue
+        for player_number, character_address in player_character_entity_iter(ctx):
             if CharacterDeathState.get(ctx, character_address) != CharacterDeathState.ALIVE:
-                return True, i + 1
+                return True, player_number
         return False, -1
 
     async def update_game_state(self, ctx: TCSContext) -> None:
