@@ -936,6 +936,42 @@ class LegoStarWarsTCSDeathLink(DeathLink):
     rich_text_doc = True
 
 
+class DeathLinkAmnesty(Range):
+    """Only send a Death with Death Link after dying this many times.
+
+    Applies to most Chapters and other levels.
+    """
+    range_start = 1
+    range_end = 10
+    display_name = "Normal Death Link Amnesty"
+
+
+class VehicleDeathLinkAmnesty(Range):
+    """Only send a Death with Death Link after dying this many times.
+
+    *Applies to most top-down vehicle levels and bonus vehicle levels.
+
+    Applies to:
+    - 2-1 (Bounty Hunter Pursuit)
+    - 2-5 (Gunship Cavalry)
+    - 4-6 (Rebel Attack)
+    - 5-1 (Hoth Battle)
+    - 5-3 (Falcon Flight)
+    - 6-6 (Into The Death Star)
+    - Mos Espa Pod Race (Original)
+    - Anakin's Flight
+    - Gunship Cavalry (Original)
+
+    Does not apply to:
+    - 1-4 (Mos Espa Pod Race)
+    - 3-1 (Battle Over Coruscant)
+    """
+    range_start = 1
+    range_end = 5
+    display_name = "Vehicle* Death Link Amnesty"
+    rich_text_doc = True
+
+
 @dataclass
 class LegoStarWarsTCSOptions(PerGameCommonOptions):
     start_inventory_from_pool: StartInventoryPool
@@ -987,6 +1023,8 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     received_item_messages: ReceivedItemMessages
     checked_location_messages: CheckedLocationMessages
     death_link: LegoStarWarsTCSDeathLink
+    death_link_amnesty: DeathLinkAmnesty
+    vehicle_death_link_amnesty: VehicleDeathLinkAmnesty
     # Future options, not implemented yet.
     # random_starting_level_max_starting_characters: RandomStartingLevelMaxStartingCharacters
 
@@ -1040,5 +1078,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         ReceivedItemMessages,
         CheckedLocationMessages,
         LegoStarWarsTCSDeathLink,
+        DeathLinkAmnesty,
+        VehicleDeathLinkAmnesty,
     ])
 ]

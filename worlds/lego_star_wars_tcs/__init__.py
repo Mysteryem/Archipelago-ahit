@@ -1958,6 +1958,8 @@ class LegoStarWarsTCSWorld(World):
                 "enable_minikit_locations",
                 "enable_true_jedi_locations",
                 "death_link",
+                "death_link_amnesty",
+                "vehicle_death_link_amnesty",
             )
         }
 

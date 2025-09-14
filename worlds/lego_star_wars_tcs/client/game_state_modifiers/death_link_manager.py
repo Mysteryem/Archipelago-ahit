@@ -14,6 +14,8 @@ from ...levels import (
     VEHICLE_CHAPTER_SHORTNAMES,
     AREA_ID_TO_BONUS_AREA,
     VEHICLE_BONUS_AREA_NAMES,
+    SHORT_NAME_TO_CHAPTER_AREA,
+    BONUS_NAME_TO_BONUS_AREA,
 )
 
 logger = logging.getLogger("Client")
@@ -23,6 +25,19 @@ debug_logger = logging.getLogger("TCS Debug")
 # There are a maximum of 8 playable characters in a level, pointers to their 'character entity' objects are in an
 # entity*[8] array at this address.
 PLAYER_CHARACTER_POINTERS_ARRAY_ADDRESS = 0x93d7f0
+
+
+VEHICLE_AMNESTY_AREA_IDS = frozenset({
+    SHORT_NAME_TO_CHAPTER_AREA["2-1"].area_id,
+    SHORT_NAME_TO_CHAPTER_AREA["2-5"].area_id,
+    SHORT_NAME_TO_CHAPTER_AREA["4-6"].area_id,
+    SHORT_NAME_TO_CHAPTER_AREA["5-1"].area_id,
+    SHORT_NAME_TO_CHAPTER_AREA["5-3"].area_id,
+    SHORT_NAME_TO_CHAPTER_AREA["6-6"].area_id,
+    BONUS_NAME_TO_BONUS_AREA["Mos Espa Pod Race (Original)"].area_id,
+    BONUS_NAME_TO_BONUS_AREA["Anakin's Flight"].area_id,
+    BONUS_NAME_TO_BONUS_AREA["Gunship Cavalry (Original)"].area_id,
+})
 
 
 class CharacterState(IntEnum):
@@ -182,6 +197,13 @@ class DeathLinkManager(GameStateUpdater):
     death_link_enabled = False
 
     waiting_for_respawn = False
+    normal_death_link_amnesty = 1
+    vehicle_death_link_amnesty = 1
+
+    normal_death_count = 0
+    vehicle_death_count = 0
+
+    last_death_amnesty = time.time()
 
     def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
         # If Death Link does not exist because the multiworld was generated with an apworld that did not have Death Link
@@ -189,6 +211,9 @@ class DeathLinkManager(GameStateUpdater):
         death_link_enabled = slot_data.get("death_link", False)
         async_start(ctx.update_death_link(death_link_enabled))
         self.death_link_enabled = death_link_enabled
+
+        self.normal_death_link_amnesty = slot_data.get("death_link_amnesty", 1)
+        self.vehicle_death_link_amnesty = slot_data.get("vehicle_death_link_amnesty", 1)
 
     @staticmethod
     def _get_kill_state_to_set(ctx: TCSContext) -> CharacterState:
@@ -255,7 +280,9 @@ class DeathLinkManager(GameStateUpdater):
         if not self.death_link_enabled or not ctx.is_in_game() or not is_actively_playing(ctx):
             return
 
-        if time.time() < ctx.last_death_link + 2.25:
+        now = time.time()
+
+        if now < ctx.last_death_link + 2.25:
             # Respawn is typically 2.0s, so ignore any deaths to send and delay any received within just above this
             # time.
             # If something goes horrendously wrong with this Death Link implementation, this has the added benefit of
@@ -276,8 +303,15 @@ class DeathLinkManager(GameStateUpdater):
                 self.pending_received_death = False
                 ctx.text_display.priority_message(self.last_received_death_message)
             return
+
+        if now < self.last_death_amnesty + 2.25:
+            # Do not send another death if sending a death through Death Link was recently prevented due to amnesty.
+            return
+        # fixme: 3-1 never sends deaths because 3-1 intercepts dying to instead instantly warpt he player back to their
+        #  last checkpoint. Maybe 3-1 could check the current stud count of the player(s) and send a death when the stud
+        #  count reduces, implying that the player died.
         # Send death.
-        send_death, _dead_player_number = self._find_dead_player_controlled_character(ctx)
+        any_players_dead, _dead_player_number = self._find_dead_player_controlled_character(ctx)
         # todo: Customise the death cause.
         #  Ideas:
         #  f"{alias name} crashed their {vehicle name}"
@@ -289,11 +323,38 @@ class DeathLinkManager(GameStateUpdater):
         #  Special messages only when both P1 and P2 are player controlled and are the same character?
         #  f"Caused by {alias name}'s {character name} (P{player number})"
 
+        if not any_players_dead:
+            return
+
+        send_death = True
+        remaining_amnesty = 0
+        if CURRENT_AREA_ADDRESS.get(ctx) in VEHICLE_AMNESTY_AREA_IDS:
+            self.vehicle_death_count += 1
+            if self.vehicle_death_count >= self.vehicle_death_link_amnesty:
+                self.vehicle_death_count = 0
+            else:
+                send_death = False
+                self.last_death_amnesty = time.time()
+                remaining_amnesty = self.vehicle_death_link_amnesty - self.vehicle_death_count
+        else:
+            self.normal_death_count += 1
+            if self.normal_death_count >= self.normal_death_link_amnesty:
+                self.normal_death_count = 0
+            else:
+                send_death = False
+                self.last_death_amnesty = time.time()
+                remaining_amnesty = self.normal_death_link_amnesty - self.normal_death_count
+
         if send_death:
             # Kill any other player characters too, just like when receiving a death.
-            await self.kill_player_characters(ctx)
-            await ctx.send_death()
             ctx.text_display.priority_message("DeathLink: Death Sent")
+            await ctx.send_death()
+            await self.kill_player_characters(ctx)
+        else:
+            if remaining_amnesty == 0:
+                ctx.text_display.priority_message("DeathLink: No amnesty remaining")
+            else:
+                ctx.text_display.priority_message(f"DeathLink: {remaining_amnesty} amnesty remaining")
 
     def on_deathlink(self, ctx: TCSContext, message: str):
         if self.pending_received_death:
