@@ -930,7 +930,7 @@ class VehicleDeathLinkAmnesty(Range):
     - 3-1 (Battle Over Coruscant)
     """
     range_start = 1
-    range_end = 5
+    range_end = 10
     display_name = "Vehicle* Death Link Amnesty"
     rich_text_doc = True
 
