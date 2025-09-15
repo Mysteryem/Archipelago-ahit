@@ -727,7 +727,7 @@ class FillerWeightCharacters(Range):
     display_name = "Filler Weight: Characters"
     range_start = 0
     range_end = 100
-    default = 40
+    default = 10
 
 
 class FillerWeightExtras(Range):
