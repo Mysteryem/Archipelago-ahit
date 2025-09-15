@@ -1919,7 +1919,7 @@ class LegoStarWarsTCSWorld(World):
         if changed:
             extras = item.collect_extras
             if extras is not None:
-                state.prog_items[self.player].update(item.collect_extras)
+                state.prog_items[self.player].update(extras)
             return True
         return False
 
@@ -1928,7 +1928,7 @@ class LegoStarWarsTCSWorld(World):
         if changed:
             extras = item.collect_extras
             if extras is not None:
-                state.prog_items[self.player].subtract(item.collect_extras)
+                state.prog_items[self.player].subtract(extras)
             return True
         return False
 
