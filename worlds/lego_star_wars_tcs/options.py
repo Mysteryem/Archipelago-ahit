@@ -500,7 +500,7 @@ class StartingChapter(ChoiceFromStringExtension):
     main room of the Cantina.
     - Due to the way the logic currently assumes the player has access to a Jedi and a Protocol Droid, if access to the
     chosen starting Chapter does not include a Jedi and Protocol Droid in its requirements, a Jedi character and/or
-    TC-14 will be added to the starting inventory.
+    a Protocol Droid character will be added to the starting inventory.
 
     Due to the character requirements being shared between some Chapters, some starting Chapters will result in
     additional Chapters being open from the start:
@@ -515,49 +515,12 @@ class StartingChapter(ChoiceFromStringExtension):
     Starting with 6-6 will also open 5-3 if the Episode Unlock Requirement is set to Open.
     """
     display_name = "Starting Chapter"
-    # todo: Try setting the attributes for specific levels such that they use 1-1 format rather than 1_1.
     # Variable names cannot use hyphens, so the options for specific levels are set programmatically.
     # option_1-1 = 11
     # option_1-2 = 12
     # etc.
     locals().update({f"option_{episode}-{chapter}": int(f"{episode}{chapter}")
                      for episode, chapter in itertools.product(range(1, 7), range(1, 7))})
-    # option_1_1 = 11
-    # option_1_2 = 12
-    # option_1_3 = 13
-    # option_1_4 = 14
-    # option_1_5 = 15
-    # option_1_6 = 16
-    # option_2_1 = 21
-    # option_2_2 = 22
-    # option_2_3 = 23
-    # option_2_4 = 24
-    # option_2_5 = 25
-    # option_2_6 = 26
-    # option_3_1 = 31
-    # option_3_2 = 32
-    # option_3_3 = 33
-    # option_3_4 = 34
-    # option_3_5 = 35
-    # option_3_6 = 36
-    # option_4_1 = 41
-    # option_4_2 = 42
-    # option_4_3 = 43
-    # option_4_4 = 44
-    # option_4_5 = 45
-    # option_4_6 = 46
-    # option_5_1 = 51
-    # option_5_2 = 52
-    # option_5_3 = 53
-    # option_5_4 = 54
-    # option_5_5 = 55
-    # option_5_6 = 56
-    # option_6_1 = 61
-    # option_6_2 = 62
-    # option_6_3 = 63
-    # option_6_4 = 64
-    # option_6_5 = 65
-    # option_6_6 = 66
     option_random_chapter = -1
     option_random_non_vehicle = -2
     option_random_vehicle = -3
