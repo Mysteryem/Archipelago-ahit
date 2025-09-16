@@ -72,6 +72,18 @@ components.append(Component("Lego Star Wars: The Complete Saga Client",
                             func=launch_client,
                             component_type=Type.CLIENT))
 
+# Use deprioritzed on AP 0.6.3+, but still allow generation on older AP versions.
+progression_deprioritized_skip_balancing: ItemClassification = getattr(
+    ItemClassification,
+    "progression_deprioritized_skip_balancing",
+    ItemClassification.progression_skip_balancing
+)
+progression_deprioritized: ItemClassification = getattr(
+    ItemClassification,
+    "progression_deprioritized",
+    ItemClassification.progression
+)
+
 
 class LegoStarWarsTCSWebWorld(WebWorld):
     theme = "partyTime"
@@ -843,7 +855,14 @@ class LegoStarWarsTCSWorld(World):
             if name in MINIKITS_BY_NAME:
                 # A goal macguffin.
                 if self.goal_minikit_count > 0:
-                    classification = ItemClassification.progression_skip_balancing
+                    if self.options.accessibility == "minimal" or self.minikit_bundle_count > 10:
+                        # Minikits are sorted first for minimal players in stage_pre_fill to reduce generation failures,
+                        # so should always be deprioritized for minimal players.
+                        classification = progression_deprioritized_skip_balancing
+                    else:
+                        # If there are only very few bundles, e.g. the bundles are 10 minikits at a time and there are
+                        # not many in the pool, then don't use deprioritized classification.
+                        classification = ItemClassification.progression_skip_balancing
                 else:
                     classification = ItemClassification.filler
             elif name == "Progressive Score Multiplier":
@@ -1898,11 +1917,6 @@ class LegoStarWarsTCSWorld(World):
                     # Placing only the non-required Minikits first or slightly more than the number of non-required
                     # Minikits first was also tried, but placing all Minikits first seems to give fill the best chance
                     # of succeeding.
-                    #
-                    # Forcing Minikits first has the unfortunately sideeffect of priority fill picking Minikits first,
-                    # but that will just have to be put up with in order to generate well. Maybe a small buffer of
-                    # non-Minikit items could be placed first so that the items in the buffer end up on priority
-                    # locations.
                     return 1
                 else:
                     # For non-minimal players, place Minikits last. The helps prevent fill from filling most/all
