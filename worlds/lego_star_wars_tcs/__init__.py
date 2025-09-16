@@ -826,8 +826,6 @@ class LegoStarWarsTCSWorld(World):
                     classification = ItemClassification.progression | ItemClassification.useful
                 else:
                     classification = ItemClassification.progression
-            elif name in ALL_AREA_REQUIREMENT_CHARACTERS:
-                classification = ItemClassification.progression
             elif abilities & constants.RARE_AND_USEFUL_ABILITIES:
                 # These abilities are typically much less common, so the characters should never be given skip_balancing
                 # classification.
