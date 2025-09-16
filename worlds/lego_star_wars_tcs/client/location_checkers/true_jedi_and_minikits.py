@@ -168,8 +168,10 @@ class TrueJediAndMinikitChecker(ClientComponent):
         # todo: Replace the magic numbers used to get addresses, or at least move them to ChapterArea.
         for area_id in new_true_jedi_area_ids:
             area = AREA_ID_TO_CHAPTER_AREA[area_id]
-            true_jedi_address = area.address + 3
-            ctx.write_byte(true_jedi_address, 1)
+            # There are two bytes for True Jedi, seemingly as a leftover from when there used to be separate True Jedi
+            # for Story and Free Play, which got combined into just one True Jedi at some point in development.
+            true_jedi_address = area.address + 2
+            ctx.write_bytes(true_jedi_address, b"\x01\x01", 2)
         for area_id in new_minikits_gold_brick_area_ids:
             area = AREA_ID_TO_CHAPTER_AREA[area_id]
             gold_brick_address = area.address + 4
