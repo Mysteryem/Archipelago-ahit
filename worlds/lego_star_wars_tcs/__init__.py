@@ -835,8 +835,9 @@ class LegoStarWarsTCSWorld(World):
             elif abilities:
                 if self.options.filler_reserve_characters:
                     # Characters with only very common abilities are not worth spending time moving in progression
-                    # balancing because there is usually such a large number of them in the item pool.
-                    classification = ItemClassification.progression_skip_balancing
+                    # balancing, nor putting on priority locations, because there is usually such a large number of them
+                    # in the item pool.
+                    classification = progression_deprioritized_skip_balancing
                 else:
                     # Assume that there won't be many characters in the pool, so don't skip progression balancing.
                     # It is possible for there to still be many characters in the item pool if the filler weight for
