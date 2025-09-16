@@ -1903,13 +1903,16 @@ class LegoStarWarsTCSWorld(World):
                         filleritempool: list[Item],
                         fill_locations: list[Location],
                         ) -> None:
-        game_player_ids = set(multiworld.get_game_players(cls.game))
-        game_minimal_player_ids = {player for player in game_player_ids
-                                   if multiworld.worlds[player].options.accessibility == "minimal"}
+        # Get all player IDs that have progression classification minikits.
+        minikit_player_ids = {player for player in multiworld.get_game_players(cls.game)
+                             if multiworld.worlds[player].goal_minikit_count > 0}
+        # Get the player IDs of those that are also using minimal accessibility.
+        minikit_minimal_player_ids = {player for player in minikit_player_ids
+                                      if multiworld.worlds[player].options.accessibility == "minimal"}
 
         def sort_func(item: Item):
-            if item.player in game_player_ids and item.name in MINIKITS_BY_NAME:
-                if item.player in game_minimal_player_ids:
+            if item.player in minikit_player_ids and item.name in MINIKITS_BY_NAME:
+                if item.player in minikit_minimal_player_ids:
                     # For minimal players, place Minikits first. This helps prevent fill from dumping logically relevant
                     # items into unreachable locations and reducing the number of reachable locations to fewer than the
                     # number of items remaining to be placed.
