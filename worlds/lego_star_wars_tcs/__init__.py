@@ -831,16 +831,9 @@ class LegoStarWarsTCSWorld(World):
                 # classification.
                 classification = ItemClassification.progression
             elif abilities:
-                if self.options.filler_reserve_characters:
-                    # Characters with only very common abilities are not worth spending time moving in progression
-                    # balancing, nor putting on priority locations, because there is usually such a large number of them
-                    # in the item pool.
-                    classification = progression_deprioritized_skip_balancing
-                else:
-                    # Assume that there won't be many characters in the pool, so don't skip progression balancing.
-                    # It is possible for there to still be many characters in the item pool if the filler weight for
-                    # characters is high, however, for simplicity, it is assumed that there won't be many characters.
-                    classification = ItemClassification.progression
+                # Characters, with only abilities where there are many other characters in the item pool providing those
+                # abilities, are given deprioritized and skip_balancing classifications towards the end of create_items.
+                classification = ItemClassification.progression
             elif name in USEFUL_NON_PROGRESSION_CHARACTERS:
                 # Force ghosts, glitchy characters and fast characters.
                 classification = ItemClassification.useful
@@ -1490,6 +1483,39 @@ class LegoStarWarsTCSWorld(World):
             add_to_pool(item)
 
         assert len(item_pool) == len(unfilled_locations)
+
+        # todo: In the future, individual characters may be relevant to logic, e.g. Droideka, which should never be
+        #  given deprioritized + skip_balancing.
+        # Give deprioritized + skip_balancing to characters with only common abilities, and that do not give access to
+        # levels.
+        non_level_access_character_items: list[LegoStarWarsTCSItem] = []
+        non_deprioritize_ability_counts: Counter[str] = Counter()
+        for item in item_pool:
+            if item.advancement and item.name in CHARACTERS_AND_VEHICLES_BY_NAME:
+                if progression_deprioritized_skip_balancing in item.classification:
+                    # Don't count abilities from characters that are already deprioritized + skip_balancing.
+                    continue
+                extra_collects = item.collect_extras
+                if extra_collects is not None:
+                    non_deprioritize_ability_counts.update(extra_collects)
+                if level_access_character_counts[item.name] == 0:
+                    assert extra_collects is not None, ("No extra collects should mean the character item is not"
+                                                        " progression currently if the character does not unlock"
+                                                        " levels")
+                    non_level_access_character_items.append(item)
+        self.random.shuffle(non_level_access_character_items)
+        for item in non_level_access_character_items:
+            extra_collects = item.collect_extras
+            for extra_collect in extra_collects:
+                # 3 is a magic number and could be changed if other values produce nicer results.
+                if non_deprioritize_ability_counts[extra_collect] <= 3:
+                    # One of the abilities is uncommon.
+                    break
+            else:
+                # None of the abilities were uncommon, so add the deprioritize and skip balancing classifications.
+                item.classification |= progression_deprioritized_skip_balancing
+                # Reduce the remaining ability counts from non-deprioritized characters
+                non_deprioritize_ability_counts.subtract(extra_collects)
 
         self.multiworld.itempool.extend(item_pool)
 
