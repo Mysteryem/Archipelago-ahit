@@ -12,6 +12,14 @@ class StaticUChar(int):
         ctx.write_byte(self, value)
 
 
+class StaticFloat(int):
+    def get(self, ctx: TCSContext) -> float:
+        return ctx.read_float(self)
+
+    def set(self, ctx: TCSContext, value: float):
+        ctx.write_float(self, value)
+
+
 class FloatField(int):
     def get(self, ctx: TCSContext, raw_address: int) -> float:
         return ctx.read_float(raw_address + self, raw=True)

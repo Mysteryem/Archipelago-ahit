@@ -1,6 +1,6 @@
 from enum import IntEnum, IntFlag
 
-from .common import StaticUChar
+from .common import StaticUChar, StaticFloat
 from .type_aliases import TCSContext
 
 
@@ -180,11 +180,16 @@ class CustomSaveFlags1(IntFlag):
 PAUSED_OR_STATUS_WHEN_0_ADDRESS = 0x9737D8
 # This address is usually -1/255 while playing or paused, 1 while tabbed out and 0 while both paused and tabbed out.
 # It is a more unstable than the previous value, while playing, however.
+# Notably, if window focus is forced by setting 0x827610 to 1, thus allowing the game to run in the background, then
+# this still correctly identifies whether the game is frozen.
 TABBED_OUT_WHEN_1_ADDRESS = 0x9868C4
 
 # 0 when playing, 1 when in a cutscene, same-level door transition, Indy trailer and title crawl.
 # Rarely unstable and seen as -1 briefly while playing
 IS_PLAYING_WHEN_0_ADDRESS = 0x297C0AC
+
+# Set to > 0.0 during a screen wipe/transition. In-game hints only display when this is 0.0.
+SCREEN_TRANSITION_TIMER_ADDRESS = StaticFloat(0x950780)
 
 
 def is_actively_playing(ctx: TCSContext):
@@ -202,5 +207,7 @@ def is_actively_playing(ctx: TCSContext):
             and ctx.read_uchar(OPENED_MENU_DEPTH_ADDRESS) == 0
             # Handles same-level screen transitions.
             and ctx.read_uchar(IS_PLAYING_WHEN_0_ADDRESS) == 0
+            # Handles screen/level transitions. Unlike most timer-like floats, this one actually gets set to 0.0.
+            and SCREEN_TRANSITION_TIMER_ADDRESS.get(ctx) == 0.0
             and GameState1.is_playing(ctx)
     )
