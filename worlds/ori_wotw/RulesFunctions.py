@@ -23,14 +23,13 @@ class WotWLogic(LogicMixin):
     wotw_enemies_stale_remove: dict[int, bool]  # Indicate if combat has to be recomputed from remove
 
     def init_mixin(self, mw: "MultiWorld") -> None:
-        self.wotw_max_resources = {player: (30, 3.0) for player in mw.get_game_players("Ori and the Will of the Wisps")}
-        self.wotw_refill_amount = {player: (30, 1.0) for player in mw.get_game_players("Ori and the Will of the Wisps")}
-        self.wotw_enemies = {}
-        for player in mw.get_game_players("Ori and the Will of the Wisps"):
-            self.wotw_enemies.setdefault(player, {enemy: IMPOSSIBLE_COST for enemy in enemy_data.keys()})
-        self.wotw_resource_stale = {player: False for player in mw.get_game_players("Ori and the Will of the Wisps")}
-        self.wotw_enemies_stale_collect = {player: False for player in mw.get_game_players("Ori and the Will of the Wisps")}
-        self.wotw_enemies_stale_remove = {player: False for player in mw.get_game_players("Ori and the Will of the Wisps")}
+        players = mw.get_game_players("Ori and the Will of the Wisps")
+        self.wotw_max_resources = dict.fromkeys(players, (30, 3.0))
+        self.wotw_refill_amount = dict.fromkeys(players, (30, 1.0))
+        self.wotw_enemies = {player: starting_enemies.copy() for player in players}
+        self.wotw_resource_stale = dict.fromkeys(players, False)
+        self.wotw_enemies_stale_collect = self.wotw_resource_stale.copy()
+        self.wotw_enemies_stale_remove = self.wotw_resource_stale.copy()
 
     def copy_mixin(self, new_state: "CollectionState") -> "CollectionState":
         new_state.wotw_max_resources = self.wotw_max_resources.copy()
@@ -100,6 +99,8 @@ enemy_data: dict[str, tuple[int, list[str]]] = {  # For each enemy: HP and comba
     "Sandworm": (20, ["Combat.Sand"]),
     "Spiderling": (12, []),
 }
+
+starting_enemies = dict.fromkeys(enemy_data.keys(), IMPOSSIBLE_COST)  # Copied in init_mixin for each player
 
 area_data = {"MidnightBurrows": (25, False),  # For each area, minimum health and whether regenerate is needed
              "EastHollow": (20, False),
