@@ -57,8 +57,8 @@ class TrueJediAndMinikitChecker(ClientComponent):
     check, but then having to replay the level for additional checks, or taking longer to send the check by only sending
     the check once the level has been completed.
     """
-    # Sequence and Mapping are used because they hint that the types are immutable.
     remaining_true_jedi_check_shortnames: set[str]
+    remaining_true_jedi_gold_brick_shortnames: set[str]
     remaining_minikit_checks_by_shortname: dict[str, list[tuple[int, str]]]
     remaining_minikit_gold_bricks_by_area_id: set[int]
     remaining_power_bricks_by_area_id: set[int]
@@ -66,6 +66,7 @@ class TrueJediAndMinikitChecker(ClientComponent):
     def __init__(self):
         # Set to empty collections for safety.
         self.remaining_true_jedi_check_shortnames = set()
+        self.remaining_true_jedi_gold_brick_shortnames = set()
         self.remaining_minikit_checks_by_shortname = {}
         self.remaining_minikit_gold_bricks_by_area_id = set()
         self.remaining_power_bricks_by_area_id = set()
@@ -73,6 +74,7 @@ class TrueJediAndMinikitChecker(ClientComponent):
     def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
         enabled_shortnames = set(slot_data["enabled_chapters"])
         self.remaining_true_jedi_check_shortnames = enabled_shortnames.copy()
+        self.remaining_true_jedi_gold_brick_shortnames = enabled_shortnames.copy()
         self.remaining_minikit_checks_by_shortname = {shortname: ALL_MINIKIT_CHECKS_BY_SHORTNAME[shortname]
                                                       for shortname in enabled_shortnames}
         self.remaining_minikit_gold_bricks_by_area_id = {
@@ -102,7 +104,11 @@ class TrueJediAndMinikitChecker(ClientComponent):
                                            new_location_checks: list[int]
                                            ) -> bool:
         shortname = current_area.short_name
-        if shortname not in self.remaining_true_jedi_check_shortnames:
+
+        still_need_gold_brick = shortname in self.remaining_true_jedi_gold_brick_shortnames
+        still_need_check = shortname in self.remaining_true_jedi_check_shortnames
+
+        if not still_need_gold_brick and not still_need_check:
             return False
 
         location_name = LEVEL_COMMON_LOCATIONS[shortname]["True Jedi"]
@@ -111,11 +117,12 @@ class TrueJediAndMinikitChecker(ClientComponent):
             current_area_true_jedi_complete = ctx.read_uint(
                 CURRENT_AREA_TRUE_JEDI_COMPLETE_STORY_OR_FREE_PLAY_ADDRESS)
             if current_area_true_jedi_complete:
-                self.remaining_true_jedi_check_shortnames.remove(shortname)
-                # The location may already be checked due to a !collect, however, already checked locations get
-                # filtered out automatically.
-                new_location_checks.append(location_id)
-                return True
+                if still_need_check:
+                    self.remaining_true_jedi_check_shortnames.discard(shortname)
+                    new_location_checks.append(location_id)
+                # `shortname` will only be removed from `self.remaining_true_jedi_gold_brick_shortnames` once the server
+                # has updated `shortname` in datastorage and the client has acknowledged the datastorage update.
+                return still_need_gold_brick
             # The True Jedi is still incomplete, so the client will need to continue polling until the True Jedi is
             # completed in-game. It is important to keep polling even when the location has been checked due to a
             # !collect because completing True Jedi gives a Gold Brick, which should only be given to the player when
@@ -129,7 +136,8 @@ class TrueJediAndMinikitChecker(ClientComponent):
             # on.
             # Note that this means that True Jedi completion does not sync in same-slot co-op when True Jedi locations
             # are disabled.
-            self.remaining_true_jedi_check_shortnames.remove(shortname)
+            self.remaining_true_jedi_check_shortnames.discard(shortname)
+            self.remaining_true_jedi_gold_brick_shortnames.discard(shortname)
             return False
 
     def _check_minikits_from_current_area(self,
@@ -160,8 +168,8 @@ class TrueJediAndMinikitChecker(ClientComponent):
         else:
             del self.remaining_minikit_checks_by_shortname[shortname]
 
-    @staticmethod
-    def update_from_datastorage(ctx: TCSContext,
+    def update_from_datastorage(self,
+                                ctx: TCSContext,
                                 new_true_jedi_area_ids: Iterable[int] = (),
                                 new_minikits_gold_brick_area_ids: Iterable[int] = (),
                                 new_power_brick_area_ids: Iterable[int] = ()):
@@ -172,6 +180,7 @@ class TrueJediAndMinikitChecker(ClientComponent):
             # for Story and Free Play, which got combined into just one True Jedi at some point in development.
             true_jedi_address = area.address + 2
             ctx.write_bytes(true_jedi_address, b"\x01\x01", 2)
+            self.remaining_true_jedi_gold_brick_shortnames.discard(area.short_name)
         for area_id in new_minikits_gold_brick_area_ids:
             area = AREA_ID_TO_CHAPTER_AREA[area_id]
             gold_brick_address = area.address + 4
@@ -205,20 +214,37 @@ class TrueJediAndMinikitChecker(ClientComponent):
                 cached_bytes[short_name] = new_bytes
                 return new_bytes
 
-        checked_true_jedi_area_ids = []
-        # A copy has to be iterated so that elements can be removed while iterating.
-        for shortname in tuple(self.remaining_true_jedi_check_shortnames):
+        # Completed Gold Bricks to sync with Archipelago to support same-slot co-op/resuming an in-progress seed with a
+        # new save file.
+        completed_true_jedi_gold_brick_area_ids = []
+        # Besides !collect and /send_location, both sets should be the same.
+        for shortname in (self.remaining_true_jedi_gold_brick_shortnames | self.remaining_true_jedi_check_shortnames):
             location_name = LEVEL_COMMON_LOCATIONS[shortname]["True Jedi"]
             location_id = LOCATION_NAME_TO_ID[location_name]
-            if not ctx.is_location_unchecked(location_id):
-                self.remaining_true_jedi_check_shortnames.remove(shortname)
-                area_id = SHORT_NAME_TO_CHAPTER_AREA[shortname].area_id
-                if ctx.is_location_sendable(location_id):
-                    checked_true_jedi_area_ids.append(area_id)
+            if not ctx.is_location_sendable(location_id):
+                # The location is not enabled for this slot, so the client can skip polling for it from now on.
+                self.remaining_true_jedi_check_shortnames.discard(shortname)
+                self.remaining_true_jedi_gold_brick_shortnames.discard(shortname)
                 continue
-            true_jedi = get_bytes_for_short_name(shortname)[0]
-            if true_jedi:
-                new_location_checks.append(location_id)
+
+            is_checked = ctx.is_location_checked(location_id)
+            if is_checked:
+                # The location has been checked, but potentially by !collect instead of by the player.
+                # The client no longer needs to send this location ID to the server, but the location being !collect-ed
+                # does not give the player the Gold Brick for completing True Jedi, so the player may still need to get
+                # the Gold Brick if they have locations locked behind Gold Bricks.
+                self.remaining_true_jedi_check_shortnames.discard(shortname)
+
+            if shortname in self.remaining_true_jedi_gold_brick_shortnames:
+                # The client does not think the True Jedi Gold Brick has been given/earned yet, so check if that is the
+                # case.
+                true_jedi = get_bytes_for_short_name(shortname)[0]
+                if true_jedi:
+                    area_id = SHORT_NAME_TO_CHAPTER_AREA[shortname].area_id
+                    # Add the area ID to the area IDs to send to the server.
+                    completed_true_jedi_gold_brick_area_ids.append(area_id)
+                    if not is_checked:
+                        new_location_checks.append(location_id)
 
         updated_remaining_minikit_checks_by_shortname: dict[str, list[tuple[int, str]]] = {}
         for shortname, remaining_minikits in self.remaining_minikit_checks_by_shortname.items():
@@ -266,4 +292,4 @@ class TrueJediAndMinikitChecker(ClientComponent):
         ctx.update_datastorage_power_bricks_collected(newly_completed_power_brick_area_ids)
         self.remaining_power_bricks_by_area_id = updated_remaining_power_bricks_by_area_id
 
-        return checked_true_jedi_area_ids
+        return completed_true_jedi_gold_brick_area_ids
