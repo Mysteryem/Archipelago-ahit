@@ -491,6 +491,10 @@ ITEM_DATA: list[GenericItemData] = [
     # "Extra Toggle" characters.
     _char(-1, "Womp Rat", 165),
     _char(-1, "Skeleton", 231),
+
+    # Miscellaneous vehicles.
+    # This is the vehicle present in the outside area of the Cantina. 'map' is the internal name for the Cantina.
+    _char(-1, "mapcar", 303),
 ]
 
 USEFUL_NON_PROGRESSION_CHARACTERS: set[str] = {

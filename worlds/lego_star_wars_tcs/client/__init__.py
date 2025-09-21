@@ -1221,13 +1221,19 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                     await asyncio.sleep(1.0)
                     self._cantina_needs_reload_to_fix_characters = False
                 return
-            # Skeleton is the backup character the client forces when the player does not have at least 2 unlocked
-            # non-vehicle characters.
-            skeleton_character_index = CHARACTERS_AND_VEHICLES_BY_NAME["Skeleton"].character_index
+            additional_ok_ids = {
+                # Skeleton is the backup character the client forces when the player does not have at least 2 unlocked
+                # non-vehicle characters.
+                CHARACTERS_AND_VEHICLES_BY_NAME["Skeleton"].character_index,
+                # This is the vehicle found in the outside area of the Cantina.
+                # The client could probably check some flag of the character in memory to see if it is a ridable
+                # vehicle, but the Cantina only contains this one vehicle, so checking for it individually is simpler.
+                CHARACTERS_AND_VEHICLES_BY_NAME["mapcar"].character_index,
+            }
             needed_replacements = 0
             p1_character_id = self._get_player_character_id(1)
             if (p1_character_id is not None
-                    and p1_character_id != skeleton_character_index
+                    and p1_character_id not in additional_ok_ids
                     and p1_character_id not in unlocked_characters):
                 needed_replacements += 1
                 replace_p1 = True
@@ -1237,7 +1243,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 replace_p1 = False
             p2_character_id = self._get_player_character_id(2)
             if (p2_character_id is not None
-                    and p2_character_id != skeleton_character_index
+                    and p2_character_id not in additional_ok_ids
                     and p2_character_id not in unlocked_characters):
                 needed_replacements += 1
                 replace_p2 = True
