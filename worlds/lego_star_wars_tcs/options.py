@@ -13,11 +13,13 @@ from Options import (
     Toggle,
     OptionGroup,
     DeathLink,
+    ItemDict,
 )
 
 from .levels import BOSS_UNIQUE_NAME_TO_CHAPTER
 from .locations import LEVEL_SHORT_NAMES_SET
 from .items import CHARACTERS_AND_VEHICLES_BY_NAME, EXTRAS_BY_NAME
+from .item_groups import ITEM_GROUPS
 
 
 CHAPTER_OPTION_KEYS: Mapping[str, AbstractSet[str]] = {
@@ -736,8 +738,7 @@ class FillerWeightJunk(Range):
     options results in more Studs and other filler Archipelago items in the item pool, compared to other items used to
     fill out the rest of the item pool.
 
-    Purple Stud is currently the only junk filler Archipelago item that is implemented, but more will likely be added in
-    the future.
+    The weight of each Junk Filler item can be controlled with the separate Junk Weights option.
 
     The generator tries to fill the item pool with as many Characters and Extras as would be unlocked, in vanilla, by
     all the enabled locations.
@@ -751,25 +752,24 @@ class FillerWeightJunk(Range):
     default = 30
 
 
-class JunkWeightPurpleStud(Range):
-    """The weight of Purple Stud items in the Junk items pool.
+class JunkWeights(ItemDict):
+    """Control the weight of each Junk Filler item.
 
-    Purple Studs give 10000 studs when received.
+    If all weight are set to zero, all Junk will be Purple Studs.
 
-    If all Junk Weights are set to zero, the weight of Purple Studs will be forced to 1.
-    """
-    display_name = "Purple Stud Weight"
-    range_start = 0
-    range_end = 100
-    default = 50
+    Purple Studs give 10000 Studs when received.
 
-
-class JunkWeightPowerUp(Range):
-    """The weight of Power Up items in the Junk items pool.
-
-    Power Up items give 20 seconds of invincibility, 2x score multiplier, and a number of other beneficial effects.
-
+    Power Up items give 20 seconds of invincibility, 2x score multiplier and a number of other beneficial effects.
     Power Up items will not be used while in the Cantina, LEGO City, New Town or Battle Over Coruscant (3-1).
+    Unused Power Up items do not carry over to the next play session.
+    """
+    display_name = "Custom Item Pool"
+    valid_keys = ITEM_GROUPS["Junk"]
+    default = {
+        "Power Up": 10,
+        "Purple Stud": 50,
+    }
+
 
     Unused Power Up items do not carry over to the next play session."""
     display_name = "Purple Stud Weight"
@@ -995,8 +995,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     filler_weight_characters: FillerWeightCharacters
     filler_weight_extras: FillerWeightExtras
     filler_weight_junk: FillerWeightJunk
-    junk_weight_purple_stud: JunkWeightPurpleStud
-    junk_weight_power_up: JunkWeightPowerUp
+    junk_weights: JunkWeights
 
     # Client behaviour.
     received_item_messages: ReceivedItemMessages
@@ -1050,8 +1049,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         FillerWeightCharacters,
         FillerWeightExtras,
         FillerWeightJunk,
-        JunkWeightPurpleStud,
-        JunkWeightPowerUp,
+        JunkWeights,
     ]),
     OptionGroup("Client Options", [
         ReceivedItemMessages,
