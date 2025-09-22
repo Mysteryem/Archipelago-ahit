@@ -1657,7 +1657,8 @@ class LegoStarWarsTCSWorld(World):
         self.character_unlock_location_count += len(story_character_unlock_regions)
 
         # Adjust required score multipliers for any enabled chapters with difficult or potentially impossible True Jedi.
-        if not DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI.isdisjoint(self.enabled_chapters):
+        if (self.options.enable_true_jedi_locations
+                and not DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI.isdisjoint(self.enabled_chapters)):
             self.required_score_multiplier_count = max(1, self.required_score_multiplier_count)
 
         # Available minikit count is calculated in generate_early.
@@ -1873,9 +1874,10 @@ class LegoStarWarsTCSWorld(World):
                     self._add_score_multiplier_rule(purchase_location, studs_cost)
 
                 # Set True Jedi logic
-                if chapter.short_name in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI:
-                    true_jedi = self.get_location(f"{chapter.short_name} True Jedi")
-                    set_rule(true_jedi, lambda state: state.has("Progressive Score Multiplier", player))
+                if self.options.enable_true_jedi_locations:
+                    if chapter.short_name in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI:
+                        true_jedi = self.get_location(f"{chapter.short_name} True Jedi")
+                        set_rule(true_jedi, lambda state: state.has("Progressive Score Multiplier", player))
 
         # Bonus levels.
         gold_brick_requirements: set[int] = set()
