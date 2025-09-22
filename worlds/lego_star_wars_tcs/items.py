@@ -533,6 +533,6 @@ AP_NON_VEHICLE_CHARACTER_INDICES: AbstractSet[int] = {char.character_index
                                                       for char in NON_VEHICLE_CHARACTER_BY_INDEX.values()
                                                       if char.is_sendable}
 
-ITEM_NAME_TO_ID: Mapping[str, int] = {name: item.code for name, item in ITEM_DATA_BY_NAME.items() if item.is_sendable}
+ITEM_NAME_TO_ID: dict[str, int] = {name: item.code for name, item in ITEM_DATA_BY_NAME.items() if item.is_sendable}
 
 MINIKITS_BY_COUNT: Mapping[int, GenericItemData] = {bundle.bundle_size: bundle for bundle in MINIKITS_BY_NAME.values()}
