@@ -908,7 +908,8 @@ class LegoStarWarsTCSWorld(World):
         return effective_item_classifications, effective_item_collect_extras
 
     def get_filler_item_name(self) -> str:
-        return "Purple Stud"
+        junk_weights: dict[str, int] = self.options.junk_weights.value
+        return self.random.choices(tuple(junk_weights), tuple(junk_weights.values()))[0]
 
     def create_item(self, name: str) -> LegoStarWarsTCSItem:
         code = self.item_name_to_id[name]
