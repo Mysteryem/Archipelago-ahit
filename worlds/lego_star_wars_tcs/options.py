@@ -490,9 +490,11 @@ class AllEpisodesCharacterPurchaseRequirements(ChoiceFromStringExtension):
     - Episodes Unlocked: The shop purchases will unlock when the "Episode # Unlock" item for each Episode with enabled
     Chapters has been received. If the Episode Unlock Requirement is set to Open or there is only 1 enabled Episode,
     this will be forcefully changed to "Episodes Tokens" instead.
-    - Episodes Tokens: A number of "All Episodes Token" items will be added to the item pool, equal to the number of
-    enabled Episodes. All of these "All Episodes Token" items will need to be received to unlock the characters for
-    purchase.
+    - Episodes Tokens: 6 "Episode Completion Token" items need to be acquired to unlock the characters for purchase. The
+    number of "Episode Completion Token" items in the item pool is equal to your number of enabled chapters divided by 6
+    and rounded to the nearest integer, but always at least 1. The remaining "Episode Completion Token" items will be
+    added to your starting inventory. For example, if you have 28 chapters enabled, 28 / 6 = 4.666 -> 5 in the pool and
+    1 in your starting inventory.
     """
     display_name = "'All Episodes' Character Purchase Unlock Requirements"
     option_episodes_unlocked = 1

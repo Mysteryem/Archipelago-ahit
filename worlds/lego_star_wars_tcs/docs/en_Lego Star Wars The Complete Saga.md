@@ -41,7 +41,7 @@ Completing Bonus levels and watching the Indiana Jones trailer can be locations 
 Purchases in the Characters shop and Extras shop will not award their vanilla Characters/Extras.
 
 Slots in the Characters shop that would normally unlock upon completing Story mode in every Chapter have been changed to
-either unlock once all enabled Episodes are unlocked, or once a number of 'All Episodes Token' items have been received.
+either unlock once all enabled Episodes are unlocked, or once 6 'Episode Completion Token' items have been received.
 The unlock condition is controlled by an option in the game yaml.
 
 ## What does another world's item look like in Lego Star Wars: The Complete Saga?

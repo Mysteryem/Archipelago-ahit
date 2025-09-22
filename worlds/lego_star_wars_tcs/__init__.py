@@ -864,8 +864,8 @@ class LegoStarWarsTCSWorld(World):
                 #  locations need them. Make them Useful if none are needed.
                 # Generic item that grants Score multiplier Extras, which are used in logic for purchases from the shop.
                 classification = ItemClassification.progression
-            elif name == "All Episodes Token":
-                # Very few location checks.
+            elif name == "Episode Completion Token":
+                # Very few location checks and typically late into a seed.
                 classification = ItemClassification.progression_skip_balancing
             elif name.startswith("Episode ") and name.endswith(" Unlock"):
                 classification = ItemClassification.progression | ItemClassification.useful
@@ -1183,8 +1183,14 @@ class LegoStarWarsTCSWorld(World):
                 if i != self.starting_episode:
                     episode_related_items.append(f"Episode {i} Unlock")
         if self.options.all_episodes_character_purchase_requirements == "episodes_tokens":
-            for _ in range(len(self.enabled_episodes)):
-                episode_related_items.append("All Episodes Token")
+            # One token is added to the item pool for every episode's worth of (6) chapters that are enabled.
+            tokens_in_pool = max(1, round(len(self.enabled_episodes) / 6))
+            start_inventory_tokens = 6 - tokens_in_pool
+            assert 5 >= start_inventory_tokens >= 0
+            for _ in range(tokens_in_pool):
+                episode_related_items.append("Episode Completion Token")
+            for _ in range(start_inventory_tokens):
+                self.push_precollected(self.create_item("Episode Completion Token"))
 
         free_location_count -= len(episode_related_items)
 
@@ -1903,7 +1909,7 @@ class LegoStarWarsTCSWorld(World):
                 set_rule(entrance, lambda state, items_=entrance_unlocks, p=player: state.has_all(items_, p))
             elif self.options.all_episodes_character_purchase_requirements == "episodes_tokens":
                 set_rule(entrance,
-                         lambda state, c=len(self.enabled_episodes), p=player: state.has("All Episodes Token", p, c))
+                         lambda state, p=player: state.has("Episode Completion Token", p, 6))
             for character_name, studs_cost in SHOP_SLOT_REQUIREMENT_TO_UNLOCKS["ALL_EPISODES"].items():
                 purchase_location = self.get_location(f"Purchase {character_name}")
                 self._add_score_multiplier_rule(purchase_location, studs_cost)

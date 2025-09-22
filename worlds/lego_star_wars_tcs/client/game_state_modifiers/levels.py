@@ -62,8 +62,14 @@ class UnlockedChapterManager(ClientComponent):
             tokens = options.AllEpisodesCharacterPurchaseRequirements.option_episodes_tokens
             unlocks = options.AllEpisodesCharacterPurchaseRequirements.option_episodes_unlocked
             if all_episodes_character_purchase_requirements == tokens:
-                self.should_unlock_all_episodes_shop_slots = (
-                    lambda ctx: ctx.acquired_generic.all_episodes_token_counts == num_enabled_episodes)
+                if tuple(slot_data["apworld_version"]) <= (1, 1, 3):
+                    # Old versions unlock by having as many tokens as the number of enabled episodes.
+                    # The tokens were previously called "All Episodes Token".
+                    self.should_unlock_all_episodes_shop_slots = (
+                        lambda ctx: ctx.acquired_generic.episode_completion_token_count == num_enabled_episodes)
+                else:
+                    self.should_unlock_all_episodes_shop_slots = (
+                        lambda ctx: ctx.acquired_generic.episode_completion_token_count >= 6)
             elif all_episodes_character_purchase_requirements == unlocks:
                 self.should_unlock_all_episodes_shop_slots = (
                     lambda ctx: len(ctx.acquired_generic.received_episode_unlocks) == num_enabled_episodes)

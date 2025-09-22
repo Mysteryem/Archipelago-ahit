@@ -434,7 +434,7 @@ ITEM_DATA: list[GenericItemData] = [
     _extra(152, "Super Ewok Catapult", 0x29, "6-4"),
     _extra(153, "Infinite Torpedos", 0x2A, "6-6"),
     _extra(-1, "Score x10", 0x2B, "6-5"),
-    _generic(154, "All Episodes Token"),
+    _generic(154, "Episode Completion Token"),
     _generic(155, "Episode 1 Unlock"),
     _generic(156, "Episode 2 Unlock"),
     _generic(157, "Episode 3 Unlock"),
