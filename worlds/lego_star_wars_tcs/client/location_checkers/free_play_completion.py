@@ -58,17 +58,6 @@ STATUS_LEVEL_FREE_PLAY_COMPLETION_NEGATIVE_REQUIREMENTS = int(
 # )
 
 
-# Currently unused by the client, kept here for reference.
-# CURRENT_GAME_MODE_ADDRESS = 0x87951C
-# """Byte that stores the current game mode."""
-#
-# # Note: Entering a Bounty Hunter Mission or Character/Minikit bonus does not change this value.
-# # CURRENT_GAME_MODE_STORY = 0
-# CURRENT_GAME_MODE_FREE_PLAY = 1
-# # Per-chapter Challenge mode
-# # CURRENT_GAME_MODE_CHALLENGE = 2
-
-
 STATUS_LEVEL_ID_TO_AP_ID: dict[LevelId, ApLocationId] = {
     area.status_level_id: LOCATION_NAME_TO_ID[LEVEL_COMMON_LOCATIONS[area.short_name]["Completion"]]
     for area in CHAPTER_AREAS

@@ -53,9 +53,10 @@ All items display as they would in vanilla.
 The item is immediately added to your unlocked Extras/Characters/Stud count. A text display in-game may show what the
 received item was.
 
-Studs are added to your total accumulated Studs rather than your in-level Studs, so the effect of receiving Studs is
-not noticeable without returning to the Cantina. The received studs are multiplied by your maximum possible score
-multiplier.
+Studs are added to your in-level studs if you are a Chapter in Free Play, otherwise the sutds are added directly to your
+save file's total accumulated Studs. The received studs are multiplied by your maximum possible score multiplier and
+multiplied by a further 2x for characters with a Power Up active (double score zones do not affect received studs
+currently).
 
 ## Can I play offline?
 

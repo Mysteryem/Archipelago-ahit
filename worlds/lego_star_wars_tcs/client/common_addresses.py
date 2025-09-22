@@ -1,10 +1,13 @@
 from enum import IntEnum, IntFlag
 
-from .common import StaticUChar, StaticFloat
+from .common import StaticUChar, StaticFloat, StaticUint, StaticBOOL, FloatField
 from .type_aliases import TCSContext
+from ..levels import AREA_ID_TO_CHAPTER_AREA
 
 
-PLAYER_CHARACTER_POINTERS_ARRAY_ADDRESS = 0x93d7f0
+# There are two pointers here, which are NULL when the player is dropped out.
+# The full array of all 8 'player' character pointers, that can be tagged, is found at 0x93d7f0
+HUMAN_CONTROLLED_PLAYER_CHARACTER_POINTERS = 0x93d810
 
 
 class CharacterFlags1(IntFlag):
@@ -17,9 +20,12 @@ class CharacterFlags1(IntFlag):
 
 def player_character_entity_iter(ctx: TCSContext):
     for i in range(0, 2):
-        character_address = ctx.read_uint(PLAYER_CHARACTER_POINTERS_ARRAY_ADDRESS + i * 4)
-        if character_address != 0 and CharacterFlags1.PLAYER_CONTROLLED in CharacterFlags1.get(ctx, character_address):
+        character_address = ctx.read_uint(HUMAN_CONTROLLED_PLAYER_CHARACTER_POINTERS + i * 4)
+        if character_address != 0:
             yield i + 1, character_address
+
+
+CHARACTER_POWER_UP_TIMER = FloatField(0xdec)
 
 
 # It looks like AREA IDs tend to use 4 bytes, even though they only need 1 byte.
@@ -71,6 +77,58 @@ class GameState1(IntEnum):
         state = ctx.read_uchar(GAME_STATE_ADDRESS)
         return (state == cls.PLAYING_OR_TRAILER_OR_CANTINA_LOAD_OR_CHAPTER_TITLE_CRAWL.value
                 or state == cls.IN_LEVEL_SOFT_CUTSCENE.value)
+
+
+# When enabled, character swapping is enabled, e.g. Free Play/Challenge/Minikit Bonus/Character Bonus/LEGO City/
+# New Town.
+# This can be forcefully enabled in Story, and potentially other modes, to allow character swapping, though may disable
+# some Story-only events that usually get disabled in Free Play, e.g. TC-14 won't spawn if this is enabled before
+# Negotiations_A loads.
+IS_CHARACTER_SWAPPING_ENABLED = StaticBOOL(0x93b2a4)
+
+# See ChapterDoorGameMode below.
+CHAPTER_DOOR_GAME_MODE = StaticUint(0x87951C)
+
+
+class ChapterDoorGameMode(IntEnum):
+    """
+    The current game mode when in a chapter door. Note: Entering non-chapter levels does not clear this value.
+
+    The value sticks around while inside a chapter itself, so can be used as an imperfect way to detect what mode the
+    player is currently in. Notably, this can give false positives for Bounty Hunter Missions and Superstory.
+
+    Adjusting this value changes the currently selected option in the chapter door's menu.
+    """
+    STORY = 0
+    FREE_PLAY = 1
+    CHALLENGE = 2
+
+    def is_set(self, ctx: TCSContext) -> bool:
+        return CHAPTER_DOOR_GAME_MODE.get(ctx) == self.value
+
+    def set(self, ctx: TCSContext):
+        CHAPTER_DOOR_GAME_MODE.set(ctx, self.value)
+
+
+def is_in_chapter_free_play(ctx: TCSContext, area_id: int | None = None) -> bool:
+    # The current area ID is often known in advance.
+    if area_id is None:
+        area_id = CURRENT_AREA_ADDRESS.get(ctx)
+
+    if area_id not in AREA_ID_TO_CHAPTER_AREA:
+        # This eliminates Bonuses that have Free Play.
+        return False
+
+    if not IS_CHARACTER_SWAPPING_ENABLED.get(ctx):
+        # This eliminates Bounty Hunter Missions because they do not allow character swapping (only tagging).
+        # This eliminates Superstory because it does not allow character swapping (only tagging).
+        return False
+
+    if not ChapterDoorGameMode.FREE_PLAY.is_set(ctx):
+        # This eliminates chapters in Challenge mode.
+        return False
+
+    return True
 
 
 class ShopType(IntEnum):

@@ -1,8 +1,12 @@
 import logging
 from typing import Any
 
-from ..common import FloatField
-from ..common_addresses import is_actively_playing, player_character_entity_iter, CURRENT_AREA_ADDRESS
+from ..common_addresses import (
+    is_actively_playing,
+    player_character_entity_iter,
+    CURRENT_AREA_ADDRESS,
+    CHARACTER_POWER_UP_TIMER
+)
 from ..game_state_modifiers import ItemReceiver
 from ..type_aliases import TCSContext
 from ...items import GENERIC_BY_NAME
@@ -15,8 +19,6 @@ debug_logger = logging.getLogger("TCS Debug")
 # todo: Duplicated here for now, but common values like this should be moved to another module.
 LEVEL_ID_CANTINA = 325
 AREA_ID_CANTINA = 66
-
-POWER_UP_TIMER = FloatField(0xdec)
 
 # LEGO City and New Town are special levels where the player has to get 1 million studs from the level. Most sources of
 # studs in these levels ignore the 2x multiplier of having a Power Up, only loose studs on the ground get multiplied.
@@ -67,7 +69,7 @@ class PowerUpReceiver(ItemReceiver):
             for player_number, character_address in player_character_entity_iter(ctx):
                 player_numbers.append(player_number)
                 character_addresses.append(character_address)
-                power_up_timers.append(POWER_UP_TIMER.get(ctx, character_address))
+                power_up_timers.append(CHARACTER_POWER_UP_TIMER.get(ctx, character_address))
 
             if len(player_numbers) == 1:
                 power_up_timer = power_up_timers[0]
@@ -75,7 +77,7 @@ class PowerUpReceiver(ItemReceiver):
                 # The Power Up in the UI starts flickering at 3s remaining, so add to the time when less than 3.5 to try
                 # to avoid flickering happening at all.
                 if power_up_timer < 3.5:
-                    POWER_UP_TIMER.set(ctx, character_addresses[0], power_up_timer + 20.0)
+                    CHARACTER_POWER_UP_TIMER.set(ctx, character_addresses[0], power_up_timer + 20.0)
                     gave_power_up = True
                     debug_logger.info("Gave +20s of Power Up to P%i", player_numbers[0])
             elif len(player_numbers) == 2:
@@ -84,7 +86,7 @@ class PowerUpReceiver(ItemReceiver):
                     # Both players are about to run out, or have run out of Power Up time.
                     zipped = zip(player_numbers, character_addresses, power_up_timers)
                     for player_number, character_address, power_up_timer in zipped:
-                        POWER_UP_TIMER.set(ctx, character_address, power_up_timer + 20.0)
+                        CHARACTER_POWER_UP_TIMER.set(ctx, character_address, power_up_timer + 20.0)
                         gave_power_up = True
                         debug_logger.info("Gave +20s of Power Up to P%i", player_number)
                 else:
@@ -109,7 +111,7 @@ class PowerUpReceiver(ItemReceiver):
 
                         zipped = zip(player_numbers, character_addresses, power_up_timers)
                         for player_number, character_address, original_power_up_timer in zipped:
-                            POWER_UP_TIMER.set(ctx, character_address, shared_time)
+                            CHARACTER_POWER_UP_TIMER.set(ctx, character_address, shared_time)
                             if gave_power_up:
                                 if averaged:
                                     msg_format = "Averaged P%i Power Up time and gave +20s to %.3f from %.3f"

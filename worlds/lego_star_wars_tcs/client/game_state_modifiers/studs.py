@@ -1,7 +1,10 @@
 import logging
+import random  # For picking whether P1 or P2 gets remainder studs after halving.
 from typing import Mapping
 
 
+from ..common import UintField
+from ..common_addresses import player_character_entity_iter, is_in_chapter_free_play, CHARACTER_POWER_UP_TIMER
 from ..type_aliases import TCSContext
 from ...items import GENERIC_BY_NAME
 
@@ -27,12 +30,13 @@ STUDS_AP_ID_TO_VALUE: Mapping[int, int] = {
 }
 
 
-# todo: grant studs while in a level. This may be more complicated than it may appear because studs can be updated
-#  frequently, and we ideally don't want to cause in-game collected studs to disappear or to undo studs lost when dying
-#  because there is a small amount of time between reading the current studs and writing the updated studs.
+CHARACTER_STUD_COUNTER_POINTER = UintField(0x7fc)
+
+
+# todo?: The stud counts for each player appear to be static addresses, which begs the question of why each player
+#  controlled character entity has a pointer to one of these addresses.
 # CURRENT_AREA_STUDS_P1_ADDRESS = 0x855F38
 # CURRENT_AREA_STUDS_P2_ADDRESS = 0x855F48
-# CURRENT_AREA_STUDS_TRUE_JEDI = 0x87B994
 
 
 def give_studs(ctx: TCSContext, ap_item_id: int):
@@ -47,8 +51,53 @@ def give_studs(ctx: TCSContext, ap_item_id: int):
         return
 
     # Multiply by the player's current maximum score multiplier.
+    # The currently enabled score multipliers are not used because players could forget to enable them and then receive
+    # a load of studs and then feel bad that they forgot to enable their multipliers.
     studs_to_add *= ctx.acquired_generic.current_score_multiplier
 
-    current_stud_count = ctx.read_uint(STUD_COUNT_ADDRESS)
-    new_stud_count = min(current_stud_count + studs_to_add, MAX_STUD_COUNT)
-    ctx.write_uint(STUD_COUNT_ADDRESS, new_stud_count)
+    # Keep studs to increments of 10 (1x Silver Stud)
+    remainder = studs_to_add % 10
+    studs_to_add -= remainder
+
+    in_level_studs_addresses = []
+    if is_in_chapter_free_play(ctx):
+        for _, character_address in player_character_entity_iter(ctx):
+            studs_address = CHARACTER_STUD_COUNTER_POINTER.get(ctx, character_address)
+            if studs_address != 0:
+                # Power Up doubles received studs.
+                # todo: Add support for further doubling received studs when in a Double Score Zone.
+                multiplier = 2 if CHARACTER_POWER_UP_TIMER.get(ctx, character_address) > 0.0 else 1
+                in_level_studs_addresses.append((studs_address, multiplier))
+
+    if in_level_studs_addresses:
+        # Add the studs directly to the player(s)' stud counters.
+        if len(in_level_studs_addresses) == 1:
+            in_level_studs_address, multiplier = in_level_studs_addresses[0]
+            current_stud_count = ctx.read_uint(in_level_studs_address, raw=True)
+            new_stud_count = current_stud_count + studs_to_add * multiplier
+            ctx.write_uint(in_level_studs_address, new_stud_count, raw=True)
+        else:
+            # Always keep granted studs to increments of 10. The amount will be halved to give half to each player, so
+            # check the remainder for 20 which will become 10 after halving.
+            remainder_after_halving = studs_to_add % 20
+            studs_to_add -= remainder_after_halving
+            p1_studs = studs_to_add // 2
+            p2_studs = p1_studs
+            if remainder_after_halving:
+                # Pick randomly who gets the 10 studs remainder.
+                if random.randint(0, 1):
+                    p1_studs += remainder_after_halving
+                else:
+                    p2_studs += remainder_after_halving
+
+            # Give the studs to each player, taking into account any additional multipliers they each have.
+            for (in_level_studs_address, multiplier), player_studs_to_add in zip(in_level_studs_addresses,
+                                                                                 (p1_studs, p2_studs)):
+                current_stud_count = ctx.read_uint(in_level_studs_address, raw=True)
+                new_stud_count = current_stud_count + player_studs_to_add * multiplier
+                ctx.write_uint(in_level_studs_address, new_stud_count, raw=True)
+    else:
+        # Add the studs directly to the save data's stud counter.
+        current_stud_count = ctx.read_uint(STUD_COUNT_ADDRESS)
+        new_stud_count = min(current_stud_count + studs_to_add, MAX_STUD_COUNT)
+        ctx.write_uint(STUD_COUNT_ADDRESS, new_stud_count)
