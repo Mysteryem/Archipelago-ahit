@@ -359,10 +359,26 @@ class EnableTrueJediLocations(DefaultOnToggle):
     """
     Enable locations for completing True Jedi in each enabled Chapter.
 
+    Some True Jedi logically expect 1 Progressive Score Multiplier because they are otherwise too difficult or
+    impossible with only the Story characters for the Chapter:
+    - 1-6
+    - 2-6
+    - 3-3
+    - 3-5
+    - 3-6
+    - 5-1
+    - 5-2
+    - 5-6
+    - 6-5
+
+    The logic for difficult True Jedi is intended to be reworked in the future to account for additional characters
+    giving access to more studs within a Chapter, therefore making True Jedi easier to complete.
+
     When True Jedi locations are not enabled, Bonus levels will not consider True Jedi Gold Bricks as part of Gold Brick
     logic.
     """
     display_name = "Enable True Jedi Locations"
+    rich_text_doc = True
 
 
 class EnableChapterCompletionCharacterUnlockLocations(DefaultOnToggle):
