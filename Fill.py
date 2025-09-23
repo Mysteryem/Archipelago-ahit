@@ -598,7 +598,15 @@ def distribute_items_restrictive(multiworld: MultiWorld,
 
         # restore original order of progitempool
         progitempool[:] = [item for item in progitempool if not item.location]
-        accessibility_corrections(multiworld, multiworld.state, prioritylocations, progitempool)
+        if __debug__:
+            # `accessibility_corrections` is not run with __debug__, to prevent it from hiding invalid logic in worlds.
+            if not multiworld.fulfills_accessibility(sweep_from_pool(multiworld.state, progitempool)):
+                # With __debug__, `fulfills_accessibility` raises a FillError if it fails.
+                raise AssertionError("Unreachable. An error should have been raised.")
+        else:
+            # Fix any placements that don't pass accessibility checks, which should only have been caused by worlds with
+            #             # invalid logic.
+            accessibility_corrections(multiworld, multiworld.state, prioritylocations, progitempool)
         defaultlocations = prioritylocations + defaultlocations
 
     if progitempool:
