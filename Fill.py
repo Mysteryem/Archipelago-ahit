@@ -488,6 +488,34 @@ def distribute_early_items(multiworld: MultiWorld,
     return fill_locations, itempool
 
 
+def _debug_check_accessibility(state: CollectionState, item_pool: list[Item] | None = None, msg_format: str = ""
+                               ) -> None:
+    """
+    When ``__debug__`` is ``True``, so no ``-O`` command line argument passed to the Python executable, check that
+    accessibility is fulfilled by the given state and items.
+
+    If ``__debug__`` is ``False``, such as in frozen builds, then do nothing and return immediately.
+
+    :param state: The state to check accessibility from
+    :param item_pool: Any items to collect into a copy of the state
+    :param msg_format: A format string to output on failure, formatted with ``msg_format.format(item_pool)``
+    """
+    if not __debug__:
+        # In real generations, failing accessibility is allowed as a warning only, so long as the generated multiworld
+        # ends up beatable.
+        # For tests and for developers working on their worlds, failing accessibility should error.
+        return
+
+    test_state = sweep_from_pool(state, item_pool) if item_pool else state
+    try:
+        if not state.multiworld.fulfills_accessibility(test_state):
+            # With __debug__, `fulfills_accessibility` raises a FillError if it fails.
+            raise AssertionError("Unreachable. An error should have been raised.")
+    except FillError as e:
+        # Provide an optional custom message, optionally with the contents of `item_pool`.
+        raise FillError(msg_format.format(item_pool)) from e
+
+
 def distribute_items_restrictive(multiworld: MultiWorld,
                                  panic_method: typing.Literal["swap", "raise", "start_inventory"] = "swap") -> None:
     assert all(item.location is None for item in multiworld.itempool), (
@@ -516,29 +544,15 @@ def distribute_items_restrictive(multiworld: MultiWorld,
         else:
             filleritempool.append(item)
 
-    if __debug__:
-        test_state = sweep_from_pool(multiworld.state, progitempool)
-        try:
-            if not multiworld.fulfills_accessibility(test_state):
-                # With __debug__, `fulfills_accessibility` raises a FillError if it fails.
-                raise AssertionError("Unreachable. An error should have been raised.")
-        except FillError as e:
-            # Augment the error with the contents of progitempool
-            raise FillError(f"Accessibility failed with all progression items in the item pool:\n"
-                            f"{progitempool}") from e
+    # Check that accessibility is fulfilled with the entire progression item pool.
+    _debug_check_accessibility(multiworld.state, progitempool, "Accessibility failed with all progression items in the"
+                                                               " item pool:\n{}")
 
     call_all(multiworld, "fill_hook", progitempool, usefulitempool, filleritempool, fill_locations)
 
-    if __debug__:
-        test_state = sweep_from_pool(multiworld.state, progitempool)
-        try:
-            if not multiworld.fulfills_accessibility(test_state):
-                # With __debug__, `fulfills_accessibility` raises a FillError if it fails.
-                raise AssertionError("Unreachable. An error should have been raised.")
-        except FillError as e:
-            # Augment the error with the contents of progitempool
-            raise FillError(f"Accessibility failed after fill_hook with all progression items in the item pool:\n"
-                            f"{progitempool}") from e
+    # Check that accessibility is still fulfilled.
+    _debug_check_accessibility(multiworld.state, progitempool, "Accessibility failed after fill_hook with all"
+                                                               " progression items in the item pool:\n{}")
 
     locations: typing.Dict[LocationProgressType, typing.List[Location]] = {
         loc_type: [] for loc_type in LocationProgressType}
@@ -622,9 +636,10 @@ def distribute_items_restrictive(multiworld: MultiWorld,
         progitempool[:] = [item for item in progitempool if not item.location]
         if __debug__:
             # `accessibility_corrections` is not run with __debug__, to prevent it from hiding invalid logic in worlds.
-            if not multiworld.fulfills_accessibility(sweep_from_pool(multiworld.state, progitempool)):
-                # With __debug__, `fulfills_accessibility` raises a FillError if it fails.
-                raise AssertionError("Unreachable. An error should have been raised.")
+            # Check that accessibility is still fulfilled.
+            _debug_check_accessibility(multiworld.state, progitempool,
+                                       "Accessibility failed after priority fill with the remaining progression items"
+                                       " in the item pool:\n{}")
         else:
             # Fix any placements that don't pass accessibility checks, which should only have been caused by worlds with
             #             # invalid logic.
@@ -664,15 +679,17 @@ def distribute_items_restrictive(multiworld: MultiWorld,
             progitempool.clear()
         if __debug__:
             # `accessibility_corrections` is not run with __debug__, to prevent it from hiding invalid logic in worlds.
+            # Check that accessibility is still fulfilled.
             if unplaced_prog:
                 # Avoid unfairly declaring an accessibility failure if it was the result of unplaceable items, but the
                 # multiworld was beatable anyway.
                 test_state = sweep_from_pool(multiworld.state, unplaced_prog)
+                message_format = ("Accessibility failed after progression fill even if the unplaceable progression"
+                                  " items were added to starting inventory:\n{}")
             else:
                 test_state = multiworld.state
-            if not multiworld.fulfills_accessibility(test_state):
-                # With __debug__, `fulfills_accessibility` raises a FillError if it fails.
-                raise AssertionError("Unreachable. An error should have been raised.")
+                message_format = "Accessibility failed after progression fill with all progression items placed"
+            _debug_check_accessibility(test_state, unplaced_prog, message_format)
         else:
             # Fix any placements that don't pass accessibility checks, which should only have been caused by worlds with
             # invalid logic.
