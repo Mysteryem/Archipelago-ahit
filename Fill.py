@@ -206,16 +206,23 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
         _log_fill_progress(name, placed, total)
 
     if cleanup_required:
-        # validate all placements and remove invalid ones
+        assert swap, "Cleanup should only be required when swap is enabled"
+        # Validate all placements and retry invalid ones.
         state = sweep_from_pool(
             base_state, [], multiworld.get_filled_locations(item.player)
             if single_player_placement else None)
+        unplaced_by_cleanup: list[Item] = []
         for placement in placements:
             if multiworld.worlds[placement.item.player].options.accessibility != "minimal" and not placement.can_reach(state):
                 placement.item.location = None
-                unplaced_items.append(placement.item)
+                unplaced_by_cleanup.append(placement.item)
                 placement.item = None
                 locations.append(placement)
+        if unplaced_by_cleanup:
+            # Retry placement of items that were unplaced without allowing swapping, to prevent further retries.
+            fill_restrictive(multiworld, base_state, locations, unplaced_by_cleanup, single_player_placement, lock,
+                             False, on_place, allow_partial, allow_excluded)
+        unplaced_items.extend(unplaced_by_cleanup)
 
     if allow_excluded:
         # check if partial fill is the result of excluded locations, in which case retry
