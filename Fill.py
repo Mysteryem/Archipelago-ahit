@@ -20,6 +20,10 @@ class FillError(RuntimeError):
         super().__init__(*args)
 
 
+class DebugAccessibilityError(RuntimeError):
+    """Raised when accessibility is not fulfilled in ``__debug__``-only checks"""
+
+
 def _log_fill_progress(name: str, placed: int, total_items: int) -> None:
     logging.info(f"Current fill step ({name}) at {placed}/{total_items} items placed.")
 
@@ -513,7 +517,7 @@ def _debug_check_accessibility(state: CollectionState, item_pool: list[Item] | N
             raise AssertionError("Unreachable. An error should have been raised.")
     except FillError as e:
         # Provide an optional custom message, optionally with the contents of `item_pool`.
-        raise FillError(msg_format.format(item_pool)) from e
+        raise DebugAccessibilityError(msg_format.format(item_pool)) from e
 
 
 def distribute_items_restrictive(multiworld: MultiWorld,
