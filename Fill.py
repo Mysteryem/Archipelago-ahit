@@ -516,7 +516,29 @@ def distribute_items_restrictive(multiworld: MultiWorld,
         else:
             filleritempool.append(item)
 
+    if __debug__:
+        test_state = sweep_from_pool(multiworld.state, progitempool)
+        try:
+            if not multiworld.fulfills_accessibility(test_state):
+                # With __debug__, `fulfills_accessibility` raises a FillError if it fails.
+                raise AssertionError("Unreachable. An error should have been raised.")
+        except FillError as e:
+            # Augment the error with the contents of progitempool
+            raise FillError(f"Accessibility failed with all progression items in the item pool:\n"
+                            f"{progitempool}") from e
+
     call_all(multiworld, "fill_hook", progitempool, usefulitempool, filleritempool, fill_locations)
+
+    if __debug__:
+        test_state = sweep_from_pool(multiworld.state, progitempool)
+        try:
+            if not multiworld.fulfills_accessibility(test_state):
+                # With __debug__, `fulfills_accessibility` raises a FillError if it fails.
+                raise AssertionError("Unreachable. An error should have been raised.")
+        except FillError as e:
+            # Augment the error with the contents of progitempool
+            raise FillError(f"Accessibility failed after fill_hook with all progression items in the item pool:\n"
+                            f"{progitempool}") from e
 
     locations: typing.Dict[LocationProgressType, typing.List[Location]] = {
         loc_type: [] for loc_type in LocationProgressType}
