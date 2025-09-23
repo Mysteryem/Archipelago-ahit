@@ -624,12 +624,29 @@ def distribute_items_restrictive(multiworld: MultiWorld,
 
         else:
             raise ValueError(f"Generator Panic Method {panic_method} not recognized.")
+        unplaced_prog = []
         if progitempool:
             # Some items could not be placed, but the multiworld was still beatable anyway, so continue and create
             # filler to replace the items that could not be placed.
             for item in progitempool:
                 filleritempool.append(multiworld.worlds[item.player].create_filler())
+            unplaced_prog.extend(progitempool)
             progitempool.clear()
+        if __debug__:
+            # `accessibility_corrections` is not run with __debug__, to prevent it from hiding invalid logic in worlds.
+            if unplaced_prog:
+                # Avoid unfairly declaring an accessibility failure if it was the result of unplaceable items, but the
+                # multiworld was beatable anyway.
+                test_state = sweep_from_pool(multiworld.state, unplaced_prog)
+            else:
+                test_state = multiworld.state
+            if not multiworld.fulfills_accessibility(test_state):
+                # With __debug__, `fulfills_accessibility` raises a FillError if it fails.
+                raise AssertionError("Unreachable. An error should have been raised.")
+        else:
+            # Fix any placements that don't pass accessibility checks, which should only have been caused by worlds with
+            # invalid logic.
+            accessibility_corrections(multiworld, multiworld.state, defaultlocations)
 
     for location in lock_later:
         if location.item:
