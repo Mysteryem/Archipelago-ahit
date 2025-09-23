@@ -521,6 +521,22 @@ def distribute_items_restrictive(multiworld: MultiWorld,
     defaultlocations = locations[LocationProgressType.DEFAULT]
     excludedlocations = locations[LocationProgressType.EXCLUDED]
 
+    non_excluded_location_count = len(prioritylocations) + len(defaultlocations)
+    if len(progitempool) > non_excluded_location_count:
+        # In the error message, include the smaller of the two out of the excluded locations and non-excluded locations.
+        excluded_location_count = len(excludedlocations)
+        if excluded_location_count > non_excluded_location_count:
+            locations_message = f"Non-excluded unfilled locations:\n{prioritylocations + defaultlocations}"
+        else:
+            locations_message = f"Excluded unfilled locations:\n{excludedlocations}"
+        raise FillError(
+            f"Not enough non-excluded unfilled locations for progression items. "
+            f"There are {len(progitempool) - non_excluded_location_count} more progression items"
+            f" than there are available non-excluded unfilled locations.\n"
+            + locations_message,
+            multiworld=multiworld,
+        )
+
     # can't lock due to accessibility corrections touching things, so we remember which ones got placed and lock later
     lock_later = []
 
@@ -602,13 +618,11 @@ def distribute_items_restrictive(multiworld: MultiWorld,
         else:
             raise ValueError(f"Generator Panic Method {panic_method} not recognized.")
         if progitempool:
-            raise FillError(
-                f"Not enough locations for progression items. "
-                f"There are {len(progitempool)} more progression items than there are available locations.\n"
-                f"Unfilled locations:\n{multiworld.get_unfilled_locations()}.",
-                multiworld=multiworld,
-            )
-        accessibility_corrections(multiworld, multiworld.state, defaultlocations)
+            # Some items could not be placed, but the multiworld was still beatable anyway, so continue and create
+            # filler to replace the items that could not be placed.
+            for item in progitempool:
+                filleritempool.append(multiworld.worlds[item.player].create_filler())
+            progitempool.clear()
 
     for location in lock_later:
         if location.item:
