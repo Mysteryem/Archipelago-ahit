@@ -327,7 +327,7 @@ class DeathLinkManager(GameStateUpdater):
             return
 
         send_death = True
-        remaining_amnesty = 0
+        deaths_until_death_link = 1
         if CURRENT_AREA_ADDRESS.get(ctx) in VEHICLE_AMNESTY_AREA_IDS:
             self.vehicle_death_count += 1
             if self.vehicle_death_count >= self.vehicle_death_link_amnesty:
@@ -335,7 +335,7 @@ class DeathLinkManager(GameStateUpdater):
             else:
                 send_death = False
                 self.last_death_amnesty = time.time()
-                remaining_amnesty = self.vehicle_death_link_amnesty - self.vehicle_death_count
+                deaths_until_death_link = self.vehicle_death_link_amnesty - self.vehicle_death_count
         else:
             self.normal_death_count += 1
             if self.normal_death_count >= self.normal_death_link_amnesty:
@@ -343,7 +343,7 @@ class DeathLinkManager(GameStateUpdater):
             else:
                 send_death = False
                 self.last_death_amnesty = time.time()
-                remaining_amnesty = self.normal_death_link_amnesty - self.normal_death_count
+                deaths_until_death_link = self.normal_death_link_amnesty - self.normal_death_count
 
         if send_death:
             # Kill any other player characters too, just like when receiving a death.
@@ -351,10 +351,10 @@ class DeathLinkManager(GameStateUpdater):
             await ctx.send_death()
             await self.kill_player_characters(ctx)
         else:
-            if remaining_amnesty == 0:
+            if deaths_until_death_link <= 1:
                 ctx.text_display.priority_message("DeathLink: No amnesty remaining")
             else:
-                ctx.text_display.priority_message(f"DeathLink: {remaining_amnesty} amnesty remaining")
+                ctx.text_display.priority_message(f"DeathLink: {deaths_until_death_link} amnesty remaining")
 
     def on_deathlink(self, ctx: TCSContext, message: str):
         if self.pending_received_death:
