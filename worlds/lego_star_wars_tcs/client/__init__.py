@@ -6,6 +6,7 @@ import random
 
 import ModuleUpdate
 import Utils
+from BaseClasses import ItemClassification
 from NetUtils import ClientStatus
 from worlds._bizhawk.context import AuthStatus
 
@@ -341,7 +342,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     death_link_manager: DeathLinkManager
 
     # Customizable client behaviour
-    received_item_messages: bool = True
+    received_item_messages: options.ReceivedItemMessages = options.ReceivedItemMessages(
+        options.ReceivedItemMessages.option_all)
     checked_location_messages: bool = True
 
     fully_connected: bool
@@ -400,17 +402,23 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             item = args["item"]
             recipient = args["receiving"]
 
+            is_progression = ItemClassification.progression in ItemClassification(item["flags"])
+
             # Receiving an item from the server
             if self.slot_concerns_self(recipient):
                 item_name = self.item_names.lookup_in_game(item.item)
                 if self.slot_concerns_self(item.player):
                     # This counts as both a checked location and a received item.
-                    if self.checked_location_messages or self.received_item_messages:
+                    if (
+                            self.checked_location_messages
+                            or (self.received_item_messages and
+                                (is_progression or self.received_item_messages == "all"))
+                    ):
                         location_name = self.location_names.lookup_in_game(item.location)
                         message = f"Found {item_name} ({location_name})"
                         self.text_display.queue_message(message)
                 else:
-                    if self.received_item_messages:
+                    if self.received_item_messages and (is_progression or self.received_item_messages == "all"):
                         finder = self.player_names[item.player]
                         location_name = self.location_names.lookup_in_slot(item.location, item.player)
                         message = f"Received {item_name} from {finder} ({location_name})"
@@ -488,9 +496,19 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         # The connection to the server is assumed to be OK by this point, so slot_data can now be used to adjust client
         # behaviour.
         received_item_messages = slot_data["received_item_messages"]
-        self.received_item_messages = received_item_messages == options.ReceivedItemMessages.option_all
+
+        if tuple(slot_data["apworld_version"]) <= (1, 1, 3):
+            # In older versions, "all" was `0` and "none" was `1`. The values have since been swapped.
+            received_item_messages = 1 if received_item_messages == 0 else 0
+
+        self.received_item_messages = options.ReceivedItemMessages(received_item_messages)
 
         checked_location_messages = slot_data["checked_location_messages"]
+
+        if tuple(slot_data["apworld_version"]) <= (1, 1, 3):
+            # In older versions, "all" was `0` and "none" was `1`. The values have since been swapped.
+            checked_location_messages = 1 if checked_location_messages == 0 else 0
+
         self.checked_location_messages = checked_location_messages == options.CheckedLocationMessages.option_all
 
         self.acquired_characters.init_from_slot_data(self, slot_data)

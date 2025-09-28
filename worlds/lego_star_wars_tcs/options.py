@@ -873,10 +873,10 @@ class ReceivedItemMessages(ChoiceFromStringExtension):
     """
     display_name = "Received Item Messages"
     rich_text_doc = True
-    default = 0
-    option_all = 0
-    option_none = 1
-    # option_progression = 2  # Not Yet Implemented
+    default = 1
+    option_none = 0
+    option_all = 1
+    option_progression = 2
 
 
 class CheckedLocationMessages(ChoiceFromStringExtension):
@@ -893,9 +893,9 @@ class CheckedLocationMessages(ChoiceFromStringExtension):
     """
     display_name = "Checked Location Messages"
     rich_text_doc = True
-    default = 0
-    option_all = 0
-    option_none = 1
+    default = 1
+    option_none = 0
+    option_all = 1
 
 
 class LogicDifficulty(ChoiceFromStringExtension):
