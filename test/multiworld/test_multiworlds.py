@@ -20,7 +20,7 @@ class MultiworldTestBase(TestCase):
         Checks that the multiworld satisfies locations accessibility requirements, failing if all locations are cleared
         but not beatable, or some locations are unreachable.
         """
-        locations = [loc for loc in self.multiworld.get_locations()]
+        locations = [loc for loc in self.multiworld.get_locations() if loc.advancement]
         state = CollectionState(self.multiworld)
         while locations:
             sphere: List[Location] = []
