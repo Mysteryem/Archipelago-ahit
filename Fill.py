@@ -210,20 +210,21 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
         _log_fill_progress(name, placed, total)
 
     if cleanup_required:
-        assert swap, "Cleanup should only be required when swap is enabled"
+        assert swap, "Cleanup should only be possible to be needed when swap is enabled"
         # Validate all placements and retry invalid ones.
         state = sweep_from_pool(
             base_state, [], multiworld.get_filled_locations(item.player)
             if single_player_placement else None)
         unplaced_by_cleanup: list[Item] = []
         for placement in placements:
-            if multiworld.worlds[placement.item.player].options.accessibility != "minimal" and not placement.can_reach(state):
-                placement.item.location = None
-                unplaced_by_cleanup.append(placement.item)
+            placed_item = typing.cast(Item, placement.item)
+            if multiworld.worlds[placed_item.player].options.accessibility != "minimal" and not placement.can_reach(state):
+                placed_item.location = None
+                unplaced_by_cleanup.append(placed_item)
                 placement.item = None
                 locations.append(placement)
         if unplaced_by_cleanup:
-            # Retry placement of items that were unplaced without allowing swapping, to prevent further retries.
+            # Retry placement of items that were unplaced, but without allowing swapping, to prevent further retries.
             fill_restrictive(multiworld, base_state, locations, unplaced_by_cleanup, single_player_placement, lock,
                              False, on_place, allow_partial, allow_excluded)
         unplaced_items.extend(unplaced_by_cleanup)
@@ -550,13 +551,14 @@ def distribute_items_restrictive(multiworld: MultiWorld,
 
     # Check that accessibility is fulfilled with the entire progression item pool.
     _debug_check_accessibility(multiworld.state, progitempool, "Accessibility failed with all progression items in the"
-                                                               " item pool:\n{}")
+                                                               " item pool and starting inventory:\n{}")
 
     call_all(multiworld, "fill_hook", progitempool, usefulitempool, filleritempool, fill_locations)
 
     # Check that accessibility is still fulfilled.
     _debug_check_accessibility(multiworld.state, progitempool, "Accessibility failed after fill_hook with all"
-                                                               " progression items in the item pool:\n{}")
+                                                               " progression items in the item pool and starting"
+                                                               " inventory:\n{}")
 
     locations: typing.Dict[LocationProgressType, typing.List[Location]] = {
         loc_type: [] for loc_type in LocationProgressType}
@@ -646,7 +648,7 @@ def distribute_items_restrictive(multiworld: MultiWorld,
                                        " in the item pool:\n{}")
         else:
             # Fix any placements that don't pass accessibility checks, which should only have been caused by worlds with
-            #             # invalid logic.
+            # invalid logic.
             accessibility_corrections(multiworld, multiworld.state, prioritylocations, progitempool)
         defaultlocations = prioritylocations + defaultlocations
 
