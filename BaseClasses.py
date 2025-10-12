@@ -681,6 +681,9 @@ class MultiWorld():
 
         locations = [location for location in self.get_locations() if location_relevant(location)]
 
+        if not locations:
+            return self.has_beaten_game(state)
+
         while locations:
             sphere: List[Location] = []
             for n in range(len(locations) - 1, -1, -1):
