@@ -514,8 +514,10 @@ def _debug_check_accessibility(state: CollectionState, item_pool: list[Item] | N
     test_state = sweep_from_pool(state, item_pool) if item_pool else state
     try:
         if not state.multiworld.fulfills_accessibility(test_state):
-            # With __debug__, `fulfills_accessibility` raises a FillError if it fails.
-            raise AssertionError("Unreachable. An error should have been raised.")
+            # With __debug__, `fulfills_accessibility` raises a FillError if it fails to reach required locations, but
+            # it is also possible for `fulfills_accessibility` to return False without a FillError if all required
+            # locations were reachable, but the multiworld was not beatable.
+            raise DebugAccessibilityError(msg_format.format(item_pool))
     except FillError as e:
         # Provide an optional custom message, optionally with the contents of `item_pool`.
         raise DebugAccessibilityError(msg_format.format(item_pool)) from e
