@@ -68,6 +68,84 @@ def main(args, seed=None, baked_server_options: dict[str, object] | None = None)
     if not args.skip_output and not args.spoiler_only:
         AutoWorld.call_stage(multiworld, "assert_generate")
 
+    player_ids = list(multiworld.player_ids)
+    MICRO_MULTIWORLD_SIZE = 5  # Could do something dynamic like `min(len(player_ids) // 10, 5)`?
+    if MICRO_MULTIWORLD_SIZE <= 1:
+        raise RuntimeError(f"Micro multiworld size was only {MICRO_MULTIWORLD_SIZE}. Cannot generate with size of 1 or"
+                           f" less")
+    micro_multiworld_count = len(player_ids) // MICRO_MULTIWORLD_SIZE
+    multiworld.random.shuffle(player_ids)
+
+    from itertools import cycle
+    from collections import defaultdict, Counter
+    micro_multiworld_to_players: dict[int, set[int]] = defaultdict(set)
+    player_to_micro_multiworld: dict[int, int] = {}
+    for player, micro_multiworld_id in zip(player_ids, cycle(range(micro_multiworld_count))):
+        micro_multiworld_to_players[micro_multiworld_id].add(player)
+        player_to_micro_multiworld[player] = micro_multiworld_id
+    player_to_preferred_players: dict[int, set[int]] = {
+        player: micro_multiworld_to_players[multiworld_id].copy()
+        for player, multiworld_id in player_to_micro_multiworld.items()
+    }
+    for micro_multiworld_id, players_in_micro_multiworld in micro_multiworld_to_players.items():
+        player_names_in_micro_multiworld = ", ".join(
+            sorted(map(multiworld.get_player_name, players_in_micro_multiworld), key=str.casefold)
+        )
+        logger.info("Micro Multiworld %i has players %s", micro_multiworld_id, player_names_in_micro_multiworld)
+
+    # A player's progression items try to be within their own micro multiworld and within the world of their
+    # 'friend'. Each player has one 'friend' outside their micro multiworld.
+    player_to_external_friend_player: dict[int, set[int]] = defaultdict(set)
+    friend_making_attempts = 10
+    FRIEND_COUNT = 2
+    for attempt_index in range(friend_making_attempts):
+        player_ids_left_to_be_friended: Counter[int] = Counter(dict.fromkeys(multiworld.player_ids, FRIEND_COUNT))
+        while player_ids_left_to_be_friended:
+            player_id = multiworld.random.choice(tuple(player_ids_left_to_be_friended.keys()))
+            if player_ids_left_to_be_friended[player_id] <= 0:
+                raise AssertionError("Should never end up with a player left without any remaining friends to be made")
+            pick_from_set = set(+player_ids_left_to_be_friended)
+            players_in_same_micro_multiworld = player_to_preferred_players[player_id]
+            pick_from_set.difference_update(players_in_same_micro_multiworld)
+            if player_id in player_to_external_friend_player:
+                pick_from_set.difference_update(player_to_external_friend_player[player_id])
+            if not pick_from_set:
+                logger.info("Failed to make friends with remaining players: %s", +player_ids_left_to_be_friended)
+                break
+            friend_id = multiworld.random.choice(sorted(pick_from_set))
+            player_to_external_friend_player[player_id].add(friend_id)
+            player_to_external_friend_player[friend_id].add(player_id)
+            player_ids_left_to_be_friended[friend_id] -= 1
+            player_ids_left_to_be_friended[player_id] -= 1
+            # Eliminate keys with 0 as their value.
+            player_ids_left_to_be_friended = +player_ids_left_to_be_friended
+            # logger.info("Set %i and %i as friends", friend_id, player_id)
+        else:
+            # No break, so friend assignment worked
+            break
+        # Loop was broken, so friend assignment failed, try again.
+        player_to_external_friend_player = defaultdict(set)
+        continue
+    else:
+        # No break, so ran out of attempts
+        raise RuntimeError("Ran out of attempts to assign friends :(")
+    logger.info(f"Succeeded in making friends in {attempt_index + 1} tries")
+    for player, friends in sorted(player_to_external_friend_player.items(),
+                                  key=lambda t: multiworld.get_player_name(t[0]).casefold()):
+        player_to_preferred_players[player].update(friends)
+        friends_names = ", ".join(sorted(map(multiworld.get_player_name, friends), key=str.casefold))
+        logger.info("Player %s's friends are %s", multiworld.get_player_name(player), friends_names)
+    for player_id, preferred_players in sorted(player_to_preferred_players.items(),
+                                               key=lambda t: multiworld.get_player_name(t[0]).casefold()):
+        preferred_player_names = ", ".join(sorted(map(multiworld.get_player_name, preferred_players), key=str.casefold))
+        logger.info("Player %s's items prefer to be found in %s",
+                    multiworld.get_player_name(player_id),
+                    preferred_player_names)
+
+    raise RuntimeError("Debug stop")
+
+    multiworld.player_to_preferred_players = player_to_preferred_players
+
     AutoWorld.call_all(multiworld, "generate_early")
 
     logger.info('')

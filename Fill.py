@@ -903,7 +903,19 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
             else:
                 perform_access_check = True
 
-            for i, location in enumerate(locations):
+            def locations_gen():
+                preferred_player_locations = multiworld.player_to_preferred_players[item_to_place.player]
+
+                last_resort_locations = []
+                for t in enumerate(locations):
+                    location = t[1]
+                    if location.player in preferred_player_locations:
+                        yield t
+                    else:
+                        last_resort_locations.append(t)
+                yield from last_resort_locations
+
+            for i, location in locations_gen():
                 if (not single_player_placement or location.player == item_to_place.player) \
                         and location.can_fill(maximum_exploration_state, item_to_place, perform_access_check):
                     # popping by index is faster than removing by content,
@@ -1097,7 +1109,19 @@ def remaining_fill(multiworld: MultiWorld,
         item_to_place = itempool.pop()
         spot_to_fill: typing.Optional[Location] = None
 
-        for i, location in enumerate(locations):
+        def locations_gen():
+            preferred_player_locations = multiworld.player_to_preferred_players[item_to_place.player]
+
+            last_resort_locations = []
+            for t in enumerate(locations):
+                location = t[1]
+                if location.player in preferred_player_locations:
+                    yield t
+                else:
+                    last_resort_locations.append(t)
+            yield from last_resort_locations
+
+        for i, location in locations_gen():
             if location_can_fill_item(location, item_to_place):
                 # popping by index is faster than removing by content,
                 spot_to_fill = locations.pop(i)
@@ -1642,7 +1666,8 @@ def balance_multiworld_progression(multiworld: MultiWorld) -> None:
                                 if (not location.locked and not location.item.skip_in_prog_balancing and
                                         player in balancing_players and
                                         location.player != player and
-                                        location.progress_type != LocationProgressType.PRIORITY):
+                                        location.progress_type != LocationProgressType.PRIORITY and
+                                        location.player in multiworld.player_to_preferred_players[player]):
                                     candidate_items[player].add(location)
                                     logging.debug(f"Candidate item: {location.name}, {location.item.name}")
                         balancing_sphere = get_sphere_locations(balancing_state, balancing_unchecked_locations)
