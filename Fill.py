@@ -227,7 +227,8 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
             # Retry placement of items that were unplaced, but without allowing swapping, to prevent further retries.
             fill_restrictive(multiworld, base_state, locations, unplaced_by_cleanup, single_player_placement, lock,
                              False, on_place, allow_partial, allow_excluded)
-        unplaced_items.extend(unplaced_by_cleanup)
+            # Any items that were not possible to place in the cleanup fill will remain as unplaced items.
+            unplaced_items.extend(unplaced_by_cleanup)
 
     if allow_excluded:
         # check if partial fill is the result of excluded locations, in which case retry
