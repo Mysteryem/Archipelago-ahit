@@ -402,7 +402,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             item = args["item"]
             recipient = args["receiving"]
 
-            is_progression = ItemClassification.progression in ItemClassification(item["flags"])
+            is_progression = ItemClassification.progression in ItemClassification(item.flags)
 
             # Receiving an item from the server
             if self.slot_concerns_self(recipient):
