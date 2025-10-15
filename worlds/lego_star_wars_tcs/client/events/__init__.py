@@ -1,8 +1,10 @@
 import inspect
 import logging
 from dataclasses import dataclass, field
-from typing import Callable, TypeVar, Any, ClassVar, Self
+from typing import Callable, TypeVar, Any, ClassVar, Self, Protocol
+from types import MethodType
 
+from ..common import ClientComponent
 from ..type_aliases import TCSContext
 
 
@@ -22,7 +24,7 @@ class Event:
         return Event._subclasses.get(subclass_name)
 
 
-_Subscriber = TypeVar("_Subscriber")
+_Subscriber = TypeVar("_Subscriber", covariant=True)
 
 
 @dataclass
@@ -52,16 +54,24 @@ class EventManager:
         self.subscriptions.setdefault(event_type, []).append(method)
 
 
-EVENT = TypeVar("EVENT", bound=Event)
+# Some of the generics for subscribe_event are probably wrong, due to inexperience, but seem to work OK enough.
+EVENT = TypeVar("EVENT", bound=Event, contravariant=True)
 
 
-def subscribe_event(fun: Callable[[_Subscriber, EVENT], None]) -> Callable[[_Subscriber, EVENT], None]:
+class EventSubscriberFun(Protocol[_Subscriber, EVENT]):
+    def __call__(self: _Subscriber, event: EVENT) -> None:
+        ...
+
+    def __get__(self, instance, owner) -> MethodType:
+        ...
+
+
+def subscribe_event(fun: EventSubscriberFun[_Subscriber, EVENT]) -> EventSubscriberFun[_Subscriber, EVENT]:
     params = inspect.signature(fun).parameters
     params_iter = iter(params.values())
     # Skip the 'self' argument.
     next(params_iter)
     event_type = next(params_iter).annotation
-    debug_logger.info("%s(%s)", event_type, type(event_type))
     if issubclass(event_type, Event):
         pass
     elif isinstance(event_type, str):
@@ -70,8 +80,33 @@ def subscribe_event(fun: Callable[[_Subscriber, EVENT], None]) -> Callable[[_Sub
         raise ValueError(f"Invalid function to subscribe to events, the second argument should have an Event type"
                          f" annotation, but got {event_type}")
 
-    vars(fun)["_event_subscription"] = event_type
-    return fun
+    class EventSubscriber:
+        _event_subcription: type[EVENT]
+        fun: EventSubscriberFun[_Subscriber, EVENT]
+
+        def __init__(self, event_type: type[EVENT], fun: EventSubscriberFun[_Subscriber, EVENT]):
+            self._event_subscription = event_type
+            self.fun = fun
+
+        # __set_name__ is used to check that the owner of the decorated method is a valid target for subscribing to
+        # events.
+        # If it worked, it would have been much simpler to set `fun.__set_name__` and then just return `fun`.
+        def __set_name__(self, owner, name):
+            if not issubclass(owner, ClientComponent):
+                raise TypeError(
+                    f"{subscribe_event.__name__} can only be used in classes that inherit from ClientComponent."
+                    f"Use on {owner.__qualname__} is not allowed.")
+            else:
+                debug_logger.info("@subscribe_event{%s} usage on %s",
+                                  self._event_subscription.__name__, owner.__qualname__)
+
+        def __get__(self, instance, owner):
+            return self.fun.__get__(instance, owner)
+
+        def __call__(self, *args, **kwargs):
+            return self.fun(*args, **kwargs)
+
+    return EventSubscriber(event_type, fun)
 
 
 @dataclass
