@@ -64,8 +64,7 @@ class GoalManager(GameStateUpdater):
         else:
             minikit_goal_info_text = "Minikit items are not needed to goal."
 
-        server_apworld_version = tuple(slot_data["apworld_version"])
-        if server_apworld_version < (1, 1, 0):
+        if event.generator_version < (1, 1, 0):
             # Minikit goal was the only goal at this point.
             goal_bosses_count = 0
         else:

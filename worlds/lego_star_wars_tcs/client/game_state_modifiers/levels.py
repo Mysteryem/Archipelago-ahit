@@ -53,7 +53,7 @@ class UnlockedChapterManager(ClientComponent):
         all_episodes_purchases_enabled = bool(slot_data["enable_all_episodes_purchases"])
 
         # In older multiworlds, easier true jedi is never enabled becuase the option did not exist
-        if tuple(slot_data["apworld_version"]) < (1, 2, 0):
+        if event.generator_version < (1, 2, 0):
             self.easy_true_jedi = False
         else:
             self.easy_true_jedi = slot_data["easier_true_jedi"]
@@ -80,7 +80,7 @@ class UnlockedChapterManager(ClientComponent):
             tokens = options.AllEpisodesCharacterPurchaseRequirements.option_episodes_tokens
             unlocks = options.AllEpisodesCharacterPurchaseRequirements.option_episodes_unlocked
             if all_episodes_character_purchase_requirements == tokens:
-                if tuple(slot_data["apworld_version"]) <= (1, 1, 3):
+                if event.generator_version < (1, 2, 0):
                     # Old versions unlock by having as many tokens as the number of enabled episodes.
                     # The tokens were previously called "All Episodes Token".
                     self.should_unlock_all_episodes_shop_slots = (

@@ -95,7 +95,8 @@ class OnAreaChangeEvent(Event):
 @dataclass
 class OnReceiveSlotDataEvent(Event):
     slot_data: dict[str, Any]
-    version: tuple[int, int, int] = field(init=False)
+    generator_version: tuple[int, int, int] = field(init=False)
+    """The version of the Lego Star Wars: TCS apworld that generated the multiworld"""
 
     def __post_init__(self):
         # Setting the version is structured this way to satisfy type checking.
@@ -103,4 +104,4 @@ class OnReceiveSlotDataEvent(Event):
         assert isinstance(major, int)
         assert isinstance(minor, int)
         assert isinstance(patch, int)
-        self.version = (major, minor, patch)
+        self.generator_version = (major, minor, patch)

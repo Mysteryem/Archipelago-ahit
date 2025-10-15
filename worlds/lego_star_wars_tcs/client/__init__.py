@@ -504,7 +504,10 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         # behaviour.
         received_item_messages = slot_data["received_item_messages"]
 
-        if tuple(slot_data["apworld_version"]) <= (1, 1, 3):
+        on_receive_slot_data_event = OnReceiveSlotDataEvent(self, slot_data)
+        generator_apworld_version = on_receive_slot_data_event.generator_version
+
+        if generator_apworld_version < (1, 2, 0):
             # In older versions, "all" was `0` and "none" was `1`. The values have since been swapped.
             received_item_messages = 1 if received_item_messages == 0 else 0
 
@@ -512,13 +515,14 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         checked_location_messages = slot_data["checked_location_messages"]
 
-        if tuple(slot_data["apworld_version"]) <= (1, 1, 3):
+        if generator_apworld_version < (1, 2, 0):
             # In older versions, "all" was `0` and "none" was `1`. The values have since been swapped.
             checked_location_messages = 1 if checked_location_messages == 0 else 0
 
         self.checked_location_messages = checked_location_messages == options.CheckedLocationMessages.option_all
 
-        self.event_manager.fire_event(OnReceiveSlotDataEvent(self, slot_data))
+        # Fire the event so that the various client components initialize themselves from the slot_data.
+        self.event_manager.fire_event(on_receive_slot_data_event)
 
         self.client_expected_idx = 0
 
