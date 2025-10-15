@@ -100,6 +100,7 @@ def subscribe_event(fun: Callable[[_Subscriber, EVENT], None]) -> EventSubscribe
 
 @dataclass
 class OnLevelChangeEvent(Event):
+    """Called when the current level changes."""
     old_level_id: int
     new_level_id: int
 
@@ -109,6 +110,7 @@ class OnLevelChangeEvent(Event):
 
 @dataclass
 class OnAreaChangeEvent(Event):
+    """Called when the current area changes."""
     old_p_area_data: int
     new_p_area_data: int
 
@@ -118,6 +120,7 @@ class OnAreaChangeEvent(Event):
 
 @dataclass
 class OnReceiveSlotDataEvent(Event):
+    """Called when slot data is received."""
     slot_data: dict[str, Any]
     generator_version: tuple[int, int, int] = field(init=False)
     """The version of the Lego Star Wars: TCS apworld that generated the multiworld"""
