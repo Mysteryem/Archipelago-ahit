@@ -33,6 +33,3 @@ class AcquiredMinikits(ItemReceiver):
             ctx.goal_manager.tag_for_update("minikit")
         else:
             logger.error("Unhandled ap_item_id %s for generic item", ap_item_id)
-
-    async def update_game_state(self, ctx: TCSContext):
-        pass

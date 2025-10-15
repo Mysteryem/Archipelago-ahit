@@ -3,12 +3,12 @@ from typing import Mapping, Literal
 
 from .text_replacer import TextId
 from ..common_addresses import CantinaRoom, CustomSaveFlags1, GameState1
-from ..events import subscribe_event, OnReceiveSlotDataEvent
+from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
 from ..type_aliases import TCSContext, AreaId
 from ...items import MINIKITS_BY_COUNT
 from ...levels import SHORT_NAME_TO_CHAPTER_AREA, AREA_ID_TO_CHAPTER_AREA
 from ...options import OnlyUniqueBossesCountTowardsGoal
-from . import GameStateUpdater
+from . import ClientComponent
 
 MINIKIT_ITEMS: Mapping[int, int] = {item.code: count for count, item in MINIKITS_BY_COUNT.items()}
 
@@ -25,7 +25,7 @@ EPISODE_NUMBER_TO_EPISODE_TEXT = {
 }
 
 
-class GoalManager(GameStateUpdater):
+class GoalManager(ClientComponent):
     receivable_ap_ids = MINIKIT_ITEMS
 
     _goal_text_needs_update: bool = True
@@ -215,14 +215,18 @@ class GoalManager(GameStateUpdater):
             episode_text_id = EPISODE_NUMBER_TO_EPISODE_TEXT[episode]
             ctx.text_replacer.suffix_custom_string(episode_text_id, text_to_append)
 
-    async def update_game_state(self, ctx: TCSContext):
+    @subscribe_event
+    async def update_game_state(self, event: OnGameWatcherTickEvent) -> None:
+        if not event.context.slot:
+            return
+
         if self._goal_text_needs_update:
             self._goal_text_needs_update = False
-            self._update_paused_text_goal_display(ctx)
+            self._update_paused_text_goal_display(event.context)
 
         if self._bosses_goal_text_needs_update:
             self._bosses_goal_text_needs_update = False
-            self._update_episodes_text_for_boss_statuses(ctx)
+            self._update_episodes_text_for_boss_statuses(event.context)
 
     def tag_for_update(self, kind: Literal["all", "minikit", "boss"] = "all"):
         self._goal_text_needs_update = True

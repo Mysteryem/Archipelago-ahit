@@ -2,8 +2,8 @@ import logging
 from typing import Mapping, Sequence
 
 from ..common_addresses import ShopType, EXTRAS_SHOP_START
-from ..events import subscribe_event, OnReceiveSlotDataEvent
-from ..type_aliases import TCSContext, ApItemId, BitMask, MemoryOffset
+from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
+from ..type_aliases import ApItemId, BitMask, MemoryOffset
 from ...items import ExtraData, EXTRAS_BY_NAME
 from . import ItemReceiver
 
@@ -114,7 +114,8 @@ class AcquiredExtras(ItemReceiver):
 
         self.unlock_extra(RECEIVABLE_EXTRAS_BY_AP_ID[ap_item_id])
 
-    async def update_game_state(self, ctx: TCSContext):
+    @subscribe_event
+    async def update_game_state(self, event: OnGameWatcherTickEvent):
         """
         Update the game memory that stores which Extras are unlocked, with all the currently unlocked/locked extras
         according to Archipelago.
@@ -122,6 +123,7 @@ class AcquiredExtras(ItemReceiver):
         This is done constantly because the game has not been modified to prevent purchasing an Extra from the shop from
         unlocking that Extra. Purchased Extras also normally unlock themselves again when entering the Cantina.
         """
+        ctx = event.context
         # Create a copy so that `self.unlocked_extras` always represents only what has been received from Archipelago.
         unlocked_extras_copy = self.unlocked_extras.copy()
 

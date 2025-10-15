@@ -2,7 +2,7 @@ import logging
 from typing import AbstractSet, Callable
 
 from .text_replacer import TextId
-from ..events import subscribe_event, OnAreaChangeEvent, OnReceiveSlotDataEvent
+from ..events import subscribe_event, OnAreaChangeEvent, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
 from ..common import ClientComponent, UintField, UCharField
 from ..common_addresses import OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from ..type_aliases import TCSContext, AreaId
@@ -144,7 +144,9 @@ class UnlockedChapterManager(ClientComponent):
         self.unlocked_chapters_per_episode[chapter_area.episode].add(chapter_area.area_id)
         debug_logger.info("Unlocked chapter %s (%s)", chapter_area.name, chapter_area.short_name)
 
-    async def update_game_state(self, ctx: TCSContext):
+    @subscribe_event
+    async def update_game_state(self, event: OnGameWatcherTickEvent) -> None:
+        ctx = event.context
         temporary_story_completion: AbstractSet[int]
         if (self.should_unlock_all_episodes_shop_slots(ctx)
                 and ctx.acquired_characters.is_all_episodes_character_selected_in_shop(ctx)):

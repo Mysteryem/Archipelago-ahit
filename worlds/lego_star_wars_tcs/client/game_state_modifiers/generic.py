@@ -132,7 +132,3 @@ class AcquiredGeneric(ItemReceiver):
             ctx.unlocked_chapter_manager.on_character_or_episode_unlocked(ap_item_id)
         else:
             logger.error("Unhandled ap_item_id %s for generic item", ap_item_id)
-
-    async def update_game_state(self, ctx: TCSContext):
-        # Bonus level doors unlock as per vanilla, which is having enough Gold Bricks.
-        pass

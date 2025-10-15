@@ -5,9 +5,9 @@ from enum import IntEnum
 
 from Utils import async_start
 
-from . import GameStateUpdater
+from . import ClientComponent
 from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing, player_character_entity_iter
-from ..events import subscribe_event, OnReceiveSlotDataEvent
+from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
 from ..type_aliases import TCSContext
 from ...levels import (
     AREA_ID_TO_CHAPTER_AREA,
@@ -190,7 +190,7 @@ class CharacterDeathState(IntEnum):
         ctx.write_byte(character_address + 0x28b, self.value, raw=True)
 
 
-class DeathLinkManager(GameStateUpdater):
+class DeathLinkManager(ClientComponent):
     pending_received_death = False
     last_received_death_message: str = ""
 
@@ -279,7 +279,9 @@ class DeathLinkManager(GameStateUpdater):
                 return True, player_number
         return False, -1
 
-    async def update_game_state(self, ctx: TCSContext) -> None:
+    @subscribe_event
+    async def update_game_state(self, event: OnGameWatcherTickEvent) -> None:
+        ctx = event.context
         if not self.death_link_enabled or not ctx.is_in_game() or not is_actively_playing(ctx):
             return
 

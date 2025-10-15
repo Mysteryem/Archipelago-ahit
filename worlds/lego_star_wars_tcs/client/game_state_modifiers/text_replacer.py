@@ -2,7 +2,8 @@ import logging
 from dataclasses import dataclass
 from enum import IntEnum
 
-from . import GameStateUpdater
+from . import ClientComponent
+from ..events import subscribe_event, OnGameWatcherTickEvent
 from ..type_aliases import TCSContext
 
 
@@ -83,7 +84,7 @@ EXPECTED_CHARACTER_NAME_C_3PO = b"C-3PO\x00"
 MAXIMUM_SAFE_ALLOCATE_SIZE = 1024
 
 
-class TextReplacer(GameStateUpdater):
+class TextReplacer(ClientComponent):
     localized_string_data: dict[int, LocalizedStringData]
     ctx: TCSContext
 
@@ -196,7 +197,9 @@ class TextReplacer(GameStateUpdater):
     def get_vanilla_string(self, string_index: TextId) -> bytes:
         return self._get_vanilla_string(string_index.value)
 
-    async def update_game_state(self, ctx: TCSContext) -> None:
+    @subscribe_event
+    async def update_game_state(self, _event: OnGameWatcherTickEvent) -> None:
+        # todo: This initialization check should be done when the client connects to the game.
         if not self._initialized:
             # Check that the R2-D2 and C-3PO strings match what is expected. These strings are the same in every
             # language.

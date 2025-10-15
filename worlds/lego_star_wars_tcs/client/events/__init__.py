@@ -1,7 +1,7 @@
 import inspect
 import logging
 from dataclasses import dataclass, field
-from typing import Callable, TypeVar, Any, ClassVar, Self, Generic
+from typing import Callable, TypeVar, Any, ClassVar, Self, Generic, Awaitable, overload, cast
 
 from ..common import ClientComponent
 from ..type_aliases import TCSContext
@@ -24,21 +24,39 @@ class Event:
 
 
 _Subscriber = TypeVar("_Subscriber")
+_T = TypeVar("_T")
 
 
 @dataclass
 class EventManager:
     subscriptions: dict[type[Event], list[Callable[[Event], None]]] = field(default_factory=dict)
+    async_subscriptions: dict[type[Event], list[Callable[[Event], Awaitable[None]]]] = field(default_factory=dict)
 
     def fire_event(self, event: Event):
-        debug_logger.info("Firing event %s", event)
-        for subscriber in self.subscriptions.get(type(event), ()):
+        event_type = type(event)
+
+        # The tick event fires too frequently for logging.
+        if event_type is not OnGameWatcherTickEvent:
+            debug_logger.info("Firing event %s", event)
+
+        if event_type in self.async_subscriptions:
+            # Maybe they could be run as tasks in the background instead, but avoid the extra complexity for now.
+            raise RuntimeError(f"There are async subscribers of {event}, so fire_event cannot be used.")
+        for subscriber in self.subscriptions.get(event_type, ()):
             subscriber(event)
 
     async def fire_event_async(self, event: Event):
         """Fire an event, but async, so that the loop awaits before calling each subscribed method."""
-        debug_logger.info("Firing async event %s", event)
-        for subscriber in self.subscriptions.get(type(event), ()):
+        event_type = type(event)
+
+        # The tick event fires too frequently for logging.
+        if event_type is not OnGameWatcherTickEvent:
+            debug_logger.info("Firing async event %s", event)
+
+        for async_subscriber in self.async_subscriptions.get(event_type, ()):
+            await async_subscriber(event)
+        # Support for mixed subscribers.
+        for subscriber in self.subscriptions.get(event_type, ()):
             await self._fire_event_async(subscriber, event)
 
     @staticmethod
@@ -48,11 +66,18 @@ class EventManager:
     def subscribe_events(self, instance: _Subscriber) -> _Subscriber:
         subscriber: EventSubscriber
         for _method_name, subscriber in inspect.getmembers(instance,
-                                                           lambda member: isinstance(member, EventSubscriber)):
+                                                           lambda member: isinstance(member, _EventSubscriberBase)):
             func = subscriber.fun
             event_type = subscriber.event_subscription
             bound_method = func.__get__(instance)
-            self.subscriptions.setdefault(event_type, []).append(bound_method)
+            if isinstance(subscriber, EventSubscriber):
+                self.subscriptions.setdefault(event_type, []).append(bound_method)
+            elif isinstance(subscriber, AsyncEventSubscriber):
+                self.async_subscriptions.setdefault(event_type, []).append(bound_method)
+            else:
+                # Should never happen.
+                raise TypeError(f"Unexpected type {subscriber}({type(subscriber)})")
+
         return instance
 
     def subscribe_method(self, method, event_type: type[Event]):
@@ -65,8 +90,11 @@ class EventManager:
 EVENT = TypeVar("EVENT", bound=Event)
 
 
-class EventSubscriber(Generic[_Subscriber, EVENT]):
-    def __init__(self, event_type: type[EVENT], fun: Callable[[_Subscriber, EVENT], None]):
+class _EventSubscriberBase(Generic[_Subscriber, EVENT, _T]):
+    event_subscription: type[EVENT]
+    fun: Callable[[_Subscriber, EVENT], _T]
+
+    def __init__(self, event_type: type[EVENT], fun: Callable[[_Subscriber, EVENT], _T]):
         self.event_subscription = event_type
         self.fun = fun
 
@@ -91,7 +119,26 @@ class EventSubscriber(Generic[_Subscriber, EVENT]):
         return self.fun(other_self, event)
 
 
-def subscribe_event(fun: Callable[[_Subscriber, EVENT], None]) -> EventSubscriber[_Subscriber, EVENT]:
+class EventSubscriber(_EventSubscriberBase[_Subscriber, EVENT, None]):
+    def __init__(self, event_type: type[EVENT], fun: Callable[[_Subscriber, EVENT], None]):
+        super().__init__(event_type, fun)
+
+
+class AsyncEventSubscriber(_EventSubscriberBase[_Subscriber, EVENT, Awaitable]):
+    def __init__(self, event_type: type[EVENT], fun: Callable[[_Subscriber, EVENT], Awaitable]):
+        super().__init__(event_type, fun)
+
+
+@overload
+def subscribe_event(fun: Callable[[_Subscriber, EVENT], None]) -> EventSubscriber[_Subscriber, EVENT]: ...
+
+
+@overload
+def subscribe_event(fun: Callable[[_Subscriber, EVENT], Awaitable]) -> AsyncEventSubscriber[_Subscriber, EVENT]: ...
+
+
+def subscribe_event(fun: Callable[[_Subscriber, EVENT], None] | Callable[[_Subscriber, EVENT], Awaitable]
+                    ) -> EventSubscriber[_Subscriber, EVENT] | AsyncEventSubscriber[_Subscriber, EVENT]:
     params = inspect.signature(fun).parameters
     params_iter = iter(params.values())
     # Skip the 'self' argument.
@@ -105,7 +152,10 @@ def subscribe_event(fun: Callable[[_Subscriber, EVENT], None]) -> EventSubscribe
         raise ValueError(f"Invalid function to subscribe to events, the second argument should have an Event type"
                          f" annotation, but got {event_type}")
 
-    return EventSubscriber(event_type, fun)
+    if inspect.iscoroutinefunction(fun):
+        return AsyncEventSubscriber(event_type, cast(Callable[[_Subscriber, EVENT], Awaitable], fun))
+    else:
+        return EventSubscriber(event_type, cast(Callable[[_Subscriber, EVENT], None], fun))
 
 
 @dataclass
@@ -142,3 +192,8 @@ class OnReceiveSlotDataEvent(Event):
         assert isinstance(minor, int)
         assert isinstance(patch, int)
         self.generator_version = (major, minor, patch)
+
+
+@dataclass
+class OnGameWatcherTickEvent(Event):
+    """Called on each tick of the game watcher loop, while connected to the game."""

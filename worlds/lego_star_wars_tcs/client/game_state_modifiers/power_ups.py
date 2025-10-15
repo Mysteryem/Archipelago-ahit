@@ -6,8 +6,8 @@ from ..common_addresses import (
     CURRENT_AREA_ADDRESS,
     CHARACTER_POWER_UP_TIMER
 )
+from ..events import subscribe_event, OnGameWatcherTickEvent
 from ..game_state_modifiers import ItemReceiver
-from ..type_aliases import TCSContext
 from ...items import GENERIC_BY_NAME
 from ...levels import BONUS_NAME_TO_BONUS_AREA, SHORT_NAME_TO_CHAPTER_AREA
 
@@ -44,7 +44,8 @@ class PowerUpReceiver(ItemReceiver):
     def give_power_up(self):
         self.power_ups_to_give += 1
 
-    async def update_game_state(self, ctx: TCSContext) -> None:
+    @subscribe_event
+    async def update_game_state(self, event: OnGameWatcherTickEvent) -> None:
         if self.power_ups_to_give <= 0:
             # Nothing to do if there are no power ups to give.
             return
@@ -52,6 +53,7 @@ class PowerUpReceiver(ItemReceiver):
         # is not paused/alt tabbed etc.
         # Power Up time is not stacked up much higher than 20s so that the player won't lose stacked up Power Ups if
         # they return to the Cantina from a level.
+        ctx = event.context
         if (
                 ctx.is_in_game()
                 and CURRENT_AREA_ADDRESS.get(ctx) not in BANNED_AREA_IDS

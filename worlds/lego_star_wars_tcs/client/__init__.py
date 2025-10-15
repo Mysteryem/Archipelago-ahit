@@ -30,7 +30,7 @@ from .location_checkers.free_play_completion import FreePlayChapterCompletionChe
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
 from .location_checkers.true_jedi_and_minikits import TrueJediAndMinikitChecker
 from .location_checkers.shop_purchases import PurchasedExtrasChecker, PurchasedCharactersChecker
-from .events import EventManager, OnLevelChangeEvent, OnAreaChangeEvent, OnReceiveSlotDataEvent
+from .events import EventManager, OnLevelChangeEvent, OnAreaChangeEvent, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
 from .game_state_modifiers import ClientComponent
 from .game_state_modifiers.extras import AcquiredExtras
 from .game_state_modifiers.characters import AcquiredCharacters
@@ -1622,7 +1622,6 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                 # coroutines to allow the player to play while disconnected.
                 # todo: Is the `is_in_game()` check here still necessary now that there is an earlier check?
                 if ctx.is_in_game():
-                    await ctx.text_replacer.update_game_state(ctx)
                     await ctx.free_play_completion_checker.initialize(ctx)
                     await give_items(ctx)
 
@@ -1631,14 +1630,8 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
 
                     # Update game state for received items.
                     await ctx.reload_cantina_if_invalid_characters()
-                    await ctx.acquired_characters.update_game_state(ctx)
-                    await ctx.acquired_extras.update_game_state(ctx)
-                    await ctx.acquired_generic.update_game_state(ctx)
-                    await ctx.acquired_minikits.update_game_state(ctx)
-                    await ctx.unlocked_chapter_manager.update_game_state(ctx)
-                    await ctx.text_display.update_game_state(ctx)
-                    await ctx.power_up_receiver.update_game_state(ctx)
-                    await ctx.death_link_manager.update_game_state(ctx)
+                    # Fire Tick event for all ClientComponents subscribed to the event.
+                    await ctx.event_manager.fire_event_async(OnGameWatcherTickEvent(ctx))
 
                     # Only queue the message if everything else worked so far.
                     msg = "The client is now fully connected to the game, receiving items and checking locations."
@@ -1675,8 +1668,6 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                         # Send newly cleared locations to the server, if there are any.
                         actually_new_location_checks = await ctx.check_locations(new_location_checks)
                         ctx.locations_checked.update(actually_new_location_checks)
-
-                        await ctx.goal_manager.update_game_state(ctx)
 
                         # Check for goal completion.
                         if not ctx.finished_game:

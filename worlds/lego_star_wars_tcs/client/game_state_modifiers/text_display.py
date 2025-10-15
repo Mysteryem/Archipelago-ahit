@@ -2,8 +2,9 @@ import logging
 from collections import deque
 from time import perf_counter_ns
 
-from . import GameStateUpdater
+from . import ClientComponent
 from ..common_addresses import is_actively_playing
+from ..events import subscribe_event, OnGameWatcherTickEvent
 from ..type_aliases import TCSContext
 from .text_replacer import TextId
 
@@ -18,7 +19,7 @@ WAIT_BETWEEN_MESSAGES_SECONDS = 2
 WAIT_BETWEEN_MESSAGES_NS = WAIT_BETWEEN_MESSAGES_SECONDS * 1_000_000_000
 
 
-class InGameTextDisplay(GameStateUpdater):
+class InGameTextDisplay(ClientComponent):
     next_allowed_message_time: int = -1
     next_allowed_clean_time: int = -1
     # If the last write to memory was a custom message.
@@ -60,11 +61,13 @@ class InGameTextDisplay(GameStateUpdater):
             # The TCSContext's TextReplacer will restore all replaced texts back to their vanilla text.
             self.memory_dirty = False
 
-    async def update_game_state(self, ctx: TCSContext) -> None:
+    @subscribe_event
+    async def update_game_state(self, event: OnGameWatcherTickEvent) -> None:
         now = perf_counter_ns()
         if now < self.next_allowed_message_time:
             return
 
+        ctx = event.context
         if not self.message_queue:
             if self.memory_dirty and now > self.next_allowed_clean_time:
                 debug_logger.info("Text Display: Clearing dirty memory")
