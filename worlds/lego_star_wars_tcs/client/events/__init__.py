@@ -35,6 +35,16 @@ class EventManager:
         for subscriber in self.subscriptions.get(type(event), ()):
             subscriber(event)
 
+    async def fire_event_async(self, event: Event):
+        """Fire an event, but async, so that the loop awaits before calling each subscribed method."""
+        debug_logger.info("Firing async event %s", event)
+        for subscriber in self.subscriptions.get(type(event), ()):
+            await self._fire_event_async(subscriber, event)
+
+    @staticmethod
+    async def _fire_event_async(subscriber: Callable[[Event], None], event: Event):
+        subscriber(event)
+
     def subscribe_events(self, instance: _Subscriber) -> _Subscriber:
         subscriber: EventSubscriber
         for _method_name, subscriber in inspect.getmembers(instance,

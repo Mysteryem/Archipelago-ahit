@@ -1050,7 +1050,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         new_p_area_data = CURRENT_P_AREA_DATA_ADDRESS.get(self)
         if new_p_area_data != current_p_area_data:
             self.current_p_area_data = new_p_area_data
-            self.event_manager.fire_event(OnAreaChangeEvent(self, current_p_area_data, new_p_area_data))
+            await self.event_manager.fire_event_async(OnAreaChangeEvent(self, current_p_area_data, new_p_area_data))
 
     def update_current_level_id(self, new_level_id: int):
         current_level_id = self.current_level_id
