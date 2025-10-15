@@ -1,7 +1,6 @@
 import logging
 from collections import deque
 from time import perf_counter_ns
-from typing import Any
 
 from . import GameStateUpdater
 from ..common_addresses import is_actively_playing
@@ -29,9 +28,6 @@ class InGameTextDisplay(GameStateUpdater):
 
     def __init__(self):
         self.message_queue = deque()
-
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
-        pass
 
     def queue_message(self, message: str):
         self.message_queue.append(message)

@@ -1,7 +1,8 @@
 import logging
 from enum import IntFlag
-from typing import Any, Iterable
+from typing import Iterable
 
+from ..events import subscribe_event, OnReceiveSlotDataEvent
 from ...levels import CHAPTER_AREAS, ChapterArea, AREA_ID_TO_CHAPTER_AREA
 from ...locations import LOCATION_NAME_TO_ID, LEVEL_COMMON_LOCATIONS
 from ..type_aliases import ApLocationId, LevelId, TCSContext, AreaId
@@ -109,7 +110,9 @@ class FreePlayChapterCompletionChecker(ClientComponent):
         self.initial_setup_complete = False
         self.chapter_completion_locations = {}
 
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
+    @subscribe_event
+    def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
+        ctx = event.context
         enabled_chapter_areas: set[AreaId] = set()
         for area in CHAPTER_AREAS:
             chapter_locations = [STATUS_LEVEL_ID_TO_AP_ID[area.status_level_id]]

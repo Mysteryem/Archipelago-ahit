@@ -1,7 +1,8 @@
-from typing import Iterable, Any
+from typing import Iterable
 
 from . import ClientComponent
 from ..common_addresses import CURRENT_AREA_ADDRESS
+from ..events import subscribe_event, OnReceiveSlotDataEvent
 from ..type_aliases import TCSContext
 from ...levels import SHORT_NAME_TO_CHAPTER_AREA, AREA_ID_TO_CHAPTER_AREA, ChapterArea
 from ...locations import LEVEL_COMMON_LOCATIONS, LOCATION_NAME_TO_ID
@@ -71,7 +72,9 @@ class TrueJediAndMinikitChecker(ClientComponent):
         self.remaining_minikit_gold_bricks_by_area_id = set()
         self.remaining_power_bricks_by_area_id = set()
 
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
+    @subscribe_event
+    def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
+        slot_data = event.slot_data
         enabled_shortnames = set(slot_data["enabled_chapters"])
         self.remaining_true_jedi_check_shortnames = enabled_shortnames.copy()
         self.remaining_true_jedi_gold_brick_shortnames = enabled_shortnames.copy()

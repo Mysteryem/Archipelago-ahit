@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 from ..common_addresses import (
     is_actively_playing,
@@ -41,9 +40,6 @@ class PowerUpReceiver(ItemReceiver):
 
     approximate_remaining_time: float = 0.0
     last_time_remaining: float = 0.0
-
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
-        pass
 
     def give_power_up(self):
         self.power_ups_to_give += 1

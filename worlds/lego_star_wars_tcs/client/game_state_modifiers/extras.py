@@ -1,7 +1,8 @@
 import logging
-from typing import Mapping, Sequence, Any
+from typing import Mapping, Sequence
 
 from ..common_addresses import ShopType, EXTRAS_SHOP_START
+from ..events import subscribe_event, OnReceiveSlotDataEvent
 from ..type_aliases import TCSContext, ApItemId, BitMask, MemoryOffset
 from ...items import ExtraData, EXTRAS_BY_NAME
 from . import ItemReceiver
@@ -82,7 +83,8 @@ class AcquiredExtras(ItemReceiver):
     def __init__(self):
         self.unlocked_extras = bytearray(NUM_RANDOMIZED_BYTES)
 
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
+    @subscribe_event
+    def init_from_slot_data(self, _event: OnReceiveSlotDataEvent) -> None:
         self.clear_received_items()
 
     def clear_received_items(self) -> None:

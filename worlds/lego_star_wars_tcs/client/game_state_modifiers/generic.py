@@ -1,6 +1,7 @@
 import logging
-from typing import Mapping, Sequence, AbstractSet, Any
+from typing import Mapping, Sequence, AbstractSet
 
+from ..events import subscribe_event, OnReceiveSlotDataEvent
 from ..type_aliases import TCSContext
 from ...items import (
     GENERIC_BY_NAME,
@@ -102,7 +103,8 @@ class AcquiredGeneric(ItemReceiver):
     def __init__(self):
         self.received_episode_unlocks = set()
 
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
+    @subscribe_event
+    def init_from_slot_data(self, _event: OnReceiveSlotDataEvent) -> None:
         self.clear_received_items()
 
     def clear_received_items(self) -> None:

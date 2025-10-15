@@ -30,7 +30,7 @@ from .location_checkers.free_play_completion import FreePlayChapterCompletionChe
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
 from .location_checkers.true_jedi_and_minikits import TrueJediAndMinikitChecker
 from .location_checkers.shop_purchases import PurchasedExtrasChecker, PurchasedCharactersChecker
-from .events import EventManager, OnLevelChangeEvent, OnAreaChangeEvent
+from .events import EventManager, OnLevelChangeEvent, OnAreaChangeEvent, OnReceiveSlotDataEvent
 from .game_state_modifiers import ClientComponent
 from .game_state_modifiers.extras import AcquiredExtras
 from .game_state_modifiers.characters import AcquiredCharacters
@@ -518,17 +518,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         self.checked_location_messages = checked_location_messages == options.CheckedLocationMessages.option_all
 
-        self.acquired_characters.init_from_slot_data(self, slot_data)
-        self.acquired_extras.init_from_slot_data(self, slot_data)
-        self.acquired_generic.init_from_slot_data(self, slot_data)
-        self.unlocked_chapter_manager.init_from_slot_data(self, slot_data)
-        self.acquired_minikits.init_from_slot_data(self, slot_data)
-        self.text_display.init_from_slot_data(self, slot_data)
-        self.death_link_manager.init_from_slot_data(self, slot_data)
+        self.event_manager.fire_event(OnReceiveSlotDataEvent(self, slot_data))
 
-        self.true_jedi_and_minikit_checker.init_from_slot_data(self, slot_data)
-        self.free_play_completion_checker.init_from_slot_data(self, slot_data)
-        self.goal_manager.init_from_slot_data(self, slot_data)
         self.client_expected_idx = 0
 
     def on_package(self, cmd: str, args: dict):

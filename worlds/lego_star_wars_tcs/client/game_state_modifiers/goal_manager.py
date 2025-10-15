@@ -1,8 +1,9 @@
 import logging
-from typing import Mapping, Any, Literal
+from typing import Mapping, Literal
 
 from .text_replacer import TextId
 from ..common_addresses import CantinaRoom, CustomSaveFlags1, GameState1
+from ..events import subscribe_event, OnReceiveSlotDataEvent
 from ..type_aliases import TCSContext, AreaId
 from ...items import MINIKITS_BY_COUNT
 from ...levels import SHORT_NAME_TO_CHAPTER_AREA, AREA_ID_TO_CHAPTER_AREA
@@ -43,7 +44,10 @@ class GoalManager(GameStateUpdater):
     def __init__(self):
         self.enabled_boss_chapters = set()
 
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
+    @subscribe_event
+    def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
+        slot_data = event.slot_data
+        ctx = event.context
         self.goal_minikit_count = slot_data["minikit_goal_amount"]
 
         if self.goal_minikit_count > 0:

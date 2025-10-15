@@ -93,7 +93,7 @@ class OnAreaChangeEvent(Event):
 
 
 @dataclass
-class OnReceiveSlotData(Event):
+class OnReceiveSlotDataEvent(Event):
     slot_data: dict[str, Any]
     version: tuple[int, int, int] = field(init=False)
 

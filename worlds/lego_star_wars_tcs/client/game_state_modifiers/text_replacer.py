@@ -1,7 +1,6 @@
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any
 
 from . import GameStateUpdater
 from ..type_aliases import TCSContext
@@ -208,11 +207,6 @@ class TextReplacer(GameStateUpdater):
                 raise RuntimeError("Failed to access the localized text array. If you have mods installed for Lego Star"
                                    " Wars: The Complete Saga, please try uninstalling the mods and try again.")
             self._initialized = True
-
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
-        # Nothing specific to do here, though it is expected that other parts of the client will set custom strings in
-        # their own init_from_slot_data callbacks.
-        pass
 
     def on_unhook_game_process(self):
         data = self.localized_string_data

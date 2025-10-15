@@ -1,8 +1,8 @@
 import logging
-from typing import AbstractSet, Callable, Any
+from typing import AbstractSet, Callable
 
 from .text_replacer import TextId
-from ..events import subscribe_event, OnAreaChangeEvent
+from ..events import subscribe_event, OnAreaChangeEvent, OnReceiveSlotDataEvent
 from ..common import ClientComponent, UintField, UCharField
 from ..common_addresses import OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from ..type_aliases import TCSContext, AreaId
@@ -41,7 +41,11 @@ class UnlockedChapterManager(ClientComponent):
         self.unlocked_chapters_per_episode = {}
         self.enabled_chapter_area_ids = set()
 
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
+    @subscribe_event
+    def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
+        slot_data = event.slot_data
+        ctx = event.context
+
         enabled_chapters = slot_data["enabled_chapters"]
         enabled_episodes = slot_data["enabled_episodes"]
         episode_unlock_requirement = slot_data["episode_unlock_requirement"]

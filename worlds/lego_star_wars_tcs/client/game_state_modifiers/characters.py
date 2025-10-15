@@ -1,7 +1,7 @@
 import logging
-from typing import Any
 
 from ..common_addresses import CHARACTERS_SHOP_START, ShopType
+from ..events import subscribe_event, OnReceiveSlotDataEvent
 from ..type_aliases import TCSContext, ApItemId
 from ...items import CHARACTERS_AND_VEHICLES_BY_NAME, GenericCharacterData, CHARACTER_SHOP_SLOTS
 from . import ItemReceiver
@@ -55,7 +55,8 @@ class AcquiredCharacters(ItemReceiver):
     def __init__(self):
         self.unlocked_characters = set()
 
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
+    @subscribe_event
+    def init_from_slot_data(self, _event: OnReceiveSlotDataEvent) -> None:
         self.clear_received_items()
 
     def clear_received_items(self) -> None:

@@ -2,12 +2,12 @@ import asyncio
 import logging
 import time
 from enum import IntEnum
-from typing import Any
 
 from Utils import async_start
 
 from . import GameStateUpdater
 from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing, player_character_entity_iter
+from ..events import subscribe_event, OnReceiveSlotDataEvent
 from ..type_aliases import TCSContext
 from ...levels import (
     AREA_ID_TO_CHAPTER_AREA,
@@ -205,7 +205,10 @@ class DeathLinkManager(GameStateUpdater):
 
     last_death_amnesty = time.time()
 
-    def init_from_slot_data(self, ctx: TCSContext, slot_data: dict[str, Any]) -> None:
+    @subscribe_event
+    def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
+        slot_data = event.slot_data
+        ctx = event.context
         # If Death Link does not exist because the multiworld was generated with an apworld that did not have Death Link
         # implemented yet, then Death Link will be disabled.
         death_link_enabled = slot_data.get("death_link", False)
