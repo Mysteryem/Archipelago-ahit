@@ -1,8 +1,7 @@
 import inspect
 import logging
 from dataclasses import dataclass, field
-from typing import Callable, TypeVar, Any, ClassVar, Self, Protocol
-from types import MethodType
+from typing import Callable, TypeVar, Any, ClassVar, Self
 
 from ..common import ClientComponent
 from ..type_aliases import TCSContext
@@ -24,7 +23,7 @@ class Event:
         return Event._subclasses.get(subclass_name)
 
 
-_Subscriber = TypeVar("_Subscriber", covariant=True)
+_Subscriber = TypeVar("_Subscriber")
 
 
 @dataclass
@@ -54,19 +53,10 @@ class EventManager:
         self.subscriptions.setdefault(event_type, []).append(method)
 
 
-# Some of the generics for subscribe_event are probably wrong, due to inexperience, but seem to work OK enough.
-EVENT = TypeVar("EVENT", bound=Event, contravariant=True)
+EVENT = TypeVar("EVENT", bound=Event)
 
 
-class EventSubscriberFun(Protocol[_Subscriber, EVENT]):
-    def __call__(self: _Subscriber, event: EVENT) -> None:
-        ...
-
-    def __get__(self, instance, owner) -> MethodType:
-        ...
-
-
-def subscribe_event(fun: EventSubscriberFun[_Subscriber, EVENT]) -> EventSubscriberFun[_Subscriber, EVENT]:
+def subscribe_event(fun: Callable[[_Subscriber, EVENT], None]) -> Callable[[_Subscriber, EVENT], None]:
     params = inspect.signature(fun).parameters
     params_iter = iter(params.values())
     # Skip the 'self' argument.
@@ -81,10 +71,7 @@ def subscribe_event(fun: EventSubscriberFun[_Subscriber, EVENT]) -> EventSubscri
                          f" annotation, but got {event_type}")
 
     class EventSubscriber:
-        _event_subcription: type[EVENT]
-        fun: EventSubscriberFun[_Subscriber, EVENT]
-
-        def __init__(self, event_type: type[EVENT], fun: EventSubscriberFun[_Subscriber, EVENT]):
+        def __init__(self, event_type: type[EVENT], fun: Callable[[_Subscriber, EVENT], None]):
             self._event_subscription = event_type
             self.fun = fun
 
@@ -101,6 +88,7 @@ def subscribe_event(fun: EventSubscriberFun[_Subscriber, EVENT]) -> EventSubscri
                                   self._event_subscription.__name__, owner.__qualname__)
 
         def __get__(self, instance, owner):
+            # noinspection PyUnresolvedReferences
             return self.fun.__get__(instance, owner)
 
         def __call__(self, *args, **kwargs):
