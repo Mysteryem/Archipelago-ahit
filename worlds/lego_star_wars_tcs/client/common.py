@@ -1,5 +1,4 @@
 import abc
-from typing import Any
 
 from .type_aliases import TCSContext
 

@@ -1,5 +1,4 @@
 import struct
-from collections import Counter
 from dataclasses import dataclass, field
 from typing import ClassVar, NamedTuple
 

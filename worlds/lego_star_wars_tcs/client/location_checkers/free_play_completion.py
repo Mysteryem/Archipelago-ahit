@@ -3,7 +3,7 @@ from enum import IntFlag
 from typing import Iterable
 
 from ..events import subscribe_event, OnReceiveSlotDataEvent
-from ...levels import CHAPTER_AREAS, ChapterArea, AREA_ID_TO_CHAPTER_AREA
+from ...levels import CHAPTER_AREAS, ChapterArea
 from ...locations import LOCATION_NAME_TO_ID, LEVEL_COMMON_LOCATIONS
 from ..type_aliases import ApLocationId, LevelId, TCSContext, AreaId
 from ..common import ClientComponent

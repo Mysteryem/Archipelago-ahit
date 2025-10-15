@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, TYPE_CHECKING, ClassVar, Literal, Iterable, Mapping, AbstractSet
+from typing import Optional, ClassVar, Literal, Iterable, Mapping, AbstractSet
 
 from BaseClasses import Item, ItemClassification
 from .constants import (
@@ -18,11 +18,6 @@ from .constants import (
     VEHICLE_TIE,
     VEHICLE_TOW,
 )
-
-if TYPE_CHECKING:
-    from . import LegoStarWarsTCSWorld
-else:
-    LegoStarWarsTCSWorld = object
 
 
 ItemType = Literal["Character", "Vehicle", "Extra", "Generic", "Minikit"]

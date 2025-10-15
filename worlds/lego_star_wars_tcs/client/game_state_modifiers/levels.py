@@ -52,7 +52,7 @@ class UnlockedChapterManager(ClientComponent):
         all_episodes_character_purchase_requirements = slot_data["all_episodes_character_purchase_requirements"]
         all_episodes_purchases_enabled = bool(slot_data["enable_all_episodes_purchases"])
 
-        # In older multiworlds, easier true jedi is never enabled becuase the option did not exist
+        # In older multiworlds, easier true jedi is never enabled because the option did not exist.
         if event.generator_version < (1, 2, 0):
             self.easy_true_jedi = False
         else:
