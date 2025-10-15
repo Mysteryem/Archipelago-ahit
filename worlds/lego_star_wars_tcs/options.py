@@ -811,6 +811,28 @@ class JunkWeights(ItemDict):
     }
 
 
+class EasierTrueJedi(Toggle):
+    """When enabled, the True Jedi requirements in Free Play will be set to the Story True Jedi requirement, which is
+    usually less.
+
+    True Jedi in Free Play usually has higher requirements than True Jedi in Story and can be very difficult, if not
+    impossible, with just the Story characters for that Chapter.
+
+    Without this option enabled, the following Chapters will gain a logical requirement for Score x2 due to their
+    difficulty/impossibility of achieving True Jedi in Free Play with just the Story characters for the Chapter:
+
+    - 1-6
+    - 2-6
+    - 3-3
+    - 3-5
+    - 3-6
+    - 5-1
+    - 5-2
+    - 5-6
+    - 6-5
+    """
+    display_name = "Easier True Jedi"
+    rich_text_doc = True
 
 
 class MostExpensivePurchaseWithNoScoreMultiplier(NamedRange):
@@ -1032,6 +1054,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     chapter_unlock_requirement: ChapterUnlockRequirement
     most_expensive_purchase_with_no_multiplier: MostExpensivePurchaseWithNoScoreMultiplier
     all_episodes_character_purchase_requirements: AllEpisodesCharacterPurchaseRequirements
+    easier_true_jedi: EasierTrueJedi
 
     # Items.
     preferred_characters: PreferredCharacters
@@ -1083,6 +1106,7 @@ OPTION_GROUPS: list[OptionGroup] = [
     OptionGroup("Logic Options", [
         EpisodeUnlockRequirement,
         ChapterUnlockRequirement,
+        EasierTrueJedi,
         MostExpensivePurchaseWithNoScoreMultiplier,
         AllEpisodesCharacterPurchaseRequirements,
     ]),

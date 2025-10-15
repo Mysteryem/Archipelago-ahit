@@ -79,6 +79,13 @@ class ChapterArea:
     # "Save and Exit to Cantina", or from completing the level.
     status_level_id: int
     area_id: int
+    story_true_jedi_requirement: int
+    free_play_true_jedi_requirement: int
+    # Index of the AreaData* for this area. AreaData is where the level IDs are stored, as well as True Jedi
+    # requirements. Generally, the indices are in Episode and Chapter order, except 3-1 has two separate pointers in the
+    # array for some reason. The array starts at 0x0087af70 (GOG).
+    # Not currently used.
+    unused_p_area_data_index: int
     ## The address of each Level in the area with minikits, and the names of the minikits in that Level.
     #minikit_address_to_names: dict[int, set[str]]
     # TODO: Convert this file mostly into a script that writes `print(repr(GAME_LEVEL_AREAS))`
@@ -490,63 +497,68 @@ DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI: set[str] = {
 # TODO: Record Level IDs, these would mostly be there to help make map switching in the tracker easier, and would
 #  serve as a record of data that might be useful for others.
 CHAPTER_AREAS = [
-    # area -1/255 = Cantina
-    ChapterArea("Negotiations", 1, 1, 0x86E0F4, 7, 0),
-    ChapterArea("Invasion of Naboo", 1, 2, 0x86E100, 15, 1),
-    ChapterArea("Escape From Naboo", 1, 3, 0x86E10C, 24, 2),
-    ChapterArea("Mos Espa Pod Race", 1, 4, 0x86E118, 37, 3),
-    # area 4 = Bonus: Pod Race (Original)
-    ChapterArea("Retake Theed Palace", 1, 5, 0x86E130, 48, 5),
-    ChapterArea("Darth Maul", 1, 6, 0x86E13C, 55, 6),
+    # area -1/255 = Cantina, AreaData* index ??
+    ChapterArea("Negotiations", 1, 1, 0x86E0F4, 7, 0, 31000, 64000, 0),
+    ChapterArea("Invasion of Naboo", 1, 2, 0x86E100, 15, 1, 44000, 52000, 1),
+    ChapterArea("Escape From Naboo", 1, 3, 0x86E10C, 24, 2, 48000, 60000, 2),
+    ChapterArea("Mos Espa Pod Race", 1, 4, 0x86E118, 37, 3, 45000, 45000, 3),
+    # area 4 = Bonus: Pod Race (Original), AreaData* index 49
+    ChapterArea("Retake Theed Palace", 1, 5, 0x86E130, 48, 5, 60000, 100000, 4),
+    ChapterArea("Darth Maul", 1, 6, 0x86E13C, 55, 6, 31000, 64000, 5),
     # area 7 = EP1 Ending
-    # area 8 = EP1 Character Bonus
+    # area 8 = EP1 Character Bonus, AreaData* index 37
     # area 9 = EP1 Minikit Bonus. Episode Bonus doors show the Minikit Bonus Area ID rather than Character Bonus Area ID
-    ChapterArea("Bounty Hunter Pursuit", 2, 1, 0x86E16C, 68, 10),
-    ChapterArea("Discovery On Kamino", 2, 2, 0x86E178, 78, 11),
-    ChapterArea("Droid Factory", 2, 3, 0x86E184, 88, 12),
-    ChapterArea("Jedi Battle", 2, 4, 0x86E190, 92, 13),
-    ChapterArea("Gunship Cavalry", 2, 5, 0x86E19C, 95, 14),
-    # area 15 = Bonus: Gunship Cavalry (Original)
-    ChapterArea("Count Dooku", 2, 6, 0x86E1B4, 103, 16),
-    ChapterArea("Battle Over Coruscant", 3, 1, 0x86E1E4, 111, 20),
-    ChapterArea("Chancellor In Peril", 3, 2, 0x86E1F0, 121, 21),
-    ChapterArea("General Grievous", 3, 3, 0x86E1FC, 123, 22),
-    ChapterArea("Defense Of Kashyyyk", 3, 4, 0x86E208, 128, 23),
-    ChapterArea("Ruin Of The Jedi", 3, 5, 0x86E214, 134, 24),
-    ChapterArea("Darth Vader", 3, 6, 0x86E220, 139, 25),
+    # AreaData* index 43
+    ChapterArea("Bounty Hunter Pursuit", 2, 1, 0x86E16C, 68, 10, 35000, 45000, 6),
+    ChapterArea("Discovery On Kamino", 2, 2, 0x86E178, 78, 11, 50000, 65000, 7),
+    ChapterArea("Droid Factory", 2, 3, 0x86E184, 88, 12, 40000, 55000, 8),
+    ChapterArea("Jedi Battle", 2, 4, 0x86E190, 92, 13, 8000, 16000, 9),
+    ChapterArea("Gunship Cavalry", 2, 5, 0x86E19C, 95, 14, 30000, 40000, 10),
+    # area 15 = Bonus: Gunship Cavalry (Original), AreaData* index 51
+    ChapterArea("Count Dooku", 2, 6, 0x86E1B4, 103, 16, 10000, 22000, 11),
+    # area 17 = EP2 Ending
+    # area 18 = EP2 Character Bonus, AreaData* index 38
+    # area 19 = EP2 Minikit Bonus, AreaData* index 44
+    ChapterArea("Battle Over Coruscant", 3, 1, 0x86E1E4, 111, 20, 75000, 75000, 12),
+    ChapterArea("Chancellor In Peril", 3, 2, 0x86E1F0, 121, 21, 60000, 80000, 14),
+    ChapterArea("General Grievous", 3, 3, 0x86E1FC, 123, 22, 3300, 5000, 15),
+    ChapterArea("Defense Of Kashyyyk", 3, 4, 0x86E208, 128, 23, 65000, 90000, 16),
+    ChapterArea("Ruin Of The Jedi", 3, 5, 0x86E214, 134, 24, 35000, 75000, 17),
+    ChapterArea("Darth Vader", 3, 6, 0x86E220, 139, 25, 25000, 45000, 18),
     # area 26 = EP3 Ending
-    # area 27 = EP3 Character Bonus
-    # area 28 = EP3 Minikit Bonus
-    # area 29 = Bonus: A New Hope
-    ChapterArea("Secret Plans", 4, 1, 0x86E25C, 159, 30),
-    ChapterArea("Through The Jundland Wastes", 4, 2, 0x86E268, 167, 31),
-    ChapterArea("Mos Eisley Spaceport", 4, 3, 0x86E274, 177, 32),
-    ChapterArea("Rescue The Princess", 4, 4, 0x86E280, 185, 33),
-    ChapterArea("Death Star Escape", 4, 5, 0x86E28C, 192, 34),
-    ChapterArea("Rebel Attack", 4, 6, 0x86E298, 203, 35),
+    # area 27 = EP3 Character Bonus, AreaData* index 39
+    # area 28 = EP3 Minikit Bonus, AreaData* index 45
+    # area 29 = Bonus: A New Hope, AreaData* index 52
+    ChapterArea("Secret Plans", 4, 1, 0x86E25C, 159, 30, 28000, 40000, 19),
+    ChapterArea("Through The Jundland Wastes", 4, 2, 0x86E268, 167, 31, 60000, 90000, 20),
+    ChapterArea("Mos Eisley Spaceport", 4, 3, 0x86E274, 177, 32, 60000, 100000, 21),
+    ChapterArea("Rescue The Princess", 4, 4, 0x86E280, 185, 33, 60000, 80000, 22),
+    ChapterArea("Death Star Escape", 4, 5, 0x86E28C, 192, 34, 45000, 65000, 23),
+    ChapterArea("Rebel Attack", 4, 6, 0x86E298, 203, 35, 30000, 45000, 24),
     # area 36 = EP4 Ending
-    # area 37 = EP4 Character Bonus
-    # area 38 = EP4 Minikit Bonus
-    ChapterArea("Hoth Battle", 5, 1, 0x86E2C8, 219, 39),
-    ChapterArea("Escape From Echo Base", 5, 2, 0x86E2D4, 228, 40),
-    ChapterArea("Falcon Flight", 5, 3, 0x86E2E0, 236, 41),
-    ChapterArea("Dagobah", 5, 4, 0x86E2EC, 244, 42),
-    ChapterArea("Cloud City Trap", 5, 5, 0x86E2F8, 257, 43),  # 5-5 levels are after 5-6 levels for some reason.
-    ChapterArea("Betrayal Over Bespin", 5, 6, 0x86E304, 251, 44),
+    # area 37 = EP4 Character Bonus, AreaData* index 40
+    # area 38 = EP4 Minikit Bonus, AreaData* index 46
+    ChapterArea("Hoth Battle", 5, 1, 0x86E2C8, 219, 39, 25000, 35000, 25),
+    ChapterArea("Escape From Echo Base", 5, 2, 0x86E2D4, 228, 40, 40000, 80000, 26),
+    ChapterArea("Falcon Flight", 5, 3, 0x86E2E0, 236, 41, 30000, 48000, 27),
+    ChapterArea("Dagobah", 5, 4, 0x86E2EC, 244, 42, 52000, 72000, 28),
+    # 5-5 levels are after 5-6 levels for some reason.
+    ChapterArea("Cloud City Trap", 5, 5, 0x86E2F8, 257, 43, 14000, 22000, 29),
+    ChapterArea("Betrayal Over Bespin", 5, 6, 0x86E304, 251, 44, 34000, 60000, 30),
     # area 45 = EP5 Ending
-    # area 46 = EP5 Character Bonus
-    # area 47 = EP5 Minikit Bonus
-    ChapterArea("Jabba's Palace", 6, 1, 0x86E334, 271, 48),
-    ChapterArea("The Great Pit Of Carkoon", 6, 2, 0x86E340, 277, 49),
-    ChapterArea("Speeder Showdown", 6, 3, 0x86E34C, 279, 50),
-    ChapterArea("The Battle Of Endor", 6, 4, 0x86E358, 286, 51),
-    ChapterArea("Jedi Destiny", 6, 5, 0x86E364, 301, 52),
-    ChapterArea("Into The Death Star", 6, 6, 0x86E370, 297, 53),
+    # area 46 = EP5 Character Bonus, AreaData* index 41
+    # area 47 = EP5 Minikit Bonus, AreaData* index 47
+    ChapterArea("Jabba's Palace", 6, 1, 0x86E334, 271, 48, 43000, 60000, 31),
+    ChapterArea("The Great Pit Of Carkoon", 6, 2, 0x86E340, 277, 49, 50000, 65000, 32),
+    ChapterArea("Speeder Showdown", 6, 3, 0x86E34C, 279, 50, 55000, 70000, 33),
+    ChapterArea("The Battle Of Endor", 6, 4, 0x86E358, 286, 51, 90000, 110000, 34),
+    ChapterArea("Jedi Destiny", 6, 5, 0x86E364, 301, 52, 35000, 80000, 35),
+    ChapterArea("Into The Death Star", 6, 6, 0x86E370, 297, 53, 35000, 40000, 36),
     # area 54 = EP6 Ending
-    # area 55 = EP6 Character Bonus
-    # area 56 = EP6 Minikit Bonus
+    # area 55 = EP6 Character Bonus, AreaData* index 42
+    # area 56 = EP6 Minikit Bonus, AreaData* index 48
     # area 57 = Bonus: New Town
-    # area 58 = Bonus: Anakin's Flight
+    # area 58 = Bonus: Anakin's Flight, AreaData* index 50
     # area 59 = Bonus: Lego City
     # area 60 = Two Player Arcade
     # area 66 = Cantina

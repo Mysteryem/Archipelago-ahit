@@ -2,8 +2,9 @@ import logging
 from typing import AbstractSet, Callable, Any
 
 from .text_replacer import TextId
-from ..common import ClientComponent
-from ..common_addresses import OPENED_MENU_DEPTH_ADDRESS
+from ..events import subscribe_event, OnAreaChangeEvent
+from ..common import ClientComponent, UintField, UCharField
+from ..common_addresses import OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from ..type_aliases import TCSContext, AreaId
 from ...items import ITEM_DATA_BY_NAME, ITEM_DATA_BY_ID
 from ...levels import ChapterArea, CHAPTER_AREAS, SHORT_NAME_TO_CHAPTER_AREA, AREA_ID_TO_CHAPTER_AREA
@@ -18,6 +19,10 @@ ALL_CHAPTER_AREA_IDS_SET = frozenset({area.area_id for area in CHAPTER_AREAS})
 # from an Area door.
 CURRENT_AREA_DOOR_ADDRESS = 0x8795A0
 
+AREA_DATA_ID = UCharField(0x7c)
+AREA_DATA_STORY_TRUE_JEDI_REQUIREMENT = UintField(0x8c)
+AREA_DATA_FREE_PLAY_TRUE_JEDI_REQUIREMENT = UintField(0x90)
+
 
 class UnlockedChapterManager(ClientComponent):
     character_to_dependent_game_chapters: dict[int, list[str]]
@@ -27,6 +32,8 @@ class UnlockedChapterManager(ClientComponent):
     should_unlock_all_episodes_shop_slots: Callable[[TCSContext], bool] = staticmethod(lambda _ctx: False)
 
     enabled_chapter_area_ids: set[int]
+
+    easy_true_jedi: bool = False
 
     def __init__(self) -> None:
         self.character_to_dependent_game_chapters = {}
@@ -40,6 +47,13 @@ class UnlockedChapterManager(ClientComponent):
         episode_unlock_requirement = slot_data["episode_unlock_requirement"]
         all_episodes_character_purchase_requirements = slot_data["all_episodes_character_purchase_requirements"]
         all_episodes_purchases_enabled = bool(slot_data["enable_all_episodes_purchases"])
+
+        # In older multiworlds, easier true jedi is never enabled becuase the option did not exist
+        if tuple(slot_data["apworld_version"]) < (1, 2, 0):
+            self.easy_true_jedi = False
+        else:
+            self.easy_true_jedi = slot_data["easier_true_jedi"]
+        self._set_current_area_true_jedi_requirement(ctx)
 
         num_enabled_episodes = len(enabled_episodes)
 
@@ -192,3 +206,30 @@ class UnlockedChapterManager(ClientComponent):
                 else:
                     # Set the chapter as locked, with Story mode incomplete.
                     ctx.write_bytes(area.address, b"\x00\x00", 2)
+
+    def _set_current_area_true_jedi_requirement(self, ctx: TCSContext, current_p_area_data: int | None = None):
+        if current_p_area_data is None:
+            current_p_area_data = CURRENT_P_AREA_DATA_ADDRESS.get(ctx)
+
+        if current_p_area_data == 0:
+            # debug_logger.info("Current AreaData pointer is NULL. Nothing to do.")
+            return
+
+        current_area_id = AREA_DATA_ID.get(ctx, current_p_area_data)
+        chapter_area = AREA_ID_TO_CHAPTER_AREA.get(current_area_id)
+        if chapter_area is None:
+            # The current area is not a chapter area, so there is nothing to do.
+            debug_logger.info("The current area has ID %i, which is not a chapter Area", current_area_id)
+            return
+
+        if self.easy_true_jedi:
+            true_jedi_requirement = chapter_area.story_true_jedi_requirement
+        else:
+            true_jedi_requirement = chapter_area.free_play_true_jedi_requirement
+        AREA_DATA_FREE_PLAY_TRUE_JEDI_REQUIREMENT.set(ctx, current_p_area_data, true_jedi_requirement)
+        debug_logger.info("Set the True Jedi requirement for %s to %i", chapter_area.name, true_jedi_requirement)
+
+    @subscribe_event
+    def on_area_change(self, event: OnAreaChangeEvent):
+        self._set_current_area_true_jedi_requirement(event.context, event.new_p_area_data)
+        # todo: Fix Original Trilogy High Jump here.

@@ -1874,7 +1874,7 @@ class LegoStarWarsTCSWorld(World):
                     self._add_score_multiplier_rule(purchase_location, studs_cost)
 
                 # Set True Jedi logic
-                if self.options.enable_true_jedi_locations:
+                if self.options.enable_true_jedi_locations and not self.options.easier_true_jedi:
                     if chapter.short_name in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI:
                         true_jedi = self.get_location(f"{chapter.short_name} True Jedi")
                         set_rule(true_jedi, lambda state: state.has("Progressive Score Multiplier", player))
@@ -2019,6 +2019,7 @@ class LegoStarWarsTCSWorld(World):
                 "death_link",
                 "death_link_amnesty",
                 "vehicle_death_link_amnesty",
+                "easier_true_jedi",
             )
         }
 

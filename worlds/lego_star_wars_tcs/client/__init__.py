@@ -25,11 +25,13 @@ from ..constants import GAME_NAME, AP_WORLD_VERSION
 from ..items import CHARACTERS_AND_VEHICLES_BY_NAME, AP_NON_VEHICLE_CHARACTER_INDICES
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, CHAPTER_AREAS, ChapterArea
 from ..locations import LOCATION_NAME_TO_ID
-from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS
+from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from .location_checkers.free_play_completion import FreePlayChapterCompletionChecker
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
 from .location_checkers.true_jedi_and_minikits import TrueJediAndMinikitChecker
 from .location_checkers.shop_purchases import PurchasedExtrasChecker, PurchasedCharactersChecker
+from .events import EventManager, OnLevelChangeEvent, OnAreaChangeEvent
+from .game_state_modifiers import ClientComponent
 from .game_state_modifiers.extras import AcquiredExtras
 from .game_state_modifiers.characters import AcquiredCharacters
 from .game_state_modifiers.death_link_manager import DeathLinkManager
@@ -311,6 +313,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     game_process: pymem.Pymem | None = None
     #previous_level_id: int = -1
     current_level_id: int = 0  # Title screen
+    current_p_area_data: int = 0  # NULL
     current_cantina_room: CantinaRoom = CantinaRoom.UNKNOWN
     # Memory in the GOG version is offset 32 bytes after GOG_MEMORY_OFFSET_START.
     # todo: Memory in the retail version is offset ?? bytes after ??.
@@ -318,6 +321,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     # In the case of an unrecognised version, an overall memory offset may be set.
     _overall_memory_offset: int = 0
     _cantina_needs_reload_to_fix_characters: bool = False
+    event_manager: EventManager
 
     # Client state.
     acquired_characters: AcquiredCharacters
@@ -360,12 +364,9 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         self.disabled_locations = set()
 
-        self.acquired_extras = AcquiredExtras()
-        self.acquired_characters = AcquiredCharacters()
-        self.acquired_generic = AcquiredGeneric()
-        self.acquired_minikits = AcquiredMinikits()
-        self.goal_manager = GoalManager()
-        self.power_up_receiver = PowerUpReceiver()
+        # Event manager must be set before other attributes, so that the event manager can look for methods that are
+        # subscribing to events on the other attributes.
+        self.event_manager = EventManager()
 
         self.text_display = InGameTextDisplay()
         self.death_link_manager = DeathLinkManager()
@@ -385,6 +386,12 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.client_expected_idx = 0
 
         self.fully_connected = False
+
+    def __setattr__(self, key, value) -> None:
+        super().__setattr__(key, value)
+        if isinstance(value, ClientComponent):
+            # Subscribe methods that want to receive events.
+            self.event_manager.subscribe_events(value)
 
     def _get_datastorage_key(self, key_prefix: str):
         return key_prefix + DATA_STORAGE_KEY_SUFFIX.format(team=self.team, slot=self.slot)
@@ -1043,6 +1050,13 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     def is_connected_to_server(self):
         return self.server is not None and not self.server.socket.closed
 
+    async def update_current_p_area_data(self):
+        current_p_area_data = self.current_p_area_data
+        new_p_area_data = CURRENT_P_AREA_DATA_ADDRESS.get(self)
+        if new_p_area_data != current_p_area_data:
+            self.current_p_area_data = new_p_area_data
+            self.event_manager.fire_event(OnAreaChangeEvent(self, current_p_area_data, new_p_area_data))
+
     def update_current_level_id(self, new_level_id: int):
         current_level_id = self.current_level_id
         if new_level_id != current_level_id:
@@ -1349,6 +1363,10 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         """
         self.finished_game = False
         self.locations_checked.clear()
+        # Event manager must be set before other attributes, so that the event manager can look for methods that are
+        # subscribing to events on the other attributes.
+        self.event_manager = EventManager()
+
         self.acquired_extras = AcquiredExtras()
         self.acquired_characters = AcquiredCharacters()
         self.acquired_generic = AcquiredGeneric()
@@ -1357,6 +1375,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.unlocked_chapter_manager = UnlockedChapterManager()
         self.client_expected_idx = 0
         self.current_level_id = 0
+        self.current_p_area_data = 0
         self.current_cantina_room = CantinaRoom.UNKNOWN
 
         self.free_play_completion_checker = FreePlayChapterCompletionChecker()
@@ -1611,6 +1630,9 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                     await ctx.text_replacer.update_game_state(ctx)
                     await ctx.free_play_completion_checker.initialize(ctx)
                     await give_items(ctx)
+
+                    # Check for changes to the current AreaData pointer, firing an event if it changes.
+                    await ctx.update_current_p_area_data()
 
                     # Update game state for received items.
                     await ctx.reload_cantina_if_invalid_characters()

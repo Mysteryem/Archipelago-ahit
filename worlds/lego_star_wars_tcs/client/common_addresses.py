@@ -34,6 +34,9 @@ CURRENT_AREA_ADDRESS = StaticUChar(0x7fd2c1)
 # This second address is referenced directly, so could be a better choice.
 # CURRENT_AREA_ADDRESS = StaticUChar(0x803784)
 
+# Technically, this is direct access of the WORLDINFO struct at 0x93d858, accessing field offset 0x12c.
+CURRENT_P_AREA_DATA_ADDRESS = StaticUint(0x93d984)
+
 
 CHARACTERS_SHOP_START = 0x86E4A8  # See CHARACTER_SHOP_SLOTS in items.py for the mapping
 EXTRAS_SHOP_START = 0x86E4B8
