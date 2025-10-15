@@ -1361,6 +1361,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         # Event manager must be set before other attributes, so that the event manager can look for methods that are
         # subscribing to events on the other attributes.
         self.event_manager = EventManager()
+        # The text display instance does not get re-created and re-assigned, so needs to be subscribed manually.
+        self.event_manager.subscribe_events(self.text_display)
 
         self.acquired_extras = AcquiredExtras()
         self.acquired_characters = AcquiredCharacters()

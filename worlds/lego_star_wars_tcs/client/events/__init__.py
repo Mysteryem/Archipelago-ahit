@@ -65,8 +65,10 @@ class EventManager:
 
     def subscribe_events(self, instance: _Subscriber) -> _Subscriber:
         subscriber: EventSubscriber
-        for _method_name, subscriber in inspect.getmembers(instance,
-                                                           lambda member: isinstance(member, _EventSubscriberBase)):
+        members = inspect.getmembers(instance, lambda member: isinstance(member, _EventSubscriberBase))
+        if members:
+            debug_logger.info("Subscribing to events on %s", instance)
+        for _method_name, subscriber in members:
             func = subscriber.fun
             event_type = subscriber.event_subscription
             bound_method = func.__get__(instance)
@@ -77,6 +79,7 @@ class EventManager:
             else:
                 # Should never happen.
                 raise TypeError(f"Unexpected type {subscriber}({type(subscriber)})")
+            debug_logger.info("\tSubscribed to %s on %s", event_type.__name__, func.__qualname__)
 
         return instance
 
