@@ -811,6 +811,19 @@ class JunkWeights(ItemDict):
     }
 
 
+class UncapOriginalTrilogyHighJump(Toggle):
+    """Original Trilogy Chapters, Bonuses and the Cantina cap High Jump height to about the same as a Jedi double jump
+    because they were not designed for being able to High Jump.
+
+    Enabling this option will remove the cap, restoring High Jump height to the same as seen in Prequel Trilogy
+    Chapters.
+
+    The logic does not currently account for this option being enabled.
+    """
+    display_name = "Uncap Original Trilogy High Jump"
+    rich_text_doc = True
+
+
 class EasierTrueJedi(Toggle):
     """When enabled, the True Jedi requirements in Free Play will be set to the Story True Jedi requirement, which is
     usually less.
@@ -1073,6 +1086,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     death_link: LegoStarWarsTCSDeathLink
     death_link_amnesty: DeathLinkAmnesty
     vehicle_death_link_amnesty: VehicleDeathLinkAmnesty
+    uncap_original_trilogy_high_jump: UncapOriginalTrilogyHighJump
     # Future options, not implemented yet.
     # random_starting_level_max_starting_characters: RandomStartingLevelMaxStartingCharacters
 
@@ -1128,5 +1142,6 @@ OPTION_GROUPS: list[OptionGroup] = [
         LegoStarWarsTCSDeathLink,
         DeathLinkAmnesty,
         VehicleDeathLinkAmnesty,
+        UncapOriginalTrilogyHighJump,
     ])
 ]

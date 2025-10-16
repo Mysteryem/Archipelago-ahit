@@ -43,6 +43,7 @@ from .game_state_modifiers.power_ups import PowerUpReceiver
 from .game_state_modifiers.studs import STUDS_AP_ID_TO_VALUE, give_studs
 from .game_state_modifiers.text_display import InGameTextDisplay
 from .game_state_modifiers.text_replacer import TextReplacer
+from .game_state_modifiers.uncap_high_jump import UncapHighJump
 
 
 logger = logging.getLogger("Client")
@@ -79,7 +80,7 @@ VERSION_CHECK_GOG_OFFSET = VERSION_CHECK_ADDRESS_STEAM - VERSION_CHECK_ADDRESS_G
 MEMORY_OFFSET_STEAM = 0
 MEMORY_OFFSET_GOG = 0x20
 # Addresses greater than this need to be offset by 0x20 when the GOG version is being used.
-# It is possible that the cutoff point is earlier, somewhere between 0x802000 and 0x855000
+# It is possible that the cutoff point is earlier, somewhere between 0x802d98 and 0x855000
 GOG_MEMORY_OFFSET_START = 0x855000
 
 # class MemoryBlock(NamedTuple):
@@ -344,11 +345,16 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     # Game-state only.
     text_replacer: TextReplacer
     death_link_manager: DeathLinkManager
+    uncap_high_jump: UncapHighJump
 
     # Customizable client behaviour
     received_item_messages: options.ReceivedItemMessages = options.ReceivedItemMessages(
         options.ReceivedItemMessages.option_all)
     checked_location_messages: bool = True
+
+    # A few components are permanent and will need to be manually re-subscribed to receive events because the components
+    # won't be re-created.
+    permanent_components: tuple[ClientComponent, ...]
 
     fully_connected: bool
     last_connected_slot: str | None = None
@@ -369,6 +375,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.event_manager = EventManager()
 
         self.text_display = InGameTextDisplay()
+        self.uncap_high_jump = UncapHighJump()
+        self.permanent_components = (self.text_display, self.uncap_high_jump)
         self.death_link_manager = DeathLinkManager()
 
         # It is not ideal to leak `self` in __init__. The TextReplacer methods could be updated to include a TCSContext
@@ -1361,8 +1369,9 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         # Event manager must be set before other attributes, so that the event manager can look for methods that are
         # subscribing to events on the other attributes.
         self.event_manager = EventManager()
-        # The text display instance does not get re-created and re-assigned, so needs to be subscribed manually.
-        self.event_manager.subscribe_events(self.text_display)
+        # Some of the components are permanent, so need to be manually subscribed to the new EventManager.
+        for client_component in self.permanent_components:
+            self.event_manager.subscribe_events(client_component)
 
         self.acquired_extras = AcquiredExtras()
         self.acquired_characters = AcquiredCharacters()

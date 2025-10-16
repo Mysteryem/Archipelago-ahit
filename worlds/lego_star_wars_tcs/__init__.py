@@ -2020,6 +2020,7 @@ class LegoStarWarsTCSWorld(World):
                 "death_link_amnesty",
                 "vehicle_death_link_amnesty",
                 "easier_true_jedi",
+                "uncap_original_trilogy_high_jump",
             )
         }
 
