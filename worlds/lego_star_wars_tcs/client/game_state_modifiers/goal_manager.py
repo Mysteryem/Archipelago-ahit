@@ -1,4 +1,6 @@
 import logging
+from itertools import cycle
+from time import perf_counter_ns
 from typing import Mapping, Literal
 
 from .text_replacer import TextId
@@ -25,6 +27,10 @@ EPISODE_NUMBER_TO_EPISODE_TEXT = {
 }
 
 
+GOAL_TEXT_CYCLE_COOLDOWN_NS = int(2e9)  # 2s
+GoalKeys = Literal["Minikits", "Bosses", "Levels", "Kyber Crystals"]
+
+
 class GoalManager(ClientComponent):
     receivable_ap_ids = MINIKIT_ITEMS
 
@@ -41,14 +47,27 @@ class GoalManager(ClientComponent):
 
     minikit_goal_complete: bool = False
 
+    _paused_goal_strings: dict[GoalKeys, str]
+    _paused_goal_string_key_cycle: cycle[GoalKeys]
+    _last_paused_goal_string_cycle_key: GoalKeys | None = None
+    _last_paused_goal_string_cycle: int = -1
+
     def __init__(self):
         self.enabled_boss_chapters = set()
+        self._paused_goal_strings = {}
+        self._paused_goal_string_key_cycle = cycle(self._paused_goal_strings.keys())
 
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         slot_data = event.slot_data
         ctx = event.context
         self.goal_minikit_count = slot_data["minikit_goal_amount"]
+
+        # Reset goal strings.
+        self._paused_goal_strings.clear()
+        self._paused_goal_string_key_cycle = cycle(self._paused_goal_strings.keys())
+        self._last_paused_goal_string_cycle_key = None
+        self._last_paused_goal_string_cycle = -1
 
         if self.goal_minikit_count > 0:
             enabled_chapter_count = len(slot_data["enabled_chapters"])
@@ -149,8 +168,18 @@ class GoalManager(ClientComponent):
         Replace the current "Paused" text, displayed in the UI under the Player that paused the game, with current goal
         progress.
         """
+        goal_strings = self._paused_goal_strings
+        if not goal_strings:
+            last_cycle = None
+        else:
+            last_cycle = self._last_paused_goal_string_cycle_key
+
+        is_first_time = last_cycle is None or self._last_paused_goal_string_cycle == -1
+
+        goal_strings.clear()
+
         suffix_message = f" - Goal: "
-        goals: list[str] = []
+
         if self.goal_minikit_count > 0:
             minikit_progress = f"{ctx.acquired_minikits.minikit_count}/{self.goal_minikit_count}"
             if self.minikit_goal_complete:
@@ -159,18 +188,36 @@ class GoalManager(ClientComponent):
                 minikit_goal = f"Finish Minikit Goal at the Cantina Junkyard Minikit Display ({minikit_progress})"
             else:
                 minikit_goal = f"{minikit_progress} Minikits"
-            goals.append(minikit_goal)
+            goal_strings["Minikits"] = suffix_message + minikit_goal
+
         if self.goal_bosses_count > 0:
             defeated_count = self._get_bosses_defeated_count(ctx)
             if self.goal_bosses_must_be_unique:
                 bosses_goal = f"{defeated_count}/{self.goal_bosses_count} Unique Bosses Defeated"
             else:
                 bosses_goal = f"{defeated_count}/{self.goal_bosses_count} Bosses Defeated"
-            goals.append(bosses_goal)
-        if not goals:
-            goals.append("Error, no goal found")
-        suffix_message += ", ".join(goals)
-        ctx.text_replacer.suffix_custom_string(TextId.PAUSED, suffix_message)
+            goal_strings["Bosses"] = suffix_message + bosses_goal
+
+        if len(goal_strings) > 1:
+            # Add a " [x/total]" string to the end of each goal string to help make it clearer to the user that there
+            # are multiple goals that will cycle.
+            for i, (k, v) in enumerate(goal_strings.copy().items(), start=1):
+                goal_strings[k] = v + f" [{i}/{len(goal_strings)}]"
+
+        if is_first_time:
+            if goal_strings:
+                self._paused_goal_string_key_cycle = cycle(goal_strings.keys())
+                first_key = next(self._paused_goal_string_key_cycle)
+                self._last_paused_goal_string_cycle_key = first_key
+                updated_message = goal_strings[first_key]
+            else:
+                updated_message = suffix_message + "Error, no goals found"
+            self._last_paused_goal_string_cycle = perf_counter_ns()
+        else:
+            assert last_cycle is not None
+            assert last_cycle in goal_strings
+            updated_message = goal_strings[last_cycle]
+        ctx.text_replacer.suffix_custom_string(TextId.PAUSED, updated_message)
 
     def _update_episodes_text_for_boss_statuses(self, ctx: TCSContext):
         if self.goal_bosses_count <= 0:
@@ -227,6 +274,14 @@ class GoalManager(ClientComponent):
         if self._bosses_goal_text_needs_update:
             self._bosses_goal_text_needs_update = False
             self._update_episodes_text_for_boss_statuses(event.context)
+
+        if not self._paused_goal_strings:
+            return
+
+        now = perf_counter_ns()
+        if now > self._last_paused_goal_string_cycle + GOAL_TEXT_CYCLE_COOLDOWN_NS:
+            next_paused_key = next(self._paused_goal_string_key_cycle)
+            event.context.text_replacer.suffix_custom_string(TextId.PAUSED, self._paused_goal_strings[next_paused_key])
 
     def tag_for_update(self, kind: Literal["all", "minikit", "boss"] = "all"):
         self._goal_text_needs_update = True
