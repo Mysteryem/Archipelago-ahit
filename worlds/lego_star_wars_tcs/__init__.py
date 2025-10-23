@@ -146,7 +146,9 @@ class LegoStarWarsTCSWorld(World):
     goal_minikit_count: int = -1
     goal_minikit_bundle_count: int = -1
     goal_boss_count: int = -1
+    goal_level_completion_count: int = 0
     gold_brick_event_count: int = 0
+    _expected_gold_brick_event_count: int = -1
     character_unlock_location_count: int = 0
     required_score_multiplier_count: int = 0  # set in create_regions
 
@@ -433,7 +435,7 @@ class LegoStarWarsTCSWorld(World):
             self.enabled_chapter_count = len(self.enabled_chapters)
             self.enabled_episodes = set(passthrough["enabled_episodes"])
             # The enabled bonuses are set depending on the number of Gold Bricks available
-            # self.enabled_bonuses = set(passthrough["enabled_bonuses"])
+            self.enabled_bonuses = set(passthrough["enabled_bonuses"])
             self.starting_chapter = passthrough["starting_chapter"]
             self.starting_episode = passthrough["starting_episode"]
             # Derived Minikit attributes.
@@ -472,6 +474,18 @@ class LegoStarWarsTCSWorld(World):
             else:
                 short_name_to_boss_character = {}
             self.short_name_to_boss_character = short_name_to_boss_character
+
+            # Compute expected Gold Brick event count.
+            if self.options.enable_bonus_locations:
+                gold_bricks_per_chapter = (
+                        1
+                        + bool(self.options.enable_minikit_locations)
+                        + bool(self.options.enable_true_jedi_locations)
+                )
+                gold_bricks_from_chapters = self.enabled_chapter_count * gold_bricks_per_chapter
+                areas_gen = (BONUS_NAME_TO_BONUS_AREA[area_name] for area_name in self.enabled_bonuses)
+                gold_bricks_from_bonuses = sum(area.gold_brick for area in areas_gen)
+                self._expected_gold_brick_event_count = gold_bricks_from_chapters + gold_bricks_from_bonuses
 
         # Normal options parsing.
         else:
@@ -764,6 +778,35 @@ class LegoStarWarsTCSWorld(World):
             if sum(junk_names_and_weights.values()) == 0:
                 self._log_warning("All Junk Weights were zero. The Junk Weight of Purple Stud items has been set to 1.")
                 junk_names_and_weights["Purple Stud"] = 1
+
+            # Calculate available Bonuses based on logically available Gold Brick counts.
+            if self.options.enable_bonus_locations:
+                # Start with the Gold Bricks available from enabled Chapters.
+                gold_bricks_per_chapter = (
+                        1
+                        + bool(self.options.enable_minikit_locations)
+                        + bool(self.options.enable_true_jedi_locations)
+                )
+                available_gold_bricks_from_chapters = self.enabled_chapter_count * gold_bricks_per_chapter
+
+                # Enable Bonuses that do not require more Gold Bricks than are logically available.
+                # Enabled Bonuses can also reward a Gold Brick, so those will also add +1 available Gold Brick.
+                available_gold_bricks = available_gold_bricks_from_chapters
+                bonuses_by_gold_brick_cost: dict[int, list[BonusArea]] = {}
+                for area in BONUS_AREAS:
+                    bonuses_by_gold_brick_cost.setdefault(area.gold_bricks_required, []).append(area)
+                # Sort by lowest cost first, and then iterate.
+                for gold_brick_cost, areas in sorted(bonuses_by_gold_brick_cost.items(), key=lambda t: t[0]):
+                    if gold_brick_cost > available_gold_bricks:
+                        # The Bonuses have been sorted by lowest Gold Brick cost first, so all remaining Bonuses will
+                        # have even higher requirements that cannot be met.
+                        break
+                    for area in areas:
+                        self.enabled_bonuses.add(area.name)
+                        if area.gold_brick:
+                            available_gold_bricks += 1
+                # An assertion checks that the expected count matches the count created.
+                self._expected_gold_brick_event_count = available_gold_bricks
 
         # Calculate goal_minikit_count when set to a percentage of the available minikits.
         if self.options.minikit_goal_amount == MinikitGoalAmount.special_range_names["use_percentage_option"]:
@@ -1673,17 +1716,19 @@ class LegoStarWarsTCSWorld(World):
             # Bonuses.
             bonuses = self.create_region("Bonuses")
             cantina.connect(bonuses, "Bonuses Door")
+
+            # Group Bonuses by gold brick costs so that the regions requiring progressively more Gold Bricks can be
+            # chained together more easily.
             gold_brick_costs: dict[int, list[BonusArea]] = {}
             for area in BONUS_AREAS:
+                if area.name not in self.enabled_bonuses:
+                    continue
                 gold_brick_costs.setdefault(area.gold_bricks_required, []).append(area)
 
             previous_gold_brick_region = bonuses
             for gold_brick_cost, areas in sorted(gold_brick_costs.items(), key=lambda t: t[0]):
                 if gold_brick_cost == 0:
                     region = bonuses
-                elif gold_brick_cost > self.gold_brick_event_count:
-                    # There are not enough Gold Brick events available to enable any more bonuses.
-                    break
                 else:
                     region = self.create_region(f"{gold_brick_cost} Gold Bricks Collected")
                     player = self.player
@@ -1697,7 +1742,6 @@ class LegoStarWarsTCSWorld(World):
                     location = LegoStarWarsTCSLocation(
                         self.player, area.name, self.location_name_to_id[area.name], region)
                     region.locations.append(location)
-                    self.enabled_bonuses.add(area.name)
                     # todo: Item requirements have been removed for now because it is not currently possible to lock
                     #  access to the bonus levels.
                     for item in area.item_requirements:
@@ -1717,6 +1761,10 @@ class LegoStarWarsTCSWorld(World):
                                                     self.location_name_to_id[purchase_indy_name], bonuses)
             bonuses.locations.append(purchase_indy)
             self.character_unlock_location_count += 1
+
+        # Check that the number of Gold Brick events created matched what was expected from the calculation in
+        # generate_early.
+        assert self.gold_brick_event_count == self._expected_gold_brick_event_count
 
         # 'All Episodes' character purchases.
         if self.options.enable_all_episodes_purchases:
