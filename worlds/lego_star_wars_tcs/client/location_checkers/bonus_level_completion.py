@@ -45,7 +45,7 @@ class BonusAreaCompletionChecker:
                 if ctx.is_location_sendable(ap_id):
                     write_to_datastorage_area_ids.append(area_id)
                     # Tell the goal manager it should update for newly completed bonuses.
-                    ctx.goal_manager.tag_for_update("areas")
+                    ctx.goal_manager.tag_for_update("area")
                 continue
             # It seems that the value is always `1` for a completed bonus and `0` otherwise. The client checks
             # truthiness in case it is possible that other bits could be set.

@@ -343,7 +343,7 @@ class GoalManager(ClientComponent):
             next_paused_key = next(self._paused_goal_string_key_cycle)
             event.context.text_replacer.suffix_custom_string(TextId.PAUSED, self._paused_goal_strings[next_paused_key])
 
-    def tag_for_update(self, kind: Literal["all", "minikit", "boss", "areas", "kyber brick"]):
+    def tag_for_update(self, kind: Literal["all", "minikit", "boss", "area", "kyber brick"]):
         """Tell the GoalManager that the state of a potentially goal-relevant type of object has updated."""
         if kind == "all":
             # Update everything regardless of whether the goal is enabled. This is used during initialization from
@@ -360,7 +360,7 @@ class GoalManager(ClientComponent):
             if bosses_goal_enabled:
                 self._bosses_goal_text_needs_update = True
                 self._goal_text_needs_update = True
-        elif kind == "areas":
+        elif kind == "area":
             levels_goal_enabled = self.goal_areas_count > 0
             if levels_goal_enabled:
                 self._goal_text_needs_update = True

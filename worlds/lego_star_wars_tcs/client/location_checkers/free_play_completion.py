@@ -147,7 +147,7 @@ class FreePlayChapterCompletionChecker(ClientComponent):
                 self.sent_locations.add(STATUS_LEVEL_ID_TO_AP_ID[area.status_level_id])
                 completed_area_ids.append(area_id)
                 # Tell the goal manager it should update for newly completed chapters.
-                ctx.goal_manager.tag_for_update("areas")
+                ctx.goal_manager.tag_for_update("area")
         ctx.update_datastorage_free_play_completion(completed_area_ids)
         ctx.goal_manager.tag_for_update("boss")
 
@@ -159,7 +159,7 @@ class FreePlayChapterCompletionChecker(ClientComponent):
             # The locations should have been sent already, but try sending again just in-case.
             self.sent_locations.update(self.chapter_completion_locations.get(area_id, ()))
             # Tell the goal manager it should update for newly completed chapters.
-            ctx.goal_manager.tag_for_update("areas")
+            ctx.goal_manager.tag_for_update("area")
 
     async def initialize(self, ctx: TCSContext):
         if not self.initial_setup_complete:
