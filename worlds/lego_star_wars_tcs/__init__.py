@@ -487,6 +487,9 @@ class LegoStarWarsTCSWorld(World):
                 areas_gen = (BONUS_NAME_TO_BONUS_AREA[area_name] for area_name in self.enabled_bonuses)
                 gold_bricks_from_bonuses = sum(area.gold_brick for area in areas_gen)
                 self._expected_gold_brick_event_count = gold_bricks_from_chapters + gold_bricks_from_bonuses
+            else:
+                # Gold Brick events are only relevant when bonuses are enabled.
+                self._expected_gold_brick_event_count = 0
 
         # Normal options parsing.
         else:
@@ -808,6 +811,9 @@ class LegoStarWarsTCSWorld(World):
                             available_gold_bricks += 1
                 # An assertion checks that the expected count matches the count created.
                 self._expected_gold_brick_event_count = available_gold_bricks
+            else:
+                # Gold Brick events are only relevant when bonuses are enabled.
+                self._expected_gold_brick_event_count = 0
 
         # Calculate goal_minikit_count when set to a percentage of the available minikits.
         if self.options.minikit_goal_amount == MinikitGoalAmount.special_range_names["use_percentage_option"]:
