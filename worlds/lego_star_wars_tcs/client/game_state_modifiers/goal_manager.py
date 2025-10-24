@@ -342,6 +342,7 @@ class GoalManager(ClientComponent):
         if now > self._last_paused_goal_string_cycle + GOAL_TEXT_CYCLE_COOLDOWN_NS:
             next_paused_key = next(self._paused_goal_string_key_cycle)
             event.context.text_replacer.suffix_custom_string(TextId.PAUSED, self._paused_goal_strings[next_paused_key])
+            self._last_paused_goal_string_cycle = now
 
     def tag_for_update(self, kind: Literal["all", "minikit", "boss", "area", "kyber brick"]):
         """Tell the GoalManager that the state of a potentially goal-relevant type of object has updated."""
