@@ -153,7 +153,7 @@ class GoalManager(ClientComponent):
                                            f" {len(self.enabled_boss_chapters)} bosses enabled, in"
                                            f" {boss_chapters_text}")
 
-        if event.generator_version < (1, 3, 0):
+        if event.generator_version < (1, 2, 0):
             self.goal_areas_count = 0
         else:
             self.goal_areas_count = slot_data["goal_area_completion_count"]
@@ -183,7 +183,7 @@ class GoalManager(ClientComponent):
             hints_page_3_goal_info_texts.append(areas_goal_info_text)
         self.goal_areas_relevant_bonus_area_ids = goal_areas_relevant_bonus_area_ids
 
-        if event.generator_version < (1, 3, 0):
+        if event.generator_version < (1, 2, 0):
             self.kyber_bricks_goal_enabled = False
         else:
             self.kyber_bricks_goal_enabled = bool(slot_data["goal_requires_kyber_bricks"])
