@@ -925,6 +925,10 @@ class LegoStarWarsTCSWorld(World):
             elif name == "Episode Completion Token":
                 # Very few location checks and typically late into a seed.
                 classification = ItemClassification.progression_skip_balancing
+            elif name == "Kyber Brick":
+                # Kyber Bricks are only logically relevant to the Kyber Bricks goal and do not unlock any locations, so
+                # should skip progression balancing.
+                classification = ItemClassification.progression_skip_balancing
             elif name.startswith("Episode ") and name.endswith(" Unlock"):
                 classification = ItemClassification.progression | ItemClassification.useful
 
@@ -1234,23 +1238,26 @@ class LegoStarWarsTCSWorld(World):
 
         assert free_location_count >= 0, "initial free_location_count should always be >= 0"
 
-        episode_related_items = []
+        extra_required_items = []
         # A few free locations may need to be used for episode unlock items and/or episode tokens.
         if self.options.episode_unlock_requirement == "episode_item":
             for i in self.enabled_episodes:
                 if i != self.starting_episode:
-                    episode_related_items.append(f"Episode {i} Unlock")
+                    extra_required_items.append(f"Episode {i} Unlock")
         if self.options.all_episodes_character_purchase_requirements == "episodes_tokens":
             # One token is added to the item pool for every episode's worth of (6) chapters that are enabled.
             tokens_in_pool = max(1, round(len(self.enabled_episodes) / 6))
             start_inventory_tokens = 6 - tokens_in_pool
             assert 5 >= start_inventory_tokens >= 0
             for _ in range(tokens_in_pool):
-                episode_related_items.append("Episode Completion Token")
+                extra_required_items.append("Episode Completion Token")
             for _ in range(start_inventory_tokens):
                 self.push_precollected(self.create_item("Episode Completion Token"))
+        # 7 free locations may need to be used for Kyber Bricks.
+        if self.options.goal_requires_kyber_bricks:
+            extra_required_items.extend(("Kyber Brick",) * 7)
 
-        free_location_count -= len(episode_related_items)
+        free_location_count -= len(extra_required_items)
 
         if free_location_count < 0:
             needed = -free_location_count
@@ -1259,8 +1266,14 @@ class LegoStarWarsTCSWorld(World):
             ok_to_replace_extras_count = max(0, reserved_power_brick_location_count - required_extras_count)
             total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
             if needed > total_replaceable:
-                self._option_error("There are not enough locations to fit all required items. Enable additional"
-                                   " locations or increase the Minikit Bundle Size to free up more locations.")
+                if self.options.goal_requires_kyber_bricks:
+                    # The Kyber Bricks goal adds 7 items that have no corresponding vanilla locations.
+                    self._option_error("There are not enough locations to fit all required items. Enable additional"
+                                       " locations, increase the Minikit Bundle Size, or disable the Kyber Bricks goal"
+                                       " to free up more locations.")
+                else:
+                    self._option_error("There are not enough locations to fit all required items. Enable additional"
+                                       " locations or increase the Minikit Bundle Size to free up more locations.")
             character_percentage = ok_to_replace_character_count / total_replaceable
             character_subtract = min(needed, round(character_percentage * needed))
             extra_subtract = needed - character_subtract
@@ -1278,7 +1291,7 @@ class LegoStarWarsTCSWorld(World):
                 + reserved_power_brick_location_count
                 + required_minikit_location_count
                 + free_location_count
-                + len(episode_related_items)
+                + len(extra_required_items)
         )
 
         required_extras_count = len(pool_required_extras)
@@ -1324,9 +1337,9 @@ class LegoStarWarsTCSWorld(World):
             created_item_names.add(item.name)
 
         # Create Episode related items.
-        for name in episode_related_items:
+        for name in extra_required_items:
             add_to_pool(create_item(name))
-        num_to_fill -= len(episode_related_items)
+        num_to_fill -= len(extra_required_items)
 
         # Create required characters.
         start_inventory_required_characters_count: int
@@ -2023,6 +2036,9 @@ class LegoStarWarsTCSWorld(World):
         if goal_area_completions > 0:
             # "Level" here is as a user-facing term, with the meaning of "Area" internally.
             add_rule(victory, lambda state, p_=player, c_=goal_area_completions: state.has("Level Completion", p_, c_))
+        # Kyber Bricks goal.
+        if self.options.goal_requires_kyber_bricks:
+            add_rule(victory, lambda state, p_=player: state.has("Kyber Brick", p_, 7))
 
         self.multiworld.completion_condition[self.player] = lambda state: state.has("Victory", player)
 
@@ -2112,6 +2128,7 @@ class LegoStarWarsTCSWorld(World):
                 "easier_true_jedi",
                 "uncap_original_trilogy_high_jump",
                 "scale_true_jedi_with_score_multipliers",
+                "goal_requires_kyber_bricks",
             )
         }
 

@@ -120,6 +120,17 @@ class CompleteLevelsGoalAmountPercentage(Range):
     default = 0
 
 
+class GoalRequiresKyberBricks(Toggle):
+    """
+    Require that 7 Kyber Brick items must be acquired as part of your goal.
+
+    The 7 Kyber Brick items only contribute to your goal and do nothing else. There are only 7 added to the item pool
+    when this option is enabled.
+    """
+    display_name = "Goal Requires 7 Kyber Bricks"
+    rich_text_doc = True
+
+
 class DefeatBossesGoalAmount(Range):
     """
     Choose how many bosses must be defeated to goal.
@@ -1079,6 +1090,8 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
 
     complete_levels_goal_amount_percentage: CompleteLevelsGoalAmountPercentage
 
+    goal_requires_kyber_bricks: GoalRequiresKyberBricks
+
     # Enabled/Available locations.
     # Chapters.
     enabled_chapters_count: EnabledChaptersCount
@@ -1135,8 +1148,9 @@ OPTION_GROUPS: list[OptionGroup] = [
         AllowedBosses,
         OnlyUniqueBossesCountTowardsGoal,
     ]),
-    OptionGroup("Levels Goal Options", [
+    OptionGroup("Other Goal Options", [
         CompleteLevelsGoalAmountPercentage,
+        GoalRequiresKyberBricks,
     ]),
     OptionGroup("Chapter Options", [
         EnabledChaptersCount,

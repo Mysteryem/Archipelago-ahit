@@ -26,6 +26,7 @@ EPISODE_UNLOCKS: Mapping[int, int] = {
 }
 ALL_EPISODES_TOKEN: int = GENERIC_BY_NAME["Episode Completion Token"].code
 PROGRESSIVE_SCORE_MULTIPLIER: int = GENERIC_BY_NAME["Progressive Score Multiplier"].code
+KYBER_BRICK: int = GENERIC_BY_NAME["Kyber Brick"].code
 SCORE_MULIPLIER_EXTRAS: Sequence[ExtraData] = (
     EXTRAS_BY_NAME["Score x2"],
     EXTRAS_BY_NAME["Score x4"],
@@ -99,6 +100,7 @@ class AcquiredGeneric(ItemReceiver):
     received_episode_unlocks: set[int]
     episode_completion_token_count: int = 0
     progressive_score_count: int = 0
+    kyber_brick_count: int = 0
 
     def __init__(self):
         self.received_episode_unlocks = set()
@@ -111,6 +113,7 @@ class AcquiredGeneric(ItemReceiver):
         self.received_episode_unlocks.clear()
         self.episode_completion_token_count = 0
         self.progressive_score_count = 0
+        self.kyber_brick_count = 0
 
     @property
     def current_score_multiplier(self):
@@ -130,5 +133,9 @@ class AcquiredGeneric(ItemReceiver):
         elif ap_item_id in EPISODE_UNLOCKS:
             self.received_episode_unlocks.add(EPISODE_UNLOCKS[ap_item_id])
             ctx.unlocked_chapter_manager.on_character_or_episode_unlocked(ap_item_id)
+        # Kyber Brick goal items
+        elif ap_item_id == KYBER_BRICK:
+            self.kyber_brick_count += 1
+            ctx.goal_manager.tag_for_update("kyber brick")
         else:
             logger.error("Unhandled ap_item_id %s for generic item", ap_item_id)

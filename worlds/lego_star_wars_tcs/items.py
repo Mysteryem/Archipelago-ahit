@@ -482,6 +482,7 @@ ITEM_DATA: list[GenericItemData] = [
     MinikitItemData(200, "2 Minikits", 2),
     MinikitItemData(201, "10 Minikits", 10),
     _generic(202, "Power Up"),
+    _generic(203, "Kyber Brick"),
 
     # "Extra Toggle" characters.
     _char(-1, "Womp Rat", 165),

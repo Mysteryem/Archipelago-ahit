@@ -28,7 +28,7 @@ EPISODE_NUMBER_TO_EPISODE_TEXT = {
 
 
 GOAL_TEXT_CYCLE_COOLDOWN_NS = int(2e9)  # 2s
-GoalKeys = Literal["Minikits", "Bosses", "Areas", "Kyber Crystals"]
+GoalKeys = Literal["Minikits", "Bosses", "Areas", "Kyber Bricks"]
 
 
 class GoalManager(ClientComponent):
@@ -49,6 +49,9 @@ class GoalManager(ClientComponent):
 
     goal_areas_count: int = 999_999_999  # Set by an option and read from slot data.
     goal_areas_relevant_bonus_area_ids: set[AreaId]
+
+    # Assume enabled to start with as an extra measure against any issues that could cause goal to send early.
+    kyber_bricks_goal_enabled: bool = True
 
     _paused_goal_strings: dict[GoalKeys, str]
     _paused_goal_string_key_cycle: cycle[GoalKeys]
@@ -155,11 +158,13 @@ class GoalManager(ClientComponent):
         else:
             self.goal_areas_count = slot_data["goal_area_completion_count"]
 
+        # The "Levels" and Kyber Bricks goal info are written to the same shop hint text because they are both quite
+        # short.
+        hints_page_3_goal_info_texts = []
+
         # "Level" here is as a user-facing term, not that internal meaning of a "Level".
         goal_areas_relevant_bonus_area_ids = set()
-        if self.goal_areas_count <= 0:
-            areas_goal_info_text = "A specific number of levels do not need to be completed to goal."
-        else:
+        if self.goal_areas_count > 0:
             enabled_chapter_count = len(slot_data["enabled_chapters"])
             if slot_data["enable_bonus_locations"]:
                 enabled_bonus_level_count = 0
@@ -175,11 +180,23 @@ class GoalManager(ClientComponent):
             else:
                 areas_goal_info_text = (f"{self.goal_areas_count}/{enabled_chapter_count} Chapters need to be"
                                         f" completed to goal.")
+            hints_page_3_goal_info_texts.append(areas_goal_info_text)
         self.goal_areas_relevant_bonus_area_ids = goal_areas_relevant_bonus_area_ids
+
+        if event.generator_version < (1, 3, 0):
+            self.kyber_bricks_goal_enabled = False
+        else:
+            self.kyber_bricks_goal_enabled = bool(slot_data["goal_requires_kyber_bricks"])
+
+        if self.kyber_bricks_goal_enabled:
+            hints_page_3_goal_info_texts.append("7 Kyber Bricks are needed to goal.")
+
+        if not hints_page_3_goal_info_texts:
+            hints_page_3_goal_info_texts.append("There are no additional goal requirements.")
 
         ctx.text_replacer.write_custom_string(TextId.SHOP_UNLOCKED_HINT_2, minikit_goal_info_text)
         ctx.text_replacer.write_custom_string(TextId.SHOP_UNLOCKED_HINT_3, boss_goal_info_text)
-        ctx.text_replacer.write_custom_string(TextId.SHOP_UNLOCKED_HINT_4, areas_goal_info_text)
+        ctx.text_replacer.write_custom_string(TextId.SHOP_UNLOCKED_HINT_4, " ".join(hints_page_3_goal_info_texts))
 
         self.tag_for_update("all")
         assert isinstance(self.goal_minikit_count, int)
@@ -235,6 +252,11 @@ class GoalManager(ClientComponent):
             # "Level" here is as a user-facing term, not that internal meaning of a "Level".
             areas_goal = f"{completed_areas_count}/{self.goal_areas_count} Levels Completed"
             goal_strings["Areas"] = areas_goal
+
+        if self.kyber_bricks_goal_enabled:
+            acquired_kyber_bricks_count = ctx.acquired_generic.kyber_brick_count
+            kyber_bricks_goal = f"{acquired_kyber_bricks_count}/7 Kyber Bricks"
+            goal_strings["Kyber Bricks"] = kyber_bricks_goal
 
         if len(goal_strings) > 1:
             # Add a " [x/total]" string to the end of each goal string to help make it clearer to the user that there
@@ -321,7 +343,7 @@ class GoalManager(ClientComponent):
             next_paused_key = next(self._paused_goal_string_key_cycle)
             event.context.text_replacer.suffix_custom_string(TextId.PAUSED, self._paused_goal_strings[next_paused_key])
 
-    def tag_for_update(self, kind: Literal["all", "minikit", "boss", "areas"]):
+    def tag_for_update(self, kind: Literal["all", "minikit", "boss", "areas", "kyber brick"]):
         """Tell the GoalManager that the state of a potentially goal-relevant type of object has updated."""
         if kind == "all":
             # Update everything regardless of whether the goal is enabled. This is used during initialization from
@@ -341,6 +363,9 @@ class GoalManager(ClientComponent):
         elif kind == "areas":
             levels_goal_enabled = self.goal_areas_count > 0
             if levels_goal_enabled:
+                self._goal_text_needs_update = True
+        elif kind == "kyber brick":
+            if self.kyber_bricks_goal_enabled:
                 self._goal_text_needs_update = True
         else:
             raise ValueError(f"Unexpected goal kind '{kind}'")
@@ -407,6 +432,9 @@ class GoalManager(ClientComponent):
                 return False
         if self.goal_areas_count > 0:
             if self._get_completed_area_count(ctx) < self.goal_areas_count:
+                return False
+        if self.kyber_bricks_goal_enabled:
+            if ctx.acquired_generic.kyber_brick_count < 7:
                 return False
 
         return True
