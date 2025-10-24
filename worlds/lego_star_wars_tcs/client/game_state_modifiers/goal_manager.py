@@ -8,7 +8,7 @@ from ..common_addresses import CantinaRoom, CustomSaveFlags1, GameState1
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
 from ..type_aliases import TCSContext, AreaId
 from ...items import MINIKITS_BY_COUNT
-from ...levels import SHORT_NAME_TO_CHAPTER_AREA, AREA_ID_TO_CHAPTER_AREA
+from ...levels import SHORT_NAME_TO_CHAPTER_AREA, AREA_ID_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
 from ...options import OnlyUniqueBossesCountTowardsGoal
 from . import ClientComponent
 
@@ -28,7 +28,7 @@ EPISODE_NUMBER_TO_EPISODE_TEXT = {
 
 
 GOAL_TEXT_CYCLE_COOLDOWN_NS = int(2e9)  # 2s
-GoalKeys = Literal["Minikits", "Bosses", "Levels", "Kyber Crystals"]
+GoalKeys = Literal["Minikits", "Bosses", "Areas", "Kyber Crystals"]
 
 
 class GoalManager(ClientComponent):
@@ -46,6 +46,9 @@ class GoalManager(ClientComponent):
     _bosses_goal_text_needs_update: bool = True
 
     minikit_goal_complete: bool = False
+
+    goal_areas_count: int = 999_999_999  # Set by an option and read from slot data.
+    goal_areas_relevant_bonus_area_ids: set[AreaId]
 
     _paused_goal_strings: dict[GoalKeys, str]
     _paused_goal_string_key_cycle: cycle[GoalKeys]
@@ -146,8 +149,37 @@ class GoalManager(ClientComponent):
                     boss_goal_info_text = (f"{self.goal_bosses_count} bosses need to be defeated. There are"
                                            f" {len(self.enabled_boss_chapters)} bosses enabled, in"
                                            f" {boss_chapters_text}")
+
+        if event.generator_version < (1, 3, 0):
+            self.goal_areas_count = 0
+        else:
+            self.goal_areas_count = slot_data["goal_area_completion_count"]
+
+        # "Level" here is as a user-facing term, not that internal meaning of a "Level".
+        goal_areas_relevant_bonus_area_ids = set()
+        if self.goal_areas_count <= 0:
+            areas_goal_info_text = "A specific number of levels do not need to be completed to goal."
+        else:
+            enabled_chapter_count = len(slot_data["enabled_chapters"])
+            if slot_data["enable_bonus_locations"]:
+                enabled_bonus_level_count = 0
+                for name in slot_data["enabled_bonuses"]:
+                    bonus_area = BONUS_NAME_TO_BONUS_AREA[name]
+                    if not bonus_area.gold_brick:
+                        continue
+                    enabled_bonus_level_count += 1
+                    goal_areas_relevant_bonus_area_ids.add(bonus_area.area_id)
+                total_level_count = enabled_chapter_count + enabled_bonus_level_count
+                areas_goal_info_text = (f"{self.goal_areas_count}/{total_level_count} levels (Chapters and/or Bonus"
+                                        f" levels) need to be completed to goal.")
+            else:
+                areas_goal_info_text = (f"{self.goal_areas_count}/{enabled_chapter_count} Chapters need to be"
+                                        f" completed to goal.")
+        self.goal_areas_relevant_bonus_area_ids = goal_areas_relevant_bonus_area_ids
+
         ctx.text_replacer.write_custom_string(TextId.SHOP_UNLOCKED_HINT_2, minikit_goal_info_text)
         ctx.text_replacer.write_custom_string(TextId.SHOP_UNLOCKED_HINT_3, boss_goal_info_text)
+        ctx.text_replacer.write_custom_string(TextId.SHOP_UNLOCKED_HINT_4, areas_goal_info_text)
 
         self.tag_for_update("all")
         assert isinstance(self.goal_minikit_count, int)
@@ -197,6 +229,12 @@ class GoalManager(ClientComponent):
             else:
                 bosses_goal = f"{defeated_count}/{self.goal_bosses_count} Bosses Defeated"
             goal_strings["Bosses"] = suffix_message + bosses_goal
+
+        if self.goal_areas_count > 0:
+            completed_areas_count = self._get_completed_area_count(ctx)
+            # "Level" here is as a user-facing term, not that internal meaning of a "Level".
+            areas_goal = f"{completed_areas_count}/{self.goal_areas_count} Levels Completed"
+            goal_strings["Areas"] = areas_goal
 
         if len(goal_strings) > 1:
             # Add a " [x/total]" string to the end of each goal string to help make it clearer to the user that there
@@ -283,15 +321,27 @@ class GoalManager(ClientComponent):
             next_paused_key = next(self._paused_goal_string_key_cycle)
             event.context.text_replacer.suffix_custom_string(TextId.PAUSED, self._paused_goal_strings[next_paused_key])
 
-    def tag_for_update(self, kind: Literal["all", "minikit", "boss"] = "all"):
-        self._goal_text_needs_update = True
+    def tag_for_update(self, kind: Literal["all", "minikit", "boss", "areas"]):
+        """Tell the GoalManager that the state of a potentially goal-relevant type of object has updated."""
         if kind == "all":
+            # Update everything regardless of whether the goal is enabled. This is used during initialization from
+            # slot_data.
             self._bosses_goal_text_needs_update = True
+            self._goal_text_needs_update = True
         elif kind == "minikit":
+            minikit_goal_enabled = self.goal_minikit_count > 0
             # Only the shared goal text shows minikit progress currently.
-            pass
+            if minikit_goal_enabled:
+                self._goal_text_needs_update = True
         elif kind == "boss":
-            self._bosses_goal_text_needs_update = True
+            bosses_goal_enabled = self.goal_bosses_count > 0
+            if bosses_goal_enabled:
+                self._bosses_goal_text_needs_update = True
+                self._goal_text_needs_update = True
+        elif kind == "areas":
+            levels_goal_enabled = self.goal_areas_count > 0
+            if levels_goal_enabled:
+                self._goal_text_needs_update = True
         else:
             raise ValueError(f"Unexpected goal kind '{kind}'")
 
@@ -324,6 +374,16 @@ class GoalManager(ClientComponent):
                         return True
         return False
 
+    def _get_completed_area_count(self, ctx: TCSContext):
+        completed_chapter_count = len(ctx.free_play_completion_checker.completed_free_play)
+        if self.goal_areas_relevant_bonus_area_ids:
+            incomplete_bonuses = ctx.bonus_area_completion_checker.remaining_story_completion_checks.keys()
+            incomplete_relevant_bonuses = self.goal_areas_relevant_bonus_area_ids.intersection(incomplete_bonuses)
+            completed_bonuses_count = len(self.goal_areas_relevant_bonus_area_ids) - len(incomplete_relevant_bonuses)
+            return completed_chapter_count + completed_bonuses_count
+        else:
+            return completed_chapter_count
+
     def is_goal_complete(self, ctx: TCSContext):
         if self.goal_minikit_count > 0 and not self.minikit_goal_complete:
             if not ctx.is_in_game():
@@ -344,6 +404,9 @@ class GoalManager(ClientComponent):
             # todo: Once a boss has been defeated, reduce a remaining count and remove the boss from a set of remaining
             #  bosses. That way, the check becomes more efficient over time.
             if not self._is_bosses_goal_complete(ctx.free_play_completion_checker.completed_free_play):
+                return False
+        if self.goal_areas_count > 0:
+            if self._get_completed_area_count(ctx) < self.goal_areas_count:
                 return False
 
         return True

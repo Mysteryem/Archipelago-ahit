@@ -103,6 +103,23 @@ class MinikitGoalAmountPercentage(Range):
     default = 75
 
 
+# "Level" used here is as a user-facing term. The correct internal name is "Area". Internally, a "Level" refers to a
+# separately loaded section of an "Area".
+class CompleteLevelsGoalAmountPercentage(Range):
+    """
+    Require that a percentage of enabled Chapters and Gold Brick Door Bonuses (if Bonuses are enabled) must be completed
+    as part of your goal.
+
+    The final number of levels that must be completed to goal is rounded to the nearest integer, but will always be at
+    least 1 if the percentage is greater than 0.
+    """
+    display_name = "Goal Level Completion Percentage"
+    rich_text_doc = True
+    range_start = 0
+    range_end = 100
+    default = 0
+
+
 class DefeatBossesGoalAmount(Range):
     """
     Choose how many bosses must be defeated to goal.
@@ -1047,6 +1064,8 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     allowed_bosses: AllowedBosses
     only_unique_bosses_count: OnlyUniqueBossesCountTowardsGoal
 
+    complete_levels_goal_amount_percentage: CompleteLevelsGoalAmountPercentage
+
     # Enabled/Available locations.
     # Chapters.
     enabled_chapters_count: EnabledChaptersCount
@@ -1101,6 +1120,9 @@ OPTION_GROUPS: list[OptionGroup] = [
         EnabledBossesCount,
         AllowedBosses,
         OnlyUniqueBossesCountTowardsGoal,
+    ]),
+    OptionGroup("Levels Goal Options", [
+        CompleteLevelsGoalAmountPercentage,
     ]),
     OptionGroup("Chapter Options", [
         EnabledChaptersCount,

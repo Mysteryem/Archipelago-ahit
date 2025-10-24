@@ -146,7 +146,7 @@ class LegoStarWarsTCSWorld(World):
     goal_minikit_count: int = -1
     goal_minikit_bundle_count: int = -1
     goal_boss_count: int = -1
-    goal_level_completion_count: int = 0
+    goal_area_completion_count: int = 0
     gold_brick_event_count: int = 0
     _expected_gold_brick_event_count: int = -1
     character_unlock_location_count: int = 0
@@ -445,6 +445,7 @@ class LegoStarWarsTCSWorld(World):
             self.minikit_bundle_count = (self.available_minikits // bundle_size
                                          + (self.available_minikits % bundle_size != 0))
             self.enabled_bosses = set(passthrough["enabled_bosses"])
+            self.goal_area_completion_count = passthrough["goal_area_completion_count"]
 
             # Override options with their derived/rolled values.
             # Override the enable_chapter count to match the number that are enabled.
@@ -826,6 +827,20 @@ class LegoStarWarsTCSWorld(World):
             # There are often multiple Chapters that can send each Story character unlock location, so enable path
             # display in spoilers with paths enabled.
             self.topology_present = True
+
+        # Calculate goal_area_completion_count when set to a non-zero percentage of available areas (chapters +
+        # bonuses).
+        # The option name uses "levels" as a user-facing term, but has the meaning of "areas" internally.
+        complete_areas_goal_amount_percentage = self.options.complete_levels_goal_amount_percentage.value
+        if complete_areas_goal_amount_percentage > 0:
+            chapter_areas_count = self.enabled_chapter_count
+            # Only bonuses that award a Gold Brick on completion count towards the goal count.
+            bonus_areas_count = sum(BONUS_NAME_TO_BONUS_AREA[name].gold_brick for name in self.enabled_bonuses)
+            available_areas_count = chapter_areas_count + bonus_areas_count
+            self.goal_area_completion_count = max(1, round(
+                available_areas_count * complete_areas_goal_amount_percentage / 100))
+        else:
+            self.goal_area_completion_count = 0
 
         # Debug check to help with comparing passthrough values
         # for k, v in vars(self).items():
@@ -1583,6 +1598,8 @@ class LegoStarWarsTCSWorld(World):
         # All regions that connect to story character unlock regions.
         story_character_unlock_regions: dict[str, list[Region]] = {}
 
+        goal_requires_area_completion = self.goal_area_completion_count > 0
+
         for episode_number in range(1, 7):
             if episode_number not in self.enabled_episodes:
                 continue
@@ -1687,6 +1704,15 @@ class LegoStarWarsTCSWorld(World):
                     boss_event_location.place_locked_item(boss_event_item)
                     chapter_region.locations.append(boss_event_location)
 
+                # Area completion.
+                if goal_requires_area_completion:
+                    loc_name = f"{chapter.short_name} Completion (Event)"
+                    completion_event_location = LegoStarWarsTCSLocation(self.player, loc_name, None, chapter_region)
+                    # "Level" here is as a user-facing term, with the meaning of "Area" internally.
+                    completion_event_item = self.create_event("Level Completion")
+                    completion_event_location.place_locked_item(completion_event_item)
+                    chapter_region.locations.append(completion_event_location)
+
         for character, parent_regions in story_character_unlock_regions.items():
             character_region = self.create_region(f"Unlock {character}")
             loc_name = f"Chapter Completion - Unlock {character}"
@@ -1754,6 +1780,14 @@ class LegoStarWarsTCSWorld(World):
                     gold_brick_location.place_locked_item(self.create_event(GOLD_BRICK_EVENT_NAME))
                     self.gold_brick_event_count += 1
                     region.locations.append(gold_brick_location)
+
+                    if goal_requires_area_completion:
+                        loc_name = f"{area.name} Completion (Event)"
+                        completion_event_location = LegoStarWarsTCSLocation(self.player, loc_name, None, region)
+                        # "Level" here is as a user-facing term, with the meaning of "Area" internally.
+                        completion_event_item = self.create_event("Level Completion")
+                        completion_event_location.place_locked_item(completion_event_item)
+                        region.locations.append(completion_event_location)
 
             # Indiana Jones shop purchase. Unlocks in the shop after watching the Lego Indiana Jones trailer.
             purchase_indy_name = "Purchase Indiana Jones"
@@ -1966,8 +2000,10 @@ class LegoStarWarsTCSWorld(World):
 
         # Victory.
         victory = self.get_location("Goal")
+        # Minikits goal.
         if self.goal_minikit_count > 0:
             add_rule(victory, lambda state: state.has(self.minikit_bundle_name, player, self.goal_minikit_bundle_count))
+        # Bosses goal.
         goal_boss_count = self.options.defeat_bosses_goal_amount.value
         if goal_boss_count > 0:
             if self.options.only_unique_bosses_count:
@@ -1982,6 +2018,11 @@ class LegoStarWarsTCSWorld(World):
                 )
             else:
                 add_rule(victory, lambda state, p_=player, c_=goal_boss_count: state.has("Boss Defeated", p_, c_))
+        # Area completion goal.
+        goal_area_completions = self.goal_area_completion_count
+        if goal_area_completions > 0:
+            # "Level" here is as a user-facing term, with the meaning of "Area" internally.
+            add_rule(victory, lambda state, p_=player, c_=goal_area_completions: state.has("Level Completion", p_, c_))
 
         self.multiworld.completion_condition[self.player] = lambda state: state.has("Victory", player)
 
@@ -2049,6 +2090,7 @@ class LegoStarWarsTCSWorld(World):
             "starting_episode": self.starting_episode,
             "minikit_goal_amount": self.goal_minikit_count,
             "enabled_bosses": self.enabled_bosses,
+            "goal_area_completion_count": self.goal_area_completion_count,
             **self.options.as_dict(
                 "received_item_messages",
                 "checked_location_messages",
