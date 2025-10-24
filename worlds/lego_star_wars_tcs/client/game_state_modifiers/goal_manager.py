@@ -251,12 +251,12 @@ class GoalManager(ClientComponent):
             completed_areas_count = self._get_completed_area_count(ctx)
             # "Level" here is as a user-facing term, not that internal meaning of a "Level".
             areas_goal = f"{completed_areas_count}/{self.goal_areas_count} Levels Completed"
-            goal_strings["Areas"] = areas_goal
+            goal_strings["Areas"] = suffix_message + areas_goal
 
         if self.kyber_bricks_goal_enabled:
             acquired_kyber_bricks_count = ctx.acquired_generic.kyber_brick_count
             kyber_bricks_goal = f"{acquired_kyber_bricks_count}/7 Kyber Bricks"
-            goal_strings["Kyber Bricks"] = kyber_bricks_goal
+            goal_strings["Kyber Bricks"] = suffix_message + kyber_bricks_goal
 
         if len(goal_strings) > 1:
             # Add a " [x/total]" string to the end of each goal string to help make it clearer to the user that there
