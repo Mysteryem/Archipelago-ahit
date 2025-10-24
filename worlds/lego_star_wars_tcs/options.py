@@ -865,6 +865,19 @@ class EasierTrueJedi(Toggle):
     rich_text_doc = True
 
 
+class ScaleTrueJediWithScoreMultipliers(Toggle):
+    """Scale True Jedi requirements with the number of Progressive Score Multipliers acquired.
+
+    If Easier True Jedi is not enabled, the True Jedi that logically require Score x2 will also scale but only with
+    Score x4 and higher.
+
+    The scaling is applied only when entering a Chapter and will not adjust dynamically if you receive/find additional
+    Progressive Score Multiplier items while within the entered Chapter.
+    """
+    display_name = "Scale True Jedi With Multipliers"
+    rich_text_doc = True
+
+
 class MostExpensivePurchaseWithNoScoreMultiplier(NamedRange):
     """
     The most expensive individual purchase the player can be expected to make without any score multipliers, *in
@@ -1087,6 +1100,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     most_expensive_purchase_with_no_multiplier: MostExpensivePurchaseWithNoScoreMultiplier
     all_episodes_character_purchase_requirements: AllEpisodesCharacterPurchaseRequirements
     easier_true_jedi: EasierTrueJedi
+    scale_true_jedi_with_score_multipliers: ScaleTrueJediWithScoreMultipliers
 
     # Items.
     preferred_characters: PreferredCharacters
@@ -1143,6 +1157,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         EpisodeUnlockRequirement,
         ChapterUnlockRequirement,
         EasierTrueJedi,
+        ScaleTrueJediWithScoreMultipliers,
         MostExpensivePurchaseWithNoScoreMultiplier,
         AllEpisodesCharacterPurchaseRequirements,
     ]),

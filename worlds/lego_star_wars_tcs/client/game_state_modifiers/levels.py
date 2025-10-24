@@ -7,7 +7,13 @@ from ..common import ClientComponent, UintField, UCharField
 from ..common_addresses import OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from ..type_aliases import TCSContext, AreaId
 from ...items import ITEM_DATA_BY_NAME, ITEM_DATA_BY_ID
-from ...levels import ChapterArea, CHAPTER_AREAS, SHORT_NAME_TO_CHAPTER_AREA, AREA_ID_TO_CHAPTER_AREA
+from ...levels import (
+    ChapterArea,
+    CHAPTER_AREAS,
+    SHORT_NAME_TO_CHAPTER_AREA,
+    AREA_ID_TO_CHAPTER_AREA,
+    DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
+)
 from ... import options
 
 
@@ -34,6 +40,7 @@ class UnlockedChapterManager(ClientComponent):
     enabled_chapter_area_ids: set[int]
 
     easy_true_jedi: bool = False
+    scale_true_jedi_with_score_multipliers: bool = False
 
     def __init__(self) -> None:
         self.character_to_dependent_game_chapters = {}
@@ -58,6 +65,13 @@ class UnlockedChapterManager(ClientComponent):
         else:
             self.easy_true_jedi = slot_data["easier_true_jedi"]
         self._set_current_area_true_jedi_requirement(ctx)
+
+        # In older multiworlds, there is no option to scale True Jedi with score multipliers, so it is always disabled
+        # in those versions.
+        if event.generator_version < (1, 2, 0):
+            self.scale_true_jedi_with_score_multipliers = False
+        else:
+            self.scale_true_jedi_with_score_multipliers = bool(slot_data["scale_true_jedi_with_score_multipliers"])
 
         num_enabled_episodes = len(enabled_episodes)
 
@@ -232,6 +246,17 @@ class UnlockedChapterManager(ClientComponent):
             true_jedi_requirement = chapter_area.story_true_jedi_requirement
         else:
             true_jedi_requirement = chapter_area.free_play_true_jedi_requirement
+
+        if self.scale_true_jedi_with_score_multipliers:
+            multiplier = ctx.acquired_generic.current_score_multiplier
+            if (not self.easy_true_jedi
+                    and multiplier >= 2
+                    and chapter_area.short_name in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI):
+                # The chapter has a difficult or impossible True Jedi without the use of Score x2, so remove Score x2
+                # from the multiplier.
+                multiplier //= 2
+            true_jedi_requirement *= multiplier
+
         AREA_DATA_FREE_PLAY_TRUE_JEDI_REQUIREMENT.set(ctx, current_p_area_data, true_jedi_requirement)
         debug_logger.info("Set the True Jedi requirement for %s to %i", chapter_area.name, true_jedi_requirement)
 

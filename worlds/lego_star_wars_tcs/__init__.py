@@ -2111,6 +2111,7 @@ class LegoStarWarsTCSWorld(World):
                 "vehicle_death_link_amnesty",
                 "easier_true_jedi",
                 "uncap_original_trilogy_high_jump",
+                "scale_true_jedi_with_score_multipliers",
             )
         }
 
