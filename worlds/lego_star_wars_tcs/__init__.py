@@ -2056,27 +2056,31 @@ class LegoStarWarsTCSWorld(World):
                         filleritempool: list[Item],
                         fill_locations: list[Location],
                         ) -> None:
+        game_players = multiworld.get_game_players(cls.game)
         # Get all player IDs that have progression classification minikits.
-        minikit_player_ids = {player for player in multiworld.get_game_players(cls.game)
-                             if multiworld.worlds[player].goal_minikit_count > 0}
-        # Get the player IDs of those that are also using minimal accessibility.
-        minikit_minimal_player_ids = {player for player in minikit_player_ids
+        minikit_player_ids = {player for player in game_players if multiworld.worlds[player].goal_minikit_count > 0}
+        # Get all player IDs that have the Kyber Bricks goal.
+        kyber_brick_player_ids = {player for player in game_players
+                                  if multiworld.worlds[player].options.goal_requires_kyber_bricks}
+        # Get the player IDs of those that are using minimal accessibility.
+        minikit_minimal_player_ids = {player for player in game_players
                                       if multiworld.worlds[player].options.accessibility == "minimal"}
 
         def sort_func(item: Item):
-            if item.player in minikit_player_ids and item.name in MINIKITS_BY_NAME:
+            if ((item.player in minikit_player_ids and item.name in MINIKITS_BY_NAME)
+                    or (item.player in kyber_brick_player_ids and item.name == "Kyber Brick")):
                 if item.player in minikit_minimal_player_ids:
-                    # For minimal players, place Minikits first. This helps prevent fill from dumping logically relevant
-                    # items into unreachable locations and reducing the number of reachable locations to fewer than the
-                    # number of items remaining to be placed.
+                    # For minimal players, place goal macguffins first. This helps prevent fill from dumping logically
+                    # relevant items into unreachable locations and reducing the number of reachable locations to fewer
+                    # than the number of items remaining to be placed.
                     #
-                    # Placing only the non-required Minikits first or slightly more than the number of non-required
-                    # Minikits first was also tried, but placing all Minikits first seems to give fill the best chance
-                    # of succeeding.
+                    # Placing only the non-required goal macguffins first or slightly more than the number of
+                    # non-required goal macguffins first was also tried, but placing all goal macguffins first seems to
+                    # give fill the best chance of succeeding.
                     return 1
                 else:
-                    # For non-minimal players, place Minikits last. The helps prevent fill from filling most/all
-                    # reachable locations with the Minikit macguffins that are only required for the goal.
+                    # For non-minimal players, place goal macguffins last. The helps prevent fill from filling most/all
+                    # reachable locations with the goal macguffins that are only required for the goal.
                     return -1
             else:
                 # Python sorting is stable, so this will leave everything else in its original order.
