@@ -1,7 +1,7 @@
 import logging
 from itertools import cycle
 from time import perf_counter_ns
-from typing import Mapping, Literal
+from typing import Mapping, Literal, Iterator
 
 from .text_replacer import TextId
 from ..common_addresses import CantinaRoom, CustomSaveFlags1, GameState1
@@ -54,7 +54,7 @@ class GoalManager(ClientComponent):
     kyber_bricks_goal_enabled: bool = True
 
     _paused_goal_strings: dict[GoalKeys, str]
-    _paused_goal_string_key_cycle: cycle[GoalKeys]
+    _paused_goal_string_key_cycle: Iterator[GoalKeys]
     _last_paused_goal_string_cycle_key: GoalKeys | None = None
     _last_paused_goal_string_cycle: int = -1
 
