@@ -175,6 +175,12 @@ class LegoStarWarsTCSWorld(World):
     def _option_error(self, message: str, *args) -> NoReturn:
         self._raise_error(OptionError, message, *args)
 
+    def _is_universal_tracker(self) -> bool:
+        """Return whether the current generation is being done with Universal Tracker rather than a real generation."""
+        # The `generation_is_fake` attribute is added by Universal Tracker to allow detection of generation with
+        # Universal Tracker rather than real generation.
+        return hasattr(self.multiworld, "generation_is_fake")
+
     def _generate_early_pick_unique_enabled_bosses(self,
                                                    required_unique_boss_count: int,
                                                    allowed_boss_chapters: set[str],
@@ -1133,9 +1139,9 @@ class LegoStarWarsTCSWorld(World):
         effective_item_classifications, effective_item_collect_extras = (
             self._get_effective_item_data(logically_irrelevant_abilities)
         )
-        if hasattr(self.multiworld, "generation_is_fake"):
-            # Universal Tracker appears to delete the items added to precollected_items by create_items, instead later
-            # creating all items with create_item(), but starting characters need to be created before
+        if self._is_universal_tracker():
+            # Universal Tracker deletes the items added to precollected_items by create_items, instead later creating
+            # all items with create_item(), but starting characters need to be created before
             # self.starting_character_abilities is set to `starting_abilities` otherwise the starting characters will
             # lose all their abilities. To work around this, Universal Tracker is made to pretend that the starting
             # characters had no abilities, so no abilities will be stripped from any characters created later on with
