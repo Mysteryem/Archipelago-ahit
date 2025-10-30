@@ -60,6 +60,7 @@ from .options import (
     OnlyUniqueBossesCountTowardsGoal,
     OPTION_GROUPS,
 )
+from .option_resolution.common import resolve_options
 from .item_groups import ITEM_GROUPS
 from .location_groups import LOCATION_GROUPS
 
@@ -160,20 +161,20 @@ class LegoStarWarsTCSWorld(World):
         self.character_chapter_access_counts = Counter()
         self.short_name_to_boss_character = {}
 
-    def _log_info(self, message: str, *args) -> None:
+    def log_info(self, message: str, *args) -> None:
         logger.info("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
 
-    def _log_warning(self, message: str, *args) -> None:
+    def log_warning(self, message: str, *args) -> None:
         logger.warning("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
 
-    def _log_error(self, message: str, *args) -> None:
+    def log_error(self, message: str, *args) -> None:
         logger.error("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
 
-    def _raise_error(self, ex_type: Callable[[str], Exception], message: str, *args) -> NoReturn:
+    def raise_error(self, ex_type: Callable[[str], Exception], message: str, *args) -> NoReturn:
         raise ex_type(("Lego Star Wars TCS (%s): " + message) % (self.player_name, *args))
 
-    def _option_error(self, message: str, *args) -> NoReturn:
-        self._raise_error(OptionError, message, *args)
+    def option_error(self, message: str, *args) -> NoReturn:
+        self.raise_error(OptionError, message, *args)
 
     def _is_universal_tracker(self) -> bool:
         """Return whether the current generation is being done with Universal Tracker rather than a real generation."""
@@ -181,690 +182,8 @@ class LegoStarWarsTCSWorld(World):
         # Universal Tracker rather than real generation.
         return hasattr(self.multiworld, "generation_is_fake")
 
-    def _generate_early_pick_unique_enabled_bosses(self,
-                                                   required_unique_boss_count: int,
-                                                   allowed_boss_chapters: set[str],
-                                                   tentative_enabled_chapters: list[str],
-                                                   short_name_to_boss_character: dict[str, str]) -> set[str]:
-        # Find the currently picked boss chapters and their indices. These will be updated in-place.
-        picked_boss_indices: list[int] = [i for i, chapter in enumerate(tentative_enabled_chapters)
-                                          if chapter in allowed_boss_chapters]
-        picked_boss_chapters: set[str] = {tentative_enabled_chapters[i] for i in picked_boss_indices}
-        # Additionally find the indices for each boss character in the currently picked boss chapters.
-        picked_boss_characters_to_indices: dict[str, list[int]] = {}
-        for i in picked_boss_indices:
-            boss_chapter = tentative_enabled_chapters[i]
-            boss_character = short_name_to_boss_character[boss_chapter]
-            picked_boss_characters_to_indices.setdefault(boss_character, []).append(i)
-
-        required_boss_chapter_count = self.options.enabled_bosses_count.value
-
-        def need_more_unique_bosses() -> bool:
-            return len(picked_boss_characters_to_indices) < required_unique_boss_count
-
-        def need_more_boss_chapters() -> bool:
-            return len(picked_boss_chapters) < required_boss_chapter_count
-
-        if need_more_unique_bosses() or need_more_boss_chapters():
-            # There are too few unique bosses or boss chapters present, more need to be enabled.
-            # Replace the latest picked chapters.
-            # If more unique bosses are needed, replace chapters that are not unique bosses, with chapters that have new
-            # unique bosses.
-            # If no more unique bosses are needed, but more boss chapters are needed, replace chapters that are not
-            # bosses with new unique bosses, or duplicate bosses.
-            # Deterministically shuffle for deterministic randomness in pick order.
-            unpicked_boss_chapters = sorted(allowed_boss_chapters.difference(tentative_enabled_chapters))
-            self.random.shuffle(unpicked_boss_chapters)
-
-            def replace_chapter_at(i: int, boss_chapter_replacement: str):
-                # Replace the chapter at index `i`.
-                replaced_chapter = tentative_enabled_chapters[i]
-                tentative_enabled_chapters[i] = boss_chapter_replacement
-
-                # Add the replacement boss chapter to the set of enabled boss chapters.
-                assert boss_chapter_replacement not in picked_boss_chapters
-                picked_boss_chapters.add(boss_chapter_replacement)
-
-                # Remove the replacement boss chapter from the chapters that have not been picked.
-                unpicked_boss_chapters.remove(replacement_boss_chapter)
-
-                # Add the index to the chapter indices of the boss of the replacement chapter.
-                boss_character_replacement = short_name_to_boss_character[boss_chapter_replacement]
-                boss_character_indices = picked_boss_characters_to_indices.setdefault(boss_character_replacement, [])
-                assert i not in boss_character_indices
-                boss_character_indices.append(i)
-
-                if replaced_chapter in short_name_to_boss_character:
-                    # The replaced chapter was a boss, so update the sets of enabled boss chapters and unpicked boss
-                    # chapters.
-                    picked_boss_chapters.remove(replaced_chapter)
-                    assert replaced_chapter not in unpicked_boss_chapters
-                    unpicked_boss_chapters.append(replaced_chapter)
-
-                    # Remove the index from the chapter indices of the boss of the replaced chapter.
-                    replaced_boss_character = short_name_to_boss_character[replaced_chapter]
-                    boss_characters_indices = picked_boss_characters_to_indices[replaced_boss_character]
-                    boss_characters_indices.remove(i)
-                else:
-                    # The replaced chapter was not a boss, but has been replaced by a boss, so add the current index to
-                    # the picked indices.
-                    picked_boss_indices.append(i)
-
-            # Find unique bosses to pick from. The order of this dict is deterministically random because it is created
-            # based on the order of `unpicked_boss_chapters`.
-            unpicked_boss_characters_to_pick_from: dict[str, list[str]] = {}
-            for boss_chapter in unpicked_boss_chapters:
-                boss_character = short_name_to_boss_character[boss_chapter]
-                assert boss_character is not None
-                if boss_character not in picked_boss_characters_to_indices:
-                    unpicked_boss_characters_to_pick_from.setdefault(
-                        boss_character, []).append(boss_chapter)
-            assert ((len(unpicked_boss_characters_to_pick_from) + len(picked_boss_characters_to_indices))
-                    >= required_unique_boss_count), (
-                "There are fewer unique bosses available than the number of required unique bosses."
-                " This should not happen.")
-            assert (len(unpicked_boss_chapters) + len(picked_boss_chapters)) >= required_boss_chapter_count, (
-                "There are fewer boss chapters available than the number of required boss chapters."
-                " This should not happen.")
-            # Replace the latest picked chapters that are not unique bosses or not bosses depending on what is needed
-            # most.
-            reversed_indices = reversed(range(len(tentative_enabled_chapters)))
-            for i in reversed_indices:
-                chapter_to_replace = tentative_enabled_chapters[i]
-                chapter_at_index_is_a_boss = chapter_to_replace in short_name_to_boss_character
-                boss_character_to_replace = short_name_to_boss_character.get(chapter_to_replace, None)
-                chapter_at_index_is_a_duplicated_boss = (
-                        boss_character_to_replace is not None
-                        and len(picked_boss_characters_to_indices[boss_character_to_replace]) > 1
-                )
-
-                if self.options.prefer_entire_episodes:
-                    # Try to replace chapters with boss chapters from the same episode where possible when the option to
-                    # prefer entire episodes is enabled.
-                    preferred_episode_number_str = chapter_to_replace[0]
-                else:
-                    preferred_episode_number_str = None
-
-                # Replace the removed chapter with a unique boss.
-                replacement_boss_chapter: str
-                replacement_boss_character: str
-                if need_more_unique_bosses():
-                    if chapter_at_index_is_a_boss and not chapter_at_index_is_a_duplicated_boss:
-                        # The chapter at `i` is already a unique boss, so replacing the chapter cannot increase the
-                        # number of unique bosses.
-                        continue
-                    # Iterate through all remaining enabled unique bosses to try to find one in the same episode.
-                    for replacement_boss_character, boss_chapters in (
-                            unpicked_boss_characters_to_pick_from.items()
-                    ):
-                        for replacement_boss_chapter in boss_chapters:
-                            if (preferred_episode_number_str is None
-                                    or replacement_boss_chapter[0] == preferred_episode_number_str):
-                                # Suitable replacement found, so break the inner loop.
-                                break
-                        else:
-                            # No break, so no suitable replacement found.
-                            continue
-                        # Suitable replacement found, so break.
-                        break
-                    else:
-                        # No unique boss in the same episode was found, so pick the first boss in the dict to replace
-                        # it.
-                        it = iter(unpicked_boss_characters_to_pick_from.items())
-                        replacement_boss_character, boss_chapters = next(it)
-                        replacement_boss_chapter = boss_chapters[0]
-                    # Remove the replacement boss character from the dict of extra, unique boss characters to pick from.
-                    # There could be additional chapters that feature this boss, but now that the boss has been picked,
-                    # those additional chapters would no longer feature a unique boss.
-                    del unpicked_boss_characters_to_pick_from[replacement_boss_character]
-                else:
-                    if chapter_at_index_is_a_boss:
-                        # The chapter at `i` is already a boss chapter, so replacing the chapter cannot increase the
-                        # number of bosses.
-                        continue
-                    for replacement_boss_chapter in unpicked_boss_chapters:
-                        if (preferred_episode_number_str is None
-                                or replacement_boss_chapter[0] == preferred_episode_number_str):
-                            # Suitable replacement found, so break.
-                            break
-                    else:
-                        # No suitable replacement found, so pick the first boss chapter.
-                        replacement_boss_chapter = unpicked_boss_chapters[0]
-
-                # Replace the existing chapter with the replacement boss chapter, and update each of the containers for
-                # this replacement.
-                replace_chapter_at(i, replacement_boss_chapter)
-
-                if not need_more_unique_bosses() and not need_more_boss_chapters():
-                    # All needed replacements have been made.
-                    break
-        assert not need_more_unique_bosses()
-        assert not need_more_boss_chapters()
-
-        if len(picked_boss_chapters) > required_boss_chapter_count:
-            # There are too many bosses enabled, so disable some bosses while ensuring that we don't go
-            # under `required_unique_boss_count`
-            remaining_unique_picks = list(picked_boss_characters_to_indices.values())
-            # Pick unique bosses in the order they were initially picked.
-            enabled_boss_indices = {indices.pop(0) for indices
-                                    in remaining_unique_picks[:required_unique_boss_count]}
-            extra_boss_chapters_needed = required_boss_chapter_count - len(enabled_boss_indices)
-            # Pick extra boss chapters in the order they were initially picked.
-            remaining_chapter_picks = [i for i in picked_boss_indices if i not in enabled_boss_indices]
-            assert len(remaining_chapter_picks) >= extra_boss_chapters_needed
-            enabled_boss_indices.update(remaining_chapter_picks[:extra_boss_chapters_needed])
-            picked_boss_chapters = {tentative_enabled_chapters[i] for i in enabled_boss_indices}
-
-        assert len(picked_boss_chapters) == required_boss_chapter_count
-        return picked_boss_chapters
-
-    def _generate_early_pick_enabled_bosses(self,
-                                            allowed_boss_chapters: set[str],
-                                            tentative_enabled_chapters: list[str]) -> set[str]:
-        picked_bosses: set[str]
-        picked_boss_indices: list[int] = [i for i, chapter in enumerate(tentative_enabled_chapters)
-                                          if chapter in allowed_boss_chapters]
-
-        missing_boss_chapter_count = self.options.enabled_bosses_count - len(picked_boss_indices)
-        if missing_boss_chapter_count == 0:
-            # The exact required number of bosses are present, so no changes are needed.
-            picked_bosses = {tentative_enabled_chapters[i] for i in picked_boss_indices}
-        elif missing_boss_chapter_count < 0:
-            # Too many bosses are present, so pick only as many as needed.
-            # If the starting chapter is a boss, always un-pick it first because starting with a boss level
-            # is less interesting, especially if there is only one required boss.
-            if picked_boss_indices[0] == 0:
-                picked_boss_indices = picked_boss_indices[1:]
-            chosen_boss_indices = self.random.sample(picked_boss_indices, k=self.options.enabled_bosses_count.value)
-            picked_bosses = {tentative_enabled_chapters[i] for i in chosen_boss_indices}
-        else:
-            # There are too few bosses, so replace the latest picked chapters, that are not bosses, with
-            # chapters that have bosses.
-            extra_bosses_to_pick_from = sorted(allowed_boss_chapters.difference(tentative_enabled_chapters))
-            self.random.shuffle(extra_bosses_to_pick_from)
-            picked_bosses = {tentative_enabled_chapters[i] for i in picked_boss_indices}
-            # Remove the latest picked chapters that are not bosses.
-            picked_boss_indices_set = set(picked_boss_indices)
-            reversed_indices = reversed(range(len(tentative_enabled_chapters)))
-            replaced_chapters = []
-
-            assert len(extra_bosses_to_pick_from) >= missing_boss_chapter_count, (
-                "The number of extra bosses to pick from was less than the missing boss count")
-            for i in reversed_indices:
-                if i not in picked_boss_indices_set:
-                    # The chapter is not a boss, so replace it.
-                    chapter_to_replace = tentative_enabled_chapters[i]
-                    # Replace the removed chapter with a boss in the same episode if possible.
-                    preferred_episode_number_str = chapter_to_replace[0]
-                    for j, boss in enumerate(reversed(extra_bosses_to_pick_from), start=1):
-                        if boss[0] == preferred_episode_number_str:
-                            del extra_bosses_to_pick_from[-j]
-                            picked_bosses.add(boss)
-                            tentative_enabled_chapters[i] = boss
-                            break
-                    else:
-                        # No suitable boss was found. Pick the last one in the list to replace it.
-                        boss = extra_bosses_to_pick_from.pop()
-                        tentative_enabled_chapters[i] = boss
-                        picked_bosses.add(boss)
-                    replaced_chapters.append(chapter_to_replace)
-                    if len(replaced_chapters) == missing_boss_chapter_count:
-                        # All needed replacements have been made.
-                        break
-            assert len(replaced_chapters) == missing_boss_chapter_count, (
-                "The number of replaced chapters did not match the missing boss count")
-        return picked_bosses
-
     def generate_early(self) -> None:
-        # Universal Tracker support.
-        if passthrough := getattr(self.multiworld, "re_gen_passthrough", {}).get(self.game):
-            # Options directly from slot data.
-            self.options.minikit_goal_amount.value = passthrough["minikit_goal_amount"]
-            self.options.minikit_bundle_size.value = passthrough["minikit_bundle_size"]
-            self.options.episode_unlock_requirement.value = passthrough["episode_unlock_requirement"]
-            self.options.all_episodes_character_purchase_requirements.value = (
-                passthrough["all_episodes_character_purchase_requirements"])
-            self.options.most_expensive_purchase_with_no_multiplier.value = (
-                passthrough["most_expensive_purchase_with_no_multiplier"])
-            self.options.enable_bonus_locations.value = passthrough["enable_bonus_locations"]
-            self.options.enable_story_character_unlock_locations.value = (
-                passthrough["enable_story_character_unlock_locations"])
-            self.options.enable_all_episodes_purchases.value = passthrough["enable_all_episodes_purchases"]
-            self.options.defeat_bosses_goal_amount.value = passthrough["defeat_bosses_goal_amount"]
-            self.options.only_unique_bosses_count.value = passthrough["only_unique_bosses_count"]
-            self.options.defeat_bosses_goal_amount.value = passthrough["defeat_bosses_goal_amount"]
-            self.options.enable_minikit_locations.value = passthrough["enable_minikit_locations"]
-            self.options.enable_true_jedi_locations.value = passthrough["enable_true_jedi_locations"]
-
-            # Attributes normally derived from options during generate_early.
-            self.enabled_chapters = set(passthrough["enabled_chapters"])
-            self.enabled_chapter_count = len(self.enabled_chapters)
-            self.enabled_episodes = set(passthrough["enabled_episodes"])
-            # The enabled bonuses are set depending on the number of Gold Bricks available
-            self.enabled_bonuses = set(passthrough["enabled_bonuses"])
-            self.starting_chapter = passthrough["starting_chapter"]
-            self.starting_episode = passthrough["starting_episode"]
-            # Derived Minikit attributes.
-            self.available_minikits = self.enabled_chapter_count * 10
-            bundle_size = self.options.minikit_bundle_size.value
-            self.minikit_bundle_name = MINIKITS_BY_COUNT[bundle_size].name
-            self.minikit_bundle_count = (self.available_minikits // bundle_size
-                                         + (self.available_minikits % bundle_size != 0))
-            self.enabled_bosses = set(passthrough["enabled_bosses"])
-            self.goal_area_completion_count = passthrough["goal_area_completion_count"]
-
-            # Override options with their derived/rolled values.
-            # Override the enable_chapter count to match the number that are enabled.
-            self.options.enabled_chapters_count.value = len(self.enabled_chapters)
-            # Unrandomize the starting chapter choice with the starting chapter that was actually picked.
-            self.options.starting_chapter.set_from_string(self.starting_chapter)
-            # Override the allowed chapters with all the chapters that rolled as enabled.
-            self.options.allowed_chapters.value = set(self.enabled_chapters)
-            # Act as if there was no filtering of allowed chapter types.
-            self.options.allowed_chapter_types.set_from_string("all")
-
-            # Compute boss names when unique bosses are enabled.
-            unique_bosses_only = (
-                    self.options.only_unique_bosses_count != OnlyUniqueBossesCountTowardsGoal.option_disabled)
-            unique_bosses_anakin_as_darth_vader = (
-                    self.options.only_unique_bosses_count
-                    == OnlyUniqueBossesCountTowardsGoal.option_enabled_and_count_anakin_as_vader
-            )
-            if unique_bosses_only:
-                short_name_to_boss_character: dict[str, str] = {}
-                for chapter in self.enabled_bosses:
-                    boss_character = SHORT_NAME_TO_CHAPTER_AREA[chapter].boss
-                    if unique_bosses_anakin_as_darth_vader and boss_character == "Anakin Skywalker":
-                        boss_character = "Darth Vader"
-                    assert boss_character is not None
-                    short_name_to_boss_character[chapter] = boss_character
-            else:
-                short_name_to_boss_character = {}
-            self.short_name_to_boss_character = short_name_to_boss_character
-
-            # Compute expected Gold Brick event count.
-            if self.options.enable_bonus_locations:
-                gold_bricks_per_chapter = (
-                        1
-                        + bool(self.options.enable_minikit_locations)
-                        + bool(self.options.enable_true_jedi_locations)
-                )
-                gold_bricks_from_chapters = self.enabled_chapter_count * gold_bricks_per_chapter
-                areas_gen = (BONUS_NAME_TO_BONUS_AREA[area_name] for area_name in self.enabled_bonuses)
-                gold_bricks_from_bonuses = sum(area.gold_brick for area in areas_gen)
-                self._expected_gold_brick_event_count = gold_bricks_from_chapters + gold_bricks_from_bonuses
-            else:
-                # Gold Brick events are only relevant when bonuses are enabled.
-                self._expected_gold_brick_event_count = 0
-
-        # Normal options parsing.
-        else:
-            options = self.options
-
-            bosses_required_for_goal = options.defeat_bosses_goal_amount > 0
-            # -1 uses the percentage option, which is always greater than zero.
-            minikits_required_for_goal = options.minikit_goal_amount != 0
-
-            # Check that at least one goal is enabled.
-            # -1 for minikit goal uses a percentage option that is never 0.
-            if not bosses_required_for_goal and not minikits_required_for_goal:
-                self._option_error("At least one goal must be enabled.")
-
-            # Determine all available chapters to pick from.
-            allowed_chapters: set[str] = options.allowed_chapters.value_ungrouped
-
-            allowed_boss_chapters: set[str]
-            if bosses_required_for_goal:
-                # Update allowed chapters with allowed bosses.
-                allowed_boss_chapters = {BOSS_UNIQUE_NAME_TO_CHAPTER[unique_boss].short_name
-                                         for unique_boss in options.allowed_bosses.value}
-                allowed_chapters.update(allowed_boss_chapters)
-            else:
-                allowed_boss_chapters = set()
-
-            # Remove vehicle chapters if vehicle chapters are not allowed.
-            if options.allowed_chapter_types == "no_vehicles":
-                allowed_chapters.difference_update(VEHICLE_CHAPTER_SHORTNAMES)
-                allowed_boss_chapters.difference_update(VEHICLE_CHAPTER_SHORTNAMES)
-
-            # Determine starting chapters to pick from.
-            starting_chapters: set[str]
-            starting_chapter_option = self.options.starting_chapter
-            if starting_chapter_option == StartingChapter.option_random_chapter:
-                starting_chapters = allowed_chapters.copy()
-            elif starting_chapter_option == StartingChapter.option_random_non_vehicle:
-                starting_chapters = set(LEVEL_SHORT_NAMES_SET).difference(VEHICLE_CHAPTER_SHORTNAMES)
-            elif starting_chapter_option == StartingChapter.option_random_vehicle:
-                if options.allowed_chapter_types == "no_vehicles":
-                    self._option_error("'random_vehicle' starting Chapter cannot be used when Allowed Chapter Types is"
-                                       " set to 'no_vehicles'.")
-                starting_chapters = set(VEHICLE_CHAPTER_SHORTNAMES)
-            elif match := re.fullmatch(r"random_episode_([1-6])", starting_chapter_option.current_key):
-                episode = int(match.group(1))
-                starting_chapters = {chapter.short_name for chapter in EPISODE_TO_CHAPTER_AREAS[episode]}
-            else:
-                starting_chapter = starting_chapter_option.current_key
-                assert starting_chapter in LEVEL_SHORT_NAMES_SET
-                starting_chapters = {starting_chapter}
-                # If a singular starting chapter was chosen, but not in the allowed chapters set, forcefully add it.
-                # This should give a better generation experience to players intending to run fully random yamls.
-                if starting_chapter not in allowed_chapters:
-                    self._log_warning("The individually chosen starting chapter '%s' was not in the set of allowed"
-                                      " chapters %s. '%s' has been forcefully allowed to prevent generation failure.",
-                                      starting_chapter,
-                                      sorted(allowed_chapters),
-                                      starting_chapter)
-                    allowed_chapters.add(starting_chapter)
-                    # Add the forced starting chapter to allowed_bosses if it was an allowed boss originally.
-                    if bosses_required_for_goal:
-                        unique_boss_name = SHORT_NAME_TO_CHAPTER_AREA[starting_chapter].unique_boss_name
-                        if unique_boss_name in options.allowed_bosses.value:
-                            allowed_boss_chapters.add(starting_chapter)
-            # Filter to only the chapters that are allowed to be enabled.
-            allowed_starting_chapters = allowed_chapters.intersection(starting_chapters)
-            if not allowed_starting_chapters:
-                self._option_error("None of the chosen possible starting chapters were chosen to be possible to be"
-                                   " enabled."
-                                   " At least one starting chapter must be allowed to be enabled."
-                                   "\nPossible starting chapters:"
-                                   "\n\t%s (%s)"
-                                   "\nAllowed chapters:"
-                                   "\n\t%s (allowed chapters) + %s (allowed boss chapters) (%s)",
-                                   starting_chapter_option.current_key,
-                                   sorted(starting_chapters),
-                                   sorted(options.allowed_chapters.value),
-                                   sorted(allowed_boss_chapters),
-                                   sorted(allowed_chapters))
-
-            assert len(allowed_chapters) >= 1
-
-            if bosses_required_for_goal and not allowed_boss_chapters:
-                self._option_error("Defeating bosses is required for the goal, but no boss chapters were allowed to be"
-                                   " enabled.")
-
-            # Adjust the count of enabled chapters and warn if it was higher than the number of allowed chapters.
-            if options.enabled_chapters_count > len(allowed_chapters):
-                self._log_warning("Enabled chapter count (%i) was set higher than the number of allowed chapters (%i),"
-                                  " it has been reduced to the number of allowed chapters (%i).",
-                                  options.enabled_chapters_count.value,
-                                  len(allowed_chapters),
-                                  len(allowed_chapters))
-                options.enabled_chapters_count.value = len(allowed_chapters)
-
-            # If the Minikits goal is enabled, but Minikit locations are disabled, force Minikit bundle size to 10
-            # -1 is the "use_percentage" value, which is always non-zero
-            if (options.minikit_goal_amount != 0
-                    and not options.enable_minikit_locations
-                    and options.minikit_bundle_size != 10):
-                self._log_warning("The Minikits goal is enabled, but Minikit locations are disabled, so the Minikit"
-                                  " Bundle size has been forcefully set to 10, otherwise there would not be enough"
-                                  " locations to place all the Minikits")
-                options.minikit_bundle_size.value = 10
-
-            # Determine unique allowed boss characters.
-            maximum_boss_chapters = len(allowed_boss_chapters)
-            unique_allowed_boss_characters: set[str] = set()
-            unique_bosses_only = options.only_unique_bosses_count != OnlyUniqueBossesCountTowardsGoal.option_disabled
-            unique_bosses_anakin_as_darth_vader = (
-                    options.only_unique_bosses_count
-                    == OnlyUniqueBossesCountTowardsGoal.option_enabled_and_count_anakin_as_vader
-            )
-            if unique_bosses_only:
-                short_name_to_boss_character: dict[str, str] = {}
-                for chapter in allowed_boss_chapters:
-                    boss_character = SHORT_NAME_TO_CHAPTER_AREA[chapter].boss
-                    if unique_bosses_anakin_as_darth_vader and boss_character == "Anakin Skywalker":
-                        boss_character = "Darth Vader"
-                    assert boss_character is not None
-                    unique_allowed_boss_characters.add(boss_character)
-                    short_name_to_boss_character[chapter] = boss_character
-                maximum_unique_boss_characters = len(unique_allowed_boss_characters)
-                # The number of unique allowed boss characters is always less than or equal to the number of allowed
-                # boss chapters because there can be chapters that have the same boss character.
-                assert maximum_unique_boss_characters <= maximum_boss_chapters
-            else:
-                maximum_unique_boss_characters = -1
-                short_name_to_boss_character = {}
-            self.short_name_to_boss_character = short_name_to_boss_character
-
-            # If the starting chapter cannot be a boss chapter, then the maximum possible number of bosses is 1 fewer.
-            starting_chapter_cannot_be_a_boss = allowed_starting_chapters.isdisjoint(allowed_boss_chapters)
-            if starting_chapter_cannot_be_a_boss:
-                maximum_boss_chapters = min(options.enabled_chapters_count.value - 1, maximum_boss_chapters)
-            else:
-                maximum_boss_chapters = min(options.enabled_chapters_count.value, maximum_boss_chapters)
-
-            # Update the maximum unique bosses count.
-            maximum_unique_boss_characters = min(maximum_unique_boss_characters, maximum_boss_chapters)
-
-            if unique_bosses_only:
-                maximum_bosses_for_goal = maximum_unique_boss_characters
-            else:
-                maximum_bosses_for_goal = maximum_boss_chapters
-
-            # Reduce boss goal count if it is too high. Error in the case of the boss goal not being possible to keep
-            # enabled.
-            if options.defeat_bosses_goal_amount > maximum_bosses_for_goal:
-                if maximum_boss_chapters == 0:
-                    assert options.enabled_chapters_count.value == 1
-                    self._option_error("Only one Chapter is enabled, but none of the allowed starting chapters were"
-                                       " also an allowed boss, and the goal requires defeating bosses.")
-                else:
-                    self._log_warning("The number of bosses to defeat as part of the goal was %i, but the maximum"
-                                      " number of bosses that were allowed to be enabled was %i. The number of bosses"
-                                      " to defeat as part of the goal has been reduced to %i.",
-                                      options.defeat_bosses_goal_amount.value,
-                                      maximum_bosses_for_goal,
-                                      maximum_bosses_for_goal)
-                    options.defeat_bosses_goal_amount.value = maximum_bosses_for_goal
-
-            # The bosses goal amount should not change beyond this point.
-            goal_boss_count = options.defeat_bosses_goal_amount.value
-
-            # Warn and increase the enabled bosses count if it is lower than the goal amount.
-            if options.enabled_bosses_count < options.defeat_bosses_goal_amount:
-                self._log_warning("The number of enabled bosses was %i, but the number of bosses to defeat as part of"
-                                  " the goal was %i. The number of enabled bosses has been increased to %i.",
-                                  options.enabled_bosses_count.value,
-                                  options.defeat_bosses_goal_amount.value,
-                                  options.defeat_bosses_goal_amount.value)
-                options.enabled_bosses_count.value = options.defeat_bosses_goal_amount.value
-
-            # Warn and decrease the enabled bosses count if it is higher than the maximum bosses count.
-            if options.enabled_bosses_count > maximum_boss_chapters:
-                self._log_warning("The number of enabled bosses was %i, but the maximum number of bosses that were"
-                                  " allowed to be enabled was %i. The number of enabled bosses has been reduced to %i.",
-                                  options.enabled_bosses_count.value,
-                                  maximum_boss_chapters,
-                                  maximum_boss_chapters)
-                options.enabled_bosses_count.value = maximum_boss_chapters
-
-            # If every chapter is a boss chapter, then the starting chapter must also be a boss chapter.
-            if options.enabled_bosses_count == options.enabled_chapters_count:
-                assert not starting_chapter_cannot_be_a_boss
-                allowed_starting_chapters.intersection_update(allowed_boss_chapters)
-
-            # Pick the starting chapter.
-            self.starting_chapter = self.random.choice(sorted(allowed_starting_chapters))
-            self.starting_episode = SHORT_NAME_TO_CHAPTER_AREA[self.starting_chapter].episode
-
-            # Pick enabled chapters and therefore enabled episodes.
-            # Sort once to ensure deterministic generation.
-            non_starting_allowed_chapters = sorted(allowed_chapters - {self.starting_chapter})
-            self.random.shuffle(non_starting_allowed_chapters)
-            # Determine preferred chapters and then sort again to put any preferred chapters first.
-            preferred_chapters = self.options.preferred_chapters.value_ungrouped
-            if preferred_chapters:
-                non_starting_allowed_chapters.sort(key=lambda chapter: -1 if chapter in preferred_chapters else 0)
-            # If enabled, sort the allowed chapters into the order of the first occurrence of each episode.
-            if self.options.prefer_entire_episodes:
-                # The starting chapter is considered the first picked chapter.
-                initial_pick_order = [self.starting_chapter, *non_starting_allowed_chapters]
-                seen_episodes = 0
-                episode_pick_order: dict[str, int] = {}
-                for chapter in initial_pick_order:
-                    episode_str = chapter[0]
-                    if episode_str in episode_pick_order:
-                        continue
-                    episode_pick_order[episode_str] = seen_episodes
-                    seen_episodes += 1
-                non_starting_allowed_chapters.sort(key=lambda s: episode_pick_order[s[0]])
-            # Ensure there are enough bosses enabled and randomly disable any extra bosses if there are too many.
-            tentative_enabled_chapters = [
-                self.starting_chapter,
-                *non_starting_allowed_chapters[:options.enabled_chapters_count.value - 1],
-            ]
-            if bosses_required_for_goal:
-                if unique_bosses_only:
-                    # The number of bosses is counted by the number of unique boss characters.
-                    enabled_bosses = self._generate_early_pick_unique_enabled_bosses(
-                        goal_boss_count, allowed_boss_chapters, tentative_enabled_chapters,
-                        short_name_to_boss_character)
-                    enabled_unique_bosses = {short_name_to_boss_character[chapter] for chapter in enabled_bosses}
-                    assert len(enabled_unique_bosses) >= goal_boss_count
-                else:
-                    # Each boss counts separately, even if some bosses use the same boss character.
-                    enabled_bosses = self._generate_early_pick_enabled_bosses(
-                        allowed_boss_chapters, tentative_enabled_chapters)
-                assert len(enabled_bosses) == self.options.enabled_bosses_count.value
-                self.enabled_bosses = enabled_bosses
-            else:
-                self.enabled_bosses = set()
-
-            # Finally set the enabled chapters.
-            self.enabled_chapters = set(tentative_enabled_chapters)
-            self.enabled_episodes = {SHORT_NAME_TO_CHAPTER_AREA[s].episode for s in self.enabled_chapters}
-            self.enabled_chapter_count = len(self.enabled_chapters)
-            if self.options.all_episodes_character_purchase_requirements == "episodes_unlocked":
-                # Only warn if the 'All Episodes' character shop purchases are enabled.
-                warn = self.options.enable_all_episodes_purchases.value
-                if self.options.episode_unlock_requirement == "open":
-                    if warn:
-                        self._log_warning("'All Episodes' character shop unlocks were set to require 'Episodes Tokens' "
-                                          " instead of 'Episodes Unlocked' because Episode unlock requirements were"
-                                          " set to 'Open'")
-                    tokens = AllEpisodesCharacterPurchaseRequirements.option_episodes_tokens
-                    option = self.options.all_episodes_character_purchase_requirements
-                    option.value = tokens
-                elif len(self.enabled_episodes) == 1:
-                    if warn:
-                        self._log_warning("'All Episodes' character shop unlocks were set to require 'Episodes Tokens'"
-                                          " from 'Episodes Unlocked' because there is only 1 Episode enabled.")
-                    tokens = AllEpisodesCharacterPurchaseRequirements.option_episodes_tokens
-                    option = self.options.all_episodes_character_purchase_requirements
-                    option.value = tokens
-
-            # Minikit options.
-            bundle_size = self.options.minikit_bundle_size.value
-            self.minikit_bundle_name = MINIKITS_BY_COUNT[bundle_size].name
-            # todo?: Set self.available_minikits = 0 when self.options.minikit_goal_amount.value == 0 to remove minikits
-            #  from the item pool?
-            if self.options.minikit_goal_amount != 0 or self.options.enable_minikit_locations:
-                self.available_minikits = self.enabled_chapter_count * 10  # 10 Minikits per chapter.
-                self.minikit_bundle_count = (self.available_minikits // bundle_size
-                                             + (self.available_minikits % bundle_size != 0))
-            else:
-                self.available_minikits = 0
-                self.minikit_bundle_count = 0
-
-            # Adjust Minikit options.
-            if self.options.minikit_goal_amount.value > self.available_minikits:
-                self._log_warning("The number of minikits required to goal (%i) was higher than the number of available"
-                                  " minikits (%i). The number of minikits required to goal has been reduced to the"
-                                  " number of available minikits (%i).",
-                                  self.options.minikit_goal_amount.value,
-                                  self.available_minikits,
-                                  self.available_minikits)
-                self.options.minikit_goal_amount.value = self.available_minikits
-
-            # Sanity check Filler Weights options.
-            if (self.options.filler_weight_characters
-                    + self.options.filler_weight_extras
-                    + self.options.filler_weight_junk == 0):
-                self._option_error("At least one Filler Weight option must be set greater than zero")
-
-            # Sanity check Junk Weights, and force Purple Studs weight to 1 if all are zero.
-            junk_names_and_weights = self.options.junk_weights.value
-            if sum(junk_names_and_weights.values()) == 0:
-                self._log_warning("All Junk Weights were zero. The Junk Weight of Purple Stud items has been set to 1.")
-                junk_names_and_weights["Purple Stud"] = 1
-
-            # Calculate available Bonuses based on logically available Gold Brick counts.
-            if self.options.enable_bonus_locations:
-                # Start with the Gold Bricks available from enabled Chapters.
-                gold_bricks_per_chapter = (
-                        1
-                        + bool(self.options.enable_minikit_locations)
-                        + bool(self.options.enable_true_jedi_locations)
-                )
-                available_gold_bricks_from_chapters = self.enabled_chapter_count * gold_bricks_per_chapter
-
-                # Enable Bonuses that do not require more Gold Bricks than are logically available.
-                # Enabled Bonuses can also reward a Gold Brick, so those will also add +1 available Gold Brick.
-                available_gold_bricks = available_gold_bricks_from_chapters
-                bonuses_by_gold_brick_cost: dict[int, list[BonusArea]] = {}
-                for area in BONUS_AREAS:
-                    bonuses_by_gold_brick_cost.setdefault(area.gold_bricks_required, []).append(area)
-                # Sort by lowest cost first, and then iterate.
-                for gold_brick_cost, areas in sorted(bonuses_by_gold_brick_cost.items(), key=lambda t: t[0]):
-                    if gold_brick_cost > available_gold_bricks:
-                        # The Bonuses have been sorted by lowest Gold Brick cost first, so all remaining Bonuses will
-                        # have even higher requirements that cannot be met.
-                        break
-                    for area in areas:
-                        self.enabled_bonuses.add(area.name)
-                        if area.gold_brick:
-                            available_gold_bricks += 1
-                # An assertion checks that the expected count matches the count created.
-                self._expected_gold_brick_event_count = available_gold_bricks
-            else:
-                # Gold Brick events are only relevant when bonuses are enabled.
-                self._expected_gold_brick_event_count = 0
-
-        # Calculate goal_minikit_count when set to a percentage of the available minikits.
-        if self.options.minikit_goal_amount == MinikitGoalAmount.special_range_names["use_percentage_option"]:
-            self.goal_minikit_count = max(1, round(
-                self.available_minikits * self.options.minikit_goal_amount_percentage / 100))
-        else:
-            self.goal_minikit_count = self.options.minikit_goal_amount.value
-
-        # Only whole bundles are counted for logic, so any partial bundles require an extra whole bundle to goal.
-        self.goal_minikit_bundle_count = (self.goal_minikit_count // bundle_size
-                                          + (self.goal_minikit_count % bundle_size != 0))
-
-        self.prog_useful_level_access_threshold_count = int(
-            self.PROG_USEFUL_LEVEL_ACCESS_THRESHOLD_PERCENT * self.enabled_chapter_count)
-
-        if self.options.enable_story_character_unlock_locations:
-            # There are often multiple Chapters that can send each Story character unlock location, so enable path
-            # display in spoilers with paths enabled.
-            self.topology_present = True
-
-        # Calculate goal_area_completion_count when set to a non-zero percentage of available areas (chapters +
-        # bonuses).
-        # The option name uses "levels" as a user-facing term, but has the meaning of "areas" internally.
-        complete_areas_goal_amount_percentage = self.options.complete_levels_goal_amount_percentage.value
-        if complete_areas_goal_amount_percentage > 0:
-            chapter_areas_count = self.enabled_chapter_count
-            # Only bonuses that award a Gold Brick on completion count towards the goal count.
-            bonus_areas_count = sum(BONUS_NAME_TO_BONUS_AREA[name].gold_brick for name in self.enabled_bonuses)
-            available_areas_count = chapter_areas_count + bonus_areas_count
-            self.goal_area_completion_count = max(1, round(
-                available_areas_count * complete_areas_goal_amount_percentage / 100))
-        else:
-            self.goal_area_completion_count = 0
-
-        # Debug check to help with comparing passthrough values
-        # for k, v in vars(self).items():
-        #     print(f"{k}: {v}")
-        #
-        # if not passthrough:
-        #     self.multiworld.re_gen_passthrough = {self.game: self.fill_slot_data()}
-        #     # Recursive call, but with passthrough this time.
-        #     self.generate_early()
-        # else:
-        #     # No recursive call the second time around.
-        #     return
+        resolve_options(self)
 
     def evaluate_effective_item(self,
                                 name: str,
@@ -1280,12 +599,12 @@ class LegoStarWarsTCSWorld(World):
             if needed > total_replaceable:
                 if self.options.goal_requires_kyber_bricks:
                     # The Kyber Bricks goal adds 7 items that have no corresponding vanilla locations.
-                    self._option_error("There are not enough locations to fit all required items. Enable additional"
-                                       " locations, increase the Minikit Bundle Size, or disable the Kyber Bricks goal"
-                                       " to free up more locations.")
+                    self.option_error("There are not enough locations to fit all required items. Enable additional"
+                                      " locations, increase the Minikit Bundle Size, or disable the Kyber Bricks goal"
+                                      " to free up more locations.")
                 else:
-                    self._option_error("There are not enough locations to fit all required items. Enable additional"
-                                       " locations or increase the Minikit Bundle Size to free up more locations.")
+                    self.option_error("There are not enough locations to fit all required items. Enable additional"
+                                      " locations or increase the Minikit Bundle Size to free up more locations.")
             character_percentage = ok_to_replace_character_count / total_replaceable
             character_subtract = min(needed, round(character_percentage * needed))
             extra_subtract = needed - character_subtract
@@ -1324,10 +643,10 @@ class LegoStarWarsTCSWorld(World):
                 # to start inventory instead of erroring here.
                 non_excluded_count = num_to_fill - required_excludable_count
                 required_count = required_extras_count + required_characters_count + required_minikit_location_count
-                self._option_error("There are too few non-excluded locations to fit all required progression items."
-                                   " There are %i non-excluded locations, but there are %i required items.",
-                                   non_excluded_count,
-                                   required_count)
+                self.option_error("There are too few non-excluded locations to fit all required progression items."
+                                  " There are %i non-excluded locations, but there are %i required items.",
+                                  non_excluded_count,
+                                  required_count)
             character_percentage = ok_to_replace_character_count / total_replaceable
             character_subtract = min(needed, round(character_percentage * needed))
             extra_subtract = needed - character_subtract
@@ -1363,8 +682,8 @@ class LegoStarWarsTCSWorld(World):
                 # If there are not enough free locations, some of the required characters will have to be added to start
                 # inventory.
                 start_inventory_required_characters_count = to_subtract - free_location_count
-                self._log_warning("There were not enough locations to add all required characters to the item pool,"
-                                  " some of them have been added to starting inventory")
+                self.log_warning("There were not enough locations to add all required characters to the item pool,"
+                                 " some of them have been added to starting inventory")
                 free_location_count = 0
             else:
                 free_location_count -= to_subtract
@@ -1390,8 +709,8 @@ class LegoStarWarsTCSWorld(World):
             to_subtract = required_extras_count - reserved_power_brick_location_count
             if free_location_count < to_subtract:
                 start_inventory_required_extras_count = to_subtract - free_location_count
-                self._log_warning("There were not enough locations to add all required Extras to the item pool,"
-                                  " some of them have been added to starting inventory")
+                self.log_warning("There were not enough locations to add all required Extras to the item pool,"
+                                 " some of them have been added to starting inventory")
                 free_location_count = 0
             else:
                 free_location_count -= to_subtract
@@ -1757,11 +1076,11 @@ class LegoStarWarsTCSWorld(World):
 
         # Available minikit count is calculated in generate_early.
         if self.available_minikits != available_minikits_check:
-            self._raise_error(AssertionError,
-                              "Available minikits in create_regions did not match."
-                              " %i from generate_early and %i from create_regions",
-                              self.available_minikits,
-                              available_minikits_check)
+            self.raise_error(AssertionError,
+                             "Available minikits in create_regions did not match. %i from generate_early and %i"
+                             " from create_regions. Please report this as a bug in the apworld.",
+                             self.available_minikits,
+                             available_minikits_check)
 
         if self.options.enable_bonus_locations:
             # Bonuses.
@@ -1937,8 +1256,8 @@ class LegoStarWarsTCSWorld(World):
             elif self.options.episode_unlock_requirement == "open":
                 pass
             else:
-                self._raise_error(AssertionError, "Unreachable: Unexpected episode unlock requirement %s",
-                                  self.options.episode_unlock_requirement)
+                self.raise_error(AssertionError, "Unreachable: Unexpected episode unlock requirement %s",
+                                 self.options.episode_unlock_requirement)
 
             # Set chapter requirements.
             episode_chapters = EPISODE_TO_CHAPTER_AREAS[episode_number]
