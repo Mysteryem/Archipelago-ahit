@@ -113,6 +113,19 @@ class ChapterDoorGameMode(IntEnum):
         CHAPTER_DOOR_GAME_MODE.set(ctx, self.value)
 
 
+CHALLENGE_MODE_ADDRESS = StaticUint(0x856c08)
+
+
+class ChallengeMode(IntEnum):
+    NO_CHALLENGE = 0x0
+    CHALLENGE_IN_PROGRESS = 0x1
+    CHALLENGE_STOPPED = 0x2
+    CHALLENGE_FAILED = 0x3
+
+    def is_set(self, ctx: TCSContext) -> bool:
+        return CHALLENGE_MODE_ADDRESS.get(ctx) == self.value
+
+
 def is_in_chapter_free_play(ctx: TCSContext, area_id: int | None = None) -> bool:
     # The current area ID is often known in advance.
     if area_id is None:

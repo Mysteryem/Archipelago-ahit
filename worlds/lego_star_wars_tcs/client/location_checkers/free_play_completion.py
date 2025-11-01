@@ -7,6 +7,7 @@ from ...levels import CHAPTER_AREAS, ChapterArea
 from ...locations import LOCATION_NAME_TO_ID, LEVEL_COMMON_LOCATIONS
 from ..type_aliases import ApLocationId, LevelId, TCSContext, AreaId
 from ..common import ClientComponent
+from ..common_addresses import ChallengeMode
 
 
 debug_logger = logging.getLogger("TCS Debug")
@@ -57,6 +58,8 @@ STATUS_LEVEL_FREE_PLAY_COMPLETION_NEGATIVE_REQUIREMENTS = int(
 #     | StatusLevelFlags.UNKNOWN_200
 #     | StatusLevelFlags.UNKNOWN_1000
 # )
+# These status level flags are not enough to tell apart Free Play and Challenge mode, so an additional explicitl check
+# for Challenge mode needs to be performed.
 
 
 STATUS_LEVEL_ID_TO_AP_ID: dict[LevelId, ApLocationId] = {
@@ -82,7 +85,10 @@ def is_status_level_free_play_completion(ctx: TCSContext) -> bool:
     """
     status_flags = ctx.read_uint(STATUS_LEVEL_FLAGS_ADDRESS)
     return (status_flags & STATUS_LEVEL_FREE_PLAY_COMPLETION_REQUIREMENTS != 0
-            and status_flags & STATUS_LEVEL_FREE_PLAY_COMPLETION_NEGATIVE_REQUIREMENTS == 0)
+            and status_flags & STATUS_LEVEL_FREE_PLAY_COMPLETION_NEGATIVE_REQUIREMENTS == 0
+            # The status_flags cannot be used to tell apart Free Play and Challenge, so an explicit check for Challenge
+            # mode not being enabled is needed.
+            and ChallengeMode.NO_CHALLENGE.is_set(ctx))
 
 
 # TODO: How quickly can a player reasonably skip through the chapter completion screen? Do we need to check for chapter
