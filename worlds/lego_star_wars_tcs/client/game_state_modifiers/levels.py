@@ -4,7 +4,7 @@ from typing import AbstractSet, Callable
 from .text_replacer import TextId
 from ..events import subscribe_event, OnAreaChangeEvent, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
 from ..common import ClientComponent, UintField, UCharField
-from ..common_addresses import OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
+from ..common_addresses import OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS, ChapterDoorGameMode
 from ..type_aliases import TCSContext, AreaId
 from ...items import ITEM_DATA_BY_NAME, ITEM_DATA_BY_ID
 from ...levels import (
@@ -41,6 +41,8 @@ class UnlockedChapterManager(ClientComponent):
 
     easy_true_jedi: bool = False
     scale_true_jedi_with_score_multipliers: bool = False
+
+    last_area_door: ChapterArea | None = None
 
     def __init__(self) -> None:
         self.character_to_dependent_game_chapters = {}
@@ -197,6 +199,12 @@ class UnlockedChapterManager(ClientComponent):
                         if ctx.read_uchar(OPENED_MENU_DEPTH_ADDRESS) > 0:
                             # The player has a menu open (hopefully the menu within the chapter door.
                             temporary_story_completion = {area.area_id}
+                            if self.last_area_door is not area:
+                                # Force the selection in the menu to "Free Play" instead of "Story" or "Challenge".
+                                # This is only done when the ChapterArea changes, so that users can still choose "Story"
+                                # or "Challenge" if they really want to (not currently useful).
+                                ChapterDoorGameMode.FREE_PLAY.set(ctx)
+                                self.last_area_door = area
 
         completed_free_play = ctx.free_play_completion_checker.completed_free_play
 
