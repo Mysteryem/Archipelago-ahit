@@ -36,6 +36,12 @@ class InGameTextDisplay(ClientComponent):
     def priority_message(self, message: str):
         self.message_queue.appendleft(message)
 
+    def priority_messages(self, *messages: str):
+        # priority_messages appends the message to the front, so, to maintain order, the messages need to be appended in
+        # reverse.
+        for message in reversed(messages):
+            self.priority_message(message)
+
     # A custom minimum duration of more than 4 seconds is irrelevant currently because the message fades out by that
     # point.
     def _display_message(self, ctx: TCSContext, message: str,

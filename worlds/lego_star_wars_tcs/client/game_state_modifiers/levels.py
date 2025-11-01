@@ -4,7 +4,13 @@ from typing import AbstractSet, Callable
 from .text_replacer import TextId
 from ..events import subscribe_event, OnAreaChangeEvent, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
 from ..common import ClientComponent, UintField, UCharField
-from ..common_addresses import OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS, ChapterDoorGameMode
+from ..common_addresses import (
+    OPENED_MENU_DEPTH_ADDRESS,
+    CURRENT_P_AREA_DATA_ADDRESS,
+    ChapterDoorGameMode,
+    IS_CHARACTER_SWAPPING_ENABLED,
+    ChallengeMode,
+)
 from ..type_aliases import TCSContext, AreaId
 from ...items import ITEM_DATA_BY_NAME, ITEM_DATA_BY_ID
 from ...levels import (
@@ -235,20 +241,22 @@ class UnlockedChapterManager(ClientComponent):
                     # Set the chapter as locked, with Story mode incomplete.
                     ctx.write_bytes(area.address, b"\x00\x00", 2)
 
-    def _set_current_area_true_jedi_requirement(self, ctx: TCSContext, current_p_area_data: int | None = None):
+    def _set_current_area_true_jedi_requirement(self, ctx: TCSContext, current_p_area_data: int | None = None,
+                                                chapter_area: ChapterArea | None = None):
         if current_p_area_data is None:
             current_p_area_data = CURRENT_P_AREA_DATA_ADDRESS.get(ctx)
 
-        if current_p_area_data == 0:
-            # debug_logger.info("Current AreaData pointer is NULL. Nothing to do.")
-            return
+            if current_p_area_data == 0:
+                # debug_logger.info("Current AreaData pointer is NULL. Nothing to do.")
+                return
 
-        current_area_id = AREA_DATA_ID.get(ctx, current_p_area_data)
-        chapter_area = AREA_ID_TO_CHAPTER_AREA.get(current_area_id)
-        if chapter_area is None:
-            # The current area is not a chapter area, so there is nothing to do.
-            debug_logger.info("The current area has ID %i, which is not a chapter Area", current_area_id)
-            return
+            current_area_id = AREA_DATA_ID.get(ctx, current_p_area_data)
+            chapter_area = AREA_ID_TO_CHAPTER_AREA.get(current_area_id)
+
+            if chapter_area is None:
+                # The current area is not a chapter area, so there is nothing to do.
+                debug_logger.info("The current area has ID %i, which is not a chapter Area", current_area_id)
+                return
 
         if self.easy_true_jedi:
             true_jedi_requirement = chapter_area.story_true_jedi_requirement
@@ -270,5 +278,32 @@ class UnlockedChapterManager(ClientComponent):
 
     @subscribe_event
     def on_area_change(self, event: OnAreaChangeEvent):
-        self._set_current_area_true_jedi_requirement(event.context, event.new_p_area_data)
-        # todo: Fix Original Trilogy High Jump here.
+        ctx = event.context
+        current_p_area_data = event.new_p_area_data
+
+        if current_p_area_data == 0:
+            # debug_logger.info("Current AreaData pointer is NULL. Nothing to do.")
+            return
+
+        current_area_id = AREA_DATA_ID.get(ctx, current_p_area_data)
+        chapter_area = AREA_ID_TO_CHAPTER_AREA.get(current_area_id)
+
+        if chapter_area is None:
+            # The current area is not a chapter area, so there is nothing to do.
+            debug_logger.info("The current area has ID %i, which is not a chapter Area", current_area_id)
+            return
+
+        self._set_current_area_true_jedi_requirement(event.context, current_p_area_data, chapter_area)
+        # Check if the player is in a chapter.
+        if current_area_id in AREA_ID_TO_CHAPTER_AREA:
+            if not IS_CHARACTER_SWAPPING_ENABLED.get(ctx):
+                # The player must be in Story, Superstory or a Bounty Hunter Mission.
+                # todo: Find a way to tell apart Story, Superstory and Bounty Hunter Missions while in the level itself.
+                #  Currently, the client can only tell them apart on the 'status' screen.
+                ctx.text_display.priority_messages("Chapters should only be played in Free Play",
+                                                   "Other modes are not currently part of the randomizer.")
+            else:
+                if not ChallengeMode.NO_CHALLENGE.is_set(ctx):
+                    # The player is in Challenge mode.
+                    ctx.text_display.priority_messages("Chapters should only be played in Free Play",
+                                                       "Challenge mode is not currently part of the randomizer")
