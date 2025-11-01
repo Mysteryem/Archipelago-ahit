@@ -39,8 +39,9 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: di
     self.enabled_episodes = set(passthrough["enabled_episodes"])
     # The enabled bonuses are set depending on the number of Gold Bricks available
     self.enabled_bonuses = set(passthrough["enabled_bonuses"])
-    self.starting_chapter = passthrough["starting_chapter"]
-    self.starting_episode = passthrough["starting_episode"]
+    self.starting_chapter = SHORT_NAME_TO_CHAPTER_AREA[passthrough["starting_chapter"]]
+    assert self.starting_episode == passthrough["starting_episode"], ("Starting episode from slot_data did not match "
+                                                                      "the starting chapter from slot_data.")
 
     # Derived Minikit attributes.
     self.available_minikits = self.enabled_chapter_count * 10
@@ -59,7 +60,7 @@ def _override_options_with_derived_rolled_values(self: LegoStarWarsTCSWorld):
     # Override the enable_chapter count to match the number that are enabled.
     self.options.enabled_chapters_count.value = len(self.enabled_chapters)
     # Unrandomize the starting chapter choice with the starting chapter that was actually picked.
-    self.options.starting_chapter.set_from_string(self.starting_chapter)
+    self.options.starting_chapter.set_from_string(self.starting_chapter.short_name)
     # Override the allowed chapters with all the chapters that rolled as enabled.
     self.options.allowed_chapters.value = set(self.enabled_chapters)
     # Act as if there was no filtering of allowed chapter types.

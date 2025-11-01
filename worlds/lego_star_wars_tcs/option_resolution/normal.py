@@ -840,10 +840,7 @@ class _NormalOptionsResolver:
 
         world = self.world
         world.short_name_to_boss_character = short_name_to_boss_character
-        world.starting_chapter = starting_chapter
-        # todo: starting_episode could be a property, or could be set automatically when setting starting_chapter as a
-        #  property.
-        world.starting_episode = starting_episode
+        world.starting_chapter = SHORT_NAME_TO_CHAPTER_AREA[starting_chapter]
         world.enabled_bosses = enabled_bosses
         world.enabled_chapters = enabled_chapters
         world.enabled_episodes = enabled_episodes

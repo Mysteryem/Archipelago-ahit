@@ -38,6 +38,7 @@ from .items import (
 )
 from .levels import (
     BonusArea,
+    ChapterArea,
     CHAPTER_AREAS,
     BONUS_AREAS,
     EPISODE_TO_CHAPTER_AREAS,
@@ -138,8 +139,7 @@ class LegoStarWarsTCSWorld(World):
     enabled_bosses: set[str]
     short_name_to_boss_character: dict[str, str]
 
-    starting_chapter: str = "1-1"
-    starting_episode: int = 1
+    starting_chapter: ChapterArea = SHORT_NAME_TO_CHAPTER_AREA["1-1"]
     minikit_bundle_name: str = ""
     enabled_chapter_count: int = -1
     available_minikits: int = -1
@@ -181,6 +181,10 @@ class LegoStarWarsTCSWorld(World):
         # The `generation_is_fake` attribute is added by Universal Tracker to allow detection of generation with
         # Universal Tracker rather than real generation.
         return hasattr(self.multiworld, "generation_is_fake")
+
+    @property
+    def starting_episode(self) -> int:
+        return self.starting_chapter.episode
 
     def generate_early(self) -> None:
         resolve_options(self)
@@ -344,7 +348,7 @@ class LegoStarWarsTCSWorld(World):
         #         possible_pool_character_items[vehicle.name] = vehicle
 
         # Add characters necessary to unlock the starting chapter into starting inventory.
-        for name in CHAPTER_AREA_STORY_CHARACTERS[self.starting_chapter]:
+        for name in CHAPTER_AREA_STORY_CHARACTERS[self.starting_chapter.short_name]:
             self.push_precollected(self.create_item(name))
             del possible_pool_character_items[name]
         if self.options.episode_unlock_requirement == "episode_item":
@@ -1433,11 +1437,12 @@ class LegoStarWarsTCSWorld(World):
 
     def fill_slot_data(self) -> Mapping[str, Any]:
         return {
+            # todo: A number of the slot data keys here could be inferred from what locations exist in the multiworld.
             "apworld_version": constants.AP_WORLD_VERSION,
             "enabled_chapters": sorted(self.enabled_chapters),
             "enabled_episodes": sorted(self.enabled_episodes),
             "enabled_bonuses": sorted(self.enabled_bonuses),
-            "starting_chapter": self.starting_chapter,
+            "starting_chapter": self.starting_chapter.short_name,
             "starting_episode": self.starting_episode,
             "minikit_goal_amount": self.goal_minikit_count,
             "enabled_bosses": self.enabled_bosses,
@@ -1474,7 +1479,7 @@ class LegoStarWarsTCSWorld(World):
     def write_spoiler_header(self, spoiler_handle: TextIO) -> None:
         super().write_spoiler_header(spoiler_handle)
 
-        spoiler_handle.write(f"Starting Chapter: {self.starting_chapter}\n")
+        spoiler_handle.write(f"Starting Chapter: {self.starting_chapter.short_name}\n")
 
         enabled_episodes = sorted(self.enabled_episodes)
         spoiler_handle.write(f"Enabled Episodes: {enabled_episodes}\n")
