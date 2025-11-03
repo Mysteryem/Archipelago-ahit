@@ -89,6 +89,8 @@ class _NormalOptionsResolver:
     _junk_weights: Mapping[str, int] = field(init=False)
     _enable_bonus_locations: bool = field(init=False)
     _enable_true_jedi_locations: bool = field(init=False)
+    _kyber_bricks_required_for_goal: bool = field(init=False)
+    _level_completions_required_for_goal: bool = field(init=False)
 
     def _adjust(self, option: Option[_T], value: _T, warning: str | None = None, *warning_args):
         self.option_adjustments.append(_OptionAdjustment(option, value, warning, *warning_args))
@@ -131,14 +133,19 @@ class _NormalOptionsResolver:
         self._junk_weights = options.junk_weights.value.copy()
         self._enable_bonus_locations = bool(options.enable_bonus_locations)
         self._enable_true_jedi_locations = bool(options.enable_true_jedi_locations)
+        self._kyber_bricks_required_for_goal = bool(options.goal_requires_kyber_bricks)
+        self._level_completions_required_for_goal = bool(options.complete_levels_goal_amount_percentage)
+
+    def _validate_goal_choice(self):
+        """Check that at least one goal is enabled."""
+        if (not self._bosses_required_for_goal
+                and not self._minikits_required_for_goal
+                and not self._kyber_bricks_required_for_goal
+                and not self._level_completions_required_for_goal
+        ):
+            self.world.option_error("At least one goal must be enabled.")
 
     def _resolve_allowed_chapters(self) -> tuple[set[str], set[str]]:
-        world = self.world
-
-        # Check that at least one goal is enabled.
-        # -1 for minikit goal uses a percentage option that is never 0.
-        if not self._bosses_required_for_goal and not self._minikits_required_for_goal:
-            world.option_error("At least one goal must be enabled.")
 
         # Determine all available chapters to pick from.
         allowed_chapters = self._explicitly_allowed_chapters.value_ungrouped
@@ -790,6 +797,8 @@ class _NormalOptionsResolver:
         return enabled_bonuses, expected_gold_brick_event_count
 
     def _resolve_normal_options(self):
+        self._validate_goal_choice()
+
         allowed_chapters, allowed_boss_chapters = self._resolve_allowed_chapters()
         allowed_starting_chapters = self._resolve_allowed_starting_chapters(allowed_chapters, allowed_boss_chapters)
 
