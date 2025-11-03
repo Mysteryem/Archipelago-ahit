@@ -16,7 +16,7 @@ from Options import (
     ItemDict,
 )
 
-from .levels import BOSS_UNIQUE_NAME_TO_CHAPTER
+from .levels import BOSS_UNIQUE_NAME_TO_CHAPTER, VEHICLE_CHAPTER_SHORTNAMES, EPISODE_TO_CHAPTER_AREAS
 from .locations import LEVEL_SHORT_NAMES_SET
 from .items import CHARACTERS_AND_VEHICLES_BY_NAME, EXTRAS_BY_NAME
 from .item_groups import ITEM_GROUPS
@@ -51,6 +51,44 @@ class ChoiceFromStringExtension(Choice):
                 self.value = k
                 return
         raise ValueError(f"{s} is not a valid string for {type(self)}. Expected: {sorted(self.name_lookup.values())}")
+
+
+class ChapterChoice(ChoiceFromStringExtension):
+    """ChoiceFromStringExtension for picking Chapters"""
+    # Variable names cannot use hyphens, so the options for specific levels are set programmatically.
+    # option_1-1 = 11
+    # option_1-2 = 12
+    # etc.
+    locals().update({f"option_{episode}-{chapter}": int(f"{episode}{chapter}")
+                     for episode, chapter in itertools.product(range(1, 7), range(1, 7))})
+    option_random_chapter = -1
+    option_random_non_vehicle = -2
+    option_random_vehicle = -3
+    option_random_episode_1 = 1
+    option_random_episode_2 = 2
+    option_random_episode_3 = 3
+    option_random_episode_4 = 4
+    option_random_episode_5 = 5
+    option_random_episode_6 = 6
+
+    def is_singular_chapter(self) -> bool:
+        v = self.value
+        return 11 <= v <= 66 and 1 <= v // 10 <= 6 and 1 <= v % 10 <= 6
+
+    def to_short_name_set(self) -> set[str]:
+        v = self.value
+        if v == ChapterChoice.option_random_chapter:
+            return set(LEVEL_SHORT_NAMES_SET)
+        elif v == ChapterChoice.option_random_non_vehicle:
+            return set(LEVEL_SHORT_NAMES_SET).difference(VEHICLE_CHAPTER_SHORTNAMES)
+        elif v == ChapterChoice.option_random_vehicle:
+            return set(VEHICLE_CHAPTER_SHORTNAMES)
+        elif 1 <= v <= 6:
+            return {chapter.short_name for chapter in EPISODE_TO_CHAPTER_AREAS[v]}
+        else:
+            key = self.current_key
+            assert key in LEVEL_SHORT_NAMES_SET, f"{key} is not a valid chapter shortname"
+            return {key}
 
 
 class MinikitGoalAmount(NamedRange):
@@ -562,7 +600,7 @@ class AllEpisodesCharacterPurchaseRequirements(ChoiceFromStringExtension):
 #     """Extra Toggle characters are included in logic"""
 
 
-class StartingChapter(ChoiceFromStringExtension):
+class StartingChapter(ChapterChoice):
     """
     Choose the starting chapter. The Episode the starting Chapter belongs to will be accessible from the start.
 
@@ -591,21 +629,6 @@ class StartingChapter(ChoiceFromStringExtension):
     """
     display_name = "Starting Chapter"
     rich_text_doc = True
-    # Variable names cannot use hyphens, so the options for specific levels are set programmatically.
-    # option_1-1 = 11
-    # option_1-2 = 12
-    # etc.
-    locals().update({f"option_{episode}-{chapter}": int(f"{episode}{chapter}")
-                     for episode, chapter in itertools.product(range(1, 7), range(1, 7))})
-    option_random_chapter = -1
-    option_random_non_vehicle = -2
-    option_random_vehicle = -3
-    option_random_episode_1 = 1
-    option_random_episode_2 = 2
-    option_random_episode_3 = 3
-    option_random_episode_4 = 4
-    option_random_episode_5 = 5
-    option_random_episode_6 = 6
     default = 11
 
 

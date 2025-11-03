@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Generic, TypeVar, Any, Mapping
 
@@ -8,7 +7,6 @@ from ..items import MINIKITS_BY_COUNT
 from ..levels import (
     BOSS_UNIQUE_NAME_TO_CHAPTER,
     VEHICLE_CHAPTER_SHORTNAMES,
-    EPISODE_TO_CHAPTER_AREAS,
     SHORT_NAME_TO_CHAPTER_AREA,
     BonusArea,
     BONUS_AREAS,
@@ -16,7 +14,6 @@ from ..levels import (
 from ..options import (
     LegoStarWarsTCSOptions,
     StartingChapter,
-    LEVEL_SHORT_NAMES_SET,
     OnlyUniqueBossesCountTowardsGoal,
     AllEpisodesCharacterPurchaseRequirements,
     AllowedChapters,
@@ -176,51 +173,51 @@ class _NormalOptionsResolver:
         # Determine starting chapters to pick from.
         starting_chapters: set[str]
         starting_chapter_option = self._starting_chapter
-        if starting_chapter_option == StartingChapter.option_random_chapter:
-            starting_chapters = allowed_chapters.copy()
-        elif starting_chapter_option == StartingChapter.option_random_non_vehicle:
-            starting_chapters = set(LEVEL_SHORT_NAMES_SET).difference(VEHICLE_CHAPTER_SHORTNAMES)
-        elif starting_chapter_option == StartingChapter.option_random_vehicle:
-            if self._allowed_chapter_types == "no_vehicles":
+        starting_chapters = starting_chapter_option.to_short_name_set()
+
+        # Filter to only the chapters that are allowed to be enabled.
+        allowed_starting_chapters = starting_chapters.intersection(allowed_chapters)
+
+        if not allowed_starting_chapters:
+            # Figure out what the incompatibility was and see if it can be fixed or if an OptionError needs to be
+            # raised.
+            if (starting_chapter_option == StartingChapter.option_random_vehicle
+                    and self._allowed_chapter_types == "no_vehicles"):
                 world.option_error("'random_vehicle' starting Chapter cannot be used when Allowed Chapter Types is"
                                    " set to 'no_vehicles'.")
-            starting_chapters = set(VEHICLE_CHAPTER_SHORTNAMES)
-        elif match := re.fullmatch(r"random_episode_([1-6])", starting_chapter_option.current_key):
-            episode = int(match.group(1))
-            starting_chapters = {chapter.short_name for chapter in EPISODE_TO_CHAPTER_AREAS[episode]}
-        else:
-            starting_chapter = starting_chapter_option.current_key
-            assert starting_chapter in LEVEL_SHORT_NAMES_SET
-            starting_chapters = {starting_chapter}
-            # If a singular starting chapter was chosen, but not in the allowed chapters set, forcefully add it.
-            # This should give a better generation experience to players intending to run fully random yamls.
-            if starting_chapter not in allowed_chapters:
+            elif len(starting_chapters) == 1:
+                # If a singular starting chapter was chosen, but not in the allowed chapters set, forcefully add it.
+                # This should give a better generation experience to players intending to run fully random yamls.
+                assert starting_chapter_option.is_singular_chapter()
+                starting_chapter = next(iter(starting_chapters))
+
+                allowed_starting_chapters = starting_chapters.copy()
+                allowed_chapters.update(allowed_starting_chapters)
+
                 world.log_warning("The individually chosen starting chapter '%s' was not in the set of allowed"
                                   " chapters %s. '%s' has been forcefully allowed to prevent generation failure.",
                                   starting_chapter,
                                   sorted(allowed_chapters),
                                   starting_chapter)
-                allowed_chapters.add(starting_chapter)
                 # Add the forced starting chapter to allowed_bosses if it was an allowed boss originally.
                 if self._bosses_required_for_goal:
                     unique_boss_name = SHORT_NAME_TO_CHAPTER_AREA[starting_chapter].unique_boss_name
                     if unique_boss_name in allowed_boss_chapters:
                         allowed_boss_chapters.add(starting_chapter)
-        # Filter to only the chapters that are allowed to be enabled.
-        allowed_starting_chapters = allowed_chapters.intersection(starting_chapters)
-        if not allowed_starting_chapters:
-            world.option_error("None of the chosen possible starting chapters were chosen to be possible to be"
-                               " enabled."
-                               " At least one starting chapter must be allowed to be enabled."
-                               "\nPossible starting chapters:"
-                               "\n\t%s (%s)"
-                               "\nAllowed chapters:"
-                               "\n\t%s (allowed chapters) + %s (allowed boss chapters) (%s)",
-                               starting_chapter_option.current_key,
-                               sorted(starting_chapters),
-                               sorted(self._explicitly_allowed_chapters.value),
-                               sorted(allowed_boss_chapters),
-                               sorted(allowed_chapters))
+            else:
+                world.option_error("None of the chosen possible starting chapters were chosen to be possible to be"
+                                   " enabled."
+                                   " At least one starting chapter must be allowed to be enabled."
+                                   "\nPossible starting chapters:"
+                                   "\n\t%s (%s)"
+                                   "\nAllowed chapters:"
+                                   "\n\t%s (allowed chapters) + %s (allowed boss chapters) (%s)",
+                                   starting_chapter_option.current_key,
+                                   sorted(starting_chapters),
+                                   sorted(self._explicitly_allowed_chapters.value),
+                                   sorted(allowed_boss_chapters),
+                                   sorted(allowed_chapters))
+
         return allowed_starting_chapters
 
     @staticmethod
