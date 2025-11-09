@@ -92,8 +92,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
         while remaining_locations:
             loc = remaining_locations.pop()
             if loc.can_fill(base_state, item, check_access=False):
-                loc.item = item
-                item.location = loc
+                multiworld.push_item(loc, item, False)
                 filled_locs.append(loc)
                 if item.advancement:
                     filled_advancements_to_check.add(loc)
