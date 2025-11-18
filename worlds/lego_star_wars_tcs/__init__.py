@@ -439,7 +439,8 @@ class LegoStarWarsTCSWorld(World):
                         required_character_abilities_in_pool |= picked
                 else:
                     required_character_abilities_in_pool |= power_brick_abilities
-            required_character_abilities_in_pool |= ALL_MINIKITS_REQUIREMENTS[shortname]
+            if self.options.enable_minikit_locations.value:
+                required_character_abilities_in_pool |= ALL_MINIKITS_REQUIREMENTS[shortname]
         for bonus_name in self.enabled_bonuses:
             area = BONUS_NAME_TO_BONUS_AREA[bonus_name]
             required_character_abilities_in_pool |= area.ability_requirements
