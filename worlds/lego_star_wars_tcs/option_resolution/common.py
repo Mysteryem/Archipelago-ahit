@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from ..levels import BONUS_NAME_TO_BONUS_AREA
 from .universal_tracker import resolve_universal_tracker_options
 from .normal import resolve_normal_options
-from ..options import MinikitGoalAmount
+from ..options import MinikitGoalAmount, GoalChapterLocationsMode
 
 
 if TYPE_CHECKING:
@@ -48,8 +48,48 @@ def _resolve_common_options(world: LegoStarWarsTCSWorld):
         # Only bonuses that award a Gold Brick on completion count towards the goal count.
         bonus_areas_count = sum(BONUS_NAME_TO_BONUS_AREA[name].gold_brick for name in world.enabled_bonuses)
         available_areas_count = chapter_areas_count + bonus_areas_count
-        world.goal_area_completion_count = max(1, round(
-            available_areas_count * complete_areas_goal_amount_percentage / 100))
+        goal_area_completion_count = max(1, round(available_areas_count * complete_areas_goal_amount_percentage / 100))
+
+        # If the Goal Chapter is enabled and has normal locations, so has Gold Bricks, then the Gold Bricks in the
+        # Goal Chapter will not be usable to access Bonus Levels that can contribute level completion towards the
+        # goal.
+        if (world.goal_chapter
+                and world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal
+                and world.enabled_bonuses):
+            gold_bricks_per_chapter = (
+                    1
+                    + bool(world.options.enable_minikit_locations)
+                    + bool(world.options.enable_true_jedi_locations)
+            )
+            chapter_gold_bricks = chapter_areas_count * gold_bricks_per_chapter
+            gold_brick_bonuses = [BONUS_NAME_TO_BONUS_AREA[name] for name in world.enabled_bonuses
+                                  if BONUS_NAME_TO_BONUS_AREA[name].gold_brick]
+            # Sort lower requirement bonuses first.
+            gold_brick_bonuses.sort(key=lambda bonus_area: bonus_area.gold_bricks_required)
+            pre_goal_gold_bricks = chapter_gold_bricks
+            pre_goal_completable_bonuses = 0
+            for area in gold_brick_bonuses:
+                if area.gold_bricks_required > pre_goal_gold_bricks:
+                    # The bonuses were sorted on order of ascending gold brick requirements, so no other bonuses are
+                    # reachable before the goal.
+                    break
+                pre_goal_completable_bonuses += 1
+                pre_goal_gold_bricks += 1
+            pre_goal_completable_areas = chapter_areas_count + pre_goal_completable_bonuses
+            if goal_area_completion_count > pre_goal_completable_areas:
+                # It is rather rare for this to actually happen.
+                world.log_warning("Could not satisfy the desired %i%% (%i/%i) level completions for goal because %i"
+                                  " bonus levels are only accessible after completing the goal. The number of level"
+                                  " completions for the goal has been reduced to the maximum of %.2f%% (%i/%i)",
+                                  complete_areas_goal_amount_percentage,
+                                  goal_area_completion_count,
+                                  available_areas_count,
+                                  bonus_areas_count - pre_goal_completable_bonuses,
+                                  pre_goal_completable_areas / available_areas_count * 100,
+                                  pre_goal_completable_areas,
+                                  available_areas_count)
+                goal_area_completion_count = pre_goal_completable_areas
+        world.goal_area_completion_count = goal_area_completion_count
     else:
         world.goal_area_completion_count = 0
 
