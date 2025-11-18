@@ -1336,7 +1336,7 @@ class LegoStarWarsTCSWorld(World):
             if all(len(names) == 1 for names in ability_names):
                 # Optimize for all abilities being only a single flag each.
                 singular_names = {names[0] for names in ability_names}
-                set_rule(spot, lambda state, items_=tuple(singular_names), p=self.player: state.has_all(items_, p))
+                set_rule(spot, lambda state, items_=tuple(singular_names), p=self.player: state.has_any(items_, p))
             else:
                 def rule(state: CollectionState):
                     for names in ability_names:
