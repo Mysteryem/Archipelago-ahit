@@ -19,6 +19,7 @@ from ..options import (
     AllowedChapters,
     AllowedChapterTypes,
     EpisodeUnlockRequirement,
+    GoalChapterLocationsMode,
 )
 
 
@@ -88,6 +89,8 @@ class _NormalOptionsResolver:
     _enable_true_jedi_locations: bool = field(init=False)
     _kyber_bricks_required_for_goal: bool = field(init=False)
     _level_completions_required_for_goal: bool = field(init=False)
+    _goal_chapter: str | None = field(init=False)
+    _goal_chapter_locations_mode: GoalChapterLocationsMode = field(init=False)
 
     def _adjust(self, option: Option[_T], value: _T, warning: str | None = None, *warning_args):
         self.option_adjustments.append(_OptionAdjustment(option, value, warning, *warning_args))
@@ -132,6 +135,8 @@ class _NormalOptionsResolver:
         self._enable_true_jedi_locations = bool(options.enable_true_jedi_locations)
         self._kyber_bricks_required_for_goal = bool(options.goal_requires_kyber_bricks)
         self._level_completions_required_for_goal = bool(options.complete_levels_goal_amount_percentage)
+        self._goal_chapter = options.goal_chapter.to_short_name()
+        self._goal_chapter_locations_mode = GoalChapterLocationsMode(options.goal_chapter_locations_mode.value)
 
     def _validate_goal_choice(self):
         """Check that at least one goal is enabled."""
@@ -162,6 +167,14 @@ class _NormalOptionsResolver:
         # `allowed_boss_chapters` might no longer refer to the same chapters as self._allowed_bosses.
         del self._allowed_bosses
 
+        if self._goal_chapter:
+            # The goal chapter is special and is always picked, when enabled, and does not count towards the enabled
+            # chapter count.
+            allowed_chapters.discard(self._goal_chapter)
+            # The goal chapter can never be a boss chapter because access to the goal chapter requires completing all
+            # other goals.
+            allowed_boss_chapters.discard(self._goal_chapter)
+
         return allowed_chapters, allowed_boss_chapters
 
     def _resolve_allowed_starting_chapters(self,
@@ -191,6 +204,11 @@ class _NormalOptionsResolver:
                 assert starting_chapter_option.is_singular_chapter()
                 starting_chapter = next(iter(starting_chapters))
 
+                # The starting chapter is not allowed to be the goal chapter.
+                if starting_chapter == self._goal_chapter:
+                    world.option_error("The individually chosen starting chapter '%s' is not allowed to be the same as"
+                                       " the Goal Chapter.", starting_chapter)
+
                 allowed_starting_chapters = starting_chapters.copy()
                 allowed_chapters.update(allowed_starting_chapters)
 
@@ -211,12 +229,15 @@ class _NormalOptionsResolver:
                                    "\nPossible starting chapters:"
                                    "\n\t%s (%s)"
                                    "\nAllowed chapters:"
-                                   "\n\t%s (allowed chapters) + %s (allowed boss chapters) (%s)",
+                                   "\n\t%s (allowed chapters) + %s (allowed boss chapters) (%s)"
+                                   "\nGoal chapter (not allowed as the starting chapter):"
+                                   "\n\t%s",
                                    starting_chapter_option.current_key,
                                    sorted(starting_chapters),
                                    sorted(self._explicitly_allowed_chapters.value),
                                    sorted(allowed_boss_chapters),
-                                   sorted(allowed_chapters))
+                                   sorted(allowed_chapters),
+                                   self._goal_chapter)
 
         return allowed_starting_chapters
 
@@ -681,6 +702,10 @@ class _NormalOptionsResolver:
         enabled_chapters = set(tentative_enabled_chapters)
         enabled_episodes = {SHORT_NAME_TO_CHAPTER_AREA[s].episode for s in enabled_chapters}
 
+        # It is possible that the Goal Chapter could be the only chapter in its episode.
+        if self._goal_chapter:
+            enabled_episodes.add(SHORT_NAME_TO_CHAPTER_AREA[self._goal_chapter].episode)
+
         return enabled_bosses, enabled_chapters, enabled_episodes
 
     def _adjust_all_episodes_unlock_requirement(self, enabled_episodes: set[int]) -> int:
@@ -761,13 +786,17 @@ class _NormalOptionsResolver:
         enabled_bonuses: set[str] = set()
         expected_gold_brick_event_count: int
         if self._enable_bonus_locations:
+            total_chapters_with_gold_bricks = enabled_chapter_count
+            if self._goal_chapter and self._goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal:
+                # The Goal Chapter contributes Gold Bricks if it has non-excluded locations.
+                total_chapters_with_gold_bricks += 1
             # Start with the Gold Bricks available from enabled Chapters.
             gold_bricks_per_chapter = (
                     1
                     + self._enable_minikit_locations
                     + self._enable_true_jedi_locations
             )
-            available_gold_bricks_from_chapters = enabled_chapter_count * gold_bricks_per_chapter
+            available_gold_bricks_from_chapters = total_chapters_with_gold_bricks * gold_bricks_per_chapter
 
             # Enable Bonuses that do not require more Gold Bricks than are logically available.
             # Enabled Bonuses can also reward a Gold Brick, so those will also add +1 available Gold Brick.
@@ -856,6 +885,7 @@ class _NormalOptionsResolver:
         world.minikit_bundle_count = minikit_bundle_count
         world.enabled_bonuses = enabled_bonuses
         world._expected_gold_brick_event_count = expected_gold_brick_event_count
+        world.goal_chapter = self._goal_chapter
 
     def resolve_normal_options(self):
         try:

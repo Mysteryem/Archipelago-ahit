@@ -29,6 +29,7 @@ def _direct_slot_data_options(self: LegoStarWarsTCSWorld, passthrough: dict[str,
     self.options.defeat_bosses_goal_amount.value = passthrough["defeat_bosses_goal_amount"]
     self.options.enable_minikit_locations.value = passthrough["enable_minikit_locations"]
     self.options.enable_true_jedi_locations.value = passthrough["enable_true_jedi_locations"]
+    self.options.goal_chapter_locations_mode.value = passthrough["goal_chapter_locations_mode"]
 
 
 def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: dict[str, Any]):
@@ -53,6 +54,10 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: di
     # Derived Goal attributes.
     self.enabled_bosses = set(passthrough["enabled_bosses"])
     self.goal_area_completion_count = passthrough["goal_area_completion_count"]
+    if goal_chapter := passthrough["goal_chapter"]:
+        self.goal_chapter = goal_chapter
+    else:
+        self.goal_chapter = None
 
 
 def _override_options_with_derived_rolled_values(self: LegoStarWarsTCSWorld):

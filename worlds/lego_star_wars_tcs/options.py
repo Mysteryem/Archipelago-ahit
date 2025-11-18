@@ -169,6 +169,61 @@ class GoalRequiresKyberBricks(Toggle):
     rich_text_doc = True
 
 
+class GoalChapterLocationsMode(ChoiceFromStringExtension):
+    """
+    Choose how locations within the Goal Chapter are generated.
+
+    - Removed: Locations within the Goal Chapter are removed from the multiworld. Gold Bricks from the Goal Chapter will
+    not be included in Gold Brick logic.
+    - Excluded: Locations within the Goal Chapter are marked as Excluded, disallowing Progression and Useful items being
+    placed there. Gold Bricks from the Goal Chapter will not be included in Gold Brick logic and the 10 Minikits from
+    the Chapter will not be added to the item pool.
+    - Normal: No changes will be made to the locations in the Goal Chapter, or to Gold Brick logic. Not recommended
+    unless playing without ``!release`` after goaling.
+    """
+    option_removed = 1
+    option_excluded = 2
+    option_normal = 3
+    default = 1
+
+
+class GoalChapter(ChoiceFromStringExtension):
+    """Choose a Goal Chapter that must be completed as the final part of your goal.
+
+    All other enabled goals must be completed to unlock the Goal Chapter, in addition to the Goal Chapter's usual
+    requirements.
+
+    The Goal Chapter, when enabled, is picked separately from regular Chapters, ignoring the Allowed Chapters option
+    used when picking regular Chapters.
+
+    The Goal Chapter is enabled in addition to your Enabled Chapter Count, when possible.
+
+    If this option is enabled and part of the goal requires defeating bosses, the Goal Chapter will never have an
+    enabled boss, potentially reducing the maximum number of bosses.
+
+    If this option is enabled and part of the goal requires completing levels, the maximum possible number of required
+    levels to be completed to goal won't include the Goal Chapter.
+
+    """
+    display_name = "Goal Chapter"
+    rich_text_doc = True
+    option_no_goal_chapter = 0
+    # Variable names cannot use hyphens, so the options for specific levels are set programmatically.
+    # option_1-1 = 11
+    # option_1-2 = 12
+    # etc.
+    locals().update({f"option_{episode}-{chapter}": int(f"{episode}{chapter}")
+                     for episode, chapter in itertools.product(range(1, 7), range(1, 7))})
+    default = 0
+
+    def to_short_name(self) -> str | None:
+        if self.value == GoalChapter.option_no_goal_chapter:
+            return None
+        key = self.current_key
+        assert key in LEVEL_SHORT_NAMES_SET, f"{key} is not a valid chapter shortname"
+        return key
+
+
 class DefeatBossesGoalAmount(Range):
     """
     Choose how many bosses must be defeated to goal.
@@ -1115,6 +1170,9 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
 
     goal_requires_kyber_bricks: GoalRequiresKyberBricks
 
+    goal_chapter_locations_mode: GoalChapterLocationsMode
+    goal_chapter: GoalChapter
+
     # Enabled/Available locations.
     # Chapters.
     enabled_chapters_count: EnabledChaptersCount
@@ -1170,6 +1228,10 @@ OPTION_GROUPS: list[OptionGroup] = [
         EnabledBossesCount,
         AllowedBosses,
         OnlyUniqueBossesCountTowardsGoal,
+    ]),
+    OptionGroup("Goal Chapter Options", [
+        GoalChapter,
+        GoalChapterLocationsMode,
     ]),
     OptionGroup("Other Goal Options", [
         CompleteLevelsGoalAmountPercentage,

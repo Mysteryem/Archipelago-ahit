@@ -60,6 +60,7 @@ from .options import (
     MinikitGoalAmount,
     OnlyUniqueBossesCountTowardsGoal,
     OPTION_GROUPS,
+    GoalChapterLocationsMode,
 )
 from .option_resolution.common import resolve_options
 from .item_groups import ITEM_GROUPS
@@ -138,10 +139,11 @@ class LegoStarWarsTCSWorld(World):
     enabled_bonuses: set[str]
     enabled_bosses: set[str]
     short_name_to_boss_character: dict[str, str]
+    goal_chapter: str | None
 
     starting_chapter: ChapterArea = SHORT_NAME_TO_CHAPTER_AREA["1-1"]
     minikit_bundle_name: str = ""
-    enabled_chapter_count: int = -1
+    enabled_chapter_count: int = -1  # Does not include the Goal Chapter if it is enabled.
     available_minikits: int = -1
     minikit_bundle_count: int = -1
     goal_minikit_count: int = -1
@@ -151,6 +153,7 @@ class LegoStarWarsTCSWorld(World):
     gold_brick_event_count: int = 0
     _expected_gold_brick_event_count: int = -1
     character_unlock_location_count: int = 0
+    goal_excluded_character_unlock_location_count: int = 0
     required_score_multiplier_count: int = 0  # set in create_regions
 
     def __init__(self, multiworld, player: int):
@@ -328,12 +331,49 @@ class LegoStarWarsTCSWorld(World):
         return LegoStarWarsTCSItem(name, ItemClassification.progression, None, self.player)
 
     def create_items(self) -> None:
+        # Determine how many chapter worth's of locations are enabled.
+        if self.goal_chapter:
+            goal_chapter_locations_mode = self.options.goal_chapter_locations_mode
+            if goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal:
+                goal_chapter_locations_enabled = True
+                goal_chapter_locations_excluded = False
+                normal_goal_chapter_locations_enabled = True
+                chapters_with_locations = self.enabled_chapters | {self.goal_chapter}
+            elif goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded:
+                goal_chapter_locations_enabled = True
+                goal_chapter_locations_excluded = True
+                normal_goal_chapter_locations_enabled = False
+                chapters_with_locations = self.enabled_chapters | {self.goal_chapter}
+            else:
+                assert goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
+                goal_chapter_locations_enabled = False
+                goal_chapter_locations_excluded = False
+                normal_goal_chapter_locations_enabled = False
+                chapters_with_locations = self.enabled_chapters
+        else:
+            goal_chapter_locations_enabled = False
+            goal_chapter_locations_excluded = False
+            normal_goal_chapter_locations_enabled = False
+            chapters_with_locations = self.enabled_chapters
+
+        chapters_with_normal_locations_count = self.enabled_chapter_count + normal_goal_chapter_locations_enabled
+
         # todo: Reserve spaces in the item pool for vehicles and non-vehicles separately, based on how many locations
         #  unlock characters of the each type.
-        vehicle_chapters_enabled = not VEHICLE_CHAPTER_SHORTNAMES.isdisjoint(self.enabled_chapters)
+        if self.goal_chapter in VEHICLE_CHAPTER_SHORTNAMES and goal_chapter_locations_enabled:
+            vehicle_chapters_enabled = True
+        else:
+            vehicle_chapters_enabled = not VEHICLE_CHAPTER_SHORTNAMES.isdisjoint(self.enabled_chapters)
+
         possible_pool_character_items = {name: char for name, char in CHARACTERS_AND_VEHICLES_BY_NAME.items()
                                          if char.is_sendable and (vehicle_chapters_enabled
                                                                   or char.item_type != "Vehicle")}
+        if self.goal_chapter:
+            # Vehicle chapters could be disabled for normal chapters, but the goal chapter could be a vehicle chapter,
+            # so the vehicles required for the goal chapter need to be forced into the item pool.
+            for name in CHAPTER_AREA_STORY_CHARACTERS[self.goal_chapter]:
+                possible_pool_character_items[name] = CHARACTERS_AND_VEHICLES_BY_NAME[name]
+
         # If Gunship Cavalry (Original), Pod Race (Original) and Anakin's Flight get updated to require Vehicles again,
         # then Republic Gunship, Anakin's Pod and Naboo Starfighter would be required items to included in the pool.
         # if not vehicle_chapters_enabled:
@@ -421,7 +461,7 @@ class LegoStarWarsTCSWorld(World):
         # the item pool.
         required_character_abilities_in_pool = CharacterAbility.NONE
         optional_character_abilities = CharacterAbility.NONE
-        for shortname in self.enabled_chapters:
+        for shortname in chapters_with_locations:
             power_brick_abilities = POWER_BRICK_REQUIREMENTS[shortname][1]
             if power_brick_abilities is not None:
                 if isinstance(power_brick_abilities, tuple):
@@ -518,25 +558,36 @@ class LegoStarWarsTCSWorld(World):
         required_characters_count = len(pool_required_characters)
         required_extras_count = len(pool_required_extras)
 
+        goal_excluded_locations_count = 0
+        goal_excluded_locations_count += self.goal_excluded_character_unlock_location_count
+
+        non_excluded_character_unlock_location_count = (
+                self.character_unlock_location_count - self.goal_excluded_character_unlock_location_count
+        )
+
         # Try to add as many characters to the pool as this.
         reserved_character_location_count: int
         free_character_location_count: int
         if self.options.filler_reserve_characters:
-            reserved_character_location_count = self.character_unlock_location_count
+            reserved_character_location_count = non_excluded_character_unlock_location_count
             free_character_location_count = 0
         else:
-            reserved_character_location_count = min(required_characters_count, self.character_unlock_location_count)
-            free_character_location_count = self.character_unlock_location_count - reserved_character_location_count
+            reserved_character_location_count = min(required_characters_count,
+                                                    non_excluded_character_unlock_location_count)
+            free_character_location_count = (non_excluded_character_unlock_location_count
+                                             - reserved_character_location_count)
 
         # Try to create as many Extras as this.
         reserved_power_brick_location_count: int
         free_extra_location_count: int
         if self.options.filler_reserve_extras:
-            reserved_power_brick_location_count = self.enabled_chapter_count
+            reserved_power_brick_location_count = chapters_with_normal_locations_count
             free_extra_location_count = 0
         else:
-            reserved_power_brick_location_count = min(required_extras_count, self.enabled_chapter_count)
-            free_extra_location_count = self.enabled_chapter_count - reserved_power_brick_location_count
+            reserved_power_brick_location_count = min(required_extras_count, chapters_with_normal_locations_count)
+            free_extra_location_count = chapters_with_normal_locations_count - reserved_power_brick_location_count
+        if goal_chapter_locations_excluded:
+            goal_excluded_locations_count += 1
 
         # As many minikit bundles as this will always be created. This may be fewer than is required to goal, but
         # reducing the total bundle count can make a seed longer, so all minikit bundles should be considered to be
@@ -546,12 +597,18 @@ class LegoStarWarsTCSWorld(World):
         # The vanilla rewards for these are Gold Bricks, which are events, so these are effectively free locations for
         # any kind of item when enabled.
         if self.options.enable_true_jedi_locations:
-            true_jedi_location_count = self.enabled_chapter_count
+            true_jedi_location_count = chapters_with_normal_locations_count
+            if goal_chapter_locations_excluded:
+                goal_excluded_locations_count += 1
         else:
             true_jedi_location_count = 0
-        completion_location_count = self.enabled_chapter_count + len(self.enabled_bonuses)
+        completion_location_count = chapters_with_normal_locations_count + len(self.enabled_bonuses)
+        if goal_chapter_locations_excluded:
+            goal_excluded_locations_count += 1
         if self.options.enable_minikit_locations:
-            free_minikit_location_count = self.enabled_chapter_count * 10 - required_minikit_location_count
+            free_minikit_location_count = chapters_with_normal_locations_count * 10 - required_minikit_location_count
+            if goal_chapter_locations_excluded:
+                goal_excluded_locations_count += 10
         else:
             if self.options.minikit_goal_amount != 0:
                 assert self.options.minikit_bundle_size == 10
@@ -622,16 +679,23 @@ class LegoStarWarsTCSWorld(World):
         unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
         num_to_fill = len(self.multiworld.get_unfilled_locations(self.player))
 
-        assert num_to_fill == (
+        expected_num_to_fill = (
                 reserved_character_location_count
                 + reserved_power_brick_location_count
                 + required_minikit_location_count
                 + free_location_count
                 + len(extra_required_items)
+                + goal_excluded_locations_count
         )
 
+        assert num_to_fill == expected_num_to_fill, \
+            f"Expected {expected_num_to_fill} locations to fill, but got {num_to_fill}"
+
         required_extras_count = len(pool_required_extras)
-        required_excludable_count = sum(loc.progress_type == LocationProgressType.EXCLUDED for loc in unfilled_locations)
+        required_excludable_count = (
+                sum(loc.progress_type == LocationProgressType.EXCLUDED for loc in unfilled_locations)
+        )
+        assert required_excludable_count >= goal_excluded_locations_count
 
         if free_location_count < required_excludable_count:
             # This shouldn't really happen unless basically the entire world is excluded and/or barely any locations
@@ -946,8 +1010,16 @@ class LegoStarWarsTCSWorld(World):
 
         # All regions that connect to story character unlock regions.
         story_character_unlock_regions: dict[str, list[Region]] = {}
+        goal_chapter_region: Region | None = None
 
         goal_requires_area_completion = self.goal_area_completion_count > 0
+
+        goal_chapter_locations_mode = self.options.goal_chapter_locations_mode.value
+
+        if self.goal_chapter:
+            chapters_to_create = self.enabled_chapters | {self.goal_chapter}
+        else:
+            chapters_to_create = self.enabled_chapters
 
         for episode_number in range(1, 7):
             if episode_number not in self.enabled_episodes:
@@ -957,7 +1029,9 @@ class LegoStarWarsTCSWorld(World):
 
             episode_chapters = EPISODE_TO_CHAPTER_AREAS[episode_number]
             for chapter_number, chapter in enumerate(episode_chapters, start=1):
-                if chapter.short_name not in self.enabled_chapters:
+                assert chapter.episode == episode_number
+                assert chapter.number_in_episode == chapter_number
+                if chapter.short_name not in chapters_to_create:
                     continue
                 # Update the count of how many chapters this character blocks access to.
                 self.character_chapter_access_counts.update(chapter.character_requirements)
@@ -966,12 +1040,31 @@ class LegoStarWarsTCSWorld(World):
                 entrance_name = f"Episode {episode_number} Room, Chapter {chapter_number} Door"
                 episode_room.connect(chapter_region, entrance_name)
 
+                create_gold_bricks = bool(self.options.enable_bonus_locations)
+                exclude_locations = False
+                is_goal_chapter = chapter.short_name == self.goal_chapter
+                if is_goal_chapter:
+                    victory = LegoStarWarsTCSLocation(
+                        self.player, f"Complete Goal Chapter {self.goal_chapter}", parent=chapter_region)
+                    victory.place_locked_item(self.create_event("Victory"))
+                    chapter_region.locations.append(victory)
+                    goal_chapter_region = chapter_region
+
+                    if goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
+                        # The only location that will be placed in the chapter's Region is the Victory event used by the
+                        # completion_condition.
+                        continue
+                    if goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded:
+                        # When the locations are excluded, Gold Bricks from the Goal Chapter are removed from logic.
+                        create_gold_bricks = False
+                        exclude_locations = True
+
                 # Completion.
                 completion_name = f"{chapter.short_name} Completion"
                 completion_loc = LegoStarWarsTCSLocation(self.player, completion_name,
                                                          self.location_name_to_id[completion_name], chapter_region)
                 chapter_region.locations.append(completion_loc)
-                if self.options.enable_bonus_locations:
+                if create_gold_bricks:
                     # Completion Gold Brick event.
                     completion_gold_brick = LegoStarWarsTCSLocation(self.player, f"{completion_name} - Gold Brick",
                                                                     None, chapter_region)
@@ -985,7 +1078,7 @@ class LegoStarWarsTCSWorld(World):
                     true_jedi_loc = LegoStarWarsTCSLocation(self.player, true_jedi_name,
                                                             self.location_name_to_id[true_jedi_name], chapter_region)
                     chapter_region.locations.append(true_jedi_loc)
-                    if self.options.enable_bonus_locations:
+                    if create_gold_bricks:
                         # True Jedi Gold Brick event.
                         true_jedi_gold_brick = LegoStarWarsTCSLocation(self.player, f"{true_jedi_name} - Gold Brick",
                                                                        None, chapter_region)
@@ -1015,6 +1108,7 @@ class LegoStarWarsTCSWorld(World):
                 self.character_unlock_location_count += len(chapter.character_shop_unlocks)
 
                 # Minikits.
+                minikits_from_chapter = 0
                 if self.options.enable_minikit_locations:
                     chapter_minikits = self.create_region(f"{chapter.name} Minikits")
                     chapter_region.connect(chapter_minikits, f"{chapter.name} - Collect All Minikits")
@@ -1023,8 +1117,13 @@ class LegoStarWarsTCSWorld(World):
                         location = LegoStarWarsTCSLocation(self.player, loc_name, self.location_name_to_id[loc_name],
                                                            chapter_minikits)
                         chapter_minikits.locations.append(location)
-                        available_minikits_check += 1
-                    if self.options.enable_bonus_locations:
+                        minikits_from_chapter += 1
+                    if exclude_locations:
+                        # Exclude the minikit locations.
+                        for loc in chapter_minikits.locations:
+                            assert not loc.is_event  # At this point, only non-event locations should be created.
+                            loc.progress_type = LocationProgressType.EXCLUDED
+                    if create_gold_bricks:
                         # All Minikits Gold Brick.
                         all_minikits_gold_brick = LegoStarWarsTCSLocation(
                             self.player, f"{chapter_minikits.name} - Gold Brick", None, chapter_minikits)
@@ -1034,7 +1133,12 @@ class LegoStarWarsTCSWorld(World):
                 elif self.options.minikit_goal_amount != 0:
                     # If Minikit locations are disabled, but the goal requires Minikits, the Chapter Completion location
                     # is instead treated as if it was the vanilla location for a 10 Minikits bundle.
-                    available_minikits_check += 10
+                    minikits_from_chapter += 10
+
+                # The goal chapter does not contribute Minikits because it is only accessible once the Minikits goal is
+                # complete.
+                if not is_goal_chapter:
+                    available_minikits_check += minikits_from_chapter
 
                 if self.options.enable_story_character_unlock_locations:
                     # Story Character unlocks.
@@ -1043,6 +1147,8 @@ class LegoStarWarsTCSWorld(World):
 
                 # Boss.
                 if chapter.short_name in self.enabled_bosses:
+                    assert chapter.short_name != self.goal_chapter, ("The Goal Chapter should never be selected as an "
+                                                                     "enabled boss")
                     loc_name = f"{chapter.short_name} Defeat {chapter.boss}"
                     boss_event_location = LegoStarWarsTCSLocation(self.player, loc_name, None, chapter_region)
                     if self.options.only_unique_bosses_count:
@@ -1054,7 +1160,9 @@ class LegoStarWarsTCSWorld(World):
                     chapter_region.locations.append(boss_event_location)
 
                 # Area completion.
-                if goal_requires_area_completion:
+                # The goal chapter does not contribute to Area Completion because the Goal Chapter requires completing
+                # all other goals before it will unlock.
+                if goal_requires_area_completion and not is_goal_chapter:
                     loc_name = f"{chapter.short_name} Completion (Event)"
                     completion_event_location = LegoStarWarsTCSLocation(self.player, loc_name, None, chapter_region)
                     # "Level" here is as a user-facing term, with the meaning of "Area" internally.
@@ -1062,6 +1170,16 @@ class LegoStarWarsTCSWorld(World):
                     completion_event_location.place_locked_item(completion_event_item)
                     chapter_region.locations.append(completion_event_location)
 
+                if exclude_locations:
+                    # Exclude the non-event locations in the chapter's region.
+                    loc: Location
+                    for loc in chapter_region.locations:
+                        if not loc.is_event:
+                            loc.progress_type = LocationProgressType.EXCLUDED
+
+        excluded_goal_region = (
+            goal_chapter_region if goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded else None
+        )
         for character, parent_regions in story_character_unlock_regions.items():
             character_region = self.create_region(f"Unlock {character}")
             loc_name = f"Chapter Completion - Unlock {character}"
@@ -1069,6 +1187,11 @@ class LegoStarWarsTCSWorld(World):
                 self.player, loc_name, self.location_name_to_id[loc_name], character_region
             )
             character_region.locations.append(character_location)
+            if len(parent_regions) == 1 and parent_regions[0] == excluded_goal_region:
+                # The location is only accessed through the Goal Chapter which has its locations excluded, so this
+                # chapter completion character unlock location should also be excluded.
+                character_location.progress_type = LocationProgressType.EXCLUDED
+                self.goal_excluded_character_unlock_location_count += 1
             for parent_region in parent_regions:
                 parent_region.connect(character_region)
 
@@ -1174,10 +1297,11 @@ class LegoStarWarsTCSWorld(World):
             cantina.locations.append(location)
         self.character_unlock_location_count += len(starting_purchases)
 
-        # Victory event
-        victory = LegoStarWarsTCSLocation(self.player, "Goal", parent=cantina)
-        victory.place_locked_item(self.create_event("Victory"))
-        cantina.locations.append(victory)
+        # General Victory event.
+        if not self.goal_chapter:
+            victory = LegoStarWarsTCSLocation(self.player, "Goal", parent=cantina)
+            victory.place_locked_item(self.create_event("Victory"))
+            cantina.locations.append(victory)
 
         # For debugging.
         # from Utils import visualize_regions
@@ -1250,6 +1374,11 @@ class LegoStarWarsTCSWorld(World):
     def set_rules(self) -> None:
         player = self.player
 
+        if self.goal_chapter:
+            created_chapters = self.enabled_chapters | {self.goal_chapter}
+        else:
+            created_chapters = self.enabled_chapters
+
         # Episodes.
         for episode_number in range(1, 7):
             if episode_number not in self.enabled_episodes:
@@ -1267,7 +1396,9 @@ class LegoStarWarsTCSWorld(World):
             # Set chapter requirements.
             episode_chapters = EPISODE_TO_CHAPTER_AREAS[episode_number]
             for chapter_number, chapter in enumerate(episode_chapters, start=1):
-                if chapter.short_name not in self.enabled_chapters:
+                assert chapter.episode == episode_number
+                assert chapter.number_in_episode == chapter_number
+                if chapter.short_name not in created_chapters:
                     continue
                 entrance = self.get_entrance(f"Episode {episode_number} Room, Chapter {chapter_number} Door")
 
@@ -1279,6 +1410,11 @@ class LegoStarWarsTCSWorld(World):
                     else:
                         items = tuple(sorted(required_character_names))
                         set_rule(entrance, lambda state, items_=items: state.has_all(items_, player))
+
+                if (chapter.short_name == self.goal_chapter
+                        and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed):
+                    # There are no locations, so there is no logic.
+                    continue
 
                 entrance_abilities = CharacterAbility.NONE
                 for character_name in required_character_names:
@@ -1348,7 +1484,15 @@ class LegoStarWarsTCSWorld(World):
                 self._add_score_multiplier_rule(purchase_location, studs_cost)
 
         # Victory.
-        victory = self.get_location("Goal")
+        victory: Location | Entrance
+        if self.goal_chapter:
+            # When the goal chapter is enabled, the other goal requirements have to be completed before the goal chapter
+            # can be accessed.
+            goal_chapter = SHORT_NAME_TO_CHAPTER_AREA[self.goal_chapter]
+            victory = self.get_entrance(
+                f"Episode {goal_chapter.episode} Room, Chapter {goal_chapter.number_in_episode} Door")
+        else:
+            victory = self.get_location("Goal")
         # Minikits goal.
         if self.goal_minikit_count > 0:
             add_rule(victory, lambda state: state.has(self.minikit_bundle_name, player, self.goal_minikit_bundle_count))
@@ -1448,6 +1592,7 @@ class LegoStarWarsTCSWorld(World):
             "minikit_goal_amount": self.goal_minikit_count,
             "enabled_bosses": self.enabled_bosses,
             "goal_area_completion_count": self.goal_area_completion_count,
+            "goal_chapter": self.goal_chapter,
             **self.options.as_dict(
                 "received_item_messages",
                 "checked_location_messages",
@@ -1470,6 +1615,7 @@ class LegoStarWarsTCSWorld(World):
                 "uncap_original_trilogy_high_jump",
                 "scale_true_jedi_with_score_multipliers",
                 "goal_requires_kyber_bricks",
+                "goal_chapter_locations_mode",
             )
         }
 
