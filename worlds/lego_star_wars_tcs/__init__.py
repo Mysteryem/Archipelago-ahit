@@ -790,8 +790,8 @@ class LegoStarWarsTCSWorld(World):
             start_inventory_required_extras_count = 0
 
         self.random.shuffle(pool_required_extras)
-        pool_required_extras = pool_required_extras[start_inventory_required_extras_count:]
         start_required_extras = pool_required_extras[:start_inventory_required_extras_count]
+        pool_required_extras = pool_required_extras[start_inventory_required_extras_count:]
         for extra_name in pool_required_extras:
             add_to_pool(create_item(extra_name))
         num_to_fill -= len(pool_required_extras)
