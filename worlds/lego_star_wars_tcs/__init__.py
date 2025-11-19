@@ -1616,6 +1616,8 @@ class LegoStarWarsTCSWorld(World):
                 "scale_true_jedi_with_score_multipliers",
                 "goal_requires_kyber_bricks",
                 "goal_chapter_locations_mode",
+                "minikit_goal_completion_method",
+                "kyber_brick_goal_completion_method",
             )
         }
 

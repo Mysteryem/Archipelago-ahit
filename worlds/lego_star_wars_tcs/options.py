@@ -141,6 +141,22 @@ class MinikitGoalAmountPercentage(Range):
     default = 75
 
 
+class MinikitGoalCompletionMethod(ChoiceFromStringExtension):
+    """
+    Choose how the Minikit Goal is completed.
+
+    - Instant: The Minikit Goal is completed as soon as you have enough Minikit items to meet your goal. It is
+    recommended to enable a Goal Chapter when the Minikit Goal Completion Method is set to Instant.
+    - Junkyard Minikit Display: Once you have enough Minikit items to meet your goal, the goal must be completed by
+    using the Minikit Display in the outside Junkyard area of the Cantina.
+    """
+    display_name = "Minikit Goal Completion Method"
+    rich_text_doc = True
+    option_instant = 1
+    option_junkyard_minikit_display = 2
+    default = 2
+
+
 # "Level" used here is as a user-facing term. The correct internal name is "Area". Internally, a "Level" refers to a
 # separately loaded section of an "Area".
 class CompleteLevelsGoalAmountPercentage(Range):
@@ -164,9 +180,21 @@ class GoalRequiresKyberBricks(Toggle):
 
     The 7 Kyber Brick items only contribute to your goal and do nothing else. There are only 7 added to the item pool
     when this option is enabled.
+
+    It is recommended to enable a Goal Chapter when the Kyber Bricks Goal is enabled.
     """
     display_name = "Goal Requires 7 Kyber Bricks"
     rich_text_doc = True
+
+
+class KyberBrickGoalCompletionMethod(ChoiceFromStringExtension):
+    """
+    Set how the Kyber Brick part of the Goal is completed.
+
+    - Instant: The Kyber Brick goal is completed as soon as 7 Kyber Brick items are acquired. It is recommended to
+    enable a Goal Chapter when the Kyber Brick Goal Completion Method is set to Instant.
+    """
+    option_instant = 1
 
 
 class GoalChapterLocationsMode(ChoiceFromStringExtension):
@@ -1159,6 +1187,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     # Goals.
     minikit_goal_amount: MinikitGoalAmount
     minikit_goal_amount_percentage: MinikitGoalAmountPercentage
+    minikit_goal_completion_method: MinikitGoalCompletionMethod
     minikit_bundle_size: MinikitBundleSize
 
     defeat_bosses_goal_amount: DefeatBossesGoalAmount
@@ -1169,6 +1198,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     complete_levels_goal_amount_percentage: CompleteLevelsGoalAmountPercentage
 
     goal_requires_kyber_bricks: GoalRequiresKyberBricks
+    kyber_brick_goal_completion_method: KyberBrickGoalCompletionMethod
 
     goal_chapter_locations_mode: GoalChapterLocationsMode
     goal_chapter: GoalChapter
@@ -1222,6 +1252,7 @@ OPTION_GROUPS: list[OptionGroup] = [
     OptionGroup("Minikit Goal Options", [
         MinikitGoalAmount,
         MinikitGoalAmountPercentage,
+        MinikitGoalCompletionMethod,
     ]),
     OptionGroup("Bosses Goal Options", [
         DefeatBossesGoalAmount,
@@ -1236,6 +1267,7 @@ OPTION_GROUPS: list[OptionGroup] = [
     OptionGroup("Other Goal Options", [
         CompleteLevelsGoalAmountPercentage,
         GoalRequiresKyberBricks,
+        KyberBrickGoalCompletionMethod,
     ]),
     OptionGroup("Chapter Options", [
         EnabledChaptersCount,
