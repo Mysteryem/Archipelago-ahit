@@ -1,5 +1,4 @@
 import logging
-import re
 from collections import Counter
 from typing import cast, Iterable, Mapping, Any, NoReturn, Callable, ClassVar, TextIO
 
