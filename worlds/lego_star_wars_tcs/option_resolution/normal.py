@@ -92,7 +92,7 @@ class _NormalOptionsResolver:
     _goal_chapter: str | None = field(init=False)
     _goal_chapter_locations_mode: GoalChapterLocationsMode = field(init=False)
 
-    def _adjust(self, option: Option[_T], value: _T, warning: str | None = None, *warning_args):
+    def _deferred_adjust(self, option: Option[_T], value: _T, warning: str | None = None, *warning_args):
         self.option_adjustments.append(_OptionAdjustment(option, value, warning, *warning_args))
 
     def __post_init__(self):
@@ -242,7 +242,7 @@ class _NormalOptionsResolver:
         return allowed_starting_chapters
 
     @staticmethod
-    def _validate_allowed_chapters(allowed_chapters: set[str]) -> None:
+    def _assert_allowed_chapters(allowed_chapters: set[str]) -> None:
         assert len(allowed_chapters) >= 1
 
     def _validate_allowed_boss_chapters(self, allowed_boss_chapters: set[str]) -> None:
@@ -258,12 +258,12 @@ class _NormalOptionsResolver:
         """
         enabled_chapters_count = self._enabled_chapters_count
         if enabled_chapters_count > len(allowed_chapters):
-            self._adjust(self.options.enabled_chapters_count, len(allowed_chapters),
-                         "Enabled chapter count (%i) was set higher than the number of allowed"
-                         " chapters (%i), it has been reduced to the number of allowed chapters (%i).",
-                         enabled_chapters_count,
-                         len(allowed_chapters),
-                         len(allowed_chapters))
+            self._deferred_adjust(self.options.enabled_chapters_count, len(allowed_chapters),
+                                  "Enabled chapter count (%i) was set higher than the number of allowed"
+                                  " chapters (%i), it has been reduced to the number of allowed chapters (%i).",
+                                  enabled_chapters_count,
+                                  len(allowed_chapters),
+                                  len(allowed_chapters))
             enabled_chapters_count = len(allowed_chapters)
         del self._enabled_chapters_count
         return enabled_chapters_count
@@ -279,10 +279,10 @@ class _NormalOptionsResolver:
                 and not self._enable_minikit_locations
                 and self._minikit_bundle_size != 10):
             bundle_size = 10
-            self._adjust(self.options.minikit_bundle_size, bundle_size,
-                         f"The Minikits goal is enabled, but Minikit locations are disabled, so the Minikit"
-                         f" Bundle size has been forcefully set to {bundle_size}, otherwise there would not be enough"
-                         f" locations to place all the Minikits")
+            self._deferred_adjust(self.options.minikit_bundle_size, bundle_size,
+                                  f"The Minikits goal is enabled, but Minikit locations are disabled, so the Minikit"
+                                  f" Bundle size has been forcefully set to {bundle_size}, otherwise there would not be"
+                                  f" enough locations to place all the Minikits")
         else:
             bundle_size = self._minikit_bundle_size
         del self._minikit_bundle_size
@@ -351,13 +351,13 @@ class _NormalOptionsResolver:
                 self.world.option_error("Only one Chapter is enabled, but none of the allowed starting chapters were"
                                         " also an allowed boss, and the goal requires defeating bosses.")
             else:
-                self._adjust(self.options.defeat_bosses_goal_amount, maximum_bosses_for_goal,
-                             "The number of bosses to defeat as part of the goal was %i, but the maximum number"
-                             " of bosses that were allowed to be enabled was %i. The number of bosses to defeat as part"
-                             " of the goal has been reduced to %i.",
-                             self._defeat_bosses_goal_amount,
-                             maximum_bosses_for_goal,
-                             maximum_bosses_for_goal)
+                self._deferred_adjust(self.options.defeat_bosses_goal_amount, maximum_bosses_for_goal,
+                                      "The number of bosses to defeat as part of the goal was %i, but the maximum"
+                                      " number of bosses that were allowed to be enabled was %i. The number of bosses"
+                                      " to defeat as part of the goal has been reduced to %i.",
+                                      self._defeat_bosses_goal_amount,
+                                      maximum_bosses_for_goal,
+                                      maximum_bosses_for_goal)
                 goal_boss_count = maximum_bosses_for_goal
         else:
             goal_boss_count = self._defeat_bosses_goal_amount
@@ -365,12 +365,12 @@ class _NormalOptionsResolver:
 
         # Warn and increase the enabled bosses count if it is lower than the goal amount.
         if self._enabled_bosses_count < goal_boss_count:
-            self._adjust(self.options.enabled_bosses_count, goal_boss_count,
-                         "The number of enabled bosses was %i, but the number of bosses to defeat as part of"
-                         " the goal was %i. The number of enabled bosses has been increased to %i.",
-                         self._enabled_bosses_count,
-                         goal_boss_count,
-                         goal_boss_count)
+            self._deferred_adjust(self.options.enabled_bosses_count, goal_boss_count,
+                                  "The number of enabled bosses was %i, but the number of bosses to defeat as part of"
+                                  " the goal was %i. The number of enabled bosses has been increased to %i.",
+                                  self._enabled_bosses_count,
+                                  goal_boss_count,
+                                  goal_boss_count)
             enabled_bosses_count = goal_boss_count
         else:
             enabled_bosses_count = self._enabled_bosses_count
@@ -378,13 +378,13 @@ class _NormalOptionsResolver:
 
         # Warn and decrease the enabled bosses count if it is higher than the maximum bosses count.
         if enabled_bosses_count > maximum_boss_chapters:
-            self._adjust(self.options.enabled_bosses_count, maximum_boss_chapters,
-                         "The number of enabled bosses was %i, but the maximum number of bosses that were"
-                         " allowed to be enabled was %i. The number of enabled bosses has been reduced to"
-                         " %i.",
-                         enabled_bosses_count,
-                         maximum_boss_chapters,
-                         maximum_boss_chapters)
+            self._deferred_adjust(self.options.enabled_bosses_count, maximum_boss_chapters,
+                                  "The number of enabled bosses was %i, but the maximum number of bosses that were"
+                                  " allowed to be enabled was %i. The number of enabled bosses has been reduced to"
+                                  " %i.",
+                                  enabled_bosses_count,
+                                  maximum_boss_chapters,
+                                  maximum_boss_chapters)
             enabled_bosses_count = maximum_boss_chapters
 
         return goal_boss_count, enabled_bosses_count
@@ -717,21 +717,22 @@ class _NormalOptionsResolver:
                 tokens = AllEpisodesCharacterPurchaseRequirements.option_episodes_tokens
                 option = self.options.all_episodes_character_purchase_requirements
                 if warn:
-                    self._adjust(option, tokens, "'All Episodes' character shop unlocks were set to require 'Episodes"
-                                                 " Tokens' instead of 'Episodes Unlocked' because Episode unlock"
-                                                 " requirements were set to 'Open'")
+                    self._deferred_adjust(option, tokens,
+                                          "'All Episodes' character shop unlocks were set to require 'Episodes Tokens'"
+                                          " instead of 'Episodes Unlocked' because Episode unlock requirements were set"
+                                          " to 'Open'")
                 else:
-                    self._adjust(option, tokens)
+                    self._deferred_adjust(option, tokens)
                 return tokens
             elif len(enabled_episodes) == 1:
                 tokens = AllEpisodesCharacterPurchaseRequirements.option_episodes_tokens
                 option = self.options.all_episodes_character_purchase_requirements
                 if warn:
-                    self._adjust(option, tokens, "'All Episodes' character shop unlocks were set to require 'Episodes"
-                                                 " Tokens' from 'Episodes Unlocked' because there is only 1 Episode"
-                                                 " enabled.")
+                    self._deferred_adjust(option, tokens,
+                                          "'All Episodes' character shop unlocks were set to require 'Episodes Tokens'"
+                                          " from 'Episodes Unlocked' because there is only 1 Episode enabled.")
                 else:
-                    self._adjust(option, tokens)
+                    self._deferred_adjust(option, tokens)
                 return tokens
         return self._all_episodes_character_purchase_requirements
 
@@ -752,13 +753,13 @@ class _NormalOptionsResolver:
         minikit_goal_amount = self._minikit_goal_amount
         del self._minikit_goal_amount
         if minikit_goal_amount > available_minikits:
-            self._adjust(self.options.minikit_goal_amount, available_minikits,
-                         "The number of minikits required to goal (%i) was higher than the number of"
-                         " available minikits (%i). The number of minikits required to goal has been reduced"
-                         " to the number of available minikits (%i).",
-                         minikit_goal_amount,
-                         available_minikits,
-                         available_minikits)
+            self._deferred_adjust(self.options.minikit_goal_amount, available_minikits,
+                                  "The number of minikits required to goal (%i) was higher than the number of"
+                                  " available minikits (%i). The number of minikits required to goal has been reduced"
+                                  " to the number of available minikits (%i).",
+                                  minikit_goal_amount,
+                                  available_minikits,
+                                  available_minikits)
             return available_minikits
         else:
             return minikit_goal_amount
@@ -775,8 +776,8 @@ class _NormalOptionsResolver:
         del self._junk_weights
         if sum(junk_names_and_weights.values()) == 0:
             junk_names_and_weights["Purple Stud"] = 1
-            self._adjust(self.options.junk_weights, junk_names_and_weights,
-                         "All Junk Weights were zero. The Junk Weight of Purple Stud items has been set to 1.")
+            self._deferred_adjust(self.options.junk_weights, junk_names_and_weights,
+                                  "All Junk Weights were zero. The Junk Weight of Purple Stud items has been set to 1.")
         return junk_names_and_weights
 
     def _resolve_available_bonuses_and_expected_gold_brick_counts(self,
@@ -828,7 +829,7 @@ class _NormalOptionsResolver:
         allowed_chapters, allowed_boss_chapters = self._resolve_allowed_chapters()
         allowed_starting_chapters = self._resolve_allowed_starting_chapters(allowed_chapters, allowed_boss_chapters)
 
-        self._validate_allowed_chapters(allowed_chapters)
+        self._assert_allowed_chapters(allowed_chapters)
         self._validate_allowed_boss_chapters(allowed_boss_chapters)
 
         enabled_chapter_count = self._adjust_enabled_chapters_count(allowed_chapters)
@@ -847,7 +848,7 @@ class _NormalOptionsResolver:
         self._adjust_starting_chapters_for_boss_chapters(
             allowed_starting_chapters, allowed_boss_chapters, enabled_chapter_count, enabled_boss_count)
 
-        starting_chapter, starting_episode = self._pick_starting_chapter(allowed_starting_chapters)
+        starting_chapter, _starting_episode = self._pick_starting_chapter(allowed_starting_chapters)
         enabled_bosses, enabled_chapters, enabled_episodes = self._pick_enabled_chapters(
             allowed_chapters,
             allowed_boss_chapters,
