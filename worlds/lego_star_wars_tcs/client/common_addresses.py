@@ -25,6 +25,9 @@ def player_character_entity_iter(ctx: TCSContext):
             yield i + 1, character_address
 
 
+# CharacterEntity to index: ((int)char_ent - (int)character_entities_0093d524) / 0x10d8 & 0xffff;
+
+
 CHARACTER_POWER_UP_TIMER = FloatField(0xdec)
 
 
@@ -111,6 +114,14 @@ class ChapterDoorGameMode(IntEnum):
 
     def set(self, ctx: TCSContext):
         CHAPTER_DOOR_GAME_MODE.set(ctx, self.value)
+
+    # @classmethod
+    # def get(cls, ctx: TCSContext) -> "ChapterDoorGameMode | None":
+    #     v = CHAPTER_DOOR_GAME_MODE.get(ctx)
+    #     if v in ChapterDoorGameMode:
+    #         return cls(v)
+    #     else:
+    #         return None
 
 
 CHALLENGE_MODE_ADDRESS = StaticUint(0x856c08)
