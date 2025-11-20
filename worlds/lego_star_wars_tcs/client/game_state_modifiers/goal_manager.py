@@ -9,7 +9,7 @@ from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickE
 from ..type_aliases import TCSContext, AreaId
 from ...items import MINIKITS_BY_COUNT
 from ...levels import SHORT_NAME_TO_CHAPTER_AREA, AREA_ID_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
-from ...options import OnlyUniqueBossesCountTowardsGoal
+from ...options import OnlyUniqueBossesCountTowardsGoal, MinikitGoalCompletionMethod
 from . import ClientComponent
 
 MINIKIT_ITEMS: Mapping[int, int] = {item.code: count for count, item in MINIKITS_BY_COUNT.items()}
@@ -28,7 +28,9 @@ EPISODE_NUMBER_TO_EPISODE_TEXT = {
 
 
 GOAL_TEXT_CYCLE_COOLDOWN_NS = int(2e9)  # 2s
-GoalKeys = Literal["Minikits", "Bosses", "Areas", "Kyber Bricks"]
+GoalKeys = Literal["Minikits", "Bosses", "Areas", "Kyber Bricks", "Goal Chapter"]
+
+_NO_GOAL_CHAPTER = -1
 
 
 class GoalManager(ClientComponent):
@@ -46,12 +48,20 @@ class GoalManager(ClientComponent):
     _bosses_goal_text_needs_update: bool = True
 
     minikit_goal_complete: bool = False
+    minikit_goal_completion_method: MinikitGoalCompletionMethod = (
+        MinikitGoalCompletionMethod(MinikitGoalCompletionMethod.option_junkyard_minikit_display)
+    )
 
     goal_areas_count: int = 999_999_999  # Set by an option and read from slot data.
     goal_areas_relevant_bonus_area_ids: set[AreaId]
 
     # Assume enabled to start with as an extra measure against any issues that could cause goal to send early.
     kyber_bricks_goal_enabled: bool = True
+
+    # All goals that must be completed to unlock the Goal Chapter.
+    sub_goals_complete: bool = False
+
+    goal_chapter_area_id: int = 999_999_999  # Set by an option and read from slot data.
 
     _paused_goal_strings: dict[GoalKeys, str]
     _paused_goal_string_key_cycle: Iterator[GoalKeys]
@@ -75,7 +85,10 @@ class GoalManager(ClientComponent):
         self._last_paused_goal_string_cycle_key = None
         self._last_paused_goal_string_cycle = -1
 
+        has_sub_goals = False
+
         if self.goal_minikit_count > 0:
+            has_sub_goals = True
             enabled_chapter_count = len(slot_data["enabled_chapters"])
             minimum_minikits_in_the_multiworld = 10 * enabled_chapter_count
             minikit_goal_info_text = (f"{self.goal_minikit_count} Minikits are needed to goal. There are a minimum of"
@@ -89,6 +102,12 @@ class GoalManager(ClientComponent):
         else:
             minikit_goal_info_text = "Minikit items are not needed to goal."
 
+        if event.generator_version < (1, 2, 0):
+            # The Minikit goal was completed by going to the Junkyard minikit display on previous 1.0.0 versions.
+            self.minikit_goal_completion_method.value = MinikitGoalCompletionMethod.option_junkyard_minikit_display
+        else:
+            self.minikit_goal_completion_method.set_from_string(slot_data["minikit_goal_completion_method"])
+
         if event.generator_version < (1, 1, 0):
             # Minikit goal was the only goal at this point.
             goal_bosses_count = 0
@@ -101,6 +120,7 @@ class GoalManager(ClientComponent):
             self.enabled_unique_bosses = {}
             boss_goal_info_text = "Bosses do not need to be defeated to goal."
         else:
+            has_sub_goals = True
             self.goal_bosses_count = goal_bosses_count
             self.goal_bosses_count = slot_data["defeat_bosses_goal_amount"]
             enabled_boss_chapters = set(slot_data["enabled_bosses"])
@@ -165,6 +185,7 @@ class GoalManager(ClientComponent):
         # "Level" here is as a user-facing term, not that internal meaning of a "Level".
         goal_areas_relevant_bonus_area_ids = set()
         if self.goal_areas_count > 0:
+            has_sub_goals = True
             enabled_chapter_count = len(slot_data["enabled_chapters"])
             if slot_data["enable_bonus_locations"]:
                 enabled_bonus_level_count = 0
@@ -188,8 +209,28 @@ class GoalManager(ClientComponent):
         else:
             self.kyber_bricks_goal_enabled = bool(slot_data["goal_requires_kyber_bricks"])
 
+        if event.generator_version < (1, 2, 0):
+            self.goal_chapter_area_id = _NO_GOAL_CHAPTER
+        else:
+            goal_chapter = slot_data["goal_chapter"]
+            if goal_chapter:
+                self.goal_chapter_area_id = SHORT_NAME_TO_CHAPTER_AREA[goal_chapter].area_id
+            else:
+                # No goal chapter required.
+                self.goal_chapter_area_id = _NO_GOAL_CHAPTER
+
         if self.kyber_bricks_goal_enabled:
+            has_sub_goals = True
             hints_page_3_goal_info_texts.append("7 Kyber Bricks are needed to goal.")
+
+        if self.goal_chapter_area_id != _NO_GOAL_CHAPTER:
+            if has_sub_goals:
+                goal_area = AREA_ID_TO_CHAPTER_AREA[self.goal_chapter_area_id]
+                shortname = goal_area.short_name
+
+                hints_page_3_goal_info_texts.append(
+                    f"Once {shortname}'s usual requirements and all other goal requirements are completed,"
+                    f" {shortname} will unlock, complete it to goal your game.")
 
         if not hints_page_3_goal_info_texts:
             hints_page_3_goal_info_texts.append("There are no additional goal requirements.")
@@ -257,6 +298,13 @@ class GoalManager(ClientComponent):
             acquired_kyber_bricks_count = ctx.acquired_generic.kyber_brick_count
             kyber_bricks_goal = f"{acquired_kyber_bricks_count}/7 Kyber Bricks"
             goal_strings["Kyber Bricks"] = suffix_message + kyber_bricks_goal
+
+        if self.goal_chapter_area_id != _NO_GOAL_CHAPTER:
+            area = AREA_ID_TO_CHAPTER_AREA[self.goal_chapter_area_id]
+            if self.sub_goals_complete:
+                goal_strings["Goal Chapter"] = f" - Final Goal: Complete {area.short_name}"
+            else:
+                goal_strings["Goal Chapter"] = f" - Final Goal: Unlock and complete {area.short_name}"
 
         if len(goal_strings) > 1:
             # Add a " [x/total]" string to the end of each goal string to help make it clearer to the user that there
@@ -410,14 +458,20 @@ class GoalManager(ClientComponent):
         else:
             return completed_chapter_count
 
-    def is_goal_complete(self, ctx: TCSContext):
+    def check_sub_goals_complete(self, ctx: TCSContext) -> bool:
+        if self.sub_goals_complete:
+            return True
+
         if self.goal_minikit_count > 0 and not self.minikit_goal_complete:
             if not ctx.is_in_game():
                 return False
-            if (ctx.read_current_cantina_room() != CantinaRoom.JUNKYARD
-                    or not GameState1.IN_JUNKYARD_MINIKITS_DISPLAY.is_set(ctx)):
-                # The player is not in the Junkyard Minikits display, where the Minikit goal is submitted.
-                return False
+            if self.minikit_goal_completion_method == MinikitGoalCompletionMethod.option_junkyard_minikit_display:
+                if (ctx.read_current_cantina_room() != CantinaRoom.JUNKYARD
+                        or not GameState1.IN_JUNKYARD_MINIKITS_DISPLAY.is_set(ctx)):
+                    # The player is not in the Junkyard Minikits display, where the Minikit goal is submitted.
+                    return False
+            elif self.minikit_goal_completion_method != MinikitGoalCompletionMethod.option_instant:
+                raise AssertionError(f"Unexpected MinikitGoalCompletionMethod: {self.minikit_goal_completion_method}")
             if ctx.acquired_minikits.minikit_count < self.goal_minikit_count:
                 # The goal is incomplete. The player needs to receive/find more Minikit items.
                 return False
@@ -438,4 +492,17 @@ class GoalManager(ClientComponent):
             if ctx.acquired_generic.kyber_brick_count < 7:
                 return False
 
+        # Trigger the Goal Chapter unlock if all its usual requirements are completed.
+        ctx.unlocked_chapter_manager.on_sub_goal_completion(ctx)
+        self.sub_goals_complete = True
+
         return True
+
+    def is_goal_chapter_complete(self, ctx: TCSContext) -> bool:
+        if self.goal_chapter_area_id == _NO_GOAL_CHAPTER:
+            # There is no goal chapter.
+            return True
+        return self.goal_chapter_area_id in ctx.free_play_completion_checker.completed_free_play
+
+    def is_goal_complete(self, ctx: TCSContext) -> bool:
+        return self.check_sub_goals_complete(ctx) and self.is_goal_chapter_complete(ctx)

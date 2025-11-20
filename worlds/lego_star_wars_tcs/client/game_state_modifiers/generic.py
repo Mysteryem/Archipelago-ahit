@@ -132,7 +132,7 @@ class AcquiredGeneric(ItemReceiver):
         # Episode Unlocks
         elif ap_item_id in EPISODE_UNLOCKS:
             self.received_episode_unlocks.add(EPISODE_UNLOCKS[ap_item_id])
-            ctx.unlocked_chapter_manager.on_character_or_episode_unlocked(ap_item_id)
+            ctx.unlocked_chapter_manager.on_character_or_episode_unlocked(ctx, ap_item_id)
         # Kyber Brick goal items
         elif ap_item_id == KYBER_BRICK:
             self.kyber_brick_count += 1

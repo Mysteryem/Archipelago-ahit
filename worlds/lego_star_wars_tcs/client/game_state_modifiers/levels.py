@@ -12,7 +12,7 @@ from ..common_addresses import (
     ChallengeMode,
 )
 from ..type_aliases import TCSContext, AreaId
-from ...items import ITEM_DATA_BY_NAME, ITEM_DATA_BY_ID
+from ...items import ITEM_DATA_BY_NAME, ITEM_DATA_BY_ID, GenericItemData
 from ...levels import (
     ChapterArea,
     CHAPTER_AREAS,
@@ -35,6 +35,16 @@ AREA_DATA_ID = UCharField(0x7c)
 AREA_DATA_STORY_TRUE_JEDI_REQUIREMENT = UintField(0x8c)
 AREA_DATA_FREE_PLAY_TRUE_JEDI_REQUIREMENT = UintField(0x90)
 
+# For simplicity, the client locks the Goal Chapter by requiring a fake item that does not exist, so that no special
+# handling is needed for unlocking the Goal Chapter.
+_ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL = dict(ITEM_DATA_BY_ID)
+_SUB_GOAL_SPECIAL_ID = 999_999_999
+assert _SUB_GOAL_SPECIAL_ID not in _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL, (
+    f"The special item ID, {_SUB_GOAL_SPECIAL_ID} for all sub-goal completion already exists as a real item:"
+    f" {_ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[_SUB_GOAL_SPECIAL_ID]}")
+_ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[_SUB_GOAL_SPECIAL_ID] = GenericItemData(_SUB_GOAL_SPECIAL_ID,
+                                                                           "_INTERNAL_ALL_SUB_GOALS_COMPLETE")
+
 
 class UnlockedChapterManager(ClientComponent):
     character_to_dependent_game_chapters: dict[int, list[str]]
@@ -47,6 +57,8 @@ class UnlockedChapterManager(ClientComponent):
 
     easy_true_jedi: bool = False
     scale_true_jedi_with_score_multipliers: bool = False
+    goal_chapter: str = ""
+    goal_chapter_area_id: int = -1
 
     last_area_door: ChapterArea | None = None
 
@@ -141,26 +153,52 @@ class UnlockedChapterManager(ClientComponent):
                 code_requirements.add(item_code)
             remaining_chapter_item_requirements[chapter_area.short_name] = code_requirements
 
+        if goal_chapter := slot_data.get("goal_chapter"):
+            # Add the requirement for the fake sub-goals item to the Goal Chapter so that it will only unlock once all
+            # sub-goals have been completed.
+            item_id_to_chapter_area_short_name[_SUB_GOAL_SPECIAL_ID] = [goal_chapter]
+            # There should always be an existing set, but that could change in the future if the goal chapter can be set
+            # to unlock without needing its usual requirements, and instead only needing the other goals to be
+            # completed.
+            remaining_chapter_item_requirements.setdefault(goal_chapter, set()).add(_SUB_GOAL_SPECIAL_ID)
+            self.goal_chapter = goal_chapter
+            self.goal_chapter_area_id = AREA_ID_TO_CHAPTER_AREA[goal_chapter].area_id
+
         self.character_to_dependent_game_chapters = item_id_to_chapter_area_short_name
         self.remaining_chapter_item_requirements = remaining_chapter_item_requirements
 
-    def on_character_or_episode_unlocked(self, character_ap_id: int):
-        dependent_chapters = self.character_to_dependent_game_chapters.get(character_ap_id)
+    def on_sub_goal_completion(self, ctx: TCSContext):
+        self.on_character_or_episode_unlocked(ctx, _SUB_GOAL_SPECIAL_ID)
+
+    def on_character_or_episode_unlocked(self, ctx: TCSContext, ap_item_id: int):
+        dependent_chapters = self.character_to_dependent_game_chapters.get(ap_item_id)
         if dependent_chapters is None:
             return
 
         for dependent_area_short_name in dependent_chapters:
             remaining_requirements = self.remaining_chapter_item_requirements[dependent_area_short_name]
             assert remaining_requirements
-            assert character_ap_id in remaining_requirements, (f"{ITEM_DATA_BY_ID[character_ap_id].name} not found in"
-                                                               f" {sorted([ITEM_DATA_BY_ID[code] for code in remaining_requirements], key=lambda data: data.name)}")
-            remaining_requirements.remove(character_ap_id)
-            debug_logger.info("Removed %s from %s requirements", ITEM_DATA_BY_ID[character_ap_id].name, dependent_area_short_name)
+            assert ap_item_id in remaining_requirements, (
+                f"{_ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name} not found in"
+                f" {sorted([_ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[code] for code in remaining_requirements], key=lambda data: data.name)}")
+            remaining_requirements.remove(ap_item_id)
+            debug_logger.info("Removed %s from %s requirements",
+                              _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area_short_name)
             if not remaining_requirements:
                 self.unlock_chapter(SHORT_NAME_TO_CHAPTER_AREA[dependent_area_short_name])
+                # Display a message when the goal chapter is unlocked, but try to avoid telling the user if they are
+                # connecting to a slot where the goal chapter is already completed.
+                if (dependent_area_short_name == self.goal_chapter
+                        and not ctx.finished_game
+                        and self.goal_chapter_area_id not in ctx.free_play_completion_checker.completed_free_play):
+                    msg = f"> Goal Chapter {self.goal_chapter} Unlocked! <"
+                    # todo: This is something that would benefit from being able to control how long a message is
+                    #  displayed for.
+                    # Display the message twice because of its importance.
+                    ctx.text_display.priority_messages(msg, msg)
                 del self.remaining_chapter_item_requirements[dependent_area_short_name]
 
-        del self.character_to_dependent_game_chapters[character_ap_id]
+        del self.character_to_dependent_game_chapters[ap_item_id]
 
     def unlock_chapter(self, chapter_area: ChapterArea):
         self.unlocked_chapters_per_episode[chapter_area.episode].add(chapter_area.area_id)
