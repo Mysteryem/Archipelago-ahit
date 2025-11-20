@@ -181,8 +181,40 @@ def main(args, seed=None, baked_server_options: dict[str, object] | None = None)
 
     multiworld.link_items()
 
+    if multiworld.groups:
+        raise RuntimeError("Items links were enabled, but should not have been...")
+
+    for player, world in multiworld.worlds.items():
+        if world.options.accessibility != "minimal":
+            raise RuntimeError(f"{multiworld.get_player_name(player)} did not have minimal accessibility...")
+
     if any(world.options.item_links for world in multiworld.worlds.values()):
         multiworld._all_state = None
+
+    per_player_prog_item_counters = collections.defaultdict(collections.Counter)
+    for item in multiworld.itempool:
+        if item.advancement:
+            per_player_prog_item_counters[item.player][item.name] += 1
+
+    for player, world in multiworld.worlds.items():
+        real_locs = [loc for loc in world.get_locations() if not loc.is_event]
+        non_excluded_locs = [loc for loc in real_locs if loc.progress_type != LocationProgressType.EXCLUDED]
+        priority_locs = [loc for loc in real_locs if loc.progress_type == LocationProgressType.PRIORITY]
+        priority_loc_percentage = len(priority_locs) / len(non_excluded_locs)
+        logger.info(f"{len(priority_locs)} priority locations out of {len(non_excluded_locs)}"
+                    f" ({priority_loc_percentage*100:.3f}) non-excluded locations"
+                    f" for player {multiworld.get_player_name(player)}."
+                    f" The player has {per_player_prog_item_counters[player].total()} prog items,"
+                    f" {len(per_player_prog_item_counters[player])} of which are unique")
+        # Limit to no more than half the number of unique progression items in the world, and no more than 20.
+        max_priority_locs = min(20, max(10, len(per_player_prog_item_counters[player]) // 2))
+        if len(priority_locs) > max_priority_locs:
+            logger.warning(f"{multiworld.get_player_name(player)} has {len(priority_locs)}"
+                           f" ({priority_loc_percentage * 100:.2f}%) priority locations."
+                           f" Randomly reducing to {max_priority_locs}")
+            to_remove = world.random.choices(priority_locs, k=len(priority_locs) - max_priority_locs)
+            for loc in to_remove:
+                loc.progress_type = LocationProgressType.DEFAULT
 
     logger.info("Running Item Plando.")
     resolve_early_locations_for_planned(multiworld)
@@ -212,6 +244,47 @@ def main(args, seed=None, baked_server_options: dict[str, object] | None = None)
 
     if args.skip_output:
         logger.info('Done. Skipped output/spoiler generation. Total Time: %s', time.perf_counter() - start)
+        if not multiworld.fulfills_accessibility():
+            if not multiworld.can_beat_game():
+                raise Exception("Multiworld is unbeatable...")
+
+        test_state = CollectionState(multiworld)
+        test_state.sweep_for_advancements()
+        for player, world in multiworld.worlds.items():
+            reachable = []
+            unreachable = []
+            for loc in world.get_locations():
+                if loc.is_event:
+                    continue
+                if loc.can_reach(test_state):
+                    reachable.append(loc)
+                else:
+                    unreachable.append(loc)
+            total = len(reachable) + len(unreachable)
+            if len(unreachable) == 0:
+                func = logger.warning
+            else:
+                func = logger.info
+            func(f"{multiworld.get_player_name(player)} has {len(unreachable)}/{total}"
+                 f" ({len(unreachable)/total*100:.2f}) unreachable locations")
+
+        sphere1_locs = next(multiworld.get_sendable_spheres())
+        per_player_sphere1_locs = collections.defaultdict(list)
+        for loc in sphere1_locs:
+            per_player_sphere1_locs[loc.player].append(loc)
+        for player, world in multiworld.worlds.items():
+            all_player_locs = len([loc for loc in world.get_locations() if not loc.is_event])
+            sphere1_locs = len(per_player_sphere1_locs[player])
+            sphere1_percentage = sphere1_locs / all_player_locs
+            if sphere1_percentage > 0.3:
+                func = logger.warning
+            else:
+                func = logger.info
+            func(f"{multiworld.get_player_name(player)} has {sphere1_locs}/{all_player_locs}"
+                 f" ({sphere1_percentage*100:.3f}%) sphere 1 locations")
+
+
+        logger.info('Actual Total Time: %s', time.perf_counter() - start)
         return multiworld
 
     logger.info(f'Beginning output...')
