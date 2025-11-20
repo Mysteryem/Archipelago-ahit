@@ -144,6 +144,7 @@ class _NormalOptionsResolver:
                 and not self._minikits_required_for_goal
                 and not self._kyber_bricks_required_for_goal
                 and not self._level_completions_required_for_goal
+                and not self._goal_chapter
         ):
             self.world.option_error("At least one goal must be enabled.")
 
