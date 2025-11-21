@@ -195,6 +195,7 @@ class KyberBrickGoalCompletionMethod(ChoiceFromStringExtension):
     enable a Goal Chapter when the Kyber Brick Goal Completion Method is set to Instant.
     """
     option_instant = 1
+    default = 1
 
 
 class GoalChapterLocationsMode(ChoiceFromStringExtension):
