@@ -40,7 +40,7 @@ from .game_state_modifiers.goal_manager import GoalManager
 from .game_state_modifiers.levels import UnlockedChapterManager
 from .game_state_modifiers.minikits import AcquiredMinikits
 from .game_state_modifiers.power_ups import PowerUpReceiver
-from .game_state_modifiers.studs import STUDS_AP_ID_TO_VALUE, give_studs
+from .game_state_modifiers.studs import STUDS_AP_ID_TO_VALUE, give_studs_item
 from .game_state_modifiers.text_display import InGameTextDisplay
 from .game_state_modifiers.text_replacer import TextReplacer
 from .game_state_modifiers.uncap_high_jump import UncapHighJump
@@ -1328,7 +1328,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             # is currently in-game.
             if not self.is_in_game():
                 return False
-            give_studs(self, code)
+            give_studs_item(self, code)
         elif code in self.power_up_receiver.receivable_ap_ids:
             # Power Ups are directly given to the player as they are received, with a buffer of extra Power Ups kept
             # only in the current client session.

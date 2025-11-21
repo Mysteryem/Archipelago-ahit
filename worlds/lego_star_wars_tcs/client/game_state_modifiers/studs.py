@@ -39,7 +39,7 @@ CHARACTER_STUD_COUNTER_POINTER = UintField(0x7fc)
 # CURRENT_AREA_STUDS_P2_ADDRESS = 0x855F48
 
 
-def give_studs(ctx: TCSContext, ap_item_id: int):
+def give_studs_item(ctx: TCSContext, ap_item_id: int) -> None:
     """
     Grant Studs to the player. Unlike other items, Studs are a consumable resource, so cannot simply be set to the
     number of received studs and instead must use the last/next item index from AP to determine when a Studs item is
@@ -55,9 +55,37 @@ def give_studs(ctx: TCSContext, ap_item_id: int):
     # a load of studs and then feel bad that they forgot to enable their multipliers.
     studs_to_add *= ctx.acquired_generic.current_score_multiplier
 
+    give_studs(ctx, studs_to_add)
+
+
+def drop_remainder_towards_zero(value: int, divisor: int):
+    """Drop the remainder of division by `divisor`, so that the returned value is divisible by `divisor`."""
+    if divisor < 1:
+        raise ValueError(f"Invalid divisor {divisor}. Divisor must be positive.")
+    if value == 0:
+        return 0
+    elif value > 0:
+        # 15 % 10 == 5, so the remainder must be subtracted to approach zero.
+        remainder = value % divisor
+        return value - remainder, remainder
+    else:
+        # -15 % 10 == 5, so the remainder must be added to approach zero.
+        assert value < 0
+        remainder = value % divisor
+        return value + remainder, -remainder
+
+
+def give_studs(ctx: TCSContext, studs_to_add: int):
+    """
+    Give studs to the active players.
+
+    The studs_to_add may be negative to remove studs.
+
+    If both players are active, the studs will be split between them.
+    """
+
     # Keep studs to increments of 10 (1x Silver Stud)
-    remainder = studs_to_add % 10
-    studs_to_add -= remainder
+    studs_to_add, _remainder = drop_remainder_towards_zero(studs_to_add, 10)
 
     in_level_studs_addresses = []
     if is_in_chapter_free_play(ctx):
@@ -66,7 +94,10 @@ def give_studs(ctx: TCSContext, ap_item_id: int):
             if studs_address != 0:
                 # Power Up doubles received studs.
                 # todo: Add support for further doubling received studs when in a Double Score Zone.
-                multiplier = 2 if CHARACTER_POWER_UP_TIMER.get(ctx, character_address) > 0.0 else 1
+                if studs_to_add > 0 and CHARACTER_POWER_UP_TIMER.get(ctx, character_address) > 0.0:
+                    multiplier = 2
+                else:
+                    multiplier = 1
                 in_level_studs_addresses.append((studs_address, multiplier))
 
     if in_level_studs_addresses:
@@ -79,8 +110,7 @@ def give_studs(ctx: TCSContext, ap_item_id: int):
         else:
             # Always keep granted studs to increments of 10. The amount will be halved to give half to each player, so
             # check the remainder for 20 which will become 10 after halving.
-            remainder_after_halving = studs_to_add % 20
-            studs_to_add -= remainder_after_halving
+            studs_to_add, remainder_after_halving = drop_remainder_towards_zero(studs_to_add, 20)
             p1_studs = studs_to_add // 2
             p2_studs = p1_studs
             if remainder_after_halving:
