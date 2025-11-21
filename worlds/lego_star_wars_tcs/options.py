@@ -113,7 +113,7 @@ class MinikitGoalAmount(NamedRange):
     Setting this option to *Use Percentage Option* will use the *Minikit Goal Amount Percentage* option's value to
     determine how many Minikit's are required to goal.
     """
-    display_name = "Goal Minikit Count"
+    display_name = "Minikit Goal Amount"
     rich_text_doc = True
     range_start = 0
     range_end = 360
@@ -134,7 +134,7 @@ class MinikitGoalAmountPercentage(Range):
 
     The final number of Minikits required to goal is rounded to the nearest integer, but will always be at least 1.
     """
-    display_name = "Goal Minikit Percentage"
+    display_name = "Minikit Goal Amount Percentage"
     rich_text_doc = True
     range_start = 1
     range_end = 100
