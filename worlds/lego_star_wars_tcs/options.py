@@ -194,6 +194,7 @@ class KyberBrickGoalCompletionMethod(ChoiceFromStringExtension):
     - Instant: The Kyber Brick goal is completed as soon as 7 Kyber Brick items are acquired. It is recommended to
     enable a Goal Chapter when the Kyber Brick Goal Completion Method is set to Instant.
     """
+    display_name = "Kyber Brick Goal Completion Method"
     option_instant = 1
     default = 1
 
@@ -210,6 +211,7 @@ class GoalChapterLocationsMode(ChoiceFromStringExtension):
     - Normal: No changes will be made to the locations in the Goal Chapter, or to Gold Brick logic. Not recommended
     unless playing without ``!release`` after goaling.
     """
+    display_name = "Goal Chapter Locations Mode"
     option_removed = 1
     option_excluded = 2
     option_normal = 3
