@@ -195,6 +195,7 @@ class KyberBrickGoalCompletionMethod(ChoiceFromStringExtension):
     enable a Goal Chapter when the Kyber Brick Goal Completion Method is set to Instant.
     """
     display_name = "Kyber Brick Goal Completion Method"
+    rich_text_doc = True
     option_instant = 1
     default = 1
 
@@ -212,6 +213,7 @@ class GoalChapterLocationsMode(ChoiceFromStringExtension):
     unless playing without ``!release`` after goaling.
     """
     display_name = "Goal Chapter Locations Mode"
+    rich_text_doc = True
     option_removed = 1
     option_excluded = 2
     option_normal = 3
