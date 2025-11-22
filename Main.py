@@ -73,6 +73,17 @@ def main(args, seed=None, baked_server_options: dict[str, object] | None = None)
     if not args.skip_output and not args.spoiler_only:
         AutoWorld.call_stage(multiworld, "assert_generate")
 
+    # Fix SoH logic...
+    # Force Kakariko Potion Shop Key into start inventory from pool for slots with lock_overworld_doors enabled.
+    # There is a logic bug where the logic thinks a different key opens the Kakariko Potion Shop door.
+    key_item = "Kakariko Potion Shop Key"
+    for world in multiworld.get_game_worlds("Ship of Harkinian"):
+        options = world.options
+        if options.lock_overworld_doors:
+            if (not options.start_inventory.value.get(key_item)
+                    and not options.start_inventory_from_pool.value.get(key_item)):
+                options.start_inventory_from_pool.value[key_item] = 1
+
     AutoWorld.call_all(multiworld, "generate_early")
 
     logger.info('')
