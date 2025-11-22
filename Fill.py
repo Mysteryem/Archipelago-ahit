@@ -858,6 +858,11 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     reachable_items: typing.Dict[int, typing.Deque[Item]] = {}
     for item in item_pool:
         reachable_items.setdefault(item.player, deque()).append(item)
+        if item.location:
+            raise Exception(f"{item} is already placed at {item.location}")
+    for loc in locations:
+        if loc.item:
+            raise Exception(f"{loc} is already filled with {loc.item}")
 
     # for progress logging
     total = min(len(item_pool), len(locations))
