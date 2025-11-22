@@ -6,6 +6,7 @@ from enum import IntEnum
 from Utils import async_start
 
 from . import ClientComponent
+from .studs import give_studs
 from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing, player_character_entity_iter
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
 from ..type_aliases import TCSContext
@@ -205,6 +206,9 @@ class DeathLinkManager(ClientComponent):
 
     last_death_amnesty = time.time()
 
+    death_link_stud_loss: int = 0
+    death_link_stud_loss_scaling: bool = False
+
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         slot_data = event.slot_data
@@ -217,6 +221,14 @@ class DeathLinkManager(ClientComponent):
 
         self.normal_death_link_amnesty = slot_data.get("death_link_amnesty", 1)
         self.vehicle_death_link_amnesty = slot_data.get("vehicle_death_link_amnesty", 1)
+
+        # todo: Move the other, new, death link options into the conditional branch.
+        if event.generator_version < (1, 2, 0):
+            self.death_link_stud_loss = 0
+            self.death_link_stud_loss_scaling = False
+        else:
+            self.death_link_stud_loss = slot_data["death_link_studs_loss"]
+            self.death_link_stud_loss_scaling = bool(slot_data["death_link_studs_loss_scaling"])
 
     @staticmethod
     def _get_kill_state_to_set(ctx: TCSContext) -> CharacterState:
@@ -303,10 +315,17 @@ class DeathLinkManager(ClientComponent):
         # Receive death.
         if self.pending_received_death:
             # Kill player characters
+            # TODO: Entirely skip the received death if all player characters are already dead.
             if await self.kill_player_characters(ctx):
                 # At least one character was killed, so the death has been received.
                 self.pending_received_death = False
                 ctx.text_display.priority_message(self.last_received_death_message)
+                # Remove studs from the player.
+                studs_to_lose = self.death_link_stud_loss
+                if studs_to_lose > 0:
+                    if self.death_link_stud_loss_scaling:
+                        studs_to_lose *= ctx.acquired_generic.current_score_multiplier
+                    give_studs(ctx, -studs_to_lose, only_give_if_in_level=True, allow_power_up_multiplier=False)
             return
 
         if now < self.last_death_amnesty + 2.25:

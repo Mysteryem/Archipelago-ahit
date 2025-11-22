@@ -1617,6 +1617,8 @@ class LegoStarWarsTCSWorld(World):
                 "goal_chapter_locations_mode",
                 "minikit_goal_completion_method",
                 "kyber_brick_goal_completion_method",
+                "death_link_studs_loss",
+                "death_link_studs_loss_scaling",
             )
         }
 

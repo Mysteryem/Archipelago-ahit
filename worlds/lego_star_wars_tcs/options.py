@@ -1185,6 +1185,35 @@ class VehicleDeathLinkAmnesty(Range):
     default = 1
 
 
+class DeathLinkStudLoss(ChoiceFromStringExtension):
+    """Choose how many studs are lost when receiving a death from Death Link.
+
+    The studs will not spawn around you, and will be permanently lost.
+
+    This is a temporary option while it is not possible for the client to perform a normal death that spawns studs."""
+    display_name = "Death Link Studs Loss"
+    rich_text_doc = True
+    option_0 = 0
+    option_1000 = 1000
+    option_2000 = 2000
+    option_3000 = 3000
+    option_4000 = 4000
+    option_5000 = 5000
+    option_6000 = 6000
+    option_7000 = 7000
+    option_8000 = 8000
+    option_9000 = 9000
+    option_10000 = 10000
+    default = 2000
+
+
+class DeathLinkStudLossScaling(Toggle):
+    """When enabled, the stud loss from receiving a death from Death Link is multiplied by your maximum combined score
+    multiplier."""
+    display_name = "Death Link Studs Loss Scaling"
+    rich_text_doc = True
+
+
 @dataclass
 class LegoStarWarsTCSOptions(PerGameCommonOptions):
     start_inventory_from_pool: StartInventoryPool
@@ -1245,10 +1274,15 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     # Client behaviour.
     received_item_messages: ReceivedItemMessages
     checked_location_messages: CheckedLocationMessages
+    uncap_original_trilogy_high_jump: UncapOriginalTrilogyHighJump
+
+    # Death Link.
     death_link: LegoStarWarsTCSDeathLink
     death_link_amnesty: DeathLinkAmnesty
     vehicle_death_link_amnesty: VehicleDeathLinkAmnesty
-    uncap_original_trilogy_high_jump: UncapOriginalTrilogyHighJump
+    death_link_studs_loss: DeathLinkStudLoss
+    death_link_studs_loss_scaling: DeathLinkStudLossScaling
+
     # Future options, not implemented yet.
     # random_starting_level_max_starting_characters: RandomStartingLevelMaxStartingCharacters
 
@@ -1312,9 +1346,13 @@ OPTION_GROUPS: list[OptionGroup] = [
     OptionGroup("Client Options", [
         ReceivedItemMessages,
         CheckedLocationMessages,
+        UncapOriginalTrilogyHighJump,
+    ]),
+    OptionGroup("Death Link Options", [
         LegoStarWarsTCSDeathLink,
         DeathLinkAmnesty,
         VehicleDeathLinkAmnesty,
-        UncapOriginalTrilogyHighJump,
+        DeathLinkStudLoss,
+        DeathLinkStudLossScaling,
     ])
 ]

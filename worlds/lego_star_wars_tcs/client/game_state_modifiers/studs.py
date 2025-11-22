@@ -75,7 +75,13 @@ def drop_remainder_towards_zero(value: int, divisor: int):
         return value + remainder, -remainder
 
 
-def give_studs(ctx: TCSContext, studs_to_add: int):
+def give_studs(ctx: TCSContext,
+               shared_studs_to_add: int = 0,
+               p1_studs_to_add: int = 0,
+               p2_studs_to_add: int = 0,
+               only_give_if_in_level: bool = False,
+               allow_power_up_multiplier: bool = True
+               ):
     """
     Give studs to the active players.
 
@@ -85,16 +91,27 @@ def give_studs(ctx: TCSContext, studs_to_add: int):
     """
 
     # Keep studs to increments of 10 (1x Silver Stud)
-    studs_to_add, _remainder = drop_remainder_towards_zero(studs_to_add, 10)
+    # Combined studs are kept separately in-case there is a better remainder when all values are combined.
+    combined, _remainder = drop_remainder_towards_zero(shared_studs_to_add + p1_studs_to_add + p2_studs_to_add, 10)
+    shared_studs_to_add, _remainder = drop_remainder_towards_zero(shared_studs_to_add, 10)
+    p1_studs_to_add, _remainder = drop_remainder_towards_zero(p1_studs_to_add, 10)
+    p2_studs_to_add, _remainder = drop_remainder_towards_zero(p2_studs_to_add, 10)
+
+    if not shared_studs_to_add and not p1_studs_to_add and not p2_studs_to_add:
+        # Nothing to do.
+        return
 
     in_level_studs_addresses = []
     if is_in_chapter_free_play(ctx):
-        for _, character_address in player_character_entity_iter(ctx):
+        player_studs = (p1_studs_to_add, p2_studs_to_add)
+        for player_number, character_address in player_character_entity_iter(ctx):
             studs_address = CHARACTER_STUD_COUNTER_POINTER.get(ctx, character_address)
             if studs_address != 0:
                 # Power Up doubles received studs.
                 # todo: Add support for further doubling received studs when in a Double Score Zone.
-                if studs_to_add > 0 and CHARACTER_POWER_UP_TIMER.get(ctx, character_address) > 0.0:
+                if (allow_power_up_multiplier
+                        and (shared_studs_to_add > 0 or player_studs[player_number - 1] > 0)
+                        and CHARACTER_POWER_UP_TIMER.get(ctx, character_address) > 0.0):
                     multiplier = 2
                 else:
                     multiplier = 1
@@ -103,22 +120,30 @@ def give_studs(ctx: TCSContext, studs_to_add: int):
     if in_level_studs_addresses:
         # Add the studs directly to the player(s)' stud counters.
         if len(in_level_studs_addresses) == 1:
+            # There is only one player, so give them the combined amount of studs.
             in_level_studs_address, multiplier = in_level_studs_addresses[0]
             current_stud_count = ctx.read_uint(in_level_studs_address, raw=True)
-            new_stud_count = current_stud_count + studs_to_add * multiplier
+            new_stud_count = current_stud_count + combined * multiplier
             ctx.write_uint(in_level_studs_address, new_stud_count, raw=True)
         else:
-            # Always keep granted studs to increments of 10. The amount will be halved to give half to each player, so
-            # check the remainder for 20 which will become 10 after halving.
-            studs_to_add, remainder_after_halving = drop_remainder_towards_zero(studs_to_add, 20)
-            p1_studs = studs_to_add // 2
-            p2_studs = p1_studs
-            if remainder_after_halving:
-                # Pick randomly who gets the 10 studs remainder.
-                if random.randint(0, 1):
-                    p1_studs += remainder_after_halving
-                else:
-                    p2_studs += remainder_after_halving
+            if shared_studs_to_add:
+                # Always keep granted studs to increments of 10. The amount will be halved to give half to each player,
+                # so check the remainder for 20 which will become 10 after halving.
+                studs_to_add, remainder_after_halving = drop_remainder_towards_zero(shared_studs_to_add, 20)
+                p1_studs = studs_to_add // 2
+                p2_studs = p1_studs
+                if remainder_after_halving:
+                    # Pick randomly who gets the 10 studs remainder.
+                    if random.randint(0, 1):
+                        p1_studs += remainder_after_halving
+                    else:
+                        p2_studs += remainder_after_halving
+                # Add any individually granted studs.
+                p1_studs += p1_studs_to_add
+                p2_studs += p2_studs_to_add
+            else:
+                p1_studs = p1_studs_to_add
+                p2_studs = p2_studs_to_add
 
             # Give the studs to each player, taking into account any additional multipliers they each have.
             for (in_level_studs_address, multiplier), player_studs_to_add in zip(in_level_studs_addresses,
@@ -126,8 +151,8 @@ def give_studs(ctx: TCSContext, studs_to_add: int):
                 current_stud_count = ctx.read_uint(in_level_studs_address, raw=True)
                 new_stud_count = current_stud_count + player_studs_to_add * multiplier
                 ctx.write_uint(in_level_studs_address, new_stud_count, raw=True)
-    else:
+    elif not only_give_if_in_level:
         # Add the studs directly to the save data's stud counter.
         current_stud_count = ctx.read_uint(STUD_COUNT_ADDRESS)
-        new_stud_count = min(current_stud_count + studs_to_add, MAX_STUD_COUNT)
+        new_stud_count = min(current_stud_count + combined, MAX_STUD_COUNT)
         ctx.write_uint(STUD_COUNT_ADDRESS, new_stud_count)
