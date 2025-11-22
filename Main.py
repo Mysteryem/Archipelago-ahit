@@ -86,6 +86,10 @@ def main(args, seed=None, baked_server_options: dict[str, object] | None = None)
 
     AutoWorld.call_all(multiworld, "generate_early")
 
+    for player, world in multiworld.worlds.items():
+        if world.options.accessibility != "minimal":
+            raise Exception(f"Accessibility for {multiworld.get_player_name(player)} was {world.options.accessibility}")
+
     logger.info('')
 
     for player in multiworld.player_ids:
