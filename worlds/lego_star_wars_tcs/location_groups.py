@@ -15,6 +15,7 @@ LOCATION_GROUPS: dict[str, set[str]] = {
     "True Jedi": _locations_from_indices(110, 145),
     "Chapter Completions": _locations_from_indices(506, 541),
     "Bonuses": _locations_from_indices(547, 554),
+    "Bonus Levels": _locations_from_indices(547, 552),
     "Chapter Completion Character Unlocks": _locations_from_indices(566, 621),
     "Minikits": _locations_from_indices(146, 505),
     **{
