@@ -1893,6 +1893,23 @@ def resolve_early_locations_for_planned(multiworld: MultiWorld):
         else:  # not reachable with swept state
             non_early_locations[loc.player].append(loc)
 
+    # Workaround apworlds with known item plando bugs.
+    banned_early_locations_targets = [
+        "Ship of Harkinian",  # Does not behave correctly when items get plando-ed into local shop slots
+
+    ]
+    for game in banned_early_locations_targets:
+        for world in multiworld.get_game_worlds(game):
+            early_locations[world.player] = []
+
+    banned_non_early_locations_targets = [
+        "Ship of Harkinian",  # Deletes items plando-ed into dungeons
+        "The Legend of Zelda - Oracle of Seasons",  # Deletes items plando-ed into dungeons
+    ]
+    for game in banned_non_early_locations_targets:
+        for world in multiworld.get_game_worlds(game):
+            non_early_locations[world.player] = []
+
     for player in multiworld.plando_item_blocks:
         removed = []
         for block in multiworld.plando_item_blocks[player]:
