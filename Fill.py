@@ -98,11 +98,12 @@ class FillLogger():
 
 
 def sweep_from_pool(base_state: CollectionState, itempool: typing.Sequence[Item] = tuple(),
-                    locations: typing.Optional[typing.List[Location]] = None) -> CollectionState:
+                    locations: typing.Optional[typing.List[Location]] = None,
+                    assume_advancement: bool = False) -> CollectionState:
     new_state = base_state.copy()
     for item in itempool:
         new_state.collect(item, True)
-    new_state.sweep_for_advancements(locations=locations)
+    new_state.sweep_for_advancements(locations=locations, assume_advancement=assume_advancement)
     return new_state
 
 
@@ -335,7 +336,7 @@ class _RestrictiveFillBatcher:
                 # placed in this batch (A. items).
                 # The sweep to create `partial_exploration_state` collects many additional reachable items (some D.
                 # items).
-                partial_exploration_state = sweep_from_pool(self.batch_base_state, locations=explore_locations)
+                partial_exploration_state = sweep_from_pool(self.batch_base_state, locations=explore_locations, assume_advancement=True)
                 self._partial_exploration_state = partial_exploration_state
 
             # Collect items in this batch that have yet to be removed in order to be placed (B. items), and collect all
@@ -856,6 +857,7 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     cleanup_required = False
     swapped_items: typing.Counter[typing.Tuple[int, str, bool]] = Counter()
     reachable_items: typing.Dict[int, typing.Deque[Item]] = {}
+    item = None
     for item in item_pool:
         reachable_items.setdefault(item.player, deque()).append(item)
         if item.location:
@@ -868,6 +870,15 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
     total = min(len(item_pool), len(locations))
     fill_log = FillLogger(total)
     placed = 0
+
+    if item is None:
+        explore_locations = set()
+    elif single_player_placement:
+        explore_locations = {loc for loc in multiworld.get_locations(item.player) if loc.advancement}
+    else:
+        explore_locations = {loc for loc in multiworld.get_locations() if loc.advancement}
+    if explore_locations:
+        logging.info("%i initial explore locations", len(explore_locations))
 
     # Fill is performed in batches so that sweeping to produce a maximum exploration state can begin from the state at
     # the start of each batch, rather than having to sweep from `base_state`.
@@ -885,7 +896,7 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
             # There are no more items to place.
             break
 
-        explore_locations = multiworld.get_filled_locations(item.player) if single_player_placement else None
+        #explore_locations = multiworld.get_filled_locations(item.player) if single_player_placement else None
 
         maximum_exploration_state_ = batcher.get_maximum_exploration_state(explore_locations, unplaced_items)
         maximum_exploration_state = maximum_exploration_state_
@@ -904,7 +915,8 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
             item_to_place = items_to_place.pop(0)
 
             if not one_item_per_player:
-                maximum_exploration_state = sweep_from_pool(maximum_exploration_state_, items_to_place)
+                maximum_exploration_state = sweep_from_pool(
+                    maximum_exploration_state_, items_to_place, explore_locations, assume_advancement=True)
                 has_beaten_game = multiworld.has_beaten_game(maximum_exploration_state)
 
             spot_to_fill: typing.Optional[Location] = None
@@ -917,12 +929,22 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
             else:
                 perform_access_check = True
 
+            unreachable_placement = True
             if not perform_access_check and multiworld.random.random() <= 0.5:
-                unreachables = (t for t in enumerate(locations) if not t[1].can_reach(maximum_exploration_state))
-                all_locs = enumerate(locations)
-                locations_iter = itertools.chain(unreachables, all_locs)
+                def locations_gen():
+                    nonlocal unreachable_placement
+                    for t in enumerate(locations):
+                        if not t[1].can_reach(maximum_exploration_state):
+                            yield t
+                    # Yielded all unreachable locations already, so the remaining will be reachable (barring always
+                    # allow rules, but those are so rare that it is fine to assume the location is reachable).
+                    unreachable_placement = False
+                    yield from enumerate(locations)
+                locations_iter = locations_gen()
             else:
                 locations_iter = enumerate(locations)
+                # Need to check.
+                unreachable_placement = None
 
             for i, location in locations_iter:
                 if (not single_player_placement or location.player == item_to_place.player) \
@@ -1042,6 +1064,41 @@ def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locati
             spot_to_fill.locked = lock
             placements.append(spot_to_fill)
             placed += 1
+
+            # The location could have logic that changes its accessibility when an item is placed at it, so it is
+            # necessary to re-check the placement. This doesn't actually 100% work in practice because placing an item
+            # at one location could change the logic of *other locations*, but this check assumes only `spot_to_fill`
+            # can have its logic change.
+            if not one_item_per_player:
+                if unreachable_placement and not spot_to_fill.can_reach(maximum_exploration_state):
+                    # The maximum exploration state is a true maximum. With the item being placed in an unreachable
+                    # location, all the reached advancements by this state are the only reachable advancements.
+                    # (barring logic on other locations, that changes once the item is placed at `spot_to_fill`)
+                    #explore_locations.discard(spot_to_fill)
+                    #explore_locations.intersection_update(maximum_exploration_state.advancements)
+                    len_before = len(explore_locations)
+                    explore_locations = maximum_exploration_state.advancements
+                    len_after = len(explore_locations)
+                    if len_after < len_before and len_after <= (len_before - (len_before % 100)):
+                        logging.info("%i explore locations", len(explore_locations))
+                elif unreachable_placement is None and not perform_access_check:
+                    # There was no deliberate unreachable placement, but the placement was allowed to be unreachable due
+                    # to minimal accessibility rules, so check if the location was unreachable.
+                    if not spot_to_fill.can_reach(maximum_exploration_state):
+                        len_before = len(explore_locations)
+                        explore_locations = maximum_exploration_state.advancements
+                        len_after = len(explore_locations)
+                        if len_after < len_before and len_after <= (len_before - (len_before % 100)):
+                            logging.info("%i explore locations", len(explore_locations))
+                    else:
+                        if spot_to_fill.advancement:
+                            explore_locations.add(spot_to_fill)
+                else:
+                    if spot_to_fill.advancement:
+                        explore_locations.add(spot_to_fill)
+            else:
+                if spot_to_fill.advancement:
+                    explore_locations.add(spot_to_fill)
 
             fill_log.log_fill_progress(name, placed)
 

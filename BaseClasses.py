@@ -946,7 +946,8 @@ class CollectionState():
                                checked_locations: Optional[Set[Location]] = None) -> None: ...
 
     def sweep_for_advancements(self, locations: Optional[Iterable[Location]] = None, yield_each_sweep: bool = False,
-                               checked_locations: Optional[Set[Location]] = None) -> Optional[Iterator[None]]:
+                               checked_locations: Optional[Set[Location]] = None,
+                               assume_advancement: bool = False) -> Optional[Iterator[None]]:
         """
         Sweep through the locations that contain uncollected advancement items, collecting the items into the state
         until there are no more reachable locations that contain uncollected advancement items.
@@ -973,9 +974,18 @@ class CollectionState():
         else:
             # Filter and separate the locations into a list for each player.
             advancements_per_player_dict: Dict[int, List[Location]] = defaultdict(list)
-            for location in locations:
-                if location.advancement and location not in checked_locations:
+            if assume_advancement:
+                locations_set = set(locations)
+                locations_set.difference_update(checked_locations)
+                for location in locations_set:
                     advancements_per_player_dict[location.player].append(location)
+                # for location in locations:
+                #     if location not in checked_locations:
+                #         advancements_per_player_dict[location.player].append(location)
+            else:
+                for location in locations:
+                    if location.advancement and location not in checked_locations:
+                        advancements_per_player_dict[location.player].append(location)
             # Convert to a list of tuples.
             advancements_per_player = list(advancements_per_player_dict.items())
             del advancements_per_player_dict
