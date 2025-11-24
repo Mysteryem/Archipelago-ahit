@@ -134,6 +134,16 @@ class UnlockedChapterManager(ClientComponent):
         self.unlocked_chapters_per_episode = {i: set() for i in enabled_episodes}
         item_id_to_chapter_area_short_name: dict[int, list[str]] = {}
         remaining_chapter_item_requirements: dict[str, set[int]] = {}
+
+        if goal_chapter := slot_data.get("goal_chapter"):
+            # Add the requirement for the fake sub-goals item to the Goal Chapter so that it will only unlock once all
+            # sub-goals have been completed.
+            item_id_to_chapter_area_short_name[_SUB_GOAL_SPECIAL_ID] = [goal_chapter]
+            remaining_chapter_item_requirements[goal_chapter] = {_SUB_GOAL_SPECIAL_ID}
+            self.goal_chapter = goal_chapter
+            self.goal_chapter_area_id = SHORT_NAME_TO_CHAPTER_AREA[goal_chapter].area_id
+            self.enabled_chapter_area_ids.add(self.goal_chapter_area_id)
+
         for chapter_area in CHAPTER_AREAS:
             if chapter_area.area_id not in self.enabled_chapter_area_ids:
                 continue
@@ -151,18 +161,7 @@ class UnlockedChapterManager(ClientComponent):
                 assert item_code != -1
                 item_id_to_chapter_area_short_name.setdefault(item_code, []).append(chapter_area.short_name)
                 code_requirements.add(item_code)
-            remaining_chapter_item_requirements[chapter_area.short_name] = code_requirements
-
-        if goal_chapter := slot_data.get("goal_chapter"):
-            # Add the requirement for the fake sub-goals item to the Goal Chapter so that it will only unlock once all
-            # sub-goals have been completed.
-            item_id_to_chapter_area_short_name[_SUB_GOAL_SPECIAL_ID] = [goal_chapter]
-            # There should always be an existing set, but that could change in the future if the goal chapter can be set
-            # to unlock without needing its usual requirements, and instead only needing the other goals to be
-            # completed.
-            remaining_chapter_item_requirements.setdefault(goal_chapter, set()).add(_SUB_GOAL_SPECIAL_ID)
-            self.goal_chapter = goal_chapter
-            self.goal_chapter_area_id = SHORT_NAME_TO_CHAPTER_AREA[goal_chapter].area_id
+            remaining_chapter_item_requirements.setdefault(chapter_area.short_name, set()).update(code_requirements)
 
         self.character_to_dependent_game_chapters = item_id_to_chapter_area_short_name
         self.remaining_chapter_item_requirements = remaining_chapter_item_requirements
