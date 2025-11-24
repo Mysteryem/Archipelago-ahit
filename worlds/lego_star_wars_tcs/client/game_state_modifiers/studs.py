@@ -145,6 +145,10 @@ def give_studs(ctx: TCSContext,
                 p1_studs = p1_studs_to_add
                 p2_studs = p2_studs_to_add
 
+            # Never go below zero.
+            p1_studs = max(0, p1_studs)
+            p2_studs = max(0, p2_studs)
+
             # Give the studs to each player, taking into account any additional multipliers they each have.
             for (in_level_studs_address, multiplier), player_studs_to_add in zip(in_level_studs_addresses,
                                                                                  (p1_studs, p2_studs)):
@@ -154,5 +158,6 @@ def give_studs(ctx: TCSContext,
     elif not only_give_if_in_level:
         # Add the studs directly to the save data's stud counter.
         current_stud_count = ctx.read_uint(STUD_COUNT_ADDRESS)
-        new_stud_count = min(current_stud_count + combined, MAX_STUD_COUNT)
+        # Never go below zero if the studs to add are negative.
+        new_stud_count = max(0, min(current_stud_count + combined, MAX_STUD_COUNT))
         ctx.write_uint(STUD_COUNT_ADDRESS, new_stud_count)
