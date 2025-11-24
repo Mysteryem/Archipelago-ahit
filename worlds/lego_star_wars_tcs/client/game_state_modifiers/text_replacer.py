@@ -154,9 +154,9 @@ class TextReplacer(ClientComponent):
         # Finally write the replacement bytes.
         if string_index in TextId:
             text_id = TextId(string_index)
-            debug_logger.info("Writing %s to %s", replacement, text_id.name)
-        else:
-            debug_logger.info("Writing %s to Text ID %i", replacement, string_index)
+            # debug_logger.info("Writing %s to %s", replacement, text_id.name)
+        # else:
+        #     debug_logger.info("Writing %s to Text ID %i", replacement, string_index)
         vanilla_data.last_set_allocated_string = replacement
         self.ctx.write_bytes(pointer_to_allocated_string, replacement, len(replacement), raw=True)
 
