@@ -106,7 +106,7 @@ class GoalManager(ClientComponent):
             # The Minikit goal was completed by going to the Junkyard minikit display on previous 1.0.0 versions.
             self.minikit_goal_completion_method.value = MinikitGoalCompletionMethod.option_junkyard_minikit_display
         else:
-            self.minikit_goal_completion_method.set_from_string(slot_data["minikit_goal_completion_method"])
+            self.minikit_goal_completion_method.value = slot_data["minikit_goal_completion_method"]
 
         if event.generator_version < (1, 1, 0):
             # Minikit goal was the only goal at this point.
