@@ -58,12 +58,12 @@ def give_studs_item(ctx: TCSContext, ap_item_id: int) -> None:
     give_studs(ctx, studs_to_add)
 
 
-def drop_remainder_towards_zero(value: int, divisor: int):
+def drop_remainder_towards_zero(value: int, divisor: int) -> tuple[int, int]:
     """Drop the remainder of division by `divisor`, so that the returned value is divisible by `divisor`."""
     if divisor < 1:
         raise ValueError(f"Invalid divisor {divisor}. Divisor must be positive.")
     if value == 0:
-        return 0
+        return 0, 0
     elif value > 0:
         # 15 % 10 == 5, so the remainder must be subtracted to approach zero.
         remainder = value % divisor
