@@ -162,7 +162,7 @@ class UnlockedChapterManager(ClientComponent):
             # completed.
             remaining_chapter_item_requirements.setdefault(goal_chapter, set()).add(_SUB_GOAL_SPECIAL_ID)
             self.goal_chapter = goal_chapter
-            self.goal_chapter_area_id = AREA_ID_TO_CHAPTER_AREA[goal_chapter].area_id
+            self.goal_chapter_area_id = SHORT_NAME_TO_CHAPTER_AREA[goal_chapter].area_id
 
         self.character_to_dependent_game_chapters = item_id_to_chapter_area_short_name
         self.remaining_chapter_item_requirements = remaining_chapter_item_requirements
