@@ -393,10 +393,12 @@ class DeathLinkManager(ClientComponent):
                 deaths_until_death_link = self.normal_death_link_amnesty - self.normal_death_count
 
         if send_death:
-            # Kill any other player characters too, just like when receiving a death.
             ctx.text_display.priority_message("DeathLink: Death Sent")
             await ctx.send_death()
-            await self.kill_player_characters(ctx)
+            # Ideally, we would kill any other player characters too, just like when receiving a death, but in levels
+            # where death instantly respawns the player at an earlier checkpoint, this would result in the player, that
+            # died, dying a second time after respawning at the checkpoint.
+            # await self.kill_player_characters(ctx)
         else:
             if deaths_until_death_link <= 1:
                 ctx.text_display.priority_message("DeathLink: No amnesty remaining")
