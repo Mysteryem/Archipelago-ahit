@@ -7,8 +7,9 @@ from Utils import async_start
 
 from . import ClientComponent
 from .studs import give_studs
+from ..common import StaticUint
 from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing, player_character_entity_iter
-from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
+from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent, OnAreaChangeEvent
 from ..type_aliases import TCSContext
 from ...levels import (
     AREA_ID_TO_CHAPTER_AREA,
@@ -21,6 +22,12 @@ from ...levels import (
 
 logger = logging.getLogger("Client")
 debug_logger = logging.getLogger("TCS Debug")
+
+
+# Player death count in the current area. Resets to zero upon area change.
+PLAYER_DEATH_COUNT_IN_CURRENT_AREA = StaticUint(0x951224)
+# Player death count in the current level. Resets to zero upon level change.
+# PLAYER_DEATH_COUNTER_IN_CURRENT_LEVEL = StaticUint(0x87b2d0)
 
 
 # There are a maximum of 8 playable characters in a level, pointers to their 'character entity' objects are in an
@@ -209,6 +216,8 @@ class DeathLinkManager(ClientComponent):
     death_link_stud_loss: int = 0
     death_link_stud_loss_scaling: bool = False
 
+    _expected_area_death_count: int = 0
+
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         slot_data = event.slot_data
@@ -229,6 +238,9 @@ class DeathLinkManager(ClientComponent):
         else:
             self.death_link_stud_loss = slot_data["death_link_studs_loss"]
             self.death_link_stud_loss_scaling = bool(slot_data["death_link_studs_loss_scaling"])
+
+        # Set the expected death count to its current value.
+        self._expected_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
 
     @staticmethod
     def _get_kill_state_to_set(ctx: TCSContext) -> CharacterState:
@@ -312,6 +324,9 @@ class DeathLinkManager(ClientComponent):
                 return
             else:
                 self.waiting_for_respawn = False
+                # Update the expected death count to match however many player controlled characters were killed by the
+                # received death.
+                self._expected_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
         # Receive death.
         if self.pending_received_death:
             # Kill player characters
@@ -331,11 +346,22 @@ class DeathLinkManager(ClientComponent):
         if now < self.last_death_amnesty + 2.25:
             # Do not send another death if sending a death through Death Link was recently prevented due to amnesty.
             return
-        # fixme: 3-1 never sends deaths because 3-1 intercepts dying to instead instantly warpt he player back to their
-        #  last checkpoint. Maybe 3-1 could check the current stud count of the player(s) and send a death when the stud
-        #  count reduces, implying that the player died.
-        # Send death.
-        any_players_dead, _dead_player_number = self._find_dead_player_controlled_character(ctx)
+
+        # Check if players have died by comparing the expected death count to the actual death count.
+        player_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
+        expected_death_count = self._expected_area_death_count
+        if player_death_count == expected_death_count:
+            # Nothing to do.
+            return
+        elif player_death_count < expected_death_count:
+            # Probably should not happen unless the area has *just* changed, before the OnAreaChangeEvent has been
+            # fired.
+            self._expected_area_death_count = player_death_count
+            return
+
+        # Update for new deaths.
+        self._expected_area_death_count = player_death_count
+
         # todo: Customise the death cause.
         #  Ideas:
         #  f"{alias name} crashed their {vehicle name}"
@@ -346,9 +372,6 @@ class DeathLinkManager(ClientComponent):
         #  f"{alias name}'s P{player number} lost their studs"
         #  Special messages only when both P1 and P2 are player controlled and are the same character?
         #  f"Caused by {alias name}'s {character name} (P{player number})"
-
-        if not any_players_dead:
-            return
 
         send_death = True
         deaths_until_death_link = 1
@@ -387,3 +410,10 @@ class DeathLinkManager(ClientComponent):
             ctx.text_display.priority_message(self.last_received_death_message)
         self.last_received_death_message = message
         self.pending_received_death = True
+
+    @subscribe_event
+    def on_area_change(self, _event: OnAreaChangeEvent) -> None:
+        # The area has changed, so the expected death count should reset to zero, matching the game's counter being
+        # reset to zero.
+        self._expected_area_death_count = 0
+        debug_logger.info("Reset expected death count to 0 upon area change.")
