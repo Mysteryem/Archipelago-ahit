@@ -30,6 +30,13 @@ PLAYER_DEATH_COUNT_IN_CURRENT_AREA = StaticUint(0x951224)
 # PLAYER_DEATH_COUNTER_IN_CURRENT_LEVEL = StaticUint(0x87b2d0)
 
 
+# Flags for the currently active 'cheats' (Extras).
+CHEAT_FLAGS = StaticUint(0x950d8c)
+# For some reason, if the in-area death count is 0, but flag cheat 0x2000 is active, then the in-area death count is
+# increased to 1.
+CHEAT_FLAGS_STARTING_DEATH_COUNT = 0x2000
+
+
 # There are a maximum of 8 playable characters in a level, pointers to their 'character entity' objects are in an
 # entity*[8] array at this address.
 PLAYER_CHARACTER_POINTERS_ARRAY_ADDRESS = 0x93d7f0
@@ -216,7 +223,7 @@ class DeathLinkManager(ClientComponent):
     death_link_stud_loss: int = 0
     death_link_stud_loss_scaling: bool = False
 
-    _expected_area_death_count: int = 0
+    _expected_area_death_count: int = 999_999_999
 
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
@@ -354,9 +361,14 @@ class DeathLinkManager(ClientComponent):
             # Nothing to do.
             return
         elif player_death_count < expected_death_count:
-            # Probably should not happen unless the area has *just* changed, before the OnAreaChangeEvent has been
-            # fired.
+            # The area has changed, resetting the game's death counter. Note that there is a delay between when the area
+            # changes and when the game's death counter gets updated.
             self._expected_area_death_count = player_death_count
+            return
+        elif player_death_count == 1 and (CHEAT_FLAGS_STARTING_DEATH_COUNT & CHEAT_FLAGS.get(ctx)):
+            # The game's level update function sets the in-area death count to at least 1 when an Extra with this flag
+            # is active. I have no idea why.
+            self._expected_area_death_count = 1
             return
 
         # Update for new deaths.
@@ -415,7 +427,8 @@ class DeathLinkManager(ClientComponent):
 
     @subscribe_event
     def on_area_change(self, _event: OnAreaChangeEvent) -> None:
-        # The area has changed, so the expected death count should reset to zero, matching the game's counter being
-        # reset to zero.
-        self._expected_area_death_count = 0
+        # The area has changed, so the expected death count should reset. The area changes before the game resets the
+        # death count, so the DeathLinkManager relies on the OnGameWatcherTickEvent to reduce _expected_area_death_count
+        # from this very large dummy value to the proper value.
+        self._expected_area_death_count = 999_999_999
         debug_logger.info("Reset expected death count to 0 upon area change.")
