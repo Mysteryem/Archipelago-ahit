@@ -1135,10 +1135,8 @@ class LegoStarWarsTCSDeathLink(DeathLink):
     """When you die, everyone who enabled death link dies. Of course, the reverse is true too.
 
     Known issues:
-
-    - Studs are not dropped when receiving a death.
-    - Dying in 3-1 does not send deaths.
-    - Death Link behaviour in other Vehicle levels could also be weird, please report any issues.
+    - Studs are not dropped when receiving a death, however, you can use the Death Link Studs Loss option to cause a
+    loss of studs when receiving a death.
     """
     display_name = "Death Link"
     rich_text_doc = True
