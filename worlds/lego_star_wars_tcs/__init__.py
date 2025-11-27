@@ -553,9 +553,6 @@ class LegoStarWarsTCSWorld(World):
         required_characters_count = len(pool_required_characters)
         required_extras_count = len(pool_required_extras)
 
-        goal_excluded_locations_count = 0
-        goal_excluded_locations_count += self.goal_excluded_character_unlock_location_count
-
         non_excluded_character_unlock_location_count = (
                 self.character_unlock_location_count - self.goal_excluded_character_unlock_location_count
         )
@@ -571,6 +568,10 @@ class LegoStarWarsTCSWorld(World):
                                                     non_excluded_character_unlock_location_count)
             free_character_location_count = (non_excluded_character_unlock_location_count
                                              - reserved_character_location_count)
+        # Any goal excluded character unlock locations do not contribute Characters to the item pool (unless those
+        # characters happen to be Filler classification). Enough Filler items for Excluded locations is checked and
+        # satisfied later, so these locations are effectively free locations.
+        free_character_location_count += self.goal_excluded_character_unlock_location_count
 
         # Try to create as many Extras as this.
         reserved_power_brick_location_count: int
@@ -582,8 +583,8 @@ class LegoStarWarsTCSWorld(World):
             reserved_power_brick_location_count = min(required_extras_count, len(chapters_with_non_excluded_locations))
             free_extra_location_count = len(chapters_with_non_excluded_locations) - reserved_power_brick_location_count
         if goal_chapter_locations_excluded:
-            # The Extra location of the Goal Chapter is excluded.
-            goal_excluded_locations_count += 1
+            # The Extra location of the Goal Chapter is excluded, and does not contribute an Extra to the item pool.
+            free_extra_location_count += 1
 
         # As many minikit bundles as this will always be created. This may be fewer than is required to goal, but
         # reducing the total bundle count can make a seed longer, so all minikit bundles should be considered to be
@@ -596,19 +597,21 @@ class LegoStarWarsTCSWorld(World):
             true_jedi_location_count = len(chapters_with_non_excluded_locations)
 
             if goal_chapter_locations_excluded:
-                # The True Jedi location of the Goal Chapter is excluded.
-                goal_excluded_locations_count += 1
+                # True Jedi locations are already free locations for any kind of item.
+                true_jedi_location_count += 1
         else:
             true_jedi_location_count = 0
 
         completion_location_count = len(chapters_with_non_excluded_locations) + len(self.enabled_bonuses)
         if goal_chapter_locations_excluded:
-            goal_excluded_locations_count += 1
+            # The location is excluded, but still counted as a free location.
+            completion_location_count += 1
 
         if self.options.enable_minikit_locations:
             free_minikit_location_count = len(chapters_with_non_excluded_locations) * 10 - required_minikit_location_count
             if goal_chapter_locations_excluded:
-                goal_excluded_locations_count += 10
+                # The locations are excluded, but still count as free locations.
+                free_minikit_location_count += 10
         else:
             if self.options.minikit_goal_amount != 0:
                 assert self.options.minikit_bundle_size == 10
@@ -652,7 +655,12 @@ class LegoStarWarsTCSWorld(World):
 
         free_location_count -= len(extra_required_items)
 
+        unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
+        num_to_fill = len(self.multiworld.get_unfilled_locations(self.player))
+
         if free_location_count < 0:
+            # There are not enough non-excluded locations for all required progression items.
+            # Attempt to reduce reserved items until there is enough space.
             needed = -free_location_count
             # Subtract from reserved, but not required, counts.
             ok_to_replace_character_count = max(0, reserved_character_location_count - required_characters_count)
@@ -663,10 +671,14 @@ class LegoStarWarsTCSWorld(World):
                     # The Kyber Bricks goal adds 7 items that have no corresponding vanilla locations.
                     self.option_error("There are not enough locations to fit all required items. Enable additional"
                                       " locations, increase the Minikit Bundle Size, or disable the Kyber Bricks goal"
-                                      " to free up more locations.")
+                                      " to free up more locations. There were %i more required progression items than"
+                                      " non-excluded locations.",
+                                      needed - total_replaceable)
                 else:
                     self.option_error("There are not enough locations to fit all required items. Enable additional"
-                                      " locations or increase the Minikit Bundle Size to free up more locations.")
+                                      " locations or increase the Minikit Bundle Size to free up more locations. There"
+                                      " were %i more required progression items than locations.",
+                                      needed - total_replaceable)
             character_percentage = ok_to_replace_character_count / total_replaceable
             character_subtract = min(needed, round(character_percentage * needed))
             extra_subtract = needed - character_subtract
@@ -676,16 +688,12 @@ class LegoStarWarsTCSWorld(World):
 
         assert free_location_count >= 0, "free_location_count must always be >= 0"
 
-        unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
-        num_to_fill = len(self.multiworld.get_unfilled_locations(self.player))
-
         expected_num_to_fill = (
                 reserved_character_location_count
                 + reserved_power_brick_location_count
                 + required_minikit_location_count
                 + free_location_count
                 + len(extra_required_items)
-                + goal_excluded_locations_count
         )
 
         assert num_to_fill == expected_num_to_fill, \
@@ -695,14 +703,10 @@ class LegoStarWarsTCSWorld(World):
         required_excludable_count = (
                 sum(loc.progress_type == LocationProgressType.EXCLUDED for loc in unfilled_locations)
         )
-        assert required_excludable_count >= goal_excluded_locations_count
 
-        # `required_excludable_count` contains the goal excluded locations, so add the goal excluded locations into the
-        # free locations, and let all excluded location requirements be handled together.
-        # `goal_excluded_locations_count` is not added into `free_locations_count` earlier because free locations may be
-        # needed for progression items at that point, and progression items cannot be placed on excluded locations.
-        free_location_count += goal_excluded_locations_count
-
+        # fixme: Some reserved characters can be Filler classification, which would be fine being placed on excluded
+        #  locations, so this check is currently overly strict because it assumes that reserved characters will be
+        #  Useful or Progression.
         if free_location_count < required_excludable_count:
             # This shouldn't really happen unless basically the entire world is excluded and/or barely any locations
             # are enabled.
