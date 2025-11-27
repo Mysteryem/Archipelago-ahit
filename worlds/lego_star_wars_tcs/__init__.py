@@ -711,11 +711,16 @@ class LegoStarWarsTCSWorld(World):
                 # If this is too common of an issue, it would be possible to add some of the required characters/extras
                 # to start inventory instead of erroring here.
                 non_excluded_count = num_to_fill - required_excludable_count
-                required_count = required_extras_count + required_characters_count + required_minikit_location_count
+                required_count = (
+                        required_extras_count
+                        + required_characters_count
+                        + required_minikit_location_count
+                        + len(extra_required_items)
+                )
                 self.option_error("There are too few non-excluded locations to fit all required progression items."
-                                  " There are %i non-excluded locations, but there are %i required items.",
-                                  non_excluded_count,
-                                  required_count)
+                                  " There are %i locations, %i of which are not excluded, but there are %i required"
+                                  " items that cannot be placed on excluded locations.",
+                                  num_to_fill, non_excluded_count, required_count)
             character_percentage = ok_to_replace_character_count / total_replaceable
             character_subtract = min(needed, round(character_percentage * needed))
             extra_subtract = needed - character_subtract
