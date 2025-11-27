@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 from ..items import MINIKITS_BY_COUNT
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
-from ..options import OnlyUniqueBossesCountTowardsGoal, GoalChapterLocationsMode
+from ..options import LegoStarWarsTCSOptions, OnlyUniqueBossesCountTowardsGoal, GoalChapterLocationsMode
 
 
 if TYPE_CHECKING:
@@ -10,27 +10,33 @@ if TYPE_CHECKING:
 else:
     LegoStarWarsTCSWorld = object
 
+DIRECT_SLOT_DATA_OPTIONS = (
+    "minikit_goal_amount",
+    "minikit_bundle_size",
+    "episode_unlock_requirement",
+    "all_episodes_character_purchase_requirements",
+    "most_expensive_purchase_with_no_multiplier",
+    "enable_bonus_locations",
+    "enable_story_character_unlock_locations",
+    "enable_all_episodes_purchases",
+    "defeat_bosses_goal_amount",
+    "only_unique_bosses_count",
+    "enable_minikit_locations",
+    "enable_true_jedi_locations",
+    "goal_requires_kyber_bricks",
+    "goal_chapter_locations_mode",
+    "easier_true_jedi",
+)
+assert all(option_name in LegoStarWarsTCSOptions.type_hints for option_name in DIRECT_SLOT_DATA_OPTIONS)
+
 
 def _direct_slot_data_options(self: LegoStarWarsTCSWorld, passthrough: dict[str, Any]):
     """Options directly set from slot data."""
-    self.options.minikit_goal_amount.value = passthrough["minikit_goal_amount"]
-    self.options.minikit_bundle_size.value = passthrough["minikit_bundle_size"]
-    self.options.episode_unlock_requirement.value = passthrough["episode_unlock_requirement"]
-    self.options.all_episodes_character_purchase_requirements.value = (
-        passthrough["all_episodes_character_purchase_requirements"])
-    self.options.most_expensive_purchase_with_no_multiplier.value = (
-        passthrough["most_expensive_purchase_with_no_multiplier"])
-    self.options.enable_bonus_locations.value = passthrough["enable_bonus_locations"]
-    self.options.enable_story_character_unlock_locations.value = (
-        passthrough["enable_story_character_unlock_locations"])
-    self.options.enable_all_episodes_purchases.value = passthrough["enable_all_episodes_purchases"]
-    self.options.defeat_bosses_goal_amount.value = passthrough["defeat_bosses_goal_amount"]
-    self.options.only_unique_bosses_count.value = passthrough["only_unique_bosses_count"]
-    self.options.enable_minikit_locations.value = passthrough["enable_minikit_locations"]
-    self.options.enable_true_jedi_locations.value = passthrough["enable_true_jedi_locations"]
-    self.options.goal_requires_kyber_bricks.value = passthrough["goal_requires_kyber_bricks"]
-    self.options.goal_chapter_locations_mode.value = passthrough["goal_chapter_locations_mode"]
-    self.options.easier_true_jedi.value = passthrough["easier_true_jedi"]
+    options = self.options
+    for option_name in DIRECT_SLOT_DATA_OPTIONS:
+        # For example:
+        # `options.minikit_goal_amount.value = passthrough["minikit_goal_amount"]`
+        getattr(options, option_name).value = passthrough[option_name]
 
 
 def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: dict[str, Any]):
