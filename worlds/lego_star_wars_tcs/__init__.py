@@ -704,7 +704,7 @@ class LegoStarWarsTCSWorld(World):
             # Find how many character/extra locations can be used for filler placement without issue.
             ok_to_replace_character_count = max(0, reserved_character_location_count - required_characters_count)
             ok_to_replace_extras_count = max(0, reserved_power_brick_location_count - required_extras_count)
-            total_replaceable = ok_to_replace_extras_count + ok_to_replace_extras_count
+            total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
             if needed > total_replaceable:
                 # There are too many non-excludable items for the number of excluded locations.
                 # Give up.
