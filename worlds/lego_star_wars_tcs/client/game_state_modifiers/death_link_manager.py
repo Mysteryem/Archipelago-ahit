@@ -229,22 +229,22 @@ class DeathLinkManager(ClientComponent):
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         slot_data = event.slot_data
         ctx = event.context
-        # If Death Link does not exist because the multiworld was generated with an apworld that did not have Death Link
-        # implemented yet, then Death Link will be disabled.
-        death_link_enabled = slot_data.get("death_link", False)
-        async_start(ctx.update_death_link(death_link_enabled))
-        self.death_link_enabled = death_link_enabled
 
-        self.normal_death_link_amnesty = slot_data.get("death_link_amnesty", 1)
-        self.vehicle_death_link_amnesty = slot_data.get("vehicle_death_link_amnesty", 1)
-
-        # todo: Move the other, new, death link options into the conditional branch.
+        # Death Link did not exist as an option in older apworld versions.
         if event.generator_version < (1, 2, 0):
+            self.death_link_enabled = False
+            self.normal_death_link_amnesty = 1
+            self.vehicle_death_link_amnesty = 1
             self.death_link_stud_loss = 0
             self.death_link_stud_loss_scaling = False
         else:
+            self.death_link_enabled = bool(slot_data["death_link"])
+            self.normal_death_link_amnesty = slot_data["death_link_amnesty"]
+            self.vehicle_death_link_amnesty = slot_data["vehicle_death_link_amnesty"]
             self.death_link_stud_loss = slot_data["death_link_studs_loss"]
             self.death_link_stud_loss_scaling = bool(slot_data["death_link_studs_loss_scaling"])
+
+        async_start(ctx.update_death_link(self.death_link_enabled))
 
         # Set the expected death count to its current value.
         self._expected_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
