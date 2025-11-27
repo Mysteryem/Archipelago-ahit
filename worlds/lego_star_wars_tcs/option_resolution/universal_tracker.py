@@ -26,10 +26,11 @@ def _direct_slot_data_options(self: LegoStarWarsTCSWorld, passthrough: dict[str,
     self.options.enable_all_episodes_purchases.value = passthrough["enable_all_episodes_purchases"]
     self.options.defeat_bosses_goal_amount.value = passthrough["defeat_bosses_goal_amount"]
     self.options.only_unique_bosses_count.value = passthrough["only_unique_bosses_count"]
-    self.options.defeat_bosses_goal_amount.value = passthrough["defeat_bosses_goal_amount"]
     self.options.enable_minikit_locations.value = passthrough["enable_minikit_locations"]
     self.options.enable_true_jedi_locations.value = passthrough["enable_true_jedi_locations"]
+    self.options.goal_requires_kyber_bricks.value = passthrough["goal_requires_kyber_bricks"]
     self.options.goal_chapter_locations_mode.value = passthrough["goal_chapter_locations_mode"]
+    self.options.easier_true_jedi.value = passthrough["easier_true_jedi"]
 
 
 def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: dict[str, Any]):
