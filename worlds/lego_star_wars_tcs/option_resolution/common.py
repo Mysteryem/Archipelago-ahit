@@ -31,8 +31,8 @@ def _resolve_common_options(world: LegoStarWarsTCSWorld):
     world.goal_minikit_bundle_count = (world.goal_minikit_count // bundle_size
                                        + (world.goal_minikit_count % bundle_size != 0))
 
-    world.prog_useful_level_access_threshold_count = int(
-        world.PROG_USEFUL_LEVEL_ACCESS_THRESHOLD_PERCENT * world.enabled_chapter_count)
+    world.prog_useful_level_access_threshold_count = int(world.PROG_USEFUL_LEVEL_ACCESS_THRESHOLD_PERCENT
+                                                         * len(world.enabled_chapters))
 
     # enabled_chapters should always contain enabled_non_goal_chapters.
     assert world.enabled_non_goal_chapters <= world.enabled_chapters
