@@ -8,16 +8,6 @@ from ...levels import SHORT_NAME_TO_CHAPTER_AREA, AREA_ID_TO_CHAPTER_AREA, Chapt
 from ...locations import LEVEL_COMMON_LOCATIONS, LOCATION_NAME_TO_ID
 
 
-ALL_GAME_AREA_SHORTNAMES: tuple[str, ...] = tuple(LEVEL_COMMON_LOCATIONS.keys())
-# Suppress PyCharm typing bug.
-# PyCharm gets the typing correct when doing `tuple(list(enumerate(data["Minikits"], start=1)))`, which evaluate to the
-# same type.
-# noinspection PyTypeChecker
-ALL_MINIKIT_CHECKS_BY_SHORTNAME: dict[str, list[tuple[int, str]]] = {
-    name: tuple(enumerate(data["Minikits"], start=1)) for name, data in LEVEL_COMMON_LOCATIONS.items()
-}
-
-
 CURRENT_AREA_MINIKIT_COUNT_ADDRESS = 0x951238
 # There is a second address, but I don't know what the difference is. This address remains non-zero for longer when
 # exiting a level.
@@ -47,16 +37,8 @@ class TrueJediAndMinikitChecker(ClientComponent):
     Check if the player has completed True Jedi for each level and check how many Minikit canisters the player has
     collected in each level.
 
-    It is possible to check the number of Minikit canisters the player has collected in the current level they are in,
-    so that Minikit checks send in realtime, but the intention is to make each Minikit a separate check with separate
-    logic, which will require a rewrite anyway, so only updating collected Minikits by reading the in-memory save file
-    data is good enough before the rewrite.
-
-    Realtime checks are better for if there are receivable items, in the future, that affect the player while in a
-    level. Realtime checks are also better for the case of another player in the multiworld waiting for a Minikit check
-    to resume playing because the TCS player currently has to choose between either exiting the level early to send the
-    check, but then having to replay the level for additional checks, or taking longer to send the check by only sending
-    the check once the level has been completed.
+    Minikits are checked from both the player's save-file and from the current Area data, allowing for minikit checks to
+    be sent as soon as minikits are collected, and to allow progressing while connection to the server has been lost.
     """
     remaining_true_jedi_check_shortnames: set[str]
     remaining_true_jedi_gold_brick_shortnames: set[str]
@@ -74,18 +56,49 @@ class TrueJediAndMinikitChecker(ClientComponent):
 
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
-        slot_data = event.slot_data
-        enabled_shortnames = set(slot_data["enabled_chapters"])
-        self.remaining_true_jedi_check_shortnames = enabled_shortnames.copy()
-        self.remaining_true_jedi_gold_brick_shortnames = enabled_shortnames.copy()
-        self.remaining_minikit_checks_by_shortname = {shortname: ALL_MINIKIT_CHECKS_BY_SHORTNAME[shortname]
-                                                      for shortname in enabled_shortnames}
-        self.remaining_minikit_gold_bricks_by_area_id = {
-            SHORT_NAME_TO_CHAPTER_AREA[shortname].area_id for shortname in enabled_shortnames
-        }
-        self.remaining_power_bricks_by_area_id = {
-            SHORT_NAME_TO_CHAPTER_AREA[shortname].area_id for shortname in enabled_shortnames
-        }
+        # Determine the enabled locations by comparing against the locations the server says exist.
+        # This is more robust than relying on slot data.
+        ctx = event.context
+        enabled_true_jedi = set()
+        remaining_true_jedi = set()
+        remaining_minikits = {}
+        enabled_minikit_gold_bricks = set()
+        enabled_power_bricks_by_area_id = set()
+
+        for shortname, common_locations in LEVEL_COMMON_LOCATIONS.items():
+            chapter_area = SHORT_NAME_TO_CHAPTER_AREA[shortname]
+
+            true_jedi_id = LOCATION_NAME_TO_ID[common_locations["True Jedi"]]
+            if ctx.is_location_sendable(true_jedi_id):
+                enabled_true_jedi.add(shortname)
+                if ctx.is_location_unchecked(true_jedi_id):
+                    remaining_true_jedi.add(shortname)
+
+            remaining_minikits_in_chapter: list[tuple[int, str]] = []
+            for i, minikit_loc_name in enumerate(common_locations["Minikits"], start=1):
+                loc_id = LOCATION_NAME_TO_ID[minikit_loc_name]
+                if not ctx.is_location_sendable(loc_id):
+                    # Minikits are not enabled for this chapter, or for all chapters.
+                    break
+                if ctx.is_location_checked(loc_id):
+                    continue
+                remaining_minikits_in_chapter.append((i, minikit_loc_name))
+            else:
+                # No break, so minikits are enabled.
+                remaining_minikits[shortname] = remaining_minikits_in_chapter
+                enabled_minikit_gold_bricks.add(chapter_area.area_id)
+
+            if ctx.is_location_sendable(LOCATION_NAME_TO_ID[chapter_area.power_brick_location_name]):
+                enabled_power_bricks_by_area_id.add(chapter_area.area_id)
+
+        self.remaining_true_jedi_check_shortnames = remaining_true_jedi
+        self.remaining_minikit_checks_by_shortname = remaining_minikits
+        self.remaining_power_bricks_by_area_id = enabled_power_bricks_by_area_id
+
+        # Gold Bricks always start with the Gold Bricks for all enabled chapters because the client is unlikely to have
+        # received already completed Gold Bricks from the AP server by the time the `OnReceiveSlotDataEvent` is fired.
+        self.remaining_true_jedi_gold_brick_shortnames = enabled_true_jedi
+        self.remaining_minikit_gold_bricks_by_area_id = enabled_minikit_gold_bricks
 
     async def check_true_jedi_and_minikits(self, ctx: TCSContext, new_location_checks: list[int]):
         current_area_id = ctx.read_uchar(CURRENT_AREA_ADDRESS)
@@ -114,18 +127,22 @@ class TrueJediAndMinikitChecker(ClientComponent):
         if not still_need_gold_brick and not still_need_check:
             return False
 
-        location_name = LEVEL_COMMON_LOCATIONS[shortname]["True Jedi"]
-        location_id = LOCATION_NAME_TO_ID[location_name]
-        if ctx.is_location_sendable(location_id):
-            current_area_true_jedi_complete = ctx.read_uint(
-                CURRENT_AREA_TRUE_JEDI_COMPLETE_STORY_OR_FREE_PLAY_ADDRESS)
-            if current_area_true_jedi_complete:
-                if still_need_check:
-                    self.remaining_true_jedi_check_shortnames.discard(shortname)
-                    new_location_checks.append(location_id)
-                # `shortname` will only be removed from `self.remaining_true_jedi_gold_brick_shortnames` once the server
-                # has updated `shortname` in datastorage and the client has acknowledged the datastorage update.
-                return still_need_gold_brick
+        current_area_true_jedi_complete = ctx.read_uint(
+            CURRENT_AREA_TRUE_JEDI_COMPLETE_STORY_OR_FREE_PLAY_ADDRESS)
+
+        if current_area_true_jedi_complete:
+            if still_need_check:
+                location_name = LEVEL_COMMON_LOCATIONS[shortname]["True Jedi"]
+                location_id = LOCATION_NAME_TO_ID[location_name]
+                assert ctx.is_location_sendable(location_id), ("init_from_slot_data should have filtered to only"
+                                                               " sendable locations in advance")
+
+                self.remaining_true_jedi_check_shortnames.discard(shortname)
+                new_location_checks.append(location_id)
+            # `shortname` will only be removed from `self.remaining_true_jedi_gold_brick_shortnames` once the server
+            # has updated `shortname` in datastorage and the client has acknowledged the datastorage update.
+            return still_need_gold_brick
+        else:
             # The True Jedi is still incomplete, so the client will need to continue polling until the True Jedi is
             # completed in-game. It is important to keep polling even when the location has been checked due to a
             # !collect because completing True Jedi gives a Gold Brick, which should only be given to the player when
@@ -133,14 +150,6 @@ class TrueJediAndMinikitChecker(ClientComponent):
             # When True Jedi has actually been completed, it will update datastorage, telling other TCS clients
             # connected to the same slot that they should award the True Jedi Gold Brick. This is important for
             # supporting same-slot co-op.
-            return False
-        else:
-            # The location is not sendable, so the client can forget about polling for this True Jedi location from now
-            # on.
-            # Note that this means that True Jedi completion does not sync in same-slot co-op when True Jedi locations
-            # are disabled.
-            self.remaining_true_jedi_check_shortnames.discard(shortname)
-            self.remaining_true_jedi_gold_brick_shortnames.discard(shortname)
             return False
 
     def _check_minikits_from_current_area(self,
@@ -224,11 +233,8 @@ class TrueJediAndMinikitChecker(ClientComponent):
         for shortname in (self.remaining_true_jedi_gold_brick_shortnames | self.remaining_true_jedi_check_shortnames):
             location_name = LEVEL_COMMON_LOCATIONS[shortname]["True Jedi"]
             location_id = LOCATION_NAME_TO_ID[location_name]
-            if not ctx.is_location_sendable(location_id):
-                # The location is not enabled for this slot, so the client can skip polling for it from now on.
-                self.remaining_true_jedi_check_shortnames.discard(shortname)
-                self.remaining_true_jedi_gold_brick_shortnames.discard(shortname)
-                continue
+            assert ctx.is_location_sendable(location_id), ("init_from_slot_data should have filtered to only sendable"
+                                                           " locations in advance")
 
             is_checked = ctx.is_location_checked(location_id)
             if is_checked:
