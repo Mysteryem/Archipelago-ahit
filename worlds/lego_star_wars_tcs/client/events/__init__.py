@@ -185,6 +185,8 @@ class OnAreaChangeEvent(Event):
 class OnReceiveSlotDataEvent(Event):
     """Called when slot data is received."""
     slot_data: dict[str, Any]
+    first_time_setup: bool
+    """Whether first-time setup should be performed."""
     generator_version: tuple[int, int, int] = field(init=False)
     """The version of the Lego Star Wars: TCS apworld that generated the multiworld"""
 

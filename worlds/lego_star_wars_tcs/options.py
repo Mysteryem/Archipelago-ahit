@@ -1135,6 +1135,8 @@ class LogicDifficulty(ChoiceFromStringExtension):
 class LegoStarWarsTCSDeathLink(DeathLink):
     """When you die, everyone who enabled death link dies. Of course, the reverse is true too.
 
+    Death Link can be toggled on/off in the client with ``/toggle_death_link``.
+
     Known issues:
     - Studs are not dropped when receiving a death, however, you can use the Death Link Studs Loss option to cause a
     loss of studs when receiving a death.

@@ -298,6 +298,20 @@ class LegoStarWarsTheCompleteSagaCommandProcessor(ClientCommandProcessor):
                     "(2)色は匂へど 散りぬるを 我が世誰ぞ 常ならむ 有為の奥山 今日越えて 浅き夢見じ 酔ひもせず（ん）",  # Japanese 2
                 ]))
 
+    def _cmd_toggle_death_link(self):
+        """Toggle Death Link on/off. Whether Death Link is enabled is stored in your save data, so the client will
+        remember if Death Link was toggled the next time you connect."""
+        ctx = self.ctx
+        if isinstance(ctx, LegoStarWarsTheCompleteSagaContext):
+            if ctx.last_connected_slot is None or not ctx.is_in_game():
+                logger.info("Load into a game and connect first.")
+                return
+            ctx.death_link_manager.toggle_death_link(ctx)
+            if ctx.death_link_manager.death_link_enabled:
+                logger.info("Death Link enabled.")
+            else:
+                logger.info("Death Link disabled.")
+
 
 class LegoStarWarsTheCompleteSagaContext(CommonContext):
     command_processor = LegoStarWarsTheCompleteSagaCommandProcessor
@@ -507,12 +521,12 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 return True, None
         return True, server_seed_name_hash
 
-    def _read_slot_data(self, slot_data: dict[str, typing.Any]):
+    def _read_slot_data(self, slot_data: dict[str, typing.Any], first_time_setup: bool):
         # The connection to the server is assumed to be OK by this point, so slot_data can now be used to adjust client
         # behaviour.
         received_item_messages = slot_data["received_item_messages"]
 
-        on_receive_slot_data_event = OnReceiveSlotDataEvent(self, slot_data)
+        on_receive_slot_data_event = OnReceiveSlotDataEvent(self, slot_data, first_time_setup)
         generator_apworld_version = on_receive_slot_data_event.generator_version
 
         if generator_apworld_version < (1, 2, 0):
@@ -589,9 +603,12 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             if self.read_slot_name() is None:
                 self.write_slot_name(new_slot)
                 self.ap_first_time_setup()
+                first_time_setup = True
+            else:
+                first_time_setup = False
             self.disabled_locations = set(LOCATION_NAME_TO_ID.values()) - self.server_locations
 
-            self._read_slot_data(slot_data)
+            self._read_slot_data(slot_data, first_time_setup)
 
             # Setting this to non-None indicates to the game watcher loop to start fully running.
             self.last_connected_slot = self.auth

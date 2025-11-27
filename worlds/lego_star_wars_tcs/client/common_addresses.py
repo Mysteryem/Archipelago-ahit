@@ -196,8 +196,8 @@ class CustomSaveFlags1(IntFlag):
     The client uses these two bytes for storing up to 16 flags.
     """
     MINIKIT_GOAL_COMPLETE = 0x1
-    FIELD_2 = 0x2  # DEFEAT_BOSSES_GOAL_COMPLETE
-    FIELD_3 = 0x4  # DEATH_LINK_ENABLED
+    DEATH_LINK_ENABLED = 0x2
+    FIELD_3 = 0x4  # Could be DEFEAT_BOSSES_GOAL_COMPLETE to reduce memory reading once the goal is complete.
     FIELD_4 = 0x8
     FIELD_5 = 0x10
     FIELD_6 = 0x20

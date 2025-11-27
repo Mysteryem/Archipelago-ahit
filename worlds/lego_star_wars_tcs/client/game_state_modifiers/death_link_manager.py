@@ -8,7 +8,7 @@ from Utils import async_start
 from . import ClientComponent
 from .studs import give_studs
 from ..common import StaticUint
-from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing, player_character_entity_iter
+from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing, player_character_entity_iter, CustomSaveFlags1
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent, OnAreaChangeEvent
 from ..type_aliases import TCSContext
 from ...levels import (
@@ -244,10 +244,33 @@ class DeathLinkManager(ClientComponent):
             self.death_link_stud_loss = slot_data["death_link_studs_loss"]
             self.death_link_stud_loss_scaling = bool(slot_data["death_link_studs_loss_scaling"])
 
-        async_start(ctx.update_death_link(self.death_link_enabled))
+        if event.first_time_setup:
+            # Write whether Death Link is enabled into slot data.
+            self._update_death_link(ctx, self.death_link_enabled)
+        else:
+            # Read whether Death Link is enabled from save data, in-case the user toggled it on/off in the client.
+            self.death_link_enabled = CustomSaveFlags1.DEATH_LINK_ENABLED.is_set(ctx)
+            # Update the client tags for whether Death Link is enabled/disabled.
+            self._update_client_tags(ctx)
 
         # Set the expected death count to its current value.
         self._expected_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
+
+    def _update_client_tags(self, ctx: TCSContext):
+        """Update the client's tags to add/remove the DeathLink tag."""
+        async_start(ctx.update_death_link(self.death_link_enabled))
+
+    def _update_death_link(self, ctx: TCSContext, enabled: bool):
+        self.death_link_enabled = enabled
+        if enabled:
+            CustomSaveFlags1.DEATH_LINK_ENABLED.set(ctx)
+        else:
+            CustomSaveFlags1.DEATH_LINK_ENABLED.unset(ctx)
+        self._update_client_tags(ctx)
+
+    def toggle_death_link(self, ctx: TCSContext):
+        """Toggle Death Link on/off."""
+        self._update_death_link(ctx, not self.death_link_enabled)
 
     @staticmethod
     def _get_kill_state_to_set(ctx: TCSContext) -> CharacterState:
