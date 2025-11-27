@@ -251,23 +251,27 @@ class _NormalOptionsResolver:
             self.world.option_error("Defeating bosses is required for the goal, but no boss chapters were allowed to"
                                     " be enabled.")
 
-    def _adjust_enabled_chapters_count(self, allowed_chapters: set[str]) -> int:
+    def _adjust_enabled_non_goal_chapters_count(self, allowed_chapters: set[str]) -> int:
         """
-        Adjust the count of enabled chapters and warn if it was higher than the number of allowed chapters.
+        Adjust the count of non-goal enabled chapters and warn if it was higher than the number of allowed chapters.
 
         :return: The count of enabled chapters, after adjustments.
         """
-        enabled_chapters_count = self._enabled_chapters_count
-        if enabled_chapters_count > len(allowed_chapters):
+        enabled_non_goal_chapters_count = self._enabled_chapters_count
+        if enabled_non_goal_chapters_count > len(allowed_chapters):
             self._deferred_adjust(self.options.enabled_chapters_count, len(allowed_chapters),
                                   "Enabled chapter count (%i) was set higher than the number of allowed"
                                   " chapters (%i), it has been reduced to the number of allowed chapters (%i).",
-                                  enabled_chapters_count,
+                                  enabled_non_goal_chapters_count,
                                   len(allowed_chapters),
                                   len(allowed_chapters))
-            enabled_chapters_count = len(allowed_chapters)
+            enabled_non_goal_chapters_count = len(allowed_chapters)
+        elif enabled_non_goal_chapters_count == 36 and self._goal_chapter:
+            # The Goal Chapter is enabled separately. There isn't really a need to warn for this.
+            self._deferred_adjust(self.options.enabled_chapters_count, 35)
         del self._enabled_chapters_count
-        return enabled_chapters_count
+
+        return enabled_non_goal_chapters_count
 
     def _adjust_minikit_bundle_size(self) -> int:
         """
@@ -700,14 +704,20 @@ class _NormalOptionsResolver:
             enabled_bosses = set()
 
         # Finally set the enabled chapters.
-        enabled_chapters = set(tentative_enabled_chapters)
-        enabled_episodes = {SHORT_NAME_TO_CHAPTER_AREA[s].episode for s in enabled_chapters}
+        enabled_chapters_with_locations = set(tentative_enabled_chapters)
 
-        # It is possible that the Goal Chapter could be the only chapter in its episode.
-        if self._goal_chapter:
+        if self._goal_chapter and self._goal_chapter_locations_mode != GoalChapterLocationsMode.option_removed:
+            # The goal chapter contains locations in addition to being the goal.
+            enabled_chapters_with_locations.add(self._goal_chapter)
+
+        enabled_episodes = {SHORT_NAME_TO_CHAPTER_AREA[s].episode for s in enabled_chapters_with_locations}
+
+        if self._goal_chapter and self._goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
+            # It is possible that the Goal Chapter could be the only chapter in its episode, so there are no locations
+            # in an episode, just the goal. The episode should still be considered enabled in this case.
             enabled_episodes.add(SHORT_NAME_TO_CHAPTER_AREA[self._goal_chapter].episode)
 
-        return enabled_bosses, enabled_chapters, enabled_episodes
+        return enabled_bosses, enabled_chapters_with_locations, enabled_episodes
 
     def _adjust_all_episodes_unlock_requirement(self, enabled_episodes: set[int]) -> int:
         if (self._all_episodes_character_purchase_requirements
@@ -737,12 +747,12 @@ class _NormalOptionsResolver:
                 return tokens
         return self._all_episodes_character_purchase_requirements
 
-    def _resolve_minikit_options(self, enabled_chapter_count: int, bundle_size: int) -> tuple[str, int, int]:
+    def _resolve_minikit_options(self, enabled_non_goal_chapter_count: int, bundle_size: int) -> tuple[str, int, int]:
         minikit_bundle_name = MINIKITS_BY_COUNT[bundle_size].name
         # todo?: Set self.available_minikits = 0 when self.options.minikit_goal_amount.value == 0 to remove minikits
         #  from the item pool?
         if self._minikit_goal_amount != 0 or self._enable_minikit_locations:
-            available_minikits = enabled_chapter_count * 10  # 10 Minikits per chapter.
+            available_minikits = enabled_non_goal_chapter_count * 10  # 10 Minikits per chapter.
             minikit_bundle_count = available_minikits // bundle_size + (available_minikits % bundle_size != 0)
         else:
             available_minikits = 0
@@ -833,7 +843,7 @@ class _NormalOptionsResolver:
         self._assert_allowed_chapters(allowed_chapters)
         self._validate_allowed_boss_chapters(allowed_boss_chapters)
 
-        enabled_chapter_count = self._adjust_enabled_chapters_count(allowed_chapters)
+        enabled_non_goal_chapter_count = self._adjust_enabled_non_goal_chapters_count(allowed_chapters)
 
         minikit_bundle_size = self._adjust_minikit_bundle_size()
 
@@ -842,29 +852,38 @@ class _NormalOptionsResolver:
             maximum_boss_chapters,
             short_name_to_boss_character,
         ) = self._resolve_unique_allowed_boss_characters(
-            allowed_starting_chapters, allowed_boss_chapters, enabled_chapter_count)
+            allowed_starting_chapters, allowed_boss_chapters, enabled_non_goal_chapter_count)
 
         goal_boss_count, enabled_boss_count = self._adjust_boss_goal_count(
-            maximum_bosses_for_goal, maximum_boss_chapters, enabled_chapter_count)
+            maximum_bosses_for_goal, maximum_boss_chapters, enabled_non_goal_chapter_count)
         self._adjust_starting_chapters_for_boss_chapters(
-            allowed_starting_chapters, allowed_boss_chapters, enabled_chapter_count, enabled_boss_count)
+            allowed_starting_chapters, allowed_boss_chapters, enabled_non_goal_chapter_count, enabled_boss_count)
 
         starting_chapter, _starting_episode = self._pick_starting_chapter(allowed_starting_chapters)
-        enabled_bosses, enabled_chapters, enabled_episodes = self._pick_enabled_chapters(
+        enabled_bosses, enabled_chapters_with_locations, enabled_episodes = self._pick_enabled_chapters(
             allowed_chapters,
             allowed_boss_chapters,
             goal_boss_count,
             enabled_boss_count,
             short_name_to_boss_character,
             starting_chapter,
-            enabled_chapter_count,
+            enabled_non_goal_chapter_count,
         )
-        assert enabled_chapter_count == len(enabled_chapters)
+
+        enabled_chapters = enabled_chapters_with_locations
+        enabled_chapters_with_locations_count = enabled_non_goal_chapter_count
+        if self._goal_chapter:
+            if self._goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
+                enabled_chapters = enabled_chapters_with_locations | {self._goal_chapter}
+            else:
+                enabled_chapters_with_locations_count += 1
+
+        assert enabled_chapters_with_locations_count == len(enabled_chapters_with_locations)
 
         _all_episodes_unlock_requirement = self._adjust_all_episodes_unlock_requirement(enabled_episodes)
 
         minikit_bundle_name, available_minikits, minikit_bundle_count = self._resolve_minikit_options(
-            enabled_chapter_count, minikit_bundle_size)
+            enabled_non_goal_chapter_count, minikit_bundle_size)
         self._adjust_minikit_goal_amount(available_minikits)
 
         self._sanity_check_filler_weights()
@@ -873,7 +892,7 @@ class _NormalOptionsResolver:
         (
             enabled_bonuses,
             expected_gold_brick_event_count
-        ) = self._resolve_available_bonuses_and_expected_gold_brick_counts(enabled_chapter_count)
+        ) = self._resolve_available_bonuses_and_expected_gold_brick_counts(enabled_non_goal_chapter_count)
 
         world = self.world
         world.short_name_to_boss_character = short_name_to_boss_character
@@ -881,7 +900,8 @@ class _NormalOptionsResolver:
         world.enabled_bosses = enabled_bosses
         world.enabled_chapters = enabled_chapters
         world.enabled_episodes = enabled_episodes
-        world.enabled_chapter_count = enabled_chapter_count
+        world.enabled_chapters_with_locations = enabled_chapters_with_locations
+        world.enabled_non_goal_chapters = enabled_chapters - {self._goal_chapter}
         world.minikit_bundle_name = minikit_bundle_name
         world.available_minikits = available_minikits
         world.minikit_bundle_count = minikit_bundle_count

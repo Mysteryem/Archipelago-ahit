@@ -34,6 +34,12 @@ def _resolve_common_options(world: LegoStarWarsTCSWorld):
     world.prog_useful_level_access_threshold_count = int(
         world.PROG_USEFUL_LEVEL_ACCESS_THRESHOLD_PERCENT * world.enabled_chapter_count)
 
+    # enabled_chapters should always contain enabled_non_goal_chapters.
+    assert world.enabled_non_goal_chapters <= world.enabled_chapters
+    assert 0 <= len(world.enabled_chapters) - len(world.enabled_non_goal_chapters) <= 1
+    assert world.enabled_chapters_with_locations <= world.enabled_chapters
+    assert world.goal_chapter is None or world.goal_chapter in world.enabled_chapters
+
     if world.options.enable_story_character_unlock_locations:
         # There are often multiple Chapters that can send each Story character unlock location, so enable path
         # display in spoilers with paths enabled.
@@ -44,7 +50,11 @@ def _resolve_common_options(world: LegoStarWarsTCSWorld):
     # The option name uses "levels" as a user-facing term, but has the meaning of "areas" internally.
     complete_areas_goal_amount_percentage = world.options.complete_levels_goal_amount_percentage.value
     if complete_areas_goal_amount_percentage > 0:
-        chapter_areas_count = world.enabled_chapter_count
+        chapter_areas_count = len(world.enabled_chapters_with_locations)
+        if world.goal_chapter and world.options.goal_chapter_locations_mode != GoalChapterLocationsMode.option_removed:
+            # The goal chapter is locked behind the area completion count, so cannot contribute itself to the goal
+            # requirement.
+            chapter_areas_count -= 1
         # Only bonuses that award a Gold Brick on completion count towards the goal count.
         bonus_areas_count = sum(BONUS_NAME_TO_BONUS_AREA[name].gold_brick for name in world.enabled_bonuses)
         available_areas_count = chapter_areas_count + bonus_areas_count

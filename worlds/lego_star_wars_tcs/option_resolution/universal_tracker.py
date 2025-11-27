@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 from ..items import MINIKITS_BY_COUNT
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
-from ..options import OnlyUniqueBossesCountTowardsGoal
+from ..options import OnlyUniqueBossesCountTowardsGoal, GoalChapterLocationsMode
 
 
 if TYPE_CHECKING:
@@ -36,20 +36,12 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: di
     """Attributes normally derived from options during generate_early."""
     # Derived Chapter/Episode attributes.
     self.enabled_chapters = set(passthrough["enabled_chapters"])
-    self.enabled_chapter_count = len(self.enabled_chapters)
     self.enabled_episodes = set(passthrough["enabled_episodes"])
     # The enabled bonuses are set depending on the number of Gold Bricks available
     self.enabled_bonuses = set(passthrough["enabled_bonuses"])
     self.starting_chapter = SHORT_NAME_TO_CHAPTER_AREA[passthrough["starting_chapter"]]
     assert self.starting_episode == passthrough["starting_episode"], ("Starting episode from slot_data did not match "
                                                                       "the starting chapter from slot_data.")
-
-    # Derived Minikit attributes.
-    self.available_minikits = self.enabled_chapter_count * 10
-    bundle_size = self.options.minikit_bundle_size.value
-    self.minikit_bundle_name = MINIKITS_BY_COUNT[bundle_size].name
-    self.minikit_bundle_count = (self.available_minikits // bundle_size
-                                 + (self.available_minikits % bundle_size != 0))
 
     # Derived Goal attributes.
     self.enabled_bosses = set(passthrough["enabled_bosses"])
@@ -58,6 +50,23 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: di
         self.goal_chapter = goal_chapter
     else:
         self.goal_chapter = None
+
+    if self.goal_chapter:
+        assert self.goal_chapter in self.enabled_chapters
+        self.enabled_non_goal_chapters = self.enabled_chapters - {self.goal_chapter}
+        if self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
+            self.enabled_chapters_with_locations = self.enabled_chapters
+        else:
+            self.enabled_chapters_with_locations = self.enabled_non_goal_chapters
+    else:
+        self.enabled_non_goal_chapters = self.enabled_chapters
+
+    # Derived Minikit attributes.
+    self.available_minikits = len(self.enabled_non_goal_chapters) * 10
+    bundle_size = self.options.minikit_bundle_size.value
+    self.minikit_bundle_name = MINIKITS_BY_COUNT[bundle_size].name
+    self.minikit_bundle_count = (self.available_minikits // bundle_size
+                                 + (self.available_minikits % bundle_size != 0))
 
 
 def _override_options_with_derived_rolled_values(self: LegoStarWarsTCSWorld):
@@ -101,7 +110,11 @@ def _compute_expected_gold_brick_event_count(self: LegoStarWarsTCSWorld):
                 + bool(self.options.enable_minikit_locations)
                 + bool(self.options.enable_true_jedi_locations)
         )
-        gold_bricks_from_chapters = self.enabled_chapter_count * gold_bricks_per_chapter
+        if self.goal_chapter and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal:
+            chapters_with_gold_bricks = len(self.enabled_chapters)
+        else:
+            chapters_with_gold_bricks = len(self.enabled_non_goal_chapters)
+        gold_bricks_from_chapters = chapters_with_gold_bricks * gold_bricks_per_chapter
         areas_gen = (BONUS_NAME_TO_BONUS_AREA[area_name] for area_name in self.enabled_bonuses)
         gold_bricks_from_bonuses = sum(area.gold_brick for area in areas_gen)
         self._expected_gold_brick_event_count = gold_bricks_from_chapters + gold_bricks_from_bonuses

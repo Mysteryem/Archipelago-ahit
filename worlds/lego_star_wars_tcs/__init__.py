@@ -134,6 +134,8 @@ class LegoStarWarsTCSWorld(World):
     effective_item_collect_extras: dict[str, list[str] | None]
 
     enabled_chapters: set[str]
+    enabled_chapters_with_locations: set[str]  # Includes the Goal Chapter when it has locations.
+    enabled_non_goal_chapters: set[str]
     enabled_episodes: set[int]
     enabled_bonuses: set[str]
     enabled_bosses: set[str]
@@ -142,7 +144,6 @@ class LegoStarWarsTCSWorld(World):
 
     starting_chapter: ChapterArea = SHORT_NAME_TO_CHAPTER_AREA["1-1"]
     minikit_bundle_name: str = ""
-    enabled_chapter_count: int = -1  # Does not include the Goal Chapter if it is enabled.
     available_minikits: int = -1
     minikit_bundle_count: int = -1
     goal_minikit_count: int = -1
@@ -158,6 +159,8 @@ class LegoStarWarsTCSWorld(World):
     def __init__(self, multiworld, player: int):
         super().__init__(multiworld, player)
         self.enabled_chapters = set()
+        self.enabled_chapters_with_locations = set()
+        self.enabled_non_goal_chapters = set()
         self.enabled_episodes = set()
         self.enabled_bonuses = set()
         self.character_chapter_access_counts = Counter()
@@ -331,47 +334,40 @@ class LegoStarWarsTCSWorld(World):
 
     def create_items(self) -> None:
         # Determine how many chapter worth's of locations are enabled.
-        if self.goal_chapter:
-            goal_chapter_locations_mode = self.options.goal_chapter_locations_mode
-            if goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal:
-                goal_chapter_locations_enabled = True
-                goal_chapter_locations_excluded = False
-                normal_goal_chapter_locations_enabled = True
-                chapters_with_locations = self.enabled_chapters | {self.goal_chapter}
-            elif goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded:
-                goal_chapter_locations_enabled = True
-                goal_chapter_locations_excluded = True
-                normal_goal_chapter_locations_enabled = False
-                chapters_with_locations = self.enabled_chapters | {self.goal_chapter}
-            else:
-                assert goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
-                goal_chapter_locations_enabled = False
-                goal_chapter_locations_excluded = False
-                normal_goal_chapter_locations_enabled = False
-                chapters_with_locations = self.enabled_chapters
-        else:
-            goal_chapter_locations_enabled = False
-            goal_chapter_locations_excluded = False
-            normal_goal_chapter_locations_enabled = False
-            chapters_with_locations = self.enabled_chapters
+        goal_chapter_locations_excluded = (
+                self.goal_chapter
+                and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded
+        )
 
-        chapters_with_normal_locations_count = self.enabled_chapter_count + normal_goal_chapter_locations_enabled
+        chapters_with_locations_count = len(self.enabled_chapters_with_locations)
+        if self.goal_chapter:
+            if self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
+                chapters_with_locations = self.enabled_chapters - {self.goal_chapter}
+                chapters_with_non_excluded_locations = self.enabled_non_goal_chapters
+            elif self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded:
+                chapters_with_locations = self.enabled_chapters
+                chapters_with_non_excluded_locations = self.enabled_non_goal_chapters
+            else:
+                assert self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal
+                chapters_with_locations = self.enabled_chapters
+                chapters_with_non_excluded_locations = self.enabled_chapters
+        else:
+            chapters_with_locations = self.enabled_chapters
+            chapters_with_non_excluded_locations = self.enabled_chapters
 
         # todo: Reserve spaces in the item pool for vehicles and non-vehicles separately, based on how many locations
         #  unlock characters of the each type.
-        if self.goal_chapter in VEHICLE_CHAPTER_SHORTNAMES and goal_chapter_locations_enabled:
-            vehicle_chapters_enabled = True
-        else:
-            vehicle_chapters_enabled = not VEHICLE_CHAPTER_SHORTNAMES.isdisjoint(self.enabled_chapters)
+        vehicle_chapters_enabled = not VEHICLE_CHAPTER_SHORTNAMES.isdisjoint(self.enabled_chapters)
 
         possible_pool_character_items = {name: char for name, char in CHARACTERS_AND_VEHICLES_BY_NAME.items()
                                          if char.is_sendable and (vehicle_chapters_enabled
                                                                   or char.item_type != "Vehicle")}
-        if self.goal_chapter:
+        if self.goal_chapter and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
             # Vehicle chapters could be disabled for normal chapters, but the goal chapter could be a vehicle chapter,
             # so the vehicles required for the goal chapter need to be forced into the item pool.
             for name in CHAPTER_AREA_STORY_CHARACTERS[self.goal_chapter]:
-                possible_pool_character_items[name] = CHARACTERS_AND_VEHICLES_BY_NAME[name]
+                if name not in possible_pool_character_items:
+                    possible_pool_character_items[name] = CHARACTERS_AND_VEHICLES_BY_NAME[name]
 
         # If Gunship Cavalry (Original), Pod Race (Original) and Anakin's Flight get updated to require Vehicles again,
         # then Republic Gunship, Anakin's Pod and Naboo Starfighter would be required items to included in the pool.
@@ -580,12 +576,13 @@ class LegoStarWarsTCSWorld(World):
         reserved_power_brick_location_count: int
         free_extra_location_count: int
         if self.options.filler_reserve_extras:
-            reserved_power_brick_location_count = chapters_with_normal_locations_count
+            reserved_power_brick_location_count = len(chapters_with_non_excluded_locations)
             free_extra_location_count = 0
         else:
-            reserved_power_brick_location_count = min(required_extras_count, chapters_with_normal_locations_count)
-            free_extra_location_count = chapters_with_normal_locations_count - reserved_power_brick_location_count
+            reserved_power_brick_location_count = min(required_extras_count, len(chapters_with_non_excluded_locations))
+            free_extra_location_count = len(chapters_with_non_excluded_locations) - reserved_power_brick_location_count
         if goal_chapter_locations_excluded:
+            # The Extra location of the Goal Chapter is excluded.
             goal_excluded_locations_count += 1
 
         # As many minikit bundles as this will always be created. This may be fewer than is required to goal, but
@@ -596,25 +593,29 @@ class LegoStarWarsTCSWorld(World):
         # The vanilla rewards for these are Gold Bricks, which are events, so these are effectively free locations for
         # any kind of item when enabled.
         if self.options.enable_true_jedi_locations:
-            true_jedi_location_count = chapters_with_normal_locations_count
+            true_jedi_location_count = len(chapters_with_non_excluded_locations)
+
             if goal_chapter_locations_excluded:
+                # The True Jedi location of the Goal Chapter is excluded.
                 goal_excluded_locations_count += 1
         else:
             true_jedi_location_count = 0
-        completion_location_count = chapters_with_normal_locations_count + len(self.enabled_bonuses)
+
+        completion_location_count = len(chapters_with_non_excluded_locations) + len(self.enabled_bonuses)
         if goal_chapter_locations_excluded:
             goal_excluded_locations_count += 1
+
         if self.options.enable_minikit_locations:
-            free_minikit_location_count = chapters_with_normal_locations_count * 10 - required_minikit_location_count
+            free_minikit_location_count = len(chapters_with_non_excluded_locations) * 10 - required_minikit_location_count
             if goal_chapter_locations_excluded:
                 goal_excluded_locations_count += 10
         else:
             if self.options.minikit_goal_amount != 0:
                 assert self.options.minikit_bundle_size == 10
                 assert self.minikit_bundle_name == "10 Minikits"
-                assert self.minikit_bundle_count == self.enabled_chapter_count
+                assert self.minikit_bundle_count == len(self.enabled_non_goal_chapters)
                 # Consume the free Chapter Completion locations to fit the Minikits.
-                completion_location_count -= self.enabled_chapter_count
+                completion_location_count -= self.minikit_bundle_count
                 free_minikit_location_count = 0
             else:
                 assert required_minikit_location_count == 0
@@ -1015,10 +1016,7 @@ class LegoStarWarsTCSWorld(World):
 
         goal_chapter_locations_mode = self.options.goal_chapter_locations_mode.value
 
-        if self.goal_chapter:
-            chapters_to_create = self.enabled_chapters | {self.goal_chapter}
-        else:
-            chapters_to_create = self.enabled_chapters
+        chapters_to_create = self.enabled_chapters
 
         for episode_number in range(1, 7):
             if episode_number not in self.enabled_episodes:
@@ -1373,10 +1371,7 @@ class LegoStarWarsTCSWorld(World):
     def set_rules(self) -> None:
         player = self.player
 
-        if self.goal_chapter:
-            created_chapters = self.enabled_chapters | {self.goal_chapter}
-        else:
-            created_chapters = self.enabled_chapters
+        created_chapters = self.enabled_chapters
 
         # Episodes.
         for episode_number in range(1, 7):
