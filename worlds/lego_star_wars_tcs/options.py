@@ -207,8 +207,7 @@ class GoalChapterLocationsMode(ChoiceFromStringExtension):
     - Removed: Locations within the Goal Chapter are removed from the multiworld. Gold Bricks from the Goal Chapter will
     not be included in Gold Brick logic.
     - Excluded: Locations within the Goal Chapter are marked as Excluded, disallowing Progression and Useful items being
-    placed there. Gold Bricks from the Goal Chapter will not be included in Gold Brick logic and the 10 Minikits from
-    the Chapter will not be added to the item pool.
+    placed there. Gold Bricks from the Goal Chapter will not be included in Gold Brick logic.
     - Normal: No changes will be made to the locations in the Goal Chapter, or to Gold Brick logic. Not recommended
     unless playing without ``!release`` after goaling.
     """
@@ -230,6 +229,8 @@ class GoalChapter(ChoiceFromStringExtension):
     used when picking regular Chapters.
 
     The Goal Chapter is enabled in addition to your Enabled Chapter Count, when possible.
+
+    The Goal Chapter does not add any Minikit items to the item pool, even when it contains Minikit locations.
 
     If this option is enabled and part of the goal requires defeating bosses, the Goal Chapter will never have an
     enabled boss, potentially reducing the maximum number of bosses.
