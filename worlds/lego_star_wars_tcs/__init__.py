@@ -697,6 +697,12 @@ class LegoStarWarsTCSWorld(World):
         )
         assert required_excludable_count >= goal_excluded_locations_count
 
+        # `required_excludable_count` contains the goal excluded locations, so add the goal excluded locations into the
+        # free locations, and let all excluded location requirements be handled together.
+        # `goal_excluded_locations_count` is not added into `free_locations_count` earlier because free locations may be
+        # needed for progression items at that point, and progression items cannot be placed on excluded locations.
+        free_location_count += goal_excluded_locations_count
+
         if free_location_count < required_excludable_count:
             # This shouldn't really happen unless basically the entire world is excluded and/or barely any locations
             # are enabled.
