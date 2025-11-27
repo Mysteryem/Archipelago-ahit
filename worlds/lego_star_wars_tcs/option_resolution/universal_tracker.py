@@ -69,7 +69,12 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: di
         self.enabled_non_goal_chapters = self.enabled_chapters
 
     # Derived Minikit attributes.
-    self.available_minikits = len(self.enabled_non_goal_chapters) * 10
+    if self.options.minikit_goal_amount != 0 or self.options.enable_minikit_locations:
+        # 10 Minikits per chapter.
+        self.available_minikits = len(self.enabled_non_goal_chapters) * 10
+    else:
+        # There are no minikits if the locations are not enabled and the goal does not require minikits.
+        self.available_minikits = 0
     bundle_size = self.options.minikit_bundle_size.value
     self.minikit_bundle_name = MINIKITS_BY_COUNT[bundle_size].name
     self.minikit_bundle_count = (self.available_minikits // bundle_size
