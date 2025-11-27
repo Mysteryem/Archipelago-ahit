@@ -10,6 +10,7 @@ from ..levels import (
     SHORT_NAME_TO_CHAPTER_AREA,
     BonusArea,
     BONUS_AREAS,
+    BONUS_NAME_TO_BONUS_AREA,
 )
 from ..options import (
     LegoStarWarsTCSOptions,
@@ -834,6 +835,69 @@ class _NormalOptionsResolver:
 
         return enabled_bonuses, expected_gold_brick_event_count
 
+    def _resolve_goal_area_completion_count(self,
+                                            enabled_non_goal_chapters: set[str],
+                                            enabled_bonuses: set[str],
+                                            ) -> int:
+        # Calculate goal_area_completion_count when set to a non-zero percentage of available areas (chapters +
+        # bonuses).
+        # The option name uses "levels" as a user-facing term, but has the meaning of "areas" internally.
+        complete_areas_goal_amount_percentage = self.options.complete_levels_goal_amount_percentage
+        if complete_areas_goal_amount_percentage > 0:
+            # The goal chapter is locked behind the area completion count, so cannot contribute itself to the goal
+            # requirement.
+            chapter_areas_count = len(enabled_non_goal_chapters)
+            # Only bonuses that award a Gold Brick on completion count towards the goal count.
+            bonus_areas_count = sum(BONUS_NAME_TO_BONUS_AREA[name].gold_brick for name in enabled_bonuses)
+            available_areas_count = chapter_areas_count + bonus_areas_count
+            goal_area_completion_count = max(1,
+                                             round(available_areas_count * complete_areas_goal_amount_percentage / 100))
+
+            # If the Goal Chapter is enabled and has normal locations, so has Gold Bricks, then the Gold Bricks in the
+            # Goal Chapter will not be usable to access Bonus Levels that can contribute level completion towards the
+            # goal.
+            if (self._goal_chapter
+                    and self._goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal
+                    and enabled_bonuses):
+                gold_bricks_per_chapter = (
+                        1
+                        + bool(self._enable_minikit_locations)
+                        + bool(self._enable_true_jedi_locations)
+                )
+                chapter_gold_bricks = chapter_areas_count * gold_bricks_per_chapter
+                gold_brick_bonuses = [BONUS_NAME_TO_BONUS_AREA[name] for name in enabled_bonuses
+                                      if BONUS_NAME_TO_BONUS_AREA[name].gold_brick]
+                # Sort lower requirement bonuses first.
+                gold_brick_bonuses.sort(key=lambda bonus_area: bonus_area.gold_bricks_required)
+                pre_goal_gold_bricks = chapter_gold_bricks
+                pre_goal_completable_bonuses = 0
+                for area in gold_brick_bonuses:
+                    if area.gold_bricks_required > pre_goal_gold_bricks:
+                        # The bonuses were sorted on order of ascending gold brick requirements, so no other bonuses are
+                        # reachable before the goal.
+                        break
+                    pre_goal_completable_bonuses += 1
+                    pre_goal_gold_bricks += 1
+                pre_goal_completable_areas = chapter_areas_count + pre_goal_completable_bonuses
+                if goal_area_completion_count > pre_goal_completable_areas:
+                    # It is rather rare for this to actually happen.
+                    self.world.log_warning("Could not satisfy the desired %i%% (%i/%i) level completions for goal"
+                                           " because %i bonus levels are only accessible after completing the goal. The"
+                                           " number of level completions for the goal has been reduced to the maximum"
+                                           " of %.2f%% (%i/%i)",
+                                           complete_areas_goal_amount_percentage,
+                                           goal_area_completion_count,
+                                           available_areas_count,
+                                           bonus_areas_count - pre_goal_completable_bonuses,
+                                           pre_goal_completable_areas / available_areas_count * 100,
+                                           pre_goal_completable_areas,
+                                           available_areas_count)
+                    goal_area_completion_count = pre_goal_completable_areas
+            return goal_area_completion_count
+        else:
+            return 0
+
+
     def _resolve_normal_options(self):
         self._validate_goal_choice()
 
@@ -894,6 +958,10 @@ class _NormalOptionsResolver:
             expected_gold_brick_event_count
         ) = self._resolve_available_bonuses_and_expected_gold_brick_counts(enabled_non_goal_chapter_count)
 
+        enabled_non_goal_chapters = enabled_chapters - {self._goal_chapter}
+        goal_area_completion_count = self._resolve_goal_area_completion_count(
+            enabled_non_goal_chapters, enabled_bonuses)
+
         world = self.world
         world.short_name_to_boss_character = short_name_to_boss_character
         world.starting_chapter = SHORT_NAME_TO_CHAPTER_AREA[starting_chapter]
@@ -901,13 +969,14 @@ class _NormalOptionsResolver:
         world.enabled_chapters = enabled_chapters
         world.enabled_episodes = enabled_episodes
         world.enabled_chapters_with_locations = enabled_chapters_with_locations
-        world.enabled_non_goal_chapters = enabled_chapters - {self._goal_chapter}
+        world.enabled_non_goal_chapters = enabled_non_goal_chapters
         world.minikit_bundle_name = minikit_bundle_name
         world.available_minikits = available_minikits
         world.minikit_bundle_count = minikit_bundle_count
         world.enabled_bonuses = enabled_bonuses
         world._expected_gold_brick_event_count = expected_gold_brick_event_count
         world.goal_chapter = self._goal_chapter
+        world.goal_area_completion_count = goal_area_completion_count
 
     def resolve_normal_options(self):
         try:
