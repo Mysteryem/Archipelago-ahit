@@ -1255,7 +1255,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     enable_minikit_locations: EnableMinikitLocations
     enable_true_jedi_locations: EnableTrueJediLocations
 
-    # Logic.
+    # Logic and Difficulty.
     # logic_difficulty: LogicDifficulty
     episode_unlock_requirement: EpisodeUnlockRequirement
     chapter_unlock_requirement: ChapterUnlockRequirement
@@ -1327,7 +1327,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         EnableBonusLocations,
         EnableAllEpisodesCharacterPurchaseLocations,
     ]),
-    OptionGroup("Logic Options", [
+    OptionGroup("Logic and Difficulty Options", [
         EpisodeUnlockRequirement,
         ChapterUnlockRequirement,
         EasierTrueJedi,
