@@ -339,7 +339,6 @@ class LegoStarWarsTCSWorld(World):
                 and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded
         )
 
-        chapters_with_locations_count = len(self.enabled_chapters_with_locations)
         if self.goal_chapter:
             if self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
                 chapters_with_locations = self.enabled_chapters - {self.goal_chapter}
