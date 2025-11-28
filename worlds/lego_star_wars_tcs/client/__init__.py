@@ -282,22 +282,6 @@ class LegoStarWarsTheCompleteSagaCommandProcessor(ClientCommandProcessor):
     def __init__(self, ctx: CommonContext):
         super().__init__(ctx)
 
-    def _cmd_debug_message(self):
-        """Queue a debug message to be displayed in-game"""
-        if isinstance(self.ctx, LegoStarWarsTheCompleteSagaContext):
-            if self.ctx.slot:
-                import random
-                self.ctx.text_display.queue_message(random.choice([
-                    "The quick brown fox jumps over the lazy dog!",  # English
-                    "Voix ambiguë d'un cœur qui, au zéphyr, préfère les jattes de kiwis.",  # French
-                    "Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich",  # German
-                    "Jeżu klątw, spłódź Finom część gry hańb!",  # Polish
-                    "В чащах юга жил бы цитрус? Да, но фальшивый экземпляр!",  # Russian
-                    # Japanese does not display, despite there being Japanese localization files...
-                    "いろはにほへと ちりぬるを わかよたれそ つねならむ うゐのおくやま けふこえて あさきゆめみし ゑひもせす（ん）",  # Japanese
-                    "(2)色は匂へど 散りぬるを 我が世誰ぞ 常ならむ 有為の奥山 今日越えて 浅き夢見じ 酔ひもせず（ん）",  # Japanese 2
-                ]))
-
     def _cmd_toggle_death_link(self):
         """Toggle Death Link on/off. Whether Death Link is enabled is stored in your save data, so the client will
         remember if Death Link was toggled the next time you connect."""
