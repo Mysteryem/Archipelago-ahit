@@ -212,11 +212,11 @@ class DeathLinkManager(ClientComponent):
     death_link_enabled = False
 
     waiting_for_respawn = False
-    normal_death_link_amnesty = 1
-    vehicle_death_link_amnesty = 1
+    normal_death_link_amnesty = 0
+    vehicle_death_link_amnesty = 0
 
-    normal_death_count = 0
-    vehicle_death_count = 0
+    normal_death_amnesty_remaining = 0
+    vehicle_death_amnesty_remaining = 0
 
     last_death_amnesty = time.time()
 
@@ -233,8 +233,8 @@ class DeathLinkManager(ClientComponent):
         # Death Link did not exist as an option in older apworld versions.
         if event.generator_version < (1, 2, 0):
             self.death_link_enabled = False
-            self.normal_death_link_amnesty = 1
-            self.vehicle_death_link_amnesty = 1
+            self.normal_death_link_amnesty = 0
+            self.vehicle_death_link_amnesty = 0
             self.death_link_stud_loss = 0
             self.death_link_stud_loss_scaling = False
         else:
@@ -252,6 +252,10 @@ class DeathLinkManager(ClientComponent):
             self.death_link_enabled = CustomSaveFlags1.DEATH_LINK_ENABLED.is_set(ctx)
             # Update the client tags for whether Death Link is enabled/disabled.
             self._update_client_tags(ctx)
+
+        # Initialise remaining amnesty.
+        self.normal_death_amnesty_remaining = self.normal_death_link_amnesty
+        self.vehicle_death_amnesty_remaining = self.vehicle_death_link_amnesty
 
         # Set the expected death count to its current value.
         self._expected_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
@@ -408,37 +412,39 @@ class DeathLinkManager(ClientComponent):
         #  Special messages only when both P1 and P2 are player controlled and are the same character?
         #  f"Caused by {alias name}'s {character name} (P{player number})"
 
-        send_death = True
-        deaths_until_death_link = 1
+        amnesty_remaining = 0
         if CURRENT_AREA_ADDRESS.get(ctx) in VEHICLE_AMNESTY_AREA_IDS:
-            self.vehicle_death_count += 1
-            if self.vehicle_death_count >= self.vehicle_death_link_amnesty:
-                self.vehicle_death_count = 0
+            if self.vehicle_death_amnesty_remaining <= 0:
+                send_death = True
+                # Reset amnesty.
+                self.vehicle_death_amnesty_remaining = self.vehicle_death_link_amnesty
             else:
                 send_death = False
-                self.last_death_amnesty = time.time()
-                deaths_until_death_link = self.vehicle_death_link_amnesty - self.vehicle_death_count
+                self.vehicle_death_amnesty_remaining -= 1
+                amnesty_remaining = self.vehicle_death_amnesty_remaining
         else:
-            self.normal_death_count += 1
-            if self.normal_death_count >= self.normal_death_link_amnesty:
-                self.normal_death_count = 0
+            if self.normal_death_amnesty_remaining <= 0:
+                send_death = True
+                # Reset amnesty.
+                self.normal_death_amnesty_remaining = self.normal_death_link_amnesty
             else:
                 send_death = False
-                self.last_death_amnesty = time.time()
-                deaths_until_death_link = self.normal_death_link_amnesty - self.normal_death_count
+                self.normal_death_amnesty_remaining -= 1
+                amnesty_remaining = self.normal_death_amnesty_remaining
 
         if send_death:
             ctx.text_display.priority_message("DeathLink: Death Sent")
+            # todo: This could probably be a fire-and-forget task.
             await ctx.send_death()
             # Ideally, we would kill any other player characters too, just like when receiving a death, but in levels
             # where death instantly respawns the player at an earlier checkpoint, this would result in the player, that
             # died, dying a second time after respawning at the checkpoint.
             # await self.kill_player_characters(ctx)
         else:
-            if deaths_until_death_link <= 1:
+            if amnesty_remaining == 0:
                 ctx.text_display.priority_message("DeathLink: No amnesty remaining")
             else:
-                ctx.text_display.priority_message(f"DeathLink: {deaths_until_death_link} amnesty remaining")
+                ctx.text_display.priority_message(f"DeathLink: {amnesty_remaining} amnesty remaining")
 
     def on_deathlink(self, ctx: TCSContext, message: str):
         if self.pending_received_death:

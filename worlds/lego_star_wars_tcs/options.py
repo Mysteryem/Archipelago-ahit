@@ -1146,21 +1146,24 @@ class LegoStarWarsTCSDeathLink(DeathLink):
 
 
 class DeathLinkAmnesty(Range):
-    """Only send a Death with Death Link after dying this many times.
+    """The number of deaths allowed before the next death is sent through Death Link.
 
-    Applies to most Chapters and other levels.
+    0 means that every death will be sent through Death Link,
+    1 means every other death will send through Death Link, etc.
+
+    Applies to most Chapters and other levels (every level not covered by Vehicle Death Link Amnesty).
     """
     display_name = "Normal Death Link Amnesty"
     rich_text_doc = True
-    range_start = 1
+    range_start = 0
     range_end = 10
-    default = 1
+    default = 0
 
 
 class VehicleDeathLinkAmnesty(Range):
-    """Only send a Death with Death Link after dying this many times.
+    """The number of deaths allowed before the next death is sent through Death Link.
 
-    \\*Applies to most top-down vehicle levels and bonus vehicle levels.
+    \\*Applies to top-down vehicle levels and bonus vehicle levels that are easier to die in.
 
     Applies to:
 
@@ -1181,9 +1184,9 @@ class VehicleDeathLinkAmnesty(Range):
     """
     display_name = "Vehicle* Death Link Amnesty"
     rich_text_doc = True
-    range_start = 1
+    range_start = 0
     range_end = 10
-    default = 1
+    default = 3
 
 
 class DeathLinkStudLoss(ChoiceFromStringExtension):
