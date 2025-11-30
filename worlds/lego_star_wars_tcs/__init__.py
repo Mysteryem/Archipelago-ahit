@@ -18,7 +18,7 @@ from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import components, Component, launch_subprocess, Type
 from worlds.generic.Rules import set_rule, add_rule
 
-from . import constants
+from . import constants, regions
 from .constants import CharacterAbility, GOLD_BRICK_EVENT_NAME
 from .items import (
     ITEM_NAME_TO_ID,
@@ -62,7 +62,6 @@ from .options import (
     GoalChapterLocationsMode,
 )
 from .option_resolution.common import resolve_options
-from .regions import create_regions
 from .item_groups import ITEM_GROUPS
 from .location_groups import LOCATION_GROUPS
 
@@ -152,7 +151,8 @@ class LegoStarWarsTCSWorld(World):
     goal_boss_count: int = -1
     goal_area_completion_count: int = 0
     gold_brick_event_count: int = 0
-    _expected_gold_brick_event_count: int = -1
+    # Used in generation to check that created Gold Bricks match the number expected to be created from options.
+    expected_gold_brick_event_count: int = -1
     character_unlock_location_count: int = 0
     goal_excluded_character_unlock_location_count: int = 0
     required_score_multiplier_count: int = 0  # set in create_regions
@@ -1017,7 +1017,7 @@ class LegoStarWarsTCSWorld(World):
         return r
 
     def create_regions(self) -> None:
-        create_regions(self)
+        regions.create_regions(self)
 
     def set_abilities_rule(self, spot: Location | Entrance, abilities: CharacterAbility):
         player = self.player

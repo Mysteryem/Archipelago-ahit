@@ -129,10 +129,10 @@ def _compute_expected_gold_brick_event_count(self: LegoStarWarsTCSWorld):
         gold_bricks_from_chapters = chapters_with_gold_bricks * gold_bricks_per_chapter
         areas_gen = (BONUS_NAME_TO_BONUS_AREA[area_name] for area_name in self.enabled_bonuses)
         gold_bricks_from_bonuses = sum(area.gold_brick for area in areas_gen)
-        self._expected_gold_brick_event_count = gold_bricks_from_chapters + gold_bricks_from_bonuses
+        self.expected_gold_brick_event_count = gold_bricks_from_chapters + gold_bricks_from_bonuses
     else:
         # Gold Brick events are only relevant when bonuses are enabled.
-        self._expected_gold_brick_event_count = 0
+        self.expected_gold_brick_event_count = 0
 
 
 def resolve_universal_tracker_options(self: LegoStarWarsTCSWorld, passthrough: dict[str, Any]):

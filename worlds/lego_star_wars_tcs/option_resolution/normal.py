@@ -974,7 +974,7 @@ class _NormalOptionsResolver:
         world.available_minikits = available_minikits
         world.minikit_bundle_count = minikit_bundle_count
         world.enabled_bonuses = enabled_bonuses
-        world._expected_gold_brick_event_count = expected_gold_brick_event_count
+        world.expected_gold_brick_event_count = expected_gold_brick_event_count
         world.goal_chapter = self._goal_chapter
         world.goal_area_completion_count = goal_area_completion_count
 
