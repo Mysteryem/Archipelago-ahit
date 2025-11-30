@@ -197,19 +197,33 @@ def create_regions(world: TCSWorld) -> None:
         goal_chapter_region if goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded else None
     )
     for character, parent_regions in story_character_unlock_regions.items():
-        character_region = world.create_region(f"Unlock {character}")
         loc_name = f"Chapter Completion - Unlock {character}"
-        character_location = LegoStarWarsTCSLocation(
-            world.player, loc_name, world.location_name_to_id[loc_name], character_region
-        )
-        character_region.locations.append(character_location)
-        if len(parent_regions) == 1 and parent_regions[0] == excluded_goal_region:
-            # The location is only accessed through the Goal Chapter which has its locations excluded, so this
-            # chapter completion character unlock location should also be excluded.
-            character_location.progress_type = LocationProgressType.EXCLUDED
-            world.goal_excluded_character_unlock_location_count += 1
-        for parent_region in parent_regions:
-            parent_region.connect(character_region)
+        if len(parent_regions) == 1:
+            parent_region = parent_regions[0]
+            # The location is only accessed from 1 region, so put the location in that region. This slightly improves
+            # logic performance.
+            character_location = LegoStarWarsTCSLocation(
+                world.player, loc_name, world.location_name_to_id[loc_name], parent_region
+            )
+            if parent_region == excluded_goal_region:
+                # The location is only accessed through the Goal Chapter which has its locations excluded, so this
+                # chapter completion character unlock location should also be excluded.
+                character_location.progress_type = LocationProgressType.EXCLUDED
+                world.goal_excluded_character_unlock_location_count += 1
+        else:
+            # The location is accessed from multiple regions, so put the location in its own region that those regions
+            # can be connected to.
+            character_region = world.create_region(f"Unlock {character}")
+            character_location = LegoStarWarsTCSLocation(
+                world.player, loc_name, world.location_name_to_id[loc_name], character_region
+            )
+            character_region.locations.append(character_location)
+            for parent_region in parent_regions:
+                parent_region.connect(character_region)
+            # There are multiple ways this location could be reached, so enable path display in the Spoiler (when
+            # Playthrough Paths are enabled in the generator's host.yaml), so that the route the Playthrough used to
+            # reach the location is clear.
+            world.topology_present = True
 
     world.character_unlock_location_count += len(story_character_unlock_regions)
 

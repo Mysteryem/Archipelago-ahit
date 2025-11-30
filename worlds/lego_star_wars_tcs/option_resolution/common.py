@@ -39,11 +39,6 @@ def _resolve_common_options(world: LegoStarWarsTCSWorld):
     assert world.enabled_chapters_with_locations <= world.enabled_chapters
     assert world.goal_chapter is None or world.goal_chapter in world.enabled_chapters
 
-    if world.options.enable_story_character_unlock_locations:
-        # There are often multiple Chapters that can send each Story character unlock location, so enable path
-        # display in spoilers with paths enabled.
-        world.topology_present = True
-
 
 def resolve_options(world: LegoStarWarsTCSWorld):
     # Universal Tracker Support
