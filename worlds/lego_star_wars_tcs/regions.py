@@ -229,7 +229,7 @@ def create_regions(world: TCSWorld) -> None:
 
     # Adjust required score multipliers for any enabled chapters with difficult or potentially impossible True Jedi.
     if (world.options.enable_true_jedi_locations
-            and not DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI.isdisjoint(world.enabled_chapters)):
+            and not DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI.isdisjoint(world.enabled_chapters_with_locations)):
         world.required_score_multiplier_count = max(1, world.required_score_multiplier_count)
 
     # Available minikit count is calculated in generate_early.
