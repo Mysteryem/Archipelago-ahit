@@ -230,6 +230,7 @@ class _RegionBuilder:
                 character_location = LegoStarWarsTCSLocation(
                     world.player, loc_name, world.location_name_to_id[loc_name], parent_region
                 )
+                parent_region.locations.append(character_location)
                 if parent_region == excluded_goal_region:
                     # The location is only accessed through the Goal Chapter which has its locations excluded, so this
                     # chapter completion character unlock location should also be excluded.
