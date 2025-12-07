@@ -144,9 +144,17 @@ class BonusArea:
     status_level_id: int
     area_id: int
     item_requirements: tuple[str, ...] = ()
-    ability_requirements: CharacterAbility = CharacterAbility.NONE
+    completion_ability_requirements: CharacterAbility = CharacterAbility.NONE
     gold_bricks_required: int = 0
     gold_brick: bool = True
+
+    @property
+    def completion_location_name(self) -> str:
+        if self.gold_brick:
+            return self.name + " Completion"
+        else:
+            # The only Bonus Area without a Gold Brick is not a level to complete, but watching the Indy Trailer.
+            return self.name
 
 
 # GameLevelArea short_name to the set of characters needed to unlock that GameLevelArea
@@ -587,9 +595,9 @@ BONUS_AREAS = [
     # Could require: "Darth Vader" + "Stormtrooper" + "C-3PO"
     BonusArea("A New Hope (Bonus Level)", 0x86E249, 0x8, 150, 29, gold_bricks_required=20),
     BonusArea("LEGO City", 0x86E3B8, 0x1, 311, 59,
-              gold_bricks_required=10, ability_requirements=SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER),
+              gold_bricks_required=10, completion_ability_requirements=SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER),
     BonusArea("New Town", 0x86E3A0, 0x1, 309, 57,
-              gold_bricks_required=50, ability_requirements=SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER),
+              gold_bricks_required=50, completion_ability_requirements=SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER),
     # The bonus level was never completed, so there is just the trailer to watch (which can be skipped immediately).
     # No gold brick for watching the trailer, but it does unlock the shop slot for purchasing Indiana Jones in vanilla
     # todo: Add the Purchase Indiana Jones location.

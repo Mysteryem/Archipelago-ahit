@@ -26,6 +26,7 @@ DIRECT_SLOT_DATA_OPTIONS = (
     "goal_requires_kyber_bricks",
     "goal_chapter_locations_mode",
     "easier_true_jedi",
+    "ridesanity",
 )
 assert all(option_name in LegoStarWarsTCSOptions.type_hints for option_name in DIRECT_SLOT_DATA_OPTIONS)
 

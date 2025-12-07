@@ -62,6 +62,7 @@ from .options import (
     GoalChapterLocationsMode,
 )
 from .option_resolution.common import resolve_options
+from .ridables import RIDABLES_REQUIREMENTS
 from .item_groups import ITEM_GROUPS
 from .location_groups import LOCATION_GROUPS
 
@@ -157,6 +158,9 @@ class LegoStarWarsTCSWorld(World):
     goal_excluded_character_unlock_location_count: int = 0
     required_score_multiplier_count: int = 0  # set in create_regions
 
+    ridesanity_spots: dict[str, list[tuple[Location | Entrance, CharacterAbility | None]]]
+    ridesanity_location_count: int = 0
+
     def __init__(self, multiworld, player: int):
         super().__init__(multiworld, player)
         self.enabled_chapters = set()
@@ -166,6 +170,7 @@ class LegoStarWarsTCSWorld(World):
         self.enabled_bonuses = set()
         self.character_chapter_access_counts = Counter()
         self.short_name_to_boss_character = {}
+        self.ridesanity_spots = {}
 
     def log_info(self, message: str, *args) -> None:
         logger.info("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
@@ -478,7 +483,11 @@ class LegoStarWarsTCSWorld(World):
                 required_character_abilities_in_pool |= ALL_MINIKITS_REQUIREMENTS[shortname]
         for bonus_name in self.enabled_bonuses:
             area = BONUS_NAME_TO_BONUS_AREA[bonus_name]
-            required_character_abilities_in_pool |= area.ability_requirements
+            required_character_abilities_in_pool |= area.completion_ability_requirements
+        for _area_name, ridable_spots in self.ridesanity_spots.items():
+            for _spot, ability_requirements in ridable_spots:
+                if ability_requirements is not None:
+                    required_character_abilities_in_pool |= ability_requirements
         # Remove counts <= 0.
         level_access_character_counts = +self.character_chapter_access_counts
         for name in level_access_character_counts.keys():
@@ -623,6 +632,8 @@ class LegoStarWarsTCSWorld(World):
             else:
                 assert required_minikit_location_count == 0
                 free_minikit_location_count = 0
+        # There are no corresponding items for ridesanity locations, so they are free locations for any item.
+        free_ridesanity_location_count = self.ridesanity_location_count
 
         free_location_count = (
                 completion_location_count
@@ -630,6 +641,7 @@ class LegoStarWarsTCSWorld(World):
                 + free_minikit_location_count
                 + free_character_location_count
                 + free_extra_location_count
+                + free_ridesanity_location_count
         )
 
         assert free_location_count >= 0, "initial free_location_count should always be >= 0"
@@ -1155,6 +1167,11 @@ class LegoStarWarsTCSWorld(World):
                         true_jedi = self.get_location(f"{chapter.short_name} True Jedi")
                         set_rule(true_jedi, lambda state: state.has("Progressive Score Multiplier", player))
 
+                # Ridesanity.
+                for spot, ability_requirement in self.ridesanity_spots.get(chapter.short_name, ()):
+                    if ability_requirement is not None:
+                        set_chapter_spot_abilities_rule(spot, ability_requirement)
+
         # Bonus levels.
         gold_brick_requirements: set[int] = set()
         for area in BONUS_AREAS:
@@ -1162,14 +1179,18 @@ class LegoStarWarsTCSWorld(World):
                 continue
             # Gold brick requirements are set on entrances, so do not need to be set on the locations themselves.
             gold_brick_requirements.add(area.gold_bricks_required)
-            completion = self.get_location(area.name)
-            if area.ability_requirements:
-                self.set_abilities_rule(completion, area.ability_requirements)
+            completion = self.get_location(area.completion_location_name)
+            if area.completion_ability_requirements:
+                self.set_abilities_rule(completion, area.completion_ability_requirements)
             if area.item_requirements:
                 add_rule(completion, lambda state, items_=area.item_requirements: state.has_all(items_, player))
             if area.gold_brick:
                 gold_brick = self.get_location(f"{area.name} - Gold Brick")
                 set_rule(gold_brick, completion.access_rule)
+            # Ridesanity.
+            for spot, ability_requirement in self.ridesanity_spots.get(area.name, ()):
+                if ability_requirement is not None:
+                    self.set_abilities_rule(spot, ability_requirement)
         # Locations with 0 Gold Bricks required are added to the base Bonuses region.
         gold_brick_requirements.discard(0)
 
@@ -1329,6 +1350,7 @@ class LegoStarWarsTCSWorld(World):
                 "kyber_brick_goal_completion_method",
                 "death_link_studs_loss",
                 "death_link_studs_loss_scaling",
+                "ridesanity",
             )
         }
 

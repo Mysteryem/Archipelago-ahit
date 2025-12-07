@@ -621,6 +621,71 @@ class EnableAllEpisodesCharacterPurchaseLocations(Toggle):
     rich_text_doc = True
 
 
+class Ridesanity(Toggle):
+    """
+    Enable locations for riding each unique type of ridable 'character' (creature, vehicle, turret, crane control) in
+    the game.
+
+    This notably adds a few extra checks to the LEGO City and New Town bonus levels.
+
+    If none of your enabled levels contain a specific ridable character, then the location riding for that character
+    will not exist in the generated world.
+
+    Ridesanity adds up to 27 locations.
+
+    There are 27 unique ridable characters:
+    - AT-AT (6-3)
+    - AT-ST (4-3, 6-3, 6-4, LEGO City)
+    - Bantha (4-2, LEGO City, New Town)
+    - Basketball Cannon (New Town)
+    - Big Skiff Cannon (6-2)
+    - Cantina Car (Cantina)
+    - Clone Walker (3-4, New Town)
+    - Cloud Car (5-6, LEGO City, New Town) (the red car)
+    - Crane Control (4-1, 4-4, 4-5, 5-5, 5-6) (also controls Magnets, Window Cleaners and Turbolasers)
+    - Dewback (4-2, 4-3, LEGO City, New Town)
+    - Ewok Catapult (6-4)
+    - Firetruck (New Town)
+    - Flash Speeder (1-5)
+    - Landspeeder (4-2, 4-3, LEGO City, New Town)
+    - Lifeboat (New Town)
+    - Moon Car (4-1, LEGO City, New Town) (the orange car)
+    - Mos Eisley Cannon (4-3) (used to get a Minikit)
+    - Service Car (1-5, 1-6, 4-5) (the floating car with no wheels)
+    - Skiff Cannon (6-2)
+    - Speeder Bike (6-3)
+    - Snowmobile (5-2)
+    - STAP (1-1)
+    - Stormtrooper Cannon (5-2, 5-5)
+    - Tauntaun (5-2, LEGO City, New Town)
+    - Town Car (4-1, LEGO City, New Town) (the white van-like car)
+    - Tractor (5-4, 6-4, LEGO City, New Town)
+    - Wookie Flyer (LEGO City, New Town)
+
+    Alternatively listed by levels and the ridable characters found within them:
+    - Cantina: Cantina Car
+    - 1-1 (Negotiations): STAP
+    - 1-5 (Retake Theed Palace): Flash Speeder
+    - 1-6 (Darth Maul): Service Car
+    - 4-1 (Secret Plans): Crane Control, Moon Car, Town Car
+    - 4-2 (Through The Jundland Wastes): Bantha, Dewback, Landspeeder
+    - 4-3 (Mos Eisley Spaceport): AT-ST, Dewback, Landspeeder, Mos Eisley Cannon
+    - 4-4 (Rescue The Princess): Crane Control
+    - 4-5 (Death Star Escape): Crane Control
+    - 5-2 (Escape From Echo Base): Snowmobile, Stormtrooper Cannon, Tauntaun
+    - 5-4 (Dagobah): Tractor
+    - 5-5 (Cloud City Trap): Crane Control, Stormtrooper Cannon
+    - 5-6 (Betrayal Over Bespin): Cloud Car, Crane Control
+    - 6-2 (The Great Pit Of Carkoon): Big Skiff Cannon, Skiff Cannon
+    - 6-3 (Speeder Showdown): AT-AT, AT-ST, Speeder Bike
+    - 6-4 (The Battle Of Endor): AT-ST, Ewok Catapult, Tractor
+    - LEGO City: AT-ST, Bantha, Cloud Car, Dewback, Landspeeder, Moon Car, Tauntaun, Town Car, Tractor, Wookie flyer
+    - New Town: Bantha, Basketball Cannon, Clone Walker, Cloud Car, Dewback, Firetruck, Landspeeder, Lifeboat, Moon Car, Tauntaun, Town Car, Tractor
+    """
+    display_name = "Ridesanity Locations"
+    rich_text_doc = True
+
+
 class ChapterUnlockRequirement(ChoiceFromStringExtension):
     """Choose how Chapters within an Episode are unlocked.
 
@@ -1254,6 +1319,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     enable_all_episodes_purchases: EnableAllEpisodesCharacterPurchaseLocations
     enable_minikit_locations: EnableMinikitLocations
     enable_true_jedi_locations: EnableTrueJediLocations
+    ridesanity: Ridesanity
 
     # Logic and Difficulty.
     # logic_difficulty: LogicDifficulty
@@ -1326,6 +1392,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         EnableChapterCompletionCharacterUnlockLocations,
         EnableBonusLocations,
         EnableAllEpisodesCharacterPurchaseLocations,
+        Ridesanity,
     ]),
     OptionGroup("Logic and Difficulty Options", [
         EpisodeUnlockRequirement,
