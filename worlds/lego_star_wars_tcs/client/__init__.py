@@ -22,7 +22,6 @@ from CommonClient import CommonContext, server_loop, gui_enabled, ClientCommandP
 
 from .. import options
 from ..constants import GAME_NAME, AP_WORLD_VERSION
-from ..items import CHARACTERS_AND_VEHICLES_BY_NAME, AP_NON_VEHICLE_CHARACTER_INDICES
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, CHAPTER_AREAS, ChapterArea
 from ..locations import LOCATION_NAME_TO_ID
 from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
@@ -30,10 +29,18 @@ from .location_checkers.free_play_completion import FreePlayChapterCompletionChe
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
 from .location_checkers.true_jedi_and_minikits import TrueJediAndMinikitChecker
 from .location_checkers.shop_purchases import PurchasedExtrasChecker, PurchasedCharactersChecker
-from .events import EventManager, OnLevelChangeEvent, OnAreaChangeEvent, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
+from .events import (
+    EventManager,
+    OnLevelChangeEvent,
+    OnAreaChangeEvent,
+    OnReceiveSlotDataEvent,
+    OnGameWatcherTickEvent,
+    OnPlayerCharacterIdChangeEvent,
+)
 from .game_state_modifiers import ClientComponent
 from .game_state_modifiers.extras import AcquiredExtras
 from .game_state_modifiers.characters import AcquiredCharacters
+from .game_state_modifiers.cantina_reloader import CantinaReloader
 from .game_state_modifiers.death_link_manager import DeathLinkManager
 from .game_state_modifiers.generic import AcquiredGeneric
 from .game_state_modifiers.goal_manager import GoalManager
@@ -151,13 +158,6 @@ ACTIVE_SHOP_TYPE_ADDRESS = 0x8801AC
 # 8 = Crossbow (bowcaster) (requires *unknown* unlocked (probably Chewbacca or Wookie))
 # 9 = There is no 9
 CUSTOM_CHARACTER_1_WEAPON = 0x86E4F0
-
-# These character IDs/indices update when swapping characters in the Cantina, and the game reads these values to
-# determine what characters P1 and P2 should spawn into the Cantina as.
-# By changing these values and then forcing a hard (reset) load into the Cantina, the client can change the player's
-# characters to whatever the client needs.
-P1_CANTINA_FREE_PLAY_SELECTION_CHARACTER_ID = 0x802bd8
-P2_CANTINA_FREE_PLAY_SELECTION_CHARACTER_ID = 0x802bdc
 
 
 # # Unverified, but seems to be the case.
@@ -314,12 +314,13 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     current_level_id: int = 0  # Title screen
     current_p_area_data: int = 0  # NULL
     current_cantina_room: CantinaRoom = CantinaRoom.UNKNOWN
+    current_p1_character_id: int | None = None
+    current_p2_character_id: int | None = None
     # Memory in the GOG version is offset 32 bytes after GOG_MEMORY_OFFSET_START.
     # todo: Memory in the retail version is offset ?? bytes after ??.
     _gog_memory_offset: int = 0
     # In the case of an unrecognised version, an overall memory offset may be set.
     _overall_memory_offset: int = 0
-    _cantina_needs_reload_to_fix_characters: bool = False
     event_manager: EventManager
 
     # Client state.
@@ -344,6 +345,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     text_replacer: TextReplacer
     death_link_manager: DeathLinkManager
     uncap_high_jump: UncapHighJump
+    cantina_reloader: CantinaReloader
 
     # Customizable client behaviour
     received_item_messages: options.ReceivedItemMessages = options.ReceivedItemMessages(
@@ -374,7 +376,9 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         self.text_display = InGameTextDisplay()
         self.uncap_high_jump = UncapHighJump()
-        self.permanent_components = (self.text_display, self.uncap_high_jump)
+        self.cantina_reloader = CantinaReloader()
+        self.permanent_components = (self.text_display, self.uncap_high_jump, self.cantina_reloader)
+
         self.death_link_manager = DeathLinkManager()
 
         # It is not ideal to leak `self` in __init__. The TextReplacer methods could be updated to include a TCSContext
@@ -1158,6 +1162,11 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             self.write_uint(0x93d850, 1)
 
     def reload_cantina(self, hard: bool = False) -> bool:
+        """
+        Schedule a reload of the Cantina.
+
+        Returns whether the reload could be scheduled.
+        """
         if self.is_in_game() and self.read_current_cantina_room() == CantinaRoom.SHOP_ROOM:
             if self.is_in_shop():
                 # Reloading the cantina while the shop is open gets the camera stuck in the shop, with seemingly no way
@@ -1174,37 +1183,6 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         # Character 1 should not be allowed to use a lightsaber.
         # Custom Characters always have access to blasters, so give Custom Character 1 a Red Blaster.
         self.write_byte(CUSTOM_CHARACTER_1_WEAPON, 4)
-
-    @staticmethod
-    def _get_valid_replacement_characters(unlocked_characters: set[int], needed_count: int) -> list[int]:
-        """
-        Get 2 valid replacement characters, or a single 'Glup' replacement character if there are no valid replacement
-        characters.
-        """
-        # Prioritise good characters.
-        replacements = []
-        needed_remaining = needed_count
-
-        # Pick from unlocked characters, except Custom Characters, who are not allowed in the Cantina because that is
-        # where they are edited.
-        not_allowed = {
-            CHARACTERS_AND_VEHICLES_BY_NAME["STRANGER 1"].character_index,
-            CHARACTERS_AND_VEHICLES_BY_NAME["STRANGER 2"].character_index,
-        }
-        allowed_character_indices = unlocked_characters - not_allowed
-        allowed_character_indices.intersection_update(AP_NON_VEHICLE_CHARACTER_INDICES)
-
-        to_pick_from = sorted(allowed_character_indices)
-        picks = random.sample(to_pick_from, min(needed_remaining, len(to_pick_from)))
-        replacements.extend(picks)
-        needed_remaining -= len(picks)
-
-        if needed_remaining == 0:
-            return replacements
-        else:
-            # Fill remaining spots with the "Skeleton" "Extra Toggle" character.
-            replacements.extend([CHARACTERS_AND_VEHICLES_BY_NAME["Skeleton"].character_index] * needed_remaining)
-            return replacements
 
     def _get_player_character_addr(self, player: int) -> int:
         # Note: The returned address from this function is not static for the current game instance. Whenever P1 swaps
@@ -1244,68 +1222,19 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     def _get_player_character_id(self, player: int) -> int | None:
         return self._get_character_id(self._get_character_data_address(self._get_player_character_addr(player)))
 
-    async def reload_cantina_if_invalid_characters(self):
-        unlocked_characters = self.acquired_characters.unlocked_characters
-
-        if not unlocked_characters:
-            # If connected, there should always be at least 1 character unlocked, even if it is a vehicle character.
-            return
-
-        if (
-                self.is_in_game()
-                and self.read_current_level_id() == LEVEL_ID_CANTINA
-                and GameState1.PLAYING_OR_TRAILER_OR_CANTINA_LOAD_OR_CHAPTER_TITLE_CRAWL.is_set(self)
-                and self.read_uchar(OPENED_MENU_DEPTH_ADDRESS) == 0
-        ):
-            if self._cantina_needs_reload_to_fix_characters:
-                if self.reload_cantina(hard=True):
-                    await asyncio.sleep(1.0)
-                    self._cantina_needs_reload_to_fix_characters = False
-                return
-            additional_ok_ids = {
-                # Skeleton is the backup character the client forces when the player does not have at least 2 unlocked
-                # non-vehicle characters.
-                CHARACTERS_AND_VEHICLES_BY_NAME["Skeleton"].character_index,
-                # This is the vehicle found in the outside area of the Cantina.
-                # The client could probably check some flag of the character in memory to see if it is a ridable
-                # vehicle, but the Cantina only contains this one vehicle, so checking for it individually is simpler.
-                CHARACTERS_AND_VEHICLES_BY_NAME["mapcar"].character_index,
-            }
-            needed_replacements = 0
-            p1_character_id = self._get_player_character_id(1)
-            if (p1_character_id is not None
-                    and p1_character_id not in additional_ok_ids
-                    and p1_character_id not in unlocked_characters):
-                needed_replacements += 1
-                replace_p1 = True
-                debug_logger.info("P1 is character ID %i in the Cantina, which is not unlocked. Picking a replacement"
-                                  " character and reloading the Cantina.", p1_character_id)
-            else:
-                replace_p1 = False
-            p2_character_id = self._get_player_character_id(2)
-            if (p2_character_id is not None
-                    and p2_character_id not in additional_ok_ids
-                    and p2_character_id not in unlocked_characters):
-                needed_replacements += 1
-                replace_p2 = True
-                debug_logger.info("P2 is character ID %i in the Cantina, which is not unlocked. Picking a replacement"
-                                  " character and reloading the Cantina.", p2_character_id)
-            else:
-                replace_p2 = False
-            if needed_replacements == 0:
-                # Both characters are unlocked or are already Skeleton, so there is nothing to do.
-                return
-            replacements = self._get_valid_replacement_characters(unlocked_characters, needed_replacements)
-            if replace_p1:
-                self.write_uint(P1_CANTINA_FREE_PLAY_SELECTION_CHARACTER_ID, replacements.pop(0))
-            if replace_p2:
-                self.write_uint(P2_CANTINA_FREE_PLAY_SELECTION_CHARACTER_ID, replacements.pop(0))
-
-            if self.reload_cantina(hard=True):
-                await asyncio.sleep(1.0)
-            else:
-                # If the reload failed (e.g. the player is in the shop or the game is paused), try again.
-                self._cantina_needs_reload_to_fix_characters = True
+    async def update_player_characters(self):
+        p1_character_id = self._get_player_character_id(1)
+        p2_character_id = self._get_player_character_id(2)
+        if p1_character_id != self.current_p1_character_id or p2_character_id != self.current_p2_character_id:
+            await self.event_manager.fire_event_async(OnPlayerCharacterIdChangeEvent(
+                self,
+                self.current_p1_character_id,
+                self.current_p2_character_id,
+                p1_character_id,
+                p2_character_id,
+            ))
+            self.current_p1_character_id = p1_character_id
+            self.current_p2_character_id = p2_character_id
 
     def set_game_expected_idx(self, idx: int) -> None:
         # The expected idx is stored in the unused 4 bytes at the end of Negotiations' (1-1's) save data.
@@ -1641,8 +1570,9 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                     # Check for changes to the current AreaData pointer, firing an event if it changes.
                     await ctx.update_current_p_area_data()
 
-                    # Update game state for received items.
-                    await ctx.reload_cantina_if_invalid_characters()
+                    # todo: Firing this event should just be fired by something (ctx?) listening to the Tick event.
+                    # Fire OnPlayerCharacterIdChangeEvent if player characters have changed.
+                    await ctx.update_player_characters()
                     # Fire Tick event for all ClientComponents subscribed to the event.
                     await ctx.event_manager.fire_event_async(OnGameWatcherTickEvent(ctx))
 

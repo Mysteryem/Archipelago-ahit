@@ -202,3 +202,12 @@ class OnReceiveSlotDataEvent(Event):
 @dataclass
 class OnGameWatcherTickEvent(Event):
     """Called on each tick of the game watcher loop, while connected to the game."""
+
+
+@dataclass
+class OnPlayerCharacterIdChangeEvent(Event):
+    """Called whenever P1 or P2's character ID changes."""
+    old_p1_character_id: int | None
+    old_p2_character_id: int | None
+    new_p1_character_id: int | None
+    new_p2_character_id: int | None
