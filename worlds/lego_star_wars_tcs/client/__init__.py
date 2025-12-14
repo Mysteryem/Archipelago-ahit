@@ -1081,6 +1081,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 "want_reply": False,
                 "operations": [{"operation": "replace", "value": new_level_id}]
             }]))
+            self.event_manager.fire_event(OnLevelChangeEvent(self, current_level_id, new_level_id))
 
     def read_current_level_id(self) -> int:
         """
