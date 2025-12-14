@@ -32,10 +32,10 @@ CURRENT_AREA_TRUE_JEDI_COMPLETE_STORY_OR_FREE_PLAY_ADDRESS = 0x87B980
 # CURRENT_AREA_TRUE_JEDI_COMPLETE_FREE_PLAY_ONLY_ADDRESS = 0x87B996
 
 
-class TrueJediAndMinikitChecker(ClientComponent):
+class TrueJediAndPowerBrickAndMinikitChecker(ClientComponent):
     """
-    Check if the player has completed True Jedi for each level and check how many Minikit canisters the player has
-    collected in each level.
+    Check if the player has completed True Jedi for each level, check how many Minikit canisters the player has
+    collected in each level, and check if the player has the Power Brick for each level.
 
     Minikits are checked from both the player's save-file and from the current Area data, allowing for minikit checks to
     be sent as soon as minikits are collected, and to allow progressing while connection to the server has been lost.
@@ -100,7 +100,9 @@ class TrueJediAndMinikitChecker(ClientComponent):
         self.remaining_true_jedi_gold_brick_shortnames = enabled_true_jedi
         self.remaining_minikit_gold_bricks_by_area_id = enabled_minikit_gold_bricks
 
-    async def check_true_jedi_and_minikits(self, ctx: TCSContext, new_location_checks: list[int]):
+    # todo: In the future, this should check for the Power Brick in the current area also.
+    async def check_current_area(self, ctx: TCSContext, new_location_checks: list[int]) -> None:
+        """Check True Jedi and Minikits from reading the current area."""
         current_area_id = ctx.read_uchar(CURRENT_AREA_ADDRESS)
         true_jedi_datastorage_area_ids_to_update = []
         if current_area_id in AREA_ID_TO_CHAPTER_AREA:
@@ -109,10 +111,13 @@ class TrueJediAndMinikitChecker(ClientComponent):
             if self._check_true_jedi_from_current_area(current_area, ctx, new_location_checks):
                 true_jedi_datastorage_area_ids_to_update.append(current_area_id)
 
+        ctx.update_datastorage_true_jedi_completion(true_jedi_datastorage_area_ids_to_update)
+
+    async def check_save_data(self, ctx: TCSContext, new_location_checks: list[int]) -> None:
+        """Check True Jedi, Minikits and Power Bricks from reading save data."""
         new_true_jedi_from_sava_data = self._check_true_jedi_power_bricks_and_minikits_from_save_data(
             ctx, new_location_checks)
-        true_jedi_datastorage_area_ids_to_update.extend(new_true_jedi_from_sava_data)
-        ctx.update_datastorage_true_jedi_completion(true_jedi_datastorage_area_ids_to_update)
+        ctx.update_datastorage_true_jedi_completion(new_true_jedi_from_sava_data)
 
     def _check_true_jedi_from_current_area(self,
                                            current_area: ChapterArea,
