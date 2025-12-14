@@ -1235,6 +1235,13 @@ class LegoStarWarsTCSWorld(World):
                 purchase_location = self.get_location(f"Purchase {character_name}")
                 self._add_score_multiplier_rule(purchase_location, studs_cost)
 
+        # Cantina Ridesanity.
+        # todo: Currently there are no rules because the player is always forced to start with a Jedi, but there will be
+        #  rules in the future because (most) droids cannot ride things.
+        for spot, ability_requirement in self.ridesanity_spots.get("cantina", ()):
+            if ability_requirement is not None:
+                self.set_abilities_rule(spot, ability_requirement)
+
         # Victory.
         victory: Location | Entrance
         if self.goal_chapter:

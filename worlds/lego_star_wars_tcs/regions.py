@@ -15,7 +15,7 @@ from .levels import (
     SHORT_NAME_TO_CHAPTER_AREA,
 )
 from .options import GoalChapterLocationsMode
-from .ridables import CHAPTER_TO_RIDABLES, BONUS_TO_RIDABLES, get_ridable_requirements, Ridable
+from .ridables import CHAPTER_TO_RIDABLES, BONUS_TO_RIDABLES, get_ridable_requirements, Ridable, RIDABLES_BY_NAME
 
 if TYPE_CHECKING:
     from . import LegoStarWarsTCSWorld as TCSWorld
@@ -278,6 +278,16 @@ class _RegionBuilder:
 
     def create_ridesanity_locations(self) -> None:
         world = self.world
+
+        # Add the Cantina Car ridable found in the Cantina itself, it cannot be found anywhere else.
+        cantina_car = RIDABLES_BY_NAME["Cantina Car"]
+        # Assert that it cannot be found anywhere else.
+        assert cantina_car.is_in_cantina
+        assert not cantina_car.bonus_area_names
+        assert not cantina_car.chapter_shortnames
+        # Add it to the dict of regions.
+        self.ridable_character_regions[cantina_car] = [("cantina", self.cantina)]
+
         ridesanity_spots: defaultdict[str, list[tuple[Location | Entrance, CharacterAbility | None]]]
         ridesanity_spots = defaultdict(list)
         for ridable, areas_list in self.ridable_character_regions.items():
