@@ -1031,6 +1031,23 @@ class LegoStarWarsTCSWorld(World):
     def create_regions(self) -> None:
         regions.create_regions(self)
 
+    def add_location(self, name: str, region: Region) -> LegoStarWarsTCSLocation:
+        location = LegoStarWarsTCSLocation(self.player, name, self.location_name_to_id[name], region)
+        region.locations.append(location)
+        return location
+
+    def add_event_pair(self, location_name: str, region: Region, item_name: str = "") -> LegoStarWarsTCSLocation:
+        if not item_name:
+            item_name = location_name
+        location = LegoStarWarsTCSLocation(self.player, location_name, None, region)
+        item = self.create_event(item_name)
+        location.place_locked_item(item)
+        region.locations.append(location)
+        return location
+
+    def add_gold_brick_event(self, location_name: str, region: Region) -> LegoStarWarsTCSLocation:
+        return self.add_event_pair(location_name, region, GOLD_BRICK_EVENT_NAME)
+
     def set_abilities_rule(self, spot: Location | Entrance, abilities: CharacterAbility):
         player = self.player
         ability_names = cast(list[str], [ability.name for ability in abilities])

@@ -14,7 +14,6 @@ from .levels import (
     BONUS_AREAS,
     SHORT_NAME_TO_CHAPTER_AREA,
 )
-from .locations import LegoStarWarsTCSLocation
 from .options import GoalChapterLocationsMode
 from .ridables import CHAPTER_TO_RIDABLES, BONUS_TO_RIDABLES, get_ridable_requirements, Ridable
 
@@ -77,10 +76,7 @@ class _RegionBuilder:
             exclude_locations = False
             is_goal_chapter = chapter.short_name == world.goal_chapter
             if is_goal_chapter:
-                victory = LegoStarWarsTCSLocation(
-                    world.player, f"Complete Goal Chapter {world.goal_chapter}", parent=chapter_region)
-                victory.place_locked_item(world.create_event("Victory"))
-                chapter_region.locations.append(victory)
+                world.add_event_pair(f"Complete Goal Chapter {world.goal_chapter}", chapter_region, "Victory")
 
                 goal_chapter_locations_mode = world.options.goal_chapter_locations_mode.value
                 if goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
@@ -94,37 +90,23 @@ class _RegionBuilder:
 
             # Completion.
             completion_name = f"{chapter.short_name} Completion"
-            completion_loc = LegoStarWarsTCSLocation(world.player, completion_name,
-                                                     world.location_name_to_id[completion_name], chapter_region)
-            chapter_region.locations.append(completion_loc)
+            world.add_location(completion_name, chapter_region)
             if create_gold_bricks:
                 # Completion Gold Brick event.
-                completion_gold_brick = LegoStarWarsTCSLocation(world.player, f"{completion_name} - Gold Brick",
-                                                                None, chapter_region)
-                completion_gold_brick.place_locked_item(world.create_event(GOLD_BRICK_EVENT_NAME))
+                world.add_gold_brick_event(f"{completion_name} - Gold Brick", chapter_region)
                 self.gold_brick_event_count += 1
-                chapter_region.locations.append(completion_gold_brick)
 
             # True Jedi.
             if world.options.enable_true_jedi_locations:
                 true_jedi_name = f"{chapter.short_name} True Jedi"
-                true_jedi_loc = LegoStarWarsTCSLocation(world.player, true_jedi_name,
-                                                        world.location_name_to_id[true_jedi_name], chapter_region)
-                chapter_region.locations.append(true_jedi_loc)
+                world.add_location(true_jedi_name, chapter_region)
                 if create_gold_bricks:
                     # True Jedi Gold Brick event.
-                    true_jedi_gold_brick = LegoStarWarsTCSLocation(world.player, f"{true_jedi_name} - Gold Brick",
-                                                                   None, chapter_region)
-                    true_jedi_gold_brick.place_locked_item(world.create_event(GOLD_BRICK_EVENT_NAME))
+                    world.add_gold_brick_event(f"{true_jedi_name} - Gold Brick", chapter_region)
                     self.gold_brick_event_count += 1
-                    chapter_region.locations.append(true_jedi_gold_brick)
 
             # Power Brick.
-            power_brick_location_name = chapter.power_brick_location_name
-            power_brick_location = LegoStarWarsTCSLocation(world.player, power_brick_location_name,
-                                                           world.location_name_to_id[power_brick_location_name],
-                                                           chapter_region)
-            chapter_region.locations.append(power_brick_location)
+            world.add_location(chapter.power_brick_location_name, chapter_region)
             world.required_score_multiplier_count = max(
                 world.required_score_multiplier_count,
                 world._get_score_multiplier_requirement(chapter.power_brick_studs_cost))
@@ -132,9 +114,7 @@ class _RegionBuilder:
             # Character Purchases in the shop.
             # Character purchases unlocked upon completing the chapter (normally in Story mode).
             for shop_unlock, studs_cost in chapter.character_shop_unlocks.items():
-                shop_location = LegoStarWarsTCSLocation(world.player, shop_unlock,
-                                                        world.location_name_to_id[shop_unlock], chapter_region)
-                chapter_region.locations.append(shop_location)
+                world.add_location(shop_unlock, chapter_region)
                 world.required_score_multiplier_count = max(
                     world.required_score_multiplier_count,
                     world._get_score_multiplier_requirement(studs_cost))
@@ -146,10 +126,7 @@ class _RegionBuilder:
                 chapter_minikits = world.create_region(f"{chapter.name} Minikits")
                 chapter_region.connect(chapter_minikits, f"{chapter.name} - Collect All Minikits")
                 for i in range(1, 11):
-                    loc_name = f"{chapter.short_name} Minikit {i}"
-                    location = LegoStarWarsTCSLocation(world.player, loc_name, world.location_name_to_id[loc_name],
-                                                       chapter_minikits)
-                    chapter_minikits.locations.append(location)
+                    world.add_location(f"{chapter.short_name} Minikit {i}", chapter_minikits)
                     minikits_from_chapter += 1
                 if exclude_locations:
                     # Exclude the minikit locations.
@@ -158,11 +135,9 @@ class _RegionBuilder:
                         loc.progress_type = LocationProgressType.EXCLUDED
                 if create_gold_bricks:
                     # All Minikits Gold Brick.
-                    all_minikits_gold_brick = LegoStarWarsTCSLocation(
-                        world.player, f"{chapter_minikits.name} - Gold Brick", None, chapter_minikits)
-                    all_minikits_gold_brick.place_locked_item(world.create_event(GOLD_BRICK_EVENT_NAME))
+                    world.add_gold_brick_event(f"{chapter_minikits.name} - Gold Brick", chapter_minikits)
+                    # todo: Increment self.gold_brick_event_count on the world instance in world.add_gold_brick_event.
                     self.gold_brick_event_count += 1
-                    chapter_minikits.locations.append(all_minikits_gold_brick)
             elif world.options.minikit_goal_amount != 0:
                 # If Minikit locations are disabled, but the goal requires Minikits, the Chapter Completion location
                 # is instead treated as if it was the vanilla location for a 10 Minikits bundle.
@@ -188,26 +163,19 @@ class _RegionBuilder:
             if chapter.short_name in world.enabled_bosses:
                 assert chapter.short_name != world.goal_chapter, ("The Goal Chapter should never be selected as an "
                                                                   "enabled boss")
-                loc_name = f"{chapter.short_name} Defeat {chapter.boss}"
-                boss_event_location = LegoStarWarsTCSLocation(world.player, loc_name, None, chapter_region)
                 if world.options.only_unique_bosses_count:
-                    boss_event_item = world.create_event(
-                        f"{world.short_name_to_boss_character[chapter.short_name]} Defeated")
+                    boss_event_item_name = f"{world.short_name_to_boss_character[chapter.short_name]} Defeated"
                 else:
-                    boss_event_item = world.create_event("Boss Defeated")
-                boss_event_location.place_locked_item(boss_event_item)
-                chapter_region.locations.append(boss_event_location)
+                    boss_event_item_name = "Boss Defeated"
+                world.add_event_pair(
+                    f"{chapter.short_name} Defeat {chapter.boss}", chapter_region, boss_event_item_name)
 
             # Area completion.
             # The goal chapter does not contribute to Area Completion because the Goal Chapter requires completing
             # all other goals before it will unlock.
             if self.goal_requires_area_completion and not is_goal_chapter:
-                loc_name = f"{chapter.short_name} Completion (Event)"
-                completion_event_location = LegoStarWarsTCSLocation(world.player, loc_name, None, chapter_region)
                 # "Level" here is as a user-facing term, with the meaning of "Area" internally.
-                completion_event_item = world.create_event("Level Completion")
-                completion_event_location.place_locked_item(completion_event_item)
-                chapter_region.locations.append(completion_event_location)
+                world.add_event_pair(f"{chapter.short_name} Completion (Event)", chapter_region, "Level Completion")
 
             if exclude_locations:
                 # Exclude the non-event locations in the chapter's region.
@@ -238,10 +206,7 @@ class _RegionBuilder:
                 parent_region = parent_regions[0]
                 # The location is only accessed from 1 region, so put the location in that region. This slightly
                 # improves logic performance.
-                character_location = LegoStarWarsTCSLocation(
-                    world.player, loc_name, world.location_name_to_id[loc_name], parent_region
-                )
-                parent_region.locations.append(character_location)
+                character_location = world.add_location(loc_name, parent_region)
                 if parent_region == excluded_goal_region:
                     # The location is only accessed through the Goal Chapter which has its locations excluded, so this
                     # chapter completion character unlock location should also be excluded.
@@ -251,10 +216,7 @@ class _RegionBuilder:
                 # The location is accessed from multiple regions, so put the location in its own region that those
                 # regions can be connected to.
                 character_region = world.create_region(f"Unlock {character}")
-                character_location = LegoStarWarsTCSLocation(
-                    world.player, loc_name, world.location_name_to_id[loc_name], character_region
-                )
-                character_region.locations.append(character_location)
+                world.add_location(loc_name, character_region)
                 for parent_region in parent_regions:
                     parent_region.connect(character_region)
                 # There are multiple ways this location could be reached, so enable path display in the Spoiler (when
@@ -280,9 +242,7 @@ class _RegionBuilder:
             if gold_bricks_required == 0:
                 # No Gold Bricks are required to watch the Indy Trailer, so put it in the Bonuses region directly.
                 assert area.name == "Indiana Jones: Trailer"
-                trailer_location = LegoStarWarsTCSLocation(
-                    world.player, area.name, world.location_name_to_id[area.completion_location_name], bonuses)
-                bonuses.locations.append(trailer_location)
+                world.add_location(area.completion_location_name, bonuses)
             else:
                 gold_brick_costs.setdefault(gold_bricks_required, []).append(area)
 
@@ -299,11 +259,7 @@ class _RegionBuilder:
             for area in areas:
                 area_region = world.create_region(area.name)
                 region.connect(area_region)
-                completion_location = LegoStarWarsTCSLocation(world.player,
-                                                              area.completion_location_name,
-                                                              world.location_name_to_id[area.completion_location_name],
-                                                              area_region)
-                region.locations.append(completion_location)
+                world.add_location(area.completion_location_name, area_region)
                 # todo: Item requirements have been removed for now because it is not currently possible to lock
                 #  access to the bonus levels.
                 for item in area.item_requirements:
@@ -311,19 +267,12 @@ class _RegionBuilder:
                         world.character_chapter_access_counts[item] += 1
                 assert area.gold_brick, "Every bonus that requires Gold Bricks to access should award a Gold Brick"
 
-                gold_brick_location = LegoStarWarsTCSLocation(
-                    world.player, f"{area.name} - Gold Brick", None, area_region)
-                gold_brick_location.place_locked_item(world.create_event(GOLD_BRICK_EVENT_NAME))
+                world.add_gold_brick_event(f"{area.name} - Gold Brick", area_region)
                 self.gold_brick_event_count += 1
-                area_region.locations.append(gold_brick_location)
 
                 if self.goal_requires_area_completion:
-                    loc_name = f"{area.name} Completion (Event)"
-                    completion_event_location = LegoStarWarsTCSLocation(world.player, loc_name, None, area_region)
                     # "Level" here is as a user-facing term, with the meaning of "Area" internally.
-                    completion_event_item = world.create_event("Level Completion")
-                    completion_event_location.place_locked_item(completion_event_item)
-                    area_region.locations.append(completion_event_location)
+                    world.add_event_pair(f"{area.name} Completion (Event)", area_region, "Level Completion")
 
                 if world.options.ridesanity:
                     # Checks for riding unique characters
@@ -332,10 +281,7 @@ class _RegionBuilder:
                         self.ridable_character_regions.setdefault(ridable, []).append(t)
 
         # Indiana Jones shop purchase. Unlocks in the shop after watching the Lego Indiana Jones trailer.
-        purchase_indy_name = "Purchase Indiana Jones"
-        purchase_indy = LegoStarWarsTCSLocation(world.player, purchase_indy_name,
-                                                world.location_name_to_id[purchase_indy_name], bonuses)
-        bonuses.locations.append(purchase_indy)
+        world.add_location("Purchase Indiana Jones", bonuses)
         world.character_unlock_location_count += 1
 
     def create_ridesanity_locations(self) -> None:
@@ -349,9 +295,7 @@ class _RegionBuilder:
                 # There is only one region where this ridable can be found, so the ridable location can go directly in
                 # that region.
                 area_short_name, area_region = areas_list[0]
-                ridable_location = LegoStarWarsTCSLocation(
-                    world.player, ridable_location_name, world.location_name_to_id[ridable_location_name], area_region)
-                area_region.locations.append(ridable_location)
+                ridable_location = world.add_location(ridable_location_name, area_region)
                 # If there are any rules, they will be set on the location.
                 requirements = get_ridable_requirements(area_short_name, ridable.user_facing_name)
                 ridesanity_spots[area_short_name].append((ridable_location, requirements))
@@ -364,10 +308,7 @@ class _RegionBuilder:
                     # If there are any rules, they will be set on the entrance.
                     requirements = get_ridable_requirements(area_short_name, ridable.user_facing_name)
                     ridesanity_spots[area_short_name].append((entrance, requirements))
-                ridable_location = LegoStarWarsTCSLocation(
-                    world.player, ridable_location_name, world.location_name_to_id[ridable_location_name],
-                    ridable_region)
-                ridable_region.locations.append(ridable_location)
+                world.add_location(ridable_location_name, ridable_region)
         world.ridesanity_spots.update(ridesanity_spots)
 
     def create_all_episodes_character_purchases(self) -> None:
@@ -376,10 +317,7 @@ class _RegionBuilder:
         self.cantina.connect(all_episodes, "Unlock All Episodes")
         all_episodes_purchases = SHOP_SLOT_REQUIREMENT_TO_UNLOCKS["ALL_EPISODES"]
         for character_name in all_episodes_purchases.keys():
-            purchase = f"Purchase {character_name}"
-            location = LegoStarWarsTCSLocation(world.player, purchase, world.location_name_to_id[purchase],
-                                               all_episodes)
-            all_episodes.locations.append(location)
+            world.add_location(f"Purchase {character_name}", all_episodes)
             purchase_cost = CHARACTERS_AND_VEHICLES_BY_NAME[character_name].purchase_cost
             world.required_score_multiplier_count = max(world.required_score_multiplier_count,
                                                         world._get_score_multiplier_requirement(purchase_cost))
@@ -392,16 +330,12 @@ class _RegionBuilder:
             "Purchase PK Droid",
         ]
         for purchase in starting_purchases:
-            location = LegoStarWarsTCSLocation(world.player, purchase, world.location_name_to_id[purchase],
-                                               self.cantina)
-            self.cantina.locations.append(location)
+            world.add_location(purchase, self.cantina)
         world.character_unlock_location_count += len(starting_purchases)
 
     def create_non_goal_chapter_victory(self) -> None:
-        world = self.world
-        victory = LegoStarWarsTCSLocation(world.player, "Goal", parent=self.cantina)
-        victory.place_locked_item(world.create_event("Victory"))
-        self.cantina.locations.append(victory)
+        """Create the Victory event for the goal when the goal does not require completing a Goal Chapter."""
+        self.world.add_event_pair("Goal", self.cantina, "Victory")
 
 
 def create_regions(world: TCSWorld) -> None:
