@@ -1580,7 +1580,7 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                     # Fire OnPlayerCharacterIdChangeEvent if player characters have changed.
                     await ctx.update_player_characters()
                     # Fire Tick event for all ClientComponents subscribed to the event.
-                    await ctx.event_manager.fire_event_async(OnGameWatcherTickEvent(ctx))
+                    await ctx.event_manager.fire_event_async(OnGameWatcherTickEvent(ctx, in_game_watcher_tick_count))
 
                     # Only queue the message if everything else worked so far.
                     msg = "The client is now fully connected to the game, receiving items and checking locations."

@@ -217,7 +217,13 @@ class OnReceiveSlotDataEvent(Event):
 
 @dataclass
 class OnGameWatcherTickEvent(Event):
-    """Called on each tick of the game watcher loop, while connected to the game."""
+    """Called on each tick of the game watcher loop, while loaded into the game."""
+    tick_count: int
+    """
+    A strictly increasing tick count of game watcher ticks while loaded into the game.
+    Reset to zero upon no longer being loaded into the game.
+    Use modular arithmetic to run tick event callbacks less frequently.
+    """
 
 
 @dataclass
