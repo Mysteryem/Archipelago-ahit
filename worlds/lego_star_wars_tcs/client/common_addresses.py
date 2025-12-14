@@ -1,6 +1,6 @@
 from enum import IntEnum, IntFlag
 
-from .common import StaticUChar, StaticFloat, StaticUint, StaticBOOL, FloatField
+from .common import StaticUChar, StaticFloat, StaticUint, StaticBOOL, FloatField, UCharField
 from .type_aliases import TCSContext
 from ..levels import AREA_ID_TO_CHAPTER_AREA
 
@@ -39,6 +39,8 @@ CURRENT_AREA_ADDRESS = StaticUChar(0x7fd2c1)
 
 # Technically, this is direct access of the WORLDINFO struct at 0x93d858, accessing field offset 0x12c.
 CURRENT_P_AREA_DATA_ADDRESS = StaticUint(0x93d984)
+# ID field of P_AREA_DATA.
+AREA_DATA_ID = UCharField(0x7c)
 
 
 CHARACTERS_SHOP_START = 0x86E4A8  # See CHARACTER_SHOP_SLOTS in items.py for the mapping

@@ -27,6 +27,7 @@ from ..locations import LOCATION_NAME_TO_ID
 from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from .location_checkers.free_play_completion import FreePlayChapterCompletionChecker
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
+from .location_checkers.ridesanity import RidesanityChecker
 from .location_checkers.true_jedi_and_minikits import TrueJediAndMinikitChecker
 from .location_checkers.shop_purchases import PurchasedExtrasChecker, PurchasedCharactersChecker
 from .events import (
@@ -340,6 +341,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     purchased_extras_checker: PurchasedExtrasChecker
     purchased_characters_checker: PurchasedCharactersChecker
     bonus_area_completion_checker: BonusAreaCompletionChecker
+    ridesanity_checker: RidesanityChecker
 
     # Game-state only.
     text_replacer: TextReplacer
@@ -392,6 +394,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.purchased_extras_checker = PurchasedExtrasChecker()
         self.purchased_characters_checker = PurchasedCharactersChecker()
         self.bonus_area_completion_checker = BonusAreaCompletionChecker()
+        self.ridesanity_checker = RidesanityChecker()
 
         self.client_expected_idx = 0
 
@@ -1320,6 +1323,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.purchased_extras_checker = PurchasedExtrasChecker()
         self.purchased_characters_checker = PurchasedCharactersChecker()
         self.bonus_area_completion_checker = BonusAreaCompletionChecker()
+        self.ridesanity_checker = RidesanityChecker()
 
         self.goal_manager = GoalManager()
         self.power_up_receiver = PowerUpReceiver()
@@ -1607,6 +1611,10 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                         await ctx.purchased_characters_checker.check_extra_purchases(ctx, new_location_checks)
                         # todo: Bonus level completion is read from the save data, so does not need to be read often.
                         await ctx.bonus_area_completion_checker.check_completion(ctx, new_location_checks)
+
+                        # New Ridesanity checks are prepared to be sent by other event callbacks, so Ridesanity is cheap
+                        # to check for new locations.
+                        await ctx.ridesanity_checker.check_ridesanity(ctx, new_location_checks)
 
                         # Send newly cleared locations to the server, if there are any.
                         actually_new_location_checks = await ctx.check_locations(new_location_checks)

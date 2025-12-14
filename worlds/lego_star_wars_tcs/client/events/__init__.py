@@ -1,9 +1,11 @@
 import inspect
 import logging
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Callable, TypeVar, Any, ClassVar, Self, Generic, Awaitable, overload, cast
 
 from ..common import ClientComponent
+from ..common_addresses import AREA_DATA_ID
 from ..type_aliases import TCSContext
 
 
@@ -179,6 +181,20 @@ class OnAreaChangeEvent(Event):
 
     def __str__(self):
         return f"{type(self).__name__}(0x{self.old_p_area_data:x} -> 0x{self.new_p_area_data:x})"
+
+    @cached_property
+    def new_area_data_id(self) -> int:
+        if not self.new_p_area_data:
+            return -1
+        else:
+            return AREA_DATA_ID.get(self.context, self.new_p_area_data)
+
+    @cached_property
+    def old_area_data_id(self) -> int:
+        if not self.old_p_area_data:
+            return -1
+        else:
+            return AREA_DATA_ID.get(self.context, self.old_p_area_data)
 
 
 @dataclass

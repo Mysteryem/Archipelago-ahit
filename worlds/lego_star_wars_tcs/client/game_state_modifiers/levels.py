@@ -3,13 +3,14 @@ from typing import AbstractSet, Callable
 
 from .text_replacer import TextId
 from ..events import subscribe_event, OnAreaChangeEvent, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
-from ..common import ClientComponent, UintField, UCharField
+from ..common import ClientComponent, UintField
 from ..common_addresses import (
     OPENED_MENU_DEPTH_ADDRESS,
     CURRENT_P_AREA_DATA_ADDRESS,
     ChapterDoorGameMode,
     IS_CHARACTER_SWAPPING_ENABLED,
     ChallengeMode,
+    AREA_DATA_ID,
 )
 from ..type_aliases import TCSContext, AreaId
 from ...items import ITEM_DATA_BY_NAME, ITEM_DATA_BY_ID, GenericItemData
@@ -31,7 +32,6 @@ ALL_CHAPTER_AREA_IDS_SET = frozenset({area.area_id for area in CHAPTER_AREAS})
 # from an Area door.
 CURRENT_AREA_DOOR_ADDRESS = 0x8795A0
 
-AREA_DATA_ID = UCharField(0x7c)
 AREA_DATA_STORY_TRUE_JEDI_REQUIREMENT = UintField(0x8c)
 AREA_DATA_FREE_PLAY_TRUE_JEDI_REQUIREMENT = UintField(0x90)
 
@@ -316,13 +316,11 @@ class UnlockedChapterManager(ClientComponent):
     @subscribe_event
     def on_area_change(self, event: OnAreaChangeEvent):
         ctx = event.context
-        current_p_area_data = event.new_p_area_data
 
-        if current_p_area_data == 0:
+        current_area_id = event.new_area_data_id
+        if current_area_id == -1:
             # debug_logger.info("Current AreaData pointer is NULL. Nothing to do.")
             return
-
-        current_area_id = AREA_DATA_ID.get(ctx, current_p_area_data)
         chapter_area = AREA_ID_TO_CHAPTER_AREA.get(current_area_id)
 
         if chapter_area is None:
@@ -330,7 +328,7 @@ class UnlockedChapterManager(ClientComponent):
             debug_logger.info("The current area has ID %i, which is not a chapter Area", current_area_id)
             return
 
-        self._set_current_area_true_jedi_requirement(event.context, current_p_area_data, chapter_area)
+        self._set_current_area_true_jedi_requirement(event.context, event.new_p_area_data, chapter_area)
         # Check if the player is in a chapter.
         if current_area_id in AREA_ID_TO_CHAPTER_AREA:
             if not IS_CHARACTER_SWAPPING_ENABLED.get(ctx):

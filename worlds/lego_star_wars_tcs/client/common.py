@@ -3,6 +3,9 @@ import abc
 from .type_aliases import TCSContext
 
 
+AREA_ID_CANTINA = 66
+
+
 class StaticUChar(int):
     def get(self, ctx: TCSContext) -> int:
         return ctx.read_uchar(self)

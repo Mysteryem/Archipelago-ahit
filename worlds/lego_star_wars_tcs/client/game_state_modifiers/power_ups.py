@@ -1,5 +1,6 @@
 import logging
 
+from ..common import AREA_ID_CANTINA
 from ..common_addresses import (
     is_actively_playing,
     player_character_entity_iter,
@@ -17,7 +18,6 @@ debug_logger = logging.getLogger("TCS Debug")
 
 # todo: Duplicated here for now, but common values like this should be moved to another module.
 LEVEL_ID_CANTINA = 325
-AREA_ID_CANTINA = 66
 
 # LEGO City and New Town are special levels where the player has to get 1 million studs from the level. Most sources of
 # studs in these levels ignore the 2x multiplier of having a Power Up, only loose studs on the ground get multiplied.
