@@ -10,7 +10,8 @@ debug_logger = logging.getLogger("TCS Debug")
 
 
 ALL_STORY_COMPLETION_CHECKS: dict[AreaId, tuple[ApLocationId, MemoryAddress]] = {
-    bonus.area_id: (LOCATION_NAME_TO_ID[bonus.name], bonus.address + bonus.completion_offset) for bonus in BONUS_AREAS
+    bonus.area_id: (LOCATION_NAME_TO_ID[bonus.completion_location_name], bonus.address + bonus.completion_offset)
+    for bonus in BONUS_AREAS
 }
 
 
