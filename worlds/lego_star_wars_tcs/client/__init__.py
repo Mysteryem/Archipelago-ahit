@@ -1499,6 +1499,7 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
             last_message = msg
 
     sleep_time = 0.0
+    in_game_watcher_tick_count = 0
     while not ctx.exit_event.is_set():
         if sleep_time > 0.0:
             try:
@@ -1521,6 +1522,7 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                     pass
             else:
                 if not ctx.is_in_game():
+                    in_game_watcher_tick_count = 0
                     previously_not_in_game = True
                     # Need to wait for the player to load into a save file.
                     if (ctx.last_loaded_save_file is not None
@@ -1600,17 +1602,24 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                     #  file.
                     if ctx.slot:
                         new_location_checks: list[int] = []
-                        # todo: Free play completion needs to be checked often (need to ensure that players cannot click
-                        #  through the status screen faster than we're polling the game to check for free play!)
+                        # Free play completion needs to be checked often (need to ensure that players cannot click
+                        # through the status screen faster than we're polling the game to check for free play!)
                         await ctx.free_play_completion_checker.check_completion(ctx, new_location_checks)
-                        # todo: True Jedi and Minikit counts (deprecated) in the save data do not need to be checked
-                        #  often, but the in-level True Jedi and Minikit counts (deprecated) do need to be check often.
+
+                        # todo: Split into two separate methods, one for the current area that is called frequently, and
+                        #  one for save data, which is called infrequently.
+                        # True Jedi and Minikit counts (deprecated) in the save data do not need to be checked often,
+                        # but the in-level True Jedi and Minikit counts (deprecated) do need to be checked often.
                         await ctx.true_jedi_and_minikit_checker.check_true_jedi_and_minikits(ctx, new_location_checks)
-                        # todo: Purchases do not need to be checked often.
-                        await ctx.purchased_extras_checker.check_extra_purchases(ctx, new_location_checks)
-                        await ctx.purchased_characters_checker.check_extra_purchases(ctx, new_location_checks)
-                        # todo: Bonus level completion is read from the save data, so does not need to be read often.
-                        await ctx.bonus_area_completion_checker.check_completion(ctx, new_location_checks)
+
+                        # Purchases do not need to be checked often.
+                        if in_game_watcher_tick_count % 10 == 0:
+                            await ctx.purchased_extras_checker.check_extra_purchases(ctx, new_location_checks)
+                            await ctx.purchased_characters_checker.check_extra_purchases(ctx, new_location_checks)
+
+                        # Bonus level completion is read from the save data, so does not need to be checked often.
+                        if in_game_watcher_tick_count % 20 == 0:
+                            await ctx.bonus_area_completion_checker.check_completion(ctx, new_location_checks)
 
                         # New Ridesanity checks are prepared to be sent by other event callbacks, so Ridesanity is cheap
                         # to check for new locations.
@@ -1625,6 +1634,8 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                             if ctx.goal_manager.is_goal_complete(ctx):
                                 await ctx.send_msgs([{"cmd": "StatusUpdate", "status": ClientStatus.CLIENT_GOAL}])
                                 ctx.finished_game = True
+
+                    in_game_watcher_tick_count += 1
                 sleep_time = 0.1
         except Exception as e:
             await ctx.unhook_game_process()
