@@ -33,9 +33,6 @@ class _RegionBuilder:
     available_minikits_check: int = 0
     """Double check that the minikit counts is as expected."""
 
-    gold_brick_event_count: int = 0
-    """The number of Gold Brick events created. Compared against the expected number calculated in generate_early."""
-
     cantina: Region = field(init=False)
     """The origin region of the world, the Cantina."""
 
@@ -94,7 +91,6 @@ class _RegionBuilder:
             if create_gold_bricks:
                 # Completion Gold Brick event.
                 world.add_gold_brick_event(f"{completion_name} - Gold Brick", chapter_region)
-                self.gold_brick_event_count += 1
 
             # True Jedi.
             if world.options.enable_true_jedi_locations:
@@ -103,7 +99,6 @@ class _RegionBuilder:
                 if create_gold_bricks:
                     # True Jedi Gold Brick event.
                     world.add_gold_brick_event(f"{true_jedi_name} - Gold Brick", chapter_region)
-                    self.gold_brick_event_count += 1
 
             # Power Brick.
             world.add_location(chapter.power_brick_location_name, chapter_region)
@@ -136,8 +131,6 @@ class _RegionBuilder:
                 if create_gold_bricks:
                     # All Minikits Gold Brick.
                     world.add_gold_brick_event(f"{chapter_minikits.name} - Gold Brick", chapter_minikits)
-                    # todo: Increment self.gold_brick_event_count on the world instance in world.add_gold_brick_event.
-                    self.gold_brick_event_count += 1
             elif world.options.minikit_goal_amount != 0:
                 # If Minikit locations are disabled, but the goal requires Minikits, the Chapter Completion location
                 # is instead treated as if it was the vanilla location for a 10 Minikits bundle.
@@ -268,7 +261,6 @@ class _RegionBuilder:
                 assert area.gold_brick, "Every bonus that requires Gold Bricks to access should award a Gold Brick"
 
                 world.add_gold_brick_event(f"{area.name} - Gold Brick", area_region)
-                self.gold_brick_event_count += 1
 
                 if self.goal_requires_area_completion:
                     # "Level" here is as a user-facing term, with the meaning of "Area" internally.
@@ -368,10 +360,6 @@ def create_regions(world: TCSWorld) -> None:
 
     if world.options.ridesanity:
         builder.create_ridesanity_locations()
-
-    # Check that the number of Gold Brick events created matched what was expected from the calculation in
-    # generate_early.
-    assert builder.gold_brick_event_count == world.expected_gold_brick_event_count
 
     # 'All Episodes' character purchases.
     if world.options.enable_all_episodes_purchases:

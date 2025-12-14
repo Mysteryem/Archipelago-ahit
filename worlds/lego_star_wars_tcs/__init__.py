@@ -1030,6 +1030,10 @@ class LegoStarWarsTCSWorld(World):
 
     def create_regions(self) -> None:
         regions.create_regions(self)
+        # Check that the number of Gold Brick events created matched what was expected from the calculation in
+        # generate_early.
+        assert self.gold_brick_event_count == self.expected_gold_brick_event_count, \
+            "Created Gold Bricks did not match expected Gold Bricks, something is wrong."
 
     def add_location(self, name: str, region: Region) -> LegoStarWarsTCSLocation:
         location = LegoStarWarsTCSLocation(self.player, name, self.location_name_to_id[name], region)
@@ -1046,6 +1050,7 @@ class LegoStarWarsTCSWorld(World):
         return location
 
     def add_gold_brick_event(self, location_name: str, region: Region) -> LegoStarWarsTCSLocation:
+        self.gold_brick_event_count += 1
         return self.add_event_pair(location_name, region, GOLD_BRICK_EVENT_NAME)
 
     def set_abilities_rule(self, spot: Location | Entrance, abilities: CharacterAbility):
