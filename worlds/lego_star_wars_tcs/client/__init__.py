@@ -1069,7 +1069,10 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             self.current_p_area_data = new_p_area_data
             await self.event_manager.fire_event_async(OnAreaChangeEvent(self, current_p_area_data, new_p_area_data))
 
-    def update_current_level_id(self, new_level_id: int):
+    def update_current_level_id(self, new_level_id: int | None = None):
+        if new_level_id is None:
+            new_level_id = self.read_ushort(CURRENT_LEVEL_ID)
+
         current_level_id = self.current_level_id
         if new_level_id != current_level_id:
             # Update client state.
@@ -1083,6 +1086,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             }]))
             self.event_manager.fire_event(OnLevelChangeEvent(self, current_level_id, new_level_id))
 
+    # todo: A number of uses of this method should just check self.current_level_id instead, or listen to the
+    #  OnLevelChangeEvent.
     def read_current_level_id(self) -> int:
         """
         Read the current level ID from memory.
@@ -1571,6 +1576,10 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                 # coroutines to allow the player to play while disconnected.
                 # todo: Is the `is_in_game()` check here still necessary now that there is an earlier check?
                 if ctx.is_in_game():
+                    # Ensure that the OnLevelChangeEvent gets fired consistently, by updating the current level ID on
+                    # each game watcher tick.
+                    ctx.update_current_level_id()
+
                     await ctx.free_play_completion_checker.initialize(ctx)
                     await give_items(ctx)
 
