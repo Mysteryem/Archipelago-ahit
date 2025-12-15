@@ -21,8 +21,8 @@ class Event:
         Event._subclasses[cls.__name__] = cls
 
     @staticmethod
-    def get_subclass(subclass_name: str):
-        return Event._subclasses.get(subclass_name)
+    def get_subclass(subclass_name: str) -> "type[Event]":
+        return Event._subclasses[subclass_name]
 
 
 _Subscriber = TypeVar("_Subscriber")
