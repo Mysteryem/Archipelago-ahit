@@ -686,6 +686,33 @@ class Ridesanity(Toggle):
     rich_text_doc = True
 
 
+class EnableNonPowerBrickExtraLocations(DefaultOnToggle):
+    """
+    Enable locations for purchasing the Extras from the shop that do not require Power Bricks to unlock, and allow those
+    Extras to be shuffled into the item pool.
+
+    Adds 7 locations usually accessible from the start.
+
+    These are:
+    - Purchase Extra Toggle
+    - Purchase Fertilizer
+    - Purchase Disguise
+    - Purchase Daisy Chains
+    - Purchase Chewbacca Carrying C-3PO
+    - Purchase Tow Death Star
+    - Purchase Beep Beep
+
+    They are all classified as Filler items, except Extra Toggle, which is classified as Useful because of Mouse Droid's
+    high movement speed and a few Extra Toggle characters having abilities (in the future Extra Toggle will be
+    Progression).
+
+    If this option is not enabled, the locations will still exist in the multiworld, but will contain their vanilla
+    items.
+    """
+    display_name = "Non Power Brick Extra Purchases"
+    rich_text_doc = True
+
+
 class ChapterUnlockRequirement(ChoiceFromStringExtension):
     """Choose how Chapters within an Episode are unlocked.
 
@@ -1319,6 +1346,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     enable_all_episodes_purchases: EnableAllEpisodesCharacterPurchaseLocations
     enable_minikit_locations: EnableMinikitLocations
     enable_true_jedi_locations: EnableTrueJediLocations
+    enable_starting_extras_locations: EnableNonPowerBrickExtraLocations
     ridesanity: Ridesanity
 
     # Logic and Difficulty.
@@ -1392,6 +1420,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         EnableChapterCompletionCharacterUnlockLocations,
         EnableBonusLocations,
         EnableAllEpisodesCharacterPurchaseLocations,
+        EnableNonPowerBrickExtraLocations,
         Ridesanity,
     ]),
     OptionGroup("Logic and Difficulty Options", [

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from BaseClasses import Region, LocationProgressType, Location, Entrance
 
 from .constants import GOLD_BRICK_EVENT_NAME, CharacterAbility
-from .items import CHARACTERS_AND_VEHICLES_BY_NAME, SHOP_SLOT_REQUIREMENT_TO_UNLOCKS
+from .items import CHARACTERS_AND_VEHICLES_BY_NAME, SHOP_SLOT_REQUIREMENT_TO_UNLOCKS, PURCHASABLE_NON_POWER_BRICK_EXTRAS
 from .levels import (
     EPISODE_TO_CHAPTER_AREAS,
     CHAPTER_AREA_STORY_CHARACTERS,
@@ -323,6 +323,11 @@ class _RegionBuilder:
             character = CHARACTERS_AND_VEHICLES_BY_NAME[purchase]
             world.add_shop_location(character.purchase_location_name, self.cantina, character.purchase_cost)
         world.character_unlock_location_count += len(starting_purchases)
+
+        for extra in PURCHASABLE_NON_POWER_BRICK_EXTRAS:
+            loc = world.add_shop_location(extra.purchase_location_name, self.cantina, extra.studs_cost)
+            if not world.options.enable_starting_extras_locations:
+                loc.place_locked_item(world.create_item(extra.name))
 
     def create_non_goal_chapter_victory(self) -> None:
         """Create the Victory event for the goal when the goal does not require completing a Goal Chapter."""

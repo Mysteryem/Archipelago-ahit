@@ -34,6 +34,7 @@ from .items import (
     MINIKITS_BY_NAME,
     EXTRAS_BY_NAME,
     SHOP_SLOT_REQUIREMENT_TO_UNLOCKS,
+    PURCHASABLE_NON_POWER_BRICK_EXTRAS,
 )
 from .levels import (
     BonusArea,
@@ -542,15 +543,24 @@ class LegoStarWarsTCSWorld(World):
                 del possible_pool_character_items[character.name]
         non_required_characters = list(possible_pool_character_items.values())
 
+        # Start with all sendable Extras as possible to add to the item pool.
+        possible_pool_extras = {name: extra for name, extra in EXTRAS_BY_NAME.items() if extra.is_sendable}
+
+        if not self.options.enable_starting_extras_locations:
+            # The starting Extra purchases are vanilla, so don't include their Extras in the pool.
+            for extra in PURCHASABLE_NON_POWER_BRICK_EXTRAS:
+                del possible_pool_extras[extra.name]
+
         if self.options.start_with_detectors:
             detectors = {"Minikit Detector", "Power Brick Detector"}
-            assert detectors <= set(EXTRAS_BY_NAME.keys())
-            non_required_extras = [name for name, extra in EXTRAS_BY_NAME.items()
-                                   if extra.is_sendable and name not in detectors]
+            assert detectors <= set(possible_pool_extras.keys())
+            # The detector Extras are being given to the player at the start, so don't include their Extras in the pool.
+            for extra_name in detectors:
+                del possible_pool_extras[extra_name]
             for detector in sorted(detectors):
                 self.push_precollected(self.create_item(detector))
-        else:
-            non_required_extras = [name for name, extra in EXTRAS_BY_NAME.items() if extra.is_sendable]
+
+        non_required_extras = list(possible_pool_extras.keys())
 
         max_studs_purchase = max(loc.studs_cost for loc in self.get_locations()
                                  if isinstance(loc, LegoStarWarsTCSShopLocation))
@@ -593,14 +603,20 @@ class LegoStarWarsTCSWorld(World):
         free_character_location_count += self.goal_excluded_character_unlock_location_count
 
         # Try to create as many Extras as this.
-        reserved_power_brick_location_count: int
+        reserved_extras_location_count = len(chapters_with_non_excluded_locations)
+        if self.options.enable_starting_extras_locations:
+            reserved_extras_location_count += len(PURCHASABLE_NON_POWER_BRICK_EXTRAS)
+
         free_extra_location_count: int
         if self.options.filler_reserve_extras:
-            reserved_power_brick_location_count = len(chapters_with_non_excluded_locations)
+            # All the locations from Extras are reserved for putting Extra items into the item pool.
             free_extra_location_count = 0
         else:
-            reserved_power_brick_location_count = min(required_extras_count, len(chapters_with_non_excluded_locations))
-            free_extra_location_count = len(chapters_with_non_excluded_locations) - reserved_power_brick_location_count
+            # Reserve only as many locations for Extras as the number of Extras that are required to be in the item
+            # pool.
+            starting_reserved_count = reserved_extras_location_count
+            reserved_extras_location_count = min(required_extras_count, starting_reserved_count)
+            free_extra_location_count = starting_reserved_count - reserved_extras_location_count
         if goal_chapter_locations_excluded:
             # The Extra location of the Goal Chapter is excluded, and does not contribute an Extra to the item pool.
             free_extra_location_count += 1
@@ -686,7 +702,7 @@ class LegoStarWarsTCSWorld(World):
             needed = -free_location_count
             # Subtract from reserved, but not required, counts.
             ok_to_replace_character_count = max(0, reserved_character_location_count - required_characters_count)
-            ok_to_replace_extras_count = max(0, reserved_power_brick_location_count - required_extras_count)
+            ok_to_replace_extras_count = max(0, reserved_extras_location_count - required_extras_count)
             total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
             if needed > total_replaceable:
                 if self.options.goal_requires_kyber_bricks:
@@ -705,14 +721,14 @@ class LegoStarWarsTCSWorld(World):
             character_subtract = min(needed, round(character_percentage * needed))
             extra_subtract = needed - character_subtract
             reserved_character_location_count -= character_subtract
-            reserved_power_brick_location_count -= extra_subtract
+            reserved_extras_location_count -= extra_subtract
             free_location_count = 0
 
         assert free_location_count >= 0, "free_location_count must always be >= 0"
 
         expected_num_to_fill = (
                 reserved_character_location_count
-                + reserved_power_brick_location_count
+                + reserved_extras_location_count
                 + required_minikit_location_count
                 + free_location_count
                 + len(extra_required_items)
@@ -735,7 +751,7 @@ class LegoStarWarsTCSWorld(World):
             needed = required_excludable_count - free_location_count
             # Find how many character/extra locations can be used for filler placement without issue.
             ok_to_replace_character_count = max(0, reserved_character_location_count - required_characters_count)
-            ok_to_replace_extras_count = max(0, reserved_power_brick_location_count - required_extras_count)
+            ok_to_replace_extras_count = max(0, reserved_extras_location_count - required_extras_count)
             total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
             if needed > total_replaceable:
                 # There are too many non-excludable items for the number of excluded locations.
@@ -757,7 +773,7 @@ class LegoStarWarsTCSWorld(World):
             character_subtract = min(needed, round(character_percentage * needed))
             extra_subtract = needed - character_subtract
             reserved_character_location_count -= character_subtract
-            reserved_power_brick_location_count -= extra_subtract
+            reserved_extras_location_count -= extra_subtract
             free_location_count = 0
         else:
             free_location_count -= required_excludable_count
@@ -811,8 +827,8 @@ class LegoStarWarsTCSWorld(World):
 
         # Create required extras.
         start_inventory_required_extras_count: int
-        if reserved_power_brick_location_count < required_extras_count:
-            to_subtract = required_extras_count - reserved_power_brick_location_count
+        if reserved_extras_location_count < required_extras_count:
+            to_subtract = required_extras_count - reserved_extras_location_count
             if free_location_count < to_subtract:
                 start_inventory_required_extras_count = to_subtract - free_location_count
                 self.log_warning("There were not enough locations to add all required Extras to the item pool,"
@@ -821,9 +837,9 @@ class LegoStarWarsTCSWorld(World):
             else:
                 free_location_count -= to_subtract
                 start_inventory_required_extras_count = 0
-            reserved_power_brick_location_count = 0
+            reserved_extras_location_count = 0
         else:
-            reserved_power_brick_location_count -= required_extras_count
+            reserved_extras_location_count -= required_extras_count
             start_inventory_required_extras_count = 0
 
         self.random.shuffle(pool_required_extras)
@@ -895,8 +911,8 @@ class LegoStarWarsTCSWorld(World):
                 # Sort preferred extras to the front so that they get picked first.
                 non_required_extras.sort(key=lambda extra: -1 if extra in preferred_extras else 0)
 
-        picked_extras = non_required_extras[:reserved_power_brick_location_count]
-        leftover_extras = non_required_extras[reserved_power_brick_location_count:]
+        picked_extras = non_required_extras[:reserved_extras_location_count]
+        leftover_extras = non_required_extras[reserved_extras_location_count:]
         for extra in picked_extras:
             item = create_item(extra)
             add_to_pool(item)
@@ -1391,6 +1407,7 @@ class LegoStarWarsTCSWorld(World):
                 "death_link_studs_loss",
                 "death_link_studs_loss_scaling",
                 "ridesanity",
+                "enable_starting_extras_locations",
             )
         }
 

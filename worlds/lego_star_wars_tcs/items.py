@@ -98,6 +98,16 @@ class ExtraData(GenericItemData):
         return f"Purchase {self.name}"
 
 
+@dataclass(frozen=True)
+class NonPowerBrickExtraData(ExtraData):
+    studs_cost: int
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.level_shortname is not None:
+            raise ValueError("NonPowerBrickExtraData should not have a level_shortname set.")
+
+
 # Purchasable characters and how they are unlocked, in the order they appear in the shop.
 # See the order of characters in COLLECTION.TXT that use "buy_in_shop", plus Indiana Jones, who is special.
 CHARACTER_SHOP_SLOTS: dict[str, tuple[str | None, int]] = {
@@ -466,14 +476,14 @@ ITEM_DATA: list[GenericItemData] = [
     _char(176, "Qui-Gon Jinn", 104, abilities=JEDI),
     _char(177, "Obi-Wan Kenobi", 1, abilities=JEDI),
     _char(178, "TC-14", 71, abilities=PROTOCOL_DROID),
-    _extra(-1, "Extra Toggle", 0x0, None),
-    _extra(-1, "Fertilizer", 0x1, None),
-    _extra(-1, "Disguise", 0x2, None),
-    _extra(-1, "Daisy Chains", 0x3, None),
-    _extra(-1, "Chewbacca Carrying C-3PO", 0x4, None),
-    _extra(-1, "Tow Death Star", 0x5, None),
-    _extra(-1, "Silhouettes", 0x6, None),
-    _extra(-1, "Beep Beep", 0x7, None),
+    NonPowerBrickExtraData(179, "Extra Toggle", 0x0, None, 30000),
+    NonPowerBrickExtraData(180, "Fertilizer", 0x1, None, 8000),
+    NonPowerBrickExtraData(181, "Disguise", 0x2, None, 10000),
+    NonPowerBrickExtraData(182, "Daisy Chains", 0x3, None, 5000),
+    NonPowerBrickExtraData(183, "Chewbacca Carrying C-3PO", 0x4, None, 10000),
+    NonPowerBrickExtraData(184, "Tow Death Star", 0x5, None, 5000),
+    NonPowerBrickExtraData(185, "Silhouettes", 0x6, None, 10000),
+    NonPowerBrickExtraData(186, "Beep Beep", 0x7, None, 7500),
     _extra(-1, "Adaptive Difficulty", 0x2C, None),  # Effectively a difficulty setting, so not randomized.
     # Custom characters can only use unlocked character equipment, besides some blasters. They do not get access to
     # lightsabers/force unless Jedi are unlocked.
@@ -527,6 +537,9 @@ USEFUL_NON_PROGRESSION_CHARACTERS: set[str] = {
 ITEM_DATA_BY_NAME: Mapping[str, GenericItemData] = {data.name: data for data in ITEM_DATA}
 ITEM_DATA_BY_ID: Mapping[int, GenericItemData] = {data.code: data for data in ITEM_DATA if data.is_sendable}
 EXTRAS_BY_NAME: Mapping[str, ExtraData] = {data.name: data for data in ITEM_DATA if isinstance(data, ExtraData)}
+PURCHASABLE_NON_POWER_BRICK_EXTRAS: tuple[NonPowerBrickExtraData, ...] = tuple(
+    [extra for extra in EXTRAS_BY_NAME.values() if isinstance(extra, NonPowerBrickExtraData)]
+)
 CHARACTERS_AND_VEHICLES_BY_NAME: Mapping[str, GenericCharacterData] = {data.name: data for data in ITEM_DATA
                                                                        if isinstance(data, GenericCharacterData)}
 GENERIC_BY_NAME: Mapping[str, GenericItemData] = {data.name: data for data in ITEM_DATA if data.item_type == "Generic"}

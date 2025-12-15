@@ -27,6 +27,7 @@ DIRECT_SLOT_DATA_OPTIONS = (
     "goal_chapter_locations_mode",
     "easier_true_jedi",
     "ridesanity",
+    "enable_starting_extras_locations",
 )
 assert all(option_name in LegoStarWarsTCSOptions.type_hints for option_name in DIRECT_SLOT_DATA_OPTIONS)
 

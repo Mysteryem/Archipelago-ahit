@@ -706,6 +706,14 @@ LOCATION_NAME_TO_ID = {
     "Ride Cantina Car": 646,
     "Ride Speeder Bike": 647,
     "Ride AT-AT": 648,
+    "Purchase Extra Toggle": 649,
+    "Purchase Fertilizer": 650,
+    "Purchase Disguise": 651,
+    "Purchase Daisy Chains": 652,
+    "Purchase Chewbacca Carrying C-3PO": 653,
+    "Purchase Tow Death Star": 654,
+    "Purchase Silhouettes": 655,
+    "Purchase Beep Beep": 656,
 }
 
 
