@@ -2,7 +2,7 @@ import inspect
 import logging
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Callable, TypeVar, Any, ClassVar, Self, Generic, Awaitable, overload, cast
+from typing import Callable, TypeVar, Any, ClassVar, Generic, Awaitable, overload, cast
 
 from ..common import ClientComponent
 from ..common_addresses import AREA_DATA_ID
@@ -14,7 +14,7 @@ debug_logger = logging.getLogger("TCS Debug")
 
 @dataclass
 class Event:
-    _subclasses: ClassVar[dict[str, type[Self]]] = {}
+    _subclasses: "ClassVar[dict[str, type[Event]]]" = {}
     context: TCSContext
 
     def __init_subclass__(cls, **kwargs):
