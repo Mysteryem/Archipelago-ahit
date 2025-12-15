@@ -375,6 +375,8 @@ def create_regions(world: TCSWorld) -> None:
     if world.options.enable_all_episodes_purchases:
         builder.create_all_episodes_character_purchases()
 
+    builder.create_starting_purchases()
+
     # General Victory event.
     if not world.goal_chapter:
         builder.create_non_goal_chapter_victory()
