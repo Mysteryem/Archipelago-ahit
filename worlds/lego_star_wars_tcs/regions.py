@@ -9,7 +9,6 @@ from .items import CHARACTERS_AND_VEHICLES_BY_NAME, SHOP_SLOT_REQUIREMENT_TO_UNL
 from .levels import (
     EPISODE_TO_CHAPTER_AREAS,
     CHAPTER_AREA_STORY_CHARACTERS,
-    DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
     BonusArea,
     BONUS_AREAS,
     SHORT_NAME_TO_CHAPTER_AREA,
@@ -351,11 +350,6 @@ def create_regions(world: TCSWorld) -> None:
         # Every Chapter has at least 1 Story Character, so if none exist in a generation, the locations should be
         # disabled.
         assert not builder.world.options.enable_story_character_unlock_locations
-
-    # Adjust required score multipliers for any enabled chapters with difficult or potentially impossible True Jedi.
-    if (world.options.enable_true_jedi_locations
-            and not DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI.isdisjoint(world.enabled_chapters_with_locations)):
-        world.required_score_multiplier_count = max(1, world.required_score_multiplier_count)
 
     # Available minikit count is calculated in generate_early.
     if world.available_minikits != builder.available_minikits_check:

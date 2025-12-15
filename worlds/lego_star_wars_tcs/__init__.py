@@ -554,6 +554,14 @@ class LegoStarWarsTCSWorld(World):
             non_required_extras = [name for name, extra in EXTRAS_BY_NAME.items() if extra.is_sendable]
 
         required_score_multipliers = self.required_score_multiplier_count
+        # Increase required_score_multipliers to at least 1 if there are any enabled chapters with difficult or
+        # potentially impossible True Jedi.
+        if (required_score_multipliers < 1
+                and self.options.enable_true_jedi_locations
+                and not self.options.easier_true_jedi
+                and not DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI.isdisjoint(self.enabled_chapters_with_locations)):
+            required_score_multipliers = 1
+
         non_required_score_multipliers = 5 - required_score_multipliers
         assert 0 <= required_score_multipliers <= 5
         pool_required_extras = ["Progressive Score Multiplier"] * required_score_multipliers
