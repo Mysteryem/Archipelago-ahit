@@ -64,6 +64,12 @@ class GenericCharacterData(GenericItemData):
         _unlock_method, studs_cost = CHARACTER_SHOP_SLOTS.get(self.name, (..., 0))
         object.__setattr__(self, "purchase_cost", studs_cost)
 
+    @property
+    def purchase_location_name(self) -> str:
+        if self.shop_slot == -1:
+            raise RuntimeError(f"{self.name} has no shop slot, so cannot be purchased.")
+        return f"Purchase {self.name}"
+
 
 @dataclass(frozen=True)
 class CharacterData(GenericCharacterData):
@@ -86,6 +92,10 @@ class ExtraData(GenericItemData):
     def __post_init__(self):
         object.__setattr__(self, "shop_slot_byte", self.extra_number // 8)
         object.__setattr__(self, "shop_slot_bit_mask", 1 << (self.extra_number % 8))
+
+    @property
+    def purchase_location_name(self) -> str:
+        return f"Purchase {self.name}"
 
 
 # Purchasable characters and how they are unlocked, in the order they appear in the shop.

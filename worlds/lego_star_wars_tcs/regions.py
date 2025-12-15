@@ -100,18 +100,12 @@ class _RegionBuilder:
                     world.add_gold_brick_event(f"{true_jedi_name} - Gold Brick", chapter_region)
 
             # Power Brick.
-            world.add_location(chapter.power_brick_location_name, chapter_region)
-            world.required_score_multiplier_count = max(
-                world.required_score_multiplier_count,
-                world._get_score_multiplier_requirement(chapter.power_brick_studs_cost))
+            world.add_shop_location(chapter.power_brick_location_name, chapter_region, chapter.power_brick_studs_cost)
 
             # Character Purchases in the shop.
             # Character purchases unlocked upon completing the chapter (normally in Story mode).
             for shop_unlock, studs_cost in chapter.character_shop_unlocks.items():
-                world.add_location(shop_unlock, chapter_region)
-                world.required_score_multiplier_count = max(
-                    world.required_score_multiplier_count,
-                    world._get_score_multiplier_requirement(studs_cost))
+                world.add_shop_location(shop_unlock, chapter_region, studs_cost)
             world.character_unlock_location_count += len(chapter.character_shop_unlocks)
 
             # Minikits.
@@ -318,20 +312,16 @@ class _RegionBuilder:
         self.cantina.connect(all_episodes, "Unlock All Episodes")
         all_episodes_purchases = SHOP_SLOT_REQUIREMENT_TO_UNLOCKS["ALL_EPISODES"]
         for character_name in all_episodes_purchases.keys():
-            world.add_location(f"Purchase {character_name}", all_episodes)
-            purchase_cost = CHARACTERS_AND_VEHICLES_BY_NAME[character_name].purchase_cost
-            world.required_score_multiplier_count = max(world.required_score_multiplier_count,
-                                                        world._get_score_multiplier_requirement(purchase_cost))
+            character = CHARACTERS_AND_VEHICLES_BY_NAME[character_name]
+            world.add_shop_location(character.purchase_location_name, all_episodes, character.purchase_cost)
         world.character_unlock_location_count += len(all_episodes_purchases)
 
     def create_starting_purchases(self) -> None:
         world = self.world
-        starting_purchases = [
-            "Purchase Gonk Droid",
-            "Purchase PK Droid",
-        ]
+        starting_purchases = ("Gonk Droid", "PK Droid")
         for purchase in starting_purchases:
-            world.add_location(purchase, self.cantina)
+            character = CHARACTERS_AND_VEHICLES_BY_NAME[purchase]
+            world.add_shop_location(character.purchase_location_name, self.cantina, character.purchase_cost)
         world.character_unlock_location_count += len(starting_purchases)
 
     def create_non_goal_chapter_victory(self) -> None:

@@ -51,7 +51,7 @@ from .levels import (
     BOSS_UNIQUE_NAME_TO_CHAPTER,
     DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
 )
-from .locations import LOCATION_NAME_TO_ID, LegoStarWarsTCSLocation, LEVEL_SHORT_NAMES_SET
+from .locations import LOCATION_NAME_TO_ID, LegoStarWarsTCSLocation, LEVEL_SHORT_NAMES_SET, LegoStarWarsTCSShopLocation
 from .options import (
     LegoStarWarsTCSOptions,
     StartingChapter,
@@ -156,7 +156,6 @@ class LegoStarWarsTCSWorld(World):
     expected_gold_brick_event_count: int = -1
     character_unlock_location_count: int = 0
     goal_excluded_character_unlock_location_count: int = 0
-    required_score_multiplier_count: int = 0  # set in create_regions
 
     ridesanity_spots: dict[str, list[tuple[Location | Entrance, CharacterAbility | None]]]
     ridesanity_location_count: int = 0
@@ -553,7 +552,10 @@ class LegoStarWarsTCSWorld(World):
         else:
             non_required_extras = [name for name, extra in EXTRAS_BY_NAME.items() if extra.is_sendable]
 
-        required_score_multipliers = self.required_score_multiplier_count
+        max_studs_purchase = max(loc.studs_cost for loc in self.get_locations()
+                                 if isinstance(loc, LegoStarWarsTCSShopLocation))
+
+        required_score_multipliers = self._get_score_multiplier_requirement(max_studs_purchase)
         # Increase required_score_multipliers to at least 1 if there are any enabled chapters with difficult or
         # potentially impossible True Jedi.
         if (required_score_multipliers < 1
@@ -1048,6 +1050,11 @@ class LegoStarWarsTCSWorld(World):
         region.locations.append(location)
         return location
 
+    def add_shop_location(self, name: str, region: Region, purchase_cost: int) -> LegoStarWarsTCSLocation:
+        location = LegoStarWarsTCSShopLocation(self.player, name, self.location_name_to_id[name], region, purchase_cost)
+        region.locations.append(location)
+        return location
+
     def add_event_pair(self, location_name: str, region: Region, item_name: str = "") -> LegoStarWarsTCSLocation:
         if not item_name:
             item_name = location_name
@@ -1176,20 +1183,14 @@ class LegoStarWarsTCSWorld(World):
                     # Remove any requirements already satisfied by the chapter entrance before setting the rule.
                     self.set_any_abilities_rule(spot, *[ability & ~entrance_abilities for ability in abilities])
 
-                # Set Power Brick logic
+                # Set Power Brick logic. Score multiplier requirements are added later.
                 power_brick = self.get_location(chapter.power_brick_location_name)
                 set_chapter_spot_abilities_rule(power_brick, *chapter.power_brick_ability_requirements)
-                self._add_score_multiplier_rule(power_brick, chapter.power_brick_studs_cost)
 
                 # Set Minikits logic
                 if self.options.enable_minikit_locations:
                     all_minikits_entrance = self.get_entrance(f"{chapter.name} - Collect All Minikits")
                     set_chapter_spot_abilities_rule(all_minikits_entrance, chapter.all_minikits_ability_requirements)
-
-                # Set Character Purchase logic
-                for shop_unlock, studs_cost in chapter.character_shop_unlocks.items():
-                    purchase_location = self.get_location(shop_unlock)
-                    self._add_score_multiplier_rule(purchase_location, studs_cost)
 
                 # Set True Jedi logic
                 if self.options.enable_true_jedi_locations and not self.options.easier_true_jedi:
@@ -1239,9 +1240,6 @@ class LegoStarWarsTCSWorld(World):
             elif self.options.all_episodes_character_purchase_requirements == "episodes_tokens":
                 set_rule(entrance,
                          lambda state, p=player: state.has("Episode Completion Token", p, 6))
-            for character_name, studs_cost in SHOP_SLOT_REQUIREMENT_TO_UNLOCKS["ALL_EPISODES"].items():
-                purchase_location = self.get_location(f"Purchase {character_name}")
-                self._add_score_multiplier_rule(purchase_location, studs_cost)
 
         # Cantina Ridesanity.
         # todo: Currently there are no rules because the player is always forced to start with a Jedi, but there will be
@@ -1249,6 +1247,11 @@ class LegoStarWarsTCSWorld(World):
         for spot, ability_requirement in self.ridesanity_spots.get("cantina", ()):
             if ability_requirement is not None:
                 self.set_abilities_rule(spot, ability_requirement)
+
+        # Add Score Multiplier requirements to shop purchase locations.
+        for loc in self.get_locations():
+            if isinstance(loc, LegoStarWarsTCSShopLocation):
+                self._add_score_multiplier_rule(loc, loc.studs_cost)
 
         # Victory.
         victory: Location | Entrance
