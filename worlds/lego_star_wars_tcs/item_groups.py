@@ -4,6 +4,7 @@ from .constants import CharacterAbility
 from .items import CHARACTERS_AND_VEHICLES_BY_NAME, GenericCharacterData, EXTRAS_BY_NAME, MINIKITS_BY_COUNT
 from .levels import CHAPTER_AREA_STORY_CHARACTERS
 
+
 def _ability_to_character() -> Mapping[CharacterAbility, Sequence[GenericCharacterData]]:
     ability_to_character: dict[CharacterAbility, list[GenericCharacterData]] = {}
     for char in CHARACTERS_AND_VEHICLES_BY_NAME.values():
