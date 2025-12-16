@@ -1341,6 +1341,10 @@ class LegoStarWarsTCSWorld(World):
                     # Placing only the non-required goal macguffins first or slightly more than the number of
                     # non-required goal macguffins first was also tried, but placing all goal macguffins first seems to
                     # give fill the best chance of succeeding.
+                    #
+                    # All sizes of minikit bundles, are given the *deprioritized* classification for minimal players,
+                    # which avoids them being placed on priority locations, which would otherwise occur due to them
+                    # being sorted to be placed first.
                     return 1
                 else:
                     # For non-minimal players, place goal macguffins last. The helps prevent fill from filling most/all
