@@ -38,6 +38,9 @@ ITEM_GROUPS: dict[str, set[str]] = {
     "Minikits": {m.name for m in MINIKITS_BY_COUNT.values() if m.is_sendable},
     "Episode Unlocks": {f"Episode {i} Unlock" for i in "123456"},
     "Junk": {
+        "Silver Stud",
+        "Gold Stud",
+        "Blue Stud",
         "Purple Stud",
         "Power Up",
     },
