@@ -1071,10 +1071,14 @@ class LegoStarWarsTCSWorld(World):
         region.locations.append(location)
         return location
 
-    def add_event_pair(self, location_name: str, region: Region, item_name: str = "") -> LegoStarWarsTCSLocation:
+    def add_event_pair(self, location_name: str, region: Region, item_name: str = "", hide_in_spoiler: bool = True
+                       ) -> LegoStarWarsTCSLocation:
         if not item_name:
             item_name = location_name
         location = LegoStarWarsTCSLocation(self.player, location_name, None, region)
+        # Showing in the spoiler is only useful if the event is randomized in some way.
+        # This does no affect whether events are shown in a spoiler playthrough.
+        location.show_in_spoiler = not hide_in_spoiler
         item = self.create_event(item_name)
         location.place_locked_item(item)
         region.locations.append(location)
