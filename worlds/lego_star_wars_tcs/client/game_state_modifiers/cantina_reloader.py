@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import random  # For picking a random unlocked character to force the player into if they spawned as a locked character.
 
 from . import ClientComponent
@@ -11,6 +12,9 @@ from ..events import (
     OnGameWatcherTickEvent
 )
 from ...items import CHARACTERS_AND_VEHICLES_BY_NAME, AP_NON_VEHICLE_CHARACTER_INDICES
+
+
+debug_logger = logging.getLogger("TCS Debug")
 
 
 # These character IDs/indices update when swapping characters in the Cantina, and the game reads these values to
@@ -71,11 +75,19 @@ class CantinaReloader(ClientComponent):
 
         p1_id = event.new_p1_character_id
         if p1_id is not None and p1_id not in unlocked_characters and p1_id not in ADDITIONAL_OK_IDS:
+            debug_logger.info(f"Cantina needs to reload because P1's character ID is {p1_id}, which is not an unlocked"
+                              f" character ID.")
             self.needs_reload_p1 = True
+        else:
+            self.needs_reload_p1 = False
 
         p2_id = event.new_p2_character_id
         if p2_id is not None and p2_id not in unlocked_characters and p2_id not in ADDITIONAL_OK_IDS:
+            debug_logger.info(f"Cantina needs to reload because P2's character ID is {p2_id}, which is not an unlocked"
+                              f" character ID.")
             self.needs_reload_p2 = True
+        else:
+            self.needs_reload_p2 = False
 
     @subscribe_event
     async def on_tick(self, event: OnGameWatcherTickEvent):
