@@ -1323,16 +1323,12 @@ class LegoStarWarsTCSWorld(World):
         game_players = multiworld.get_game_players(cls.game)
         # Get all player IDs that have progression classification minikits.
         minikit_player_ids = {player for player in game_players if multiworld.worlds[player].goal_minikit_count > 0}
-        # Get all player IDs that have the Kyber Bricks goal.
-        kyber_brick_player_ids = {player for player in game_players
-                                  if multiworld.worlds[player].options.goal_requires_kyber_bricks}
         # Get the player IDs of those that are using minimal accessibility.
         minikit_minimal_player_ids = {player for player in game_players
                                       if multiworld.worlds[player].options.accessibility == "minimal"}
 
         def sort_func(item: Item):
-            if ((item.player in minikit_player_ids and item.name in MINIKITS_BY_NAME)
-                    or (item.player in kyber_brick_player_ids and item.name == "Kyber Brick")):
+            if item.player in minikit_player_ids and item.name in MINIKITS_BY_NAME:
                 if item.player in minikit_minimal_player_ids:
                     # For minimal players, place goal macguffins first. This helps prevent fill from dumping logically
                     # relevant items into unreachable locations and reducing the number of reachable locations to fewer
