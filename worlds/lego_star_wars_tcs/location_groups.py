@@ -46,4 +46,5 @@ LOCATION_GROUPS: dict[str, set[str]] = {
         f"Character Purchases - {shortname}": set(area.character_shop_unlocks.keys())
         for shortname, area in SHORT_NAME_TO_CHAPTER_AREA.items() if area.character_shop_unlocks
     },
+    "Ridesanity": _locations_from_indices(622, 648),
 }
