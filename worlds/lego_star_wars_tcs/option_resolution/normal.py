@@ -787,9 +787,9 @@ class _NormalOptionsResolver:
         junk_names_and_weights = dict(self._junk_weights)
         del self._junk_weights
         if sum(junk_names_and_weights.values()) == 0:
-            junk_names_and_weights["Purple Stud"] = 1
+            junk_names_and_weights["Blue Stud"] = 1
             self._deferred_adjust(self.options.junk_weights, junk_names_and_weights,
-                                  "All Junk Weights were zero. The Junk Weight of Purple Stud items has been set to 1.")
+                                  "All Junk Weights were zero. The Junk Weight of Blue Stud items has been set to 1.")
         return junk_names_and_weights
 
     def _resolve_available_bonuses_and_expected_gold_brick_counts(self,

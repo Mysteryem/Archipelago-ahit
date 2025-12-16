@@ -22,11 +22,10 @@ MAX_STUD_COUNT = 4_000_000_000
 
 
 STUDS_AP_ID_TO_VALUE: Mapping[int, int] = {
-    # For when additional Stud items are added.
-    # GENERIC_BY_NAME["Silver Stud"].code: 10
-    # GENERIC_BY_NAME["Gold Stud"].code: 100
-    # GENERIC_BY_NAME["Blue Stud"].code: 1000
-    GENERIC_BY_NAME["Purple Stud"].code: 10000
+    GENERIC_BY_NAME["Silver Stud"].code: 10,
+    GENERIC_BY_NAME["Gold Stud"].code: 100,
+    GENERIC_BY_NAME["Blue Stud"].code: 1000,
+    GENERIC_BY_NAME["Purple Stud"].code: 10000,
 }
 
 

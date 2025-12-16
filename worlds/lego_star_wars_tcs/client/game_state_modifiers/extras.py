@@ -89,7 +89,7 @@ class AcquiredExtras(ItemReceiver):
 
     def clear_received_items(self) -> None:
         # Clearing unlocked extras is necessary because Score Multiplier unlocks are usually progressive. Additionally,
-        # to give the player the correct number of studs when receiving a Purple Stud, the maximum active score
+        # to give the player the correct number of studs when receiving a Stud item, the maximum active score
         # multiplier, at the time of receiving the Stud, must be known.
         self.unlocked_extras = bytearray(NUM_RANDOMIZED_BYTES)
 

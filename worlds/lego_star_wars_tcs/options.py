@@ -1038,8 +1038,11 @@ class JunkWeights(ItemDict):
     rich_text_doc = True
     valid_keys = ITEM_GROUPS["Junk"]
     default = {
-        "Power Up": 10,
-        "Purple Stud": 50,
+        "Power Up": 15,
+        "Silver Stud": 1,
+        "Gold Stud": 5,
+        "Blue Stud": 50,
+        "Purple Stud": 15,
     }
 
 
