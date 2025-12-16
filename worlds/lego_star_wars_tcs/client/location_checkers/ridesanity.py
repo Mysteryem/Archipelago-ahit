@@ -27,16 +27,23 @@ class RidesanityChecker(ClientComponent):
             ridesanity_enabled = bool(event.slot_data["ridesanity"])
 
         self.ridables_by_area = {}
+
         if not ridesanity_enabled:
             return
 
         for bonus_name in event.slot_data["enabled_bonuses"]:
+            if bonus_name not in BONUS_TO_RIDABLES:
+                # No ridables in this bonus.
+                continue
             area_id = BONUS_NAME_TO_BONUS_AREA[bonus_name].area_id
             self.ridables_by_area[area_id] = {
                 ridable.character_id: LOCATION_NAME_TO_ID[ridable.location_name]
                 for ridable in BONUS_TO_RIDABLES[bonus_name]
             }
         for short_name in event.slot_data["enabled_chapters"]:
+            if short_name not in CHAPTER_TO_RIDABLES:
+                # No ridables in this chapter.
+                continue
             area_id = SHORT_NAME_TO_CHAPTER_AREA[short_name].area_id
             self.ridables_by_area[area_id] = {
                 ridable.character_id: LOCATION_NAME_TO_ID[ridable.location_name]
