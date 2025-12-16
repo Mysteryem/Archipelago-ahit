@@ -280,7 +280,7 @@ class UnlockedChapterManager(ClientComponent):
 
     def _set_current_area_true_jedi_requirement(self, ctx: TCSContext, current_p_area_data: int | None = None,
                                                 chapter_area: ChapterArea | None = None):
-        if current_p_area_data is None:
+        if current_p_area_data is None or chapter_area is None:
             current_p_area_data = CURRENT_P_AREA_DATA_ADDRESS.get(ctx)
 
             if current_p_area_data == 0:
