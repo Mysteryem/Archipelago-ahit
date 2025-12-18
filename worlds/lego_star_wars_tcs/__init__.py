@@ -529,6 +529,14 @@ class LegoStarWarsTCSWorld(World):
             # characters had no abilities, so no abilities will be stripped from any characters created later on with
             # create_item().
             self.starting_character_abilities = CharacterAbility.NONE
+            # Additionally, we return early instead of actually creating any items.
+            # This is important because changing `self.starting_character_abilities` for Universal Tracker can result in
+            # more items having Progression classification compared to the actual generation, which can require more
+            # locations to fit all the Progression items into, meaning that the generation with Universal Tracker could
+            # fail due to there being fewer locations than Progression items (because it cannot cull some of the
+            # characters that are now Progression in the Universal Tracker generation, when they would have actually
+            # been Filler in the real generation).
+            return
         else:
             self.starting_character_abilities = starting_abilities
 
