@@ -667,6 +667,7 @@ class Ridesanity(Toggle):
     - 1-1 (Negotiations): STAP
     - 1-5 (Retake Theed Palace): Flash Speeder
     - 1-6 (Darth Maul): Service Car
+    - 3-4 (Defense of Kashyyyk): Clone Walker
     - 4-1 (Secret Plans): Crane Control, Moon Car, Town Car
     - 4-2 (Through The Jundland Wastes): Bantha, Dewback, Landspeeder
     - 4-3 (Mos Eisley Spaceport): AT-ST, Dewback, Landspeeder, Mos Eisley Cannon
