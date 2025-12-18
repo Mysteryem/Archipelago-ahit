@@ -389,7 +389,7 @@ POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
     "3-4": _PowerBrickData("Super Thermal Detonator", BOUNTY_HUNTER | SITH, 25_000),
     "3-5": _PowerBrickData("Deflect Bolts", SITH | HIGH_JUMP, 150_000),
     "3-6": _PowerBrickData("Dark Side", ASTROMECH, 25_000),
-    "4-1": _PowerBrickData("Super Blasters", None, 15_000),
+    "4-1": _PowerBrickData("Super Blasters", (BOUNTY_HUNTER, IMPERIAL), 15_000),
     "4-2": _PowerBrickData("Fast Force", BOUNTY_HUNTER, 40_000),
     "4-3": _PowerBrickData("Super Lightsabers", None, 40_000),
     "4-4": _PowerBrickData("Tractor Beam", None, 15_000),
