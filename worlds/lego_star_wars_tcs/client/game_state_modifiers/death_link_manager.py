@@ -265,11 +265,15 @@ class DeathLinkManager(ClientComponent):
         async_start(ctx.update_death_link(self.death_link_enabled))
 
     def _update_death_link(self, ctx: TCSContext, enabled: bool):
-        self.death_link_enabled = enabled
         if enabled:
+            # The game's death counter increments even with Death Link is disabled, so update the current expected death
+            # count to whatever the game's death counter is set to, to prevent sending a death as soon as Death Link is
+            # enabled.
+            self._expected_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
             CustomSaveFlags1.DEATH_LINK_ENABLED.set(ctx)
         else:
             CustomSaveFlags1.DEATH_LINK_ENABLED.unset(ctx)
+        self.death_link_enabled = enabled
         self._update_client_tags(ctx)
 
     def toggle_death_link(self, ctx: TCSContext):
