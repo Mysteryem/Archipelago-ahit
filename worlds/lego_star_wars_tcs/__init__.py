@@ -24,6 +24,7 @@ from .items import (
     ITEM_NAME_TO_ID,
     LegoStarWarsTCSItem,
     ExtraData,
+    NonPowerBrickExtraData,
     VehicleData,
     CharacterData,
     GenericCharacterData,
@@ -212,7 +213,15 @@ class LegoStarWarsTCSWorld(World):
             raise RuntimeError(f"Error: Item '{name}' cannot be created")
         assert item_data.code != -1
         if isinstance(item_data, ExtraData):
-            classification = ItemClassification.useful
+            if isinstance(item_data, NonPowerBrickExtraData):
+                # Only Extra Toggle is useful out of these Extras due to the high movement speed Mouse Droid and a few
+                # logic breaks in Blaster/Imperial logic.
+                if name == "Extra Toggle":
+                    classification = ItemClassification.useful
+            else:
+                # Many Power Brick Extras provide cheat-like abilities to the player, or allow breaking logic (to be
+                # included in logic in the future), so should be given Useful classification.
+                classification = ItemClassification.useful
         elif isinstance(item_data, GenericCharacterData):
             if effective_character_abilities_lookup is not None:
                 abilities = effective_character_abilities_lookup[name]
