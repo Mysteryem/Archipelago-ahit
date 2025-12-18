@@ -660,19 +660,19 @@ class Ridesanity(Toggle):
     - Tauntaun (5-2, LEGO City, New Town)
     - Town Car (4-1, LEGO City, New Town) (the white van-like car)
     - Tractor (5-4, 6-4, LEGO City, New Town)
-    - Wookie Flyer (LEGO City, New Town)
+    - Wookie Flyer (LEGO City)
 
     Alternatively listed by levels and the ridable characters found within them:
     - Cantina: Cantina Car
     - 1-1 (Negotiations): STAP
-    - 1-5 (Retake Theed Palace): Flash Speeder
+    - 1-5 (Retake Theed Palace): Flash Speeder, Service Car
     - 1-6 (Darth Maul): Service Car
     - 3-4 (Defense of Kashyyyk): Clone Walker
     - 4-1 (Secret Plans): Crane Control, Moon Car, Town Car
     - 4-2 (Through The Jundland Wastes): Bantha, Dewback, Landspeeder
     - 4-3 (Mos Eisley Spaceport): AT-ST, Dewback, Landspeeder, Mos Eisley Cannon
     - 4-4 (Rescue The Princess): Crane Control
-    - 4-5 (Death Star Escape): Crane Control
+    - 4-5 (Death Star Escape): Crane Control, Service Car
     - 5-2 (Escape From Echo Base): Snowmobile, Stormtrooper Cannon, Tauntaun
     - 5-4 (Dagobah): Tractor
     - 5-5 (Cloud City Trap): Crane Control, Stormtrooper Cannon
