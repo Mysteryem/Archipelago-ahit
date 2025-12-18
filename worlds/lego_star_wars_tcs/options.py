@@ -901,7 +901,7 @@ class PreferredExtras(OptionSet):
         # Out-of-logic BOUNTY_HUNTER access (silver bricks only)
         "Super Ewok Catapult",
         # BLASTER and IMPERIAL out-of-logic, also speeds up levels with Mouse Droids
-        "Extra Toggle"
+        "Extra Toggle",
 
         # Speed up playing:
         # Useful for survivability/True Jedi, especially in vehicle chapters, and a few places where hostile NPCs can be
