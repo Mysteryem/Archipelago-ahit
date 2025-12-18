@@ -521,24 +521,9 @@ class LegoStarWarsTCSWorld(World):
         effective_item_classifications, effective_item_collect_extras = (
             self._get_effective_item_data(logically_irrelevant_abilities)
         )
-        if self._is_universal_tracker():
-            # Universal Tracker deletes the items added to precollected_items by create_items, instead later creating
-            # all items with create_item(), but starting characters need to be created before
-            # self.starting_character_abilities is set to `starting_abilities` otherwise the starting characters will
-            # lose all their abilities. To work around this, Universal Tracker is made to pretend that the starting
-            # characters had no abilities, so no abilities will be stripped from any characters created later on with
-            # create_item().
-            self.starting_character_abilities = CharacterAbility.NONE
-            # Additionally, we return early instead of actually creating any items.
-            # This is important because changing `self.starting_character_abilities` for Universal Tracker can result in
-            # more items having Progression classification compared to the actual generation, which can require more
-            # locations to fit all the Progression items into, meaning that the generation with Universal Tracker could
-            # fail due to there being fewer locations than Progression items (because it cannot cull some of the
-            # characters that are now Progression in the Universal Tracker generation, when they would have actually
-            # been Filler in the real generation).
-            return
-        else:
-            self.starting_character_abilities = starting_abilities
+        # These abilities are provided by the starting characters, so these abilities can be stripped from other
+        # characters, improving logic performance.
+        self.starting_character_abilities = starting_abilities
 
         remaining_abilities_to_fulfil = required_character_abilities_in_pool
 
@@ -1070,6 +1055,15 @@ class LegoStarWarsTCSWorld(World):
                 non_deprioritize_ability_counts.subtract(extra_collects)
 
         self.multiworld.itempool.extend(item_pool)
+
+        if self._is_universal_tracker():
+            # Universal Tracker deletes the items added to precollected_items by create_items, instead later creating
+            # all items with create_item(), but starting characters need to be created before
+            # self.starting_character_abilities is set to `starting_abilities` otherwise the starting characters will
+            # lose all their abilities. To work around this, Universal Tracker is made to pretend that the starting
+            # characters had no abilities, so no abilities will be stripped from any characters created later on with
+            # create_item().
+            self.starting_character_abilities = CharacterAbility.NONE
 
     def create_region(self, name: str) -> Region:
         r = Region(name, self.player, self.multiworld)
