@@ -485,9 +485,23 @@ class LegoStarWarsTCSWorld(World):
             area = BONUS_NAME_TO_BONUS_AREA[bonus_name]
             required_character_abilities_in_pool |= area.completion_ability_requirements
         for _area_name, ridable_spots in self.ridesanity_spots.items():
-            for _spot, ability_requirements in ridable_spots:
-                if ability_requirements is not None:
-                    required_character_abilities_in_pool |= ability_requirements
+            for _spot, any_ridable_ability_requirements in ridable_spots:
+                if any_ridable_ability_requirements:
+                    if len(any_ridable_ability_requirements) == 1:
+                        required_character_abilities_in_pool |= any_ridable_ability_requirements[0]
+                    else:
+                        at_least_one_already_required = False
+                        for ridable_ability_requirements in any_ridable_ability_requirements:
+                            if ridable_ability_requirements in required_character_abilities_in_pool:
+                                at_least_one_already_required = True
+                            # Mark the abilities as optional. They will be included in logic, but won't necessarily be
+                            # guaranteed to be provided by the item pool.
+                            optional_character_abilities |= ridable_ability_requirements
+
+                        if not at_least_one_already_required:
+                            # Pick any one of the abilities to be required to be provided by the item pool.
+                            picked = self.random.choice(any_ridable_ability_requirements)
+                            required_character_abilities_in_pool |= picked
         # Remove counts <= 0.
         level_access_character_counts = +self.character_chapter_access_counts
         for name in level_access_character_counts.keys():
