@@ -281,7 +281,7 @@ class _RegionBuilder:
         # Add it to the dict of regions.
         self.ridable_character_regions[cantina_car] = [("cantina", self.cantina)]
 
-        ridesanity_spots: defaultdict[str, list[tuple[Location | Entrance, CharacterAbility | None]]]
+        ridesanity_spots: defaultdict[str, list[tuple[Location | Entrance, tuple[CharacterAbility, ...] | None]]]
         ridesanity_spots = defaultdict(list)
         for ridable, areas_list in self.ridable_character_regions.items():
             world.ridesanity_location_count += 1

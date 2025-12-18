@@ -91,25 +91,29 @@ _RIDABLES: tuple[Ridable, ...] = (
 RIDABLES_BY_NAME = {ridable.user_facing_name: ridable for ridable in _RIDABLES}
 del _RIDABLES
 
-# Most ridables can be reached with only the characters that are needed to complete the chapter.
-RIDABLES_REQUIREMENTS: dict[str, dict[str, CharacterAbility]] = {
+# Most ridables can be reached with only the characters that are needed to complete the chapter in Story.
+RIDABLES_REQUIREMENTS: dict[str, dict[str, tuple[CharacterAbility, ...]]] = {
     "4-1": {
         # The car is hidden within Silver Bricks.
-        "Moon Car": CharacterAbility.BOUNTY_HUNTER,
+        "Moon Car": (CharacterAbility.BOUNTY_HUNTER,),
+        # The car is at the end of a hallway that needs a Bounty Hunter or Imperial to access.
+        # A Protocol Droid Panel must be used to remove a force field, and a Jedi must be used to spawn the plants that
+        # spawn the Town Car bricks when destroyed.
+        "Town Car": (CharacterAbility.BOUNTY_HUNTER, CharacterAbility.IMPERIAL),
     },
     "LEGO City": {
         # The car is hidden within Silver Bricks.
-        "Moon Car": CharacterAbility.BOUNTY_HUNTER,
+        "Moon Car": (CharacterAbility.BOUNTY_HUNTER,),
     },
     "New Town": {
         # The car is hidden within Silver Bricks.
-        "Moon Car": CharacterAbility.BOUNTY_HUNTER,
+        "Moon Car": (CharacterAbility.BOUNTY_HUNTER,),
     }
 }
 
 
-def get_ridable_requirements(chapter_short_name_or_bonus: str, ridable_name: str) -> CharacterAbility | None:
-    return RIDABLES_REQUIREMENTS.get(chapter_short_name_or_bonus, {}).get(ridable_name)
+def get_ridable_requirements(chapter_short_name_or_bonus: str, ridable_name: str) -> tuple[CharacterAbility, ...]:
+    return RIDABLES_REQUIREMENTS.get(chapter_short_name_or_bonus, {}).get(ridable_name, ())
 
 
 def _make_lookups() -> tuple[dict[str, list[Ridable]], dict[str, list[Ridable]]]:

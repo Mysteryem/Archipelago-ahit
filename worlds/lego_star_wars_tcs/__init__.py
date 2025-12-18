@@ -158,7 +158,7 @@ class LegoStarWarsTCSWorld(World):
     character_unlock_location_count: int = 0
     goal_excluded_character_unlock_location_count: int = 0
 
-    ridesanity_spots: dict[str, list[tuple[Location | Entrance, CharacterAbility | None]]]
+    ridesanity_spots: dict[str, list[tuple[Location | Entrance, tuple[CharacterAbility, ...]]]]
     ridesanity_location_count: int = 0
 
     def __init__(self, multiworld, player: int):
@@ -1219,9 +1219,8 @@ class LegoStarWarsTCSWorld(World):
                         set_rule(true_jedi, lambda state: state.has("Progressive Score Multiplier", player))
 
                 # Ridesanity.
-                for spot, ability_requirement in self.ridesanity_spots.get(chapter.short_name, ()):
-                    if ability_requirement is not None:
-                        set_chapter_spot_abilities_rule(spot, ability_requirement)
+                for spot, ability_requirements in self.ridesanity_spots.get(chapter.short_name, ()):
+                    set_chapter_spot_abilities_rule(spot, *ability_requirements)
 
         # Bonus levels.
         gold_brick_requirements: set[int] = set()
@@ -1239,9 +1238,8 @@ class LegoStarWarsTCSWorld(World):
                 gold_brick = self.get_location(f"{area.name} - Gold Brick")
                 set_rule(gold_brick, completion.access_rule)
             # Ridesanity.
-            for spot, ability_requirement in self.ridesanity_spots.get(area.name, ()):
-                if ability_requirement is not None:
-                    self.set_abilities_rule(spot, ability_requirement)
+            for spot, ability_requirements in self.ridesanity_spots.get(area.name, ()):
+                self.set_any_abilities_rule(spot, *ability_requirements)
         # Locations with 0 Gold Bricks required are added to the base Bonuses region.
         gold_brick_requirements.discard(0)
 
@@ -1264,9 +1262,8 @@ class LegoStarWarsTCSWorld(World):
         # Cantina Ridesanity.
         # todo: Currently there are no rules because the player is always forced to start with a Jedi, but there will be
         #  rules in the future because (most) droids cannot ride things.
-        for spot, ability_requirement in self.ridesanity_spots.get("cantina", ()):
-            if ability_requirement is not None:
-                self.set_abilities_rule(spot, ability_requirement)
+        for spot, ability_requirements in self.ridesanity_spots.get("cantina", ()):
+            self.set_any_abilities_rule(spot, *ability_requirements)
 
         # Add Score Multiplier requirements to shop purchase locations.
         for loc in self.get_locations():
