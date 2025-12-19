@@ -397,7 +397,8 @@ class LegoStarWarsTCSWorld(World):
         #         possible_pool_character_items[vehicle.name] = vehicle
 
         # Add characters necessary to unlock the starting chapter into starting inventory.
-        for name in CHAPTER_AREA_STORY_CHARACTERS[self.starting_chapter.short_name]:
+        # The story character names are a `set`, so sort before iterating to get a deterministic iteration order.
+        for name in sorted(CHAPTER_AREA_STORY_CHARACTERS[self.starting_chapter.short_name]):
             self.push_precollected(self.create_item(name))
             del possible_pool_character_items[name]
         if self.options.episode_unlock_requirement == "episode_item":
@@ -470,7 +471,8 @@ class LegoStarWarsTCSWorld(World):
         # the item pool.
         required_character_abilities_in_pool = CharacterAbility.NONE
         optional_character_abilities = CharacterAbility.NONE
-        for shortname in chapters_with_locations:
+        # `chapters_with_locations` is a `set`, so sort for deterministic results from the `self.random` usage.
+        for shortname in sorted(chapters_with_locations):
             power_brick_abilities = POWER_BRICK_REQUIREMENTS[shortname][1]
             if power_brick_abilities is not None:
                 if isinstance(power_brick_abilities, tuple):

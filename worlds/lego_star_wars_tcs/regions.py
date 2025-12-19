@@ -62,7 +62,9 @@ class _RegionBuilder:
             if chapter.short_name not in world.enabled_chapters:
                 continue
             # Update the count of how many chapters this character blocks access to.
-            world.character_chapter_access_counts.update(chapter.character_requirements)
+            # `character_requirements` is a `set`, so sort to ensure that `world.character_chapter_access_counts`
+            # maintains a deterministic order.
+            world.character_chapter_access_counts.update(sorted(chapter.character_requirements))
             chapter_region = world.create_region(chapter.name)
 
             entrance_name = f"Episode {episode_number} Room, Chapter {chapter_number} Door"
