@@ -1235,7 +1235,7 @@ class LogicDifficulty(ChoiceFromStringExtension):
 
 # Not using DeathLinkMixin currently because the docstring needs to be different.
 class LegoStarWarsTCSDeathLink(DeathLink):
-    """When you die, everyone who enabled death link dies. Of course, the reverse is true too.
+    __doc__ = getattr(DeathLink, "__doc__", "") + """
 
     Death Link can be toggled on/off in the client with ``/toggle_death_link``.
 
