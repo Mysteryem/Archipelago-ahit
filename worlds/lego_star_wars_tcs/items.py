@@ -26,12 +26,20 @@ ItemType = Literal["Character", "Vehicle", "Extra", "Generic", "Minikit"]
 class LegoStarWarsTCSItem(Item):
     game = GAME_NAME
     # Most Progression items collect their abilities into the state through a world.collect() override.
-    collect_extras: tuple[str, ...] | None
+    # `collect_abilities_int is not None` is faster than `collect_abilities_int != 0`, so `None` is used instead of `0`.
+    collect_abilities_int: int | None
+    abilities: CharacterAbility
 
     def __init__(self, name: str, classification: ItemClassification, code: Optional[int], player: int,
-                 collect_extras: Iterable[str] | None = None):
+                 abilities: CharacterAbility | None = None):
         super().__init__(name, classification, code, player)
-        self.collect_extras = tuple(collect_extras) if collect_extras is not None else None
+        if abilities is not None and abilities.value != 0:
+            self.collect_abilities_int = abilities.value
+            self.abilities = abilities
+            assert ItemClassification.progression in classification, "All items with abilities should be progression."
+        else:
+            self.collect_abilities_int = None
+            self.abilities = CharacterAbility.NONE
 
 
 @dataclass(frozen=True)

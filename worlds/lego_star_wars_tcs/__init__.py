@@ -14,12 +14,12 @@ from BaseClasses import (
     LocationProgressType,
 )
 from Options import OptionError
-from worlds.AutoWorld import WebWorld, World
+from worlds.AutoWorld import WebWorld, World, LogicMixin
 from worlds.LauncherComponents import components, Component, launch_subprocess, Type
 from worlds.generic.Rules import set_rule, add_rule
 
 from . import constants, regions
-from .constants import CharacterAbility, GOLD_BRICK_EVENT_NAME
+from .constants import CharacterAbility, GOLD_BRICK_EVENT_NAME, GAME_NAME
 from .items import (
     ITEM_NAME_TO_ID,
     LegoStarWarsTCSItem,
@@ -131,10 +131,8 @@ class LegoStarWarsTCSWorld(World):
 
     starting_character_abilities: CharacterAbility = CharacterAbility.NONE
 
-    effective_character_ability_names: dict[str, tuple[str, ...]]
     effective_character_abilities: dict[str, CharacterAbility]
     effective_item_classifications: dict[str, ItemClassification]
-    effective_item_collect_extras: dict[str, list[str] | None]
 
     enabled_chapters: set[str]
     enabled_chapters_with_locations: set[str]  # Includes the Goal Chapter when it has locations.
@@ -162,7 +160,7 @@ class LegoStarWarsTCSWorld(World):
     ridesanity_spots: dict[str, list[tuple[Location | Entrance, tuple[CharacterAbility, ...]]]]
     ridesanity_location_count: int = 0
 
-    def __init__(self, multiworld, player: int):
+    def __init__(self, multiworld: MultiWorld, player: int):
         super().__init__(multiworld, player)
         self.enabled_chapters = set()
         self.enabled_chapters_with_locations = set()
@@ -204,9 +202,9 @@ class LegoStarWarsTCSWorld(World):
     def evaluate_effective_item(self,
                                 name: str,
                                 effective_character_abilities_lookup: dict[str, CharacterAbility] | None = None,
-                                effective_character_ability_names_lookup: dict[str, tuple[str, ...]] | None = None):
+                                ) -> tuple[ItemClassification, CharacterAbility]:
         classification = ItemClassification.filler
-        collect_extras: Iterable[str] = ()
+        abilities = CharacterAbility.NONE
 
         item_data = ITEM_DATA_BY_NAME[name]
         if item_data.code < 1:
@@ -227,11 +225,6 @@ class LegoStarWarsTCSWorld(World):
                 abilities = effective_character_abilities_lookup[name]
             else:
                 abilities = item_data.abilities & ~self.starting_character_abilities
-
-            if effective_character_ability_names_lookup is not None:
-                collect_extras = effective_character_ability_names_lookup[name]
-            else:
-                collect_extras = cast(list[str], [ability.name for ability in abilities])
 
             if name in self.character_chapter_access_counts:
                 if self.character_chapter_access_counts[name] >= self.prog_useful_level_access_threshold_count:
@@ -287,19 +280,17 @@ class LegoStarWarsTCSWorld(World):
             elif name.startswith("Episode ") and name.endswith(" Unlock"):
                 classification = ItemClassification.progression | ItemClassification.useful
 
-        return classification, collect_extras if collect_extras else None
+        return classification, abilities
 
     def _get_effective_item_data(self,
                                  starting_abilities: CharacterAbility,
-                                 ) -> tuple[dict[str, ItemClassification], dict[str, Iterable[str] | None]]:
+                                 ) -> tuple[dict[str, ItemClassification], dict[str, CharacterAbility]]:
         """
         Pre-calculate the effective character abilities and classification of each item to speed up the creation
         of items with multiple copies.
         """
         effective_character_abilities: dict[str, CharacterAbility] = {}
-        effective_character_ability_names: dict[str, tuple[str, ...]] = {}
 
-        effective_ability_cache: dict[CharacterAbility, tuple[str, ...]] = {}
         for name, char in CHARACTERS_AND_VEHICLES_BY_NAME.items():
             # Remove abilities provided by the starting characters from other characters, potentially changing the
             # classification of other characters if all their abilities are covered by the starting characters.
@@ -307,22 +298,17 @@ class LegoStarWarsTCSWorld(World):
             # collected.
             effective_abilities: CharacterAbility = char.abilities & ~starting_abilities
             effective_character_abilities[name] = effective_abilities
-            if effective_abilities in effective_ability_cache:
-                effective_character_ability_names[name] = effective_ability_cache[effective_abilities]
-            else:
-                effective_ability_names = tuple(cast(list[str], [ability.name for ability in effective_abilities]))
-                effective_ability_cache[effective_abilities] = effective_ability_names
-                effective_character_ability_names[name] = effective_ability_names
 
         effective_item_classifications: dict[str, ItemClassification] = {}
-        effective_item_collect_extras: dict[str, Iterable[str] | None] = {}
+        effective_item_abilities: dict[str, CharacterAbility] = {}
         for item in self.item_name_to_id:
-            classification, collect_extras = self.evaluate_effective_item(item,
-                                                                          effective_character_abilities,
-                                                                          effective_character_ability_names)
+            # fixme: The return of `effective_abilities` here is pointless when we already have them in
+            #  `effective_character_abilities`.
+            classification, effective_abilities = self.evaluate_effective_item(item, effective_character_abilities)
             effective_item_classifications[item] = classification
-            effective_item_collect_extras[item] = collect_extras
-        return effective_item_classifications, effective_item_collect_extras
+            assert effective_abilities is effective_character_abilities.get(item, CharacterAbility.NONE)
+            effective_item_abilities[item] = effective_abilities
+        return effective_item_classifications, effective_item_abilities
 
     def get_filler_item_name(self) -> str:
         junk_weights: dict[str, int] = self.options.junk_weights.value
@@ -330,19 +316,19 @@ class LegoStarWarsTCSWorld(World):
 
     def create_item(self, name: str) -> LegoStarWarsTCSItem:
         code = self.item_name_to_id[name]
-        classification, collect_extras = self.evaluate_effective_item(name)
+        classification, collect_abilities = self.evaluate_effective_item(name)
 
-        return LegoStarWarsTCSItem(name, classification, code, self.player, collect_extras)
+        return LegoStarWarsTCSItem(name, classification, code, self.player, collect_abilities)
 
     def _create_item_ex(self,
                         name: str,
                         classification_lookup: dict[str, ItemClassification],
-                        collect_extras_lookup: dict[str, Iterable[str] | None]):
+                        abilities_lookup: dict[str, CharacterAbility]):
         code = self.item_name_to_id[name]
         classification = classification_lookup[name]
-        collect_extras = collect_extras_lookup[name]
+        abilities = abilities_lookup[name]
 
-        return LegoStarWarsTCSItem(name, classification, code, self.player, collect_extras)
+        return LegoStarWarsTCSItem(name, classification, code, self.player, abilities)
 
     def create_event(self, name: str) -> LegoStarWarsTCSItem:
         return LegoStarWarsTCSItem(name, ItemClassification.progression, None, self.player)
@@ -407,16 +393,9 @@ class LegoStarWarsTCSWorld(World):
         # Gather the abilities of all items in starting inventory, so that they can be removed from other created items,
         # improving generation performance.
         initial_starting_items = cast(list[LegoStarWarsTCSItem], self.multiworld.precollected_items[self.player])
-        starting_collect_extras = {s for item in initial_starting_items if item.collect_extras
-                                   for s in item.collect_extras}
         starting_abilities = CharacterAbility.NONE
-        # The Enum class supports __getitem__ for getting members by name, but __contains__ checks whether an Enum
-        # instance belongs to that Enum class, so checking if a string is a member name needs to use __members__ or
-        # try-except KeyError.
-        ability_members = CharacterAbility.__members__
-        for collect_extra in starting_collect_extras:
-            if collect_extra in ability_members:
-                starting_abilities |= CharacterAbility[collect_extra]
+        for item in initial_starting_items:
+            starting_abilities |= item.abilities
 
         # todo: In the future, it will be necessary to ensure the player has at least 1 (maybe better to be 2) starting
         #  non-vehicle characters when starting with a non-vehicle level, and at least 1 (maybe better to be 2) starting
@@ -529,7 +508,7 @@ class LegoStarWarsTCSWorld(World):
         # In larger worlds, it is unlikely for there to be any logically irrelevant abilities.
         logically_irrelevant_abilities = ~(required_character_abilities_in_pool | optional_character_abilities)
 
-        effective_item_classifications, effective_item_collect_extras = (
+        effective_item_classifications, effective_item_abilities = (
             self._get_effective_item_data(logically_irrelevant_abilities)
         )
         # These abilities are provided by the starting characters, so these abilities can be stripped from other
@@ -801,7 +780,7 @@ class LegoStarWarsTCSWorld(World):
         created_item_names: set[str] = set()
 
         def create_item(item_name: str) -> LegoStarWarsTCSItem:
-            return self._create_item_ex(item_name, effective_item_classifications, effective_item_collect_extras)
+            return self._create_item_ex(item_name, effective_item_classifications, effective_item_abilities)
 
         def add_to_pool(item: LegoStarWarsTCSItem):
             item_pool.append(item)
@@ -1037,33 +1016,34 @@ class LegoStarWarsTCSWorld(World):
         # Give deprioritized + skip_balancing to characters with only common abilities, and that do not give access to
         # levels.
         non_level_access_character_items: list[LegoStarWarsTCSItem] = []
-        non_deprioritize_ability_counts: Counter[str] = Counter()
+        non_deprioritize_ability_counts: Counter[CharacterAbility] = Counter()
         for item in item_pool:
             if item.advancement and item.name in CHARACTERS_AND_VEHICLES_BY_NAME:
                 if progression_deprioritized_skip_balancing in item.classification:
                     # Don't count abilities from characters that are already deprioritized + skip_balancing.
                     continue
-                extra_collects = item.collect_extras
-                if extra_collects is not None:
-                    non_deprioritize_ability_counts.update(extra_collects)
+                abilities = item.abilities
+                if abilities:
+                    non_deprioritize_ability_counts.update(abilities)
                 if level_access_character_counts[item.name] == 0:
-                    assert extra_collects is not None, ("No extra collects should mean the character item is not"
-                                                        " progression currently if the character does not unlock"
-                                                        " levels")
+                    assert abilities, ("No abilities should mean the character item is not progression currently if the"
+                                       " character does not unlock levels")
                     non_level_access_character_items.append(item)
         self.random.shuffle(non_level_access_character_items)
         for item in non_level_access_character_items:
-            extra_collects = item.collect_extras
-            for extra_collect in extra_collects:
+            abilities = item.abilities
+            for ability in abilities:
                 # 3 is a magic number and could be changed if other values produce nicer results.
-                if non_deprioritize_ability_counts[extra_collect] <= 3:
+                if non_deprioritize_ability_counts[ability] <= 3:
                     # One of the abilities is uncommon.
                     break
             else:
                 # None of the abilities were uncommon, so add the deprioritize and skip balancing classifications.
                 item.classification |= progression_deprioritized_skip_balancing
-                # Reduce the remaining ability counts from non-deprioritized characters
-                non_deprioritize_ability_counts.subtract(extra_collects)
+                if abilities:
+                    # Reduce the remaining ability counts from non-deprioritized characters
+                    non_deprioritize_ability_counts.subtract(abilities)
+        assert all(ability.bit_count() == 1 for ability in non_deprioritize_ability_counts)
 
         self.multiworld.itempool.extend(item_pool)
 
@@ -1117,14 +1097,18 @@ class LegoStarWarsTCSWorld(World):
 
     def set_abilities_rule(self, spot: Location | Entrance, abilities: CharacterAbility):
         player = self.player
-        ability_names = cast(list[str], [ability.name for ability in abilities])
-        if len(ability_names) == 0:
+        abilities_as_int: int = abilities.value
+        if abilities_as_int == 0:
             set_rule(spot, Location.access_rule if isinstance(spot, Location) else Entrance.access_rule)
-        elif len(ability_names) == 1:
-            ability_name = ability_names[0]
-            set_rule(spot, lambda state: state.has(ability_name, player))
+        elif abilities_as_int.bit_count == 1:
+            # There is only 1 bit, so a match is all that is needed.
+            set_rule(spot, lambda state: state.tcs_combined_ability_flags[player] & abilities_as_int)
         else:
-            set_rule(spot, lambda state: state.has_all(ability_names, player))
+            # There are multiple bits, so all bits need to be present.
+            set_rule(spot, lambda state: state.tcs_combined_ability_flags[player] & abilities_as_int == abilities_as_int)
+
+    # def set_combination_abilities_rule(self, spot: Location | Entrance, abilities: CharacterAbility):
+    #     """Set a rule where the specified `abilities` must be simultaneously provided by a single item"""
 
     def set_any_abilities_rule(self, spot: Location | Entrance, *any_abilities: CharacterAbility):
         for any_ability in any_abilities:
@@ -1140,17 +1124,46 @@ class LegoStarWarsTCSWorld(World):
             self.set_abilities_rule(spot, next(iter(any_abilities_set)))
         else:
             sorted_abilities = sorted(any_abilities_set, key=lambda a: (a.bit_count(), a.value))
-            ability_names = [cast(list[str], [a.name for a in any_ability]) for any_ability in sorted_abilities]
-            if all(len(names) == 1 for names in ability_names):
-                # Optimize for all abilities being only a single flag each.
-                singular_names = {names[0] for names in ability_names}
-                set_rule(spot, lambda state, items_=tuple(singular_names), p=self.player: state.has_any(items_, p))
-            else:
+            abilities_as_ints = [any_ability.value for any_ability in sorted_abilities]
+            if all(ability_as_int.bit_count() == 1 for ability_as_int in abilities_as_ints):
+                # Optimize for all abilities being only a single bit each.
+                single_bit_abilities = 0
+                for ability_as_int in abilities_as_ints:
+                    single_bit_abilities |= ability_as_int
+                # Any bit matching is all that is needed.
+                set_rule(spot, lambda state, p=self.player: state.tcs_combined_ability_flags[p] & single_bit_abilities)
+            elif all(ability_as_int.bit_count() > 1 for ability_as_int in abilities_as_ints):
+                # Optimize for all abilities being multiple bits each.
                 def rule(state: CollectionState):
-                    for names in ability_names:
-                        if state.has_all(names, self.player):
+                    combined_abilities = state.tcs_combined_ability_flags[self.player]
+                    for ability_as_int in abilities_as_ints:
+                        # All the bits in the ability need to be present.
+                        if combined_abilities & ability_as_int == ability_as_int:
                             return True
                     return False
+
+                set_rule(spot, rule)
+            else:
+                # I am unsure if this is faster than pretending all abilities have multiple bits.
+                single_bit_abilities = 0
+                multi_bit_abilities = []
+                for ability_as_int in abilities_as_ints:
+                    if ability_as_int.bit_count() == 1:
+                        single_bit_abilities |= ability_as_int
+                    else:
+                        multi_bit_abilities.append(ability_as_int)
+
+                def rule(state: CollectionState):
+                    combined_abilities = state.tcs_combined_ability_flags[self.player]
+                    if combined_abilities & single_bit_abilities:
+                        # Any 1 of the bits matching is enough because each ability to check here is only a single bit.
+                        return True
+                    for ability_as_int in multi_bit_abilities:
+                        # All the bits in the ability need to be present.
+                        if combined_abilities & ability_as_int == ability_as_int:
+                            return True
+                    return False
+
                 set_rule(spot, rule)
 
     def _get_score_multiplier_requirement(self, studs_cost: int):
@@ -1377,20 +1390,41 @@ class LegoStarWarsTCSWorld(World):
         progitempool.sort(key=sort_func)
 
     def collect(self, state: CollectionState, item: LegoStarWarsTCSItem) -> bool:
-        changed = super().collect(state, item)
-        if changed:
-            extras = item.collect_extras
-            if extras is not None:
-                state.prog_items[self.player].update(extras)
+        if super().collect(state, item):
+            abilities_as_int = item.collect_abilities_int
+            if abilities_as_int is not None:
+                # The collected item has abilities, so collect them into the state too.
+                player_prog = state.prog_items[self.player]
+                current_abilities_int_count = player_prog[abilities_as_int]
+                if current_abilities_int_count == 0:
+                    # The combination of abilities provided by `item` are new, so update the combined abilities.
+                    state.tcs_combined_ability_flags[self.player] |= abilities_as_int
+                player_prog[abilities_as_int] = current_abilities_int_count + 1
             return True
         return False
 
     def remove(self, state: CollectionState, item: LegoStarWarsTCSItem) -> bool:
-        changed = super().remove(state, item)
-        if changed:
-            extras = item.collect_extras
-            if extras is not None:
-                state.prog_items[self.player].subtract(extras)
+        if super().remove(state, item):
+            abilities_as_int = item.collect_abilities_int
+            if abilities_as_int is not None:
+                # The removed item has abilities, so remove them from the state too.
+                player_prog = state.prog_items[self.player]
+                current_abilities_int_count = player_prog[abilities_as_int]
+                if current_abilities_int_count == 1:
+                    del player_prog[abilities_as_int]
+                    new_combined_abilities = 0
+                    key: int | str
+                    # This is not fast, but `remove()` is barely ever called by Core AP.
+                    # If it is needed to make this faster, then TCS could stop abusing `state.prog_items`, and put its
+                    # own `state.tcs_abilities` on the state instead as a `Counter[int, int]`.
+                    for key in player_prog:
+                        if type(key) is int:
+                            new_combined_abilities |= key
+                    state.tcs_combined_ability_flags[self.player] = new_combined_abilities
+                else:
+                    # At least one other collected item is providing the same combination of abilities, so the combined
+                    # abilities won't have changed.
+                    player_prog[abilities_as_int] = current_abilities_int_count - 1
             return True
         return False
 
@@ -1468,3 +1502,12 @@ class LegoStarWarsTCSWorld(World):
                                f" ({slot_data_version}) does not match the version of your installed apworld"
                                f" ({constants.AP_WORLD_VERSION}).")
         return slot_data
+
+
+class TCSLogicMixin(LogicMixin):
+    def init_mixin(self: CollectionState, parent: MultiWorld):
+        self.tcs_combined_ability_flags = dict.fromkeys(parent.get_game_players(GAME_NAME), 0)
+
+    def copy_mixin(self: CollectionState, ret: CollectionState):
+        ret.tcs_combined_ability_flags = self.tcs_combined_ability_flags.copy()
+        return ret
