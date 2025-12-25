@@ -720,15 +720,16 @@ class ChapterUnlockRequirement(ChoiceFromStringExtension):
     The requirements to access your starting Chapter will be given to you at the start.
 
     - Story Characters: A Chapter unlocks once its Story mode characters have been unlocked.
-    - Chapter Item (not implemented): A Chapter unlocks after receiving an unlock item specific to that Chapter,
-    e.g. "Chapter 2-3 Unlock".
+    - Chapter Item: A Chapter unlocks after receiving an unlock item specific to that Chapter, e.g. "Chapter 2-3
+    Unlock". The logic for the Chapter Item setting is overly restrictive, so it is easy to get many checks
+    out-of-logic. The logic is in the process of being overhauled to be more accurate.
     - Random Characters (not implemented): Each Chapter requires randomly chosen characters to unlock.
     - Open (not implemented): All chapters within an Episode are unlocked as soon as the Episode is unlocked.
     """
     display_name = "Chapter Unlock Requirements"
     rich_text_doc = True
     option_story_characters = 0
-    # option_chapter_item = 1  # Needs logic rewrite
+    option_chapter_item = 1  # Partially implemented with overly restrictive logic. Needs a logic rewrite.
     # option_random_characters = 2  # Needs logic rewrite + some way to display what characters are needed in-game.
     # option_open = 3  # Needs the ability to limit characters to only being usable within a specific episode/
     default = 0

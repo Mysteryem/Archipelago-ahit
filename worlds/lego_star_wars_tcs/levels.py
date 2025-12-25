@@ -14,8 +14,9 @@ from .constants import (
     BLASTER,
     VEHICLE_TIE,
     VEHICLE_TOW,
+    CAN_WEAR_HAT,
 )
-from .items import SHOP_SLOT_REQUIREMENT_TO_UNLOCKS
+from .items import SHOP_SLOT_REQUIREMENT_TO_UNLOCKS, CHARACTERS_AND_VEHICLES_BY_NAME
 
 
 @dataclass(frozen=True)
@@ -94,7 +95,8 @@ class ChapterArea:
     power_brick_ability_requirements: tuple[CharacterAbility, ...] = field(init=False)
     power_brick_location_name: str = field(init=False)
     power_brick_studs_cost: int = field(init=False)
-    all_minikits_ability_requirements: CharacterAbility = field(init=False)
+    all_minikits_ability_requirements: tuple[CharacterAbility, ...] = field(init=False)
+    ability_requirements_from_characters: tuple[CharacterAbility, ...] = field(init=False)
     boss: str | None = field(init=False)
 
     def __post_init__(self):
@@ -123,6 +125,22 @@ class ChapterArea:
 
         boss = BOSS_CHARACTERS_BY_SHORTNAME.get(self.short_name)
         object.__setattr__(self, "boss", boss)
+
+        entrance_abilities = CharacterAbility.NONE
+        for character in character_requirements:
+            entrance_abilities |= CHARACTERS_AND_VEHICLES_BY_NAME[character].abilities
+        if hat_machine_optional := HAT_MACHINE_CHAPTERS.get(self.short_name):
+            hat_machine_logic, alternative_ability = hat_machine_optional
+            assert hat_machine_logic in entrance_abilities
+            if alternative_ability in entrance_abilities:
+                ability_requirements_from_characters = (entrance_abilities,)
+            else:
+                alternative_entrance_abilities = (entrance_abilities & ~hat_machine_logic) | alternative_ability
+                ability_requirements_from_characters = (entrance_abilities, alternative_entrance_abilities)
+        else:
+            ability_requirements_from_characters = (entrance_abilities,)
+        object.__setattr__(self, "ability_requirements_from_characters", ability_requirements_from_characters)
+
 
     @property
     def unique_boss_name(self) -> str | None:
@@ -404,48 +422,48 @@ POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
     "6-1": _PowerBrickData("Super Zapper", None, 14_000),
     "6-2": _PowerBrickData("Bounty Hunter Rockets", None, 20_000),
     "6-3": _PowerBrickData("Score x8", SHORTIE, 10_000_000),
-    "6-4": _PowerBrickData("Super Ewok Catapult", SHORTIE, 25_000),
+    "6-4": _PowerBrickData("Super Ewok Catapult", (SHORTIE | IMPERIAL, SHORTIE | CAN_WEAR_HAT), 25_000),
     "6-5": _PowerBrickData("Score x10", None, 20_000_000),  # Note: In memory after Infinite Torpedos
     "6-6": _PowerBrickData("Infinite Torpedos", None, 25_000),  # Note: In memory before Score x10
 }
 
-ALL_MINIKITS_REQUIREMENTS: dict[str, CharacterAbility] = {
-    "1-1": HIGH_JUMP | ASTROMECH | HOVER | SHORTIE,
-    "1-2": SHORTIE | BLASTER,
-    "1-3": SITH | HIGH_JUMP | HOVER | BOUNTY_HUNTER | SHORTIE,
-    "1-4": VEHICLE_TIE,
-    "1-5": SITH | BOUNTY_HUNTER | HIGH_JUMP,
-    "1-6": SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER | IMPERIAL,
-    "2-1": VEHICLE_TIE,
-    "2-2": SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER | SHORTIE,
-    "2-3": HIGH_JUMP | IMPERIAL | SHORTIE,
-    "2-4": HIGH_JUMP | SHORTIE,
-    "2-5": VEHICLE_TIE,
-    "2-6": HIGH_JUMP | BLASTER | ASTROMECH,
-    "3-1": CharacterAbility.NONE,
-    "3-2": HIGH_JUMP | BLASTER | SHORTIE,
-    "3-3": HOVER | BOUNTY_HUNTER | HIGH_JUMP,
-    "3-4": SITH | HIGH_JUMP | HOVER,
-    "3-5": SITH | HIGH_JUMP | BLASTER | HOVER | BOUNTY_HUNTER | IMPERIAL,
-    "3-6": HOVER,
-    "4-1": SITH | BOUNTY_HUNTER | IMPERIAL,
-    "4-2": SITH | SHORTIE,
-    "4-3": SITH | BOUNTY_HUNTER | SHORTIE,
-    "4-4": SITH | BOUNTY_HUNTER | IMPERIAL,
-    "4-5": SITH | BOUNTY_HUNTER | IMPERIAL | SHORTIE,
-    "4-6": VEHICLE_TOW | VEHICLE_TIE,
-    "5-1": VEHICLE_TIE,
-    "5-2": SITH | HOVER | ASTROMECH | BOUNTY_HUNTER | SHORTIE,
-    "5-3": VEHICLE_TOW | VEHICLE_TIE,
-    "5-4": SITH | BOUNTY_HUNTER | SHORTIE,
-    "5-5": SITH | BOUNTY_HUNTER | IMPERIAL | SHORTIE,
-    "5-6": SITH | BOUNTY_HUNTER,
-    "6-1": SITH | SHORTIE,
-    "6-2": SITH | HOVER | SHORTIE,
-    "6-3": SITH | BOUNTY_HUNTER | IMPERIAL | SHORTIE,
-    "6-4": BOUNTY_HUNTER,
-    "6-5": BLASTER | BOUNTY_HUNTER | SHORTIE | ASTROMECH,
-    "6-6": VEHICLE_TIE,
+ALL_MINIKITS_REQUIREMENTS: dict[str, tuple[CharacterAbility, ...]] = {
+    "1-1": (HIGH_JUMP | ASTROMECH | HOVER | SHORTIE,),
+    "1-2": (SHORTIE | BLASTER,),
+    "1-3": (SITH | HIGH_JUMP | HOVER | BOUNTY_HUNTER | SHORTIE,),
+    "1-4": (VEHICLE_TIE,),
+    "1-5": (SITH | BOUNTY_HUNTER | HIGH_JUMP,),
+    "1-6": (SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER | IMPERIAL,),
+    "2-1": (VEHICLE_TIE,),
+    "2-2": (SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER | SHORTIE,),
+    "2-3": (HIGH_JUMP | IMPERIAL | SHORTIE,),
+    "2-4": (HIGH_JUMP | SHORTIE,),
+    "2-5": (VEHICLE_TIE,),
+    "2-6": (HIGH_JUMP | BLASTER | ASTROMECH,),
+    "3-1": (CharacterAbility.NONE,),
+    "3-2": (HIGH_JUMP | BLASTER | SHORTIE,),
+    "3-3": (HOVER | BOUNTY_HUNTER | HIGH_JUMP,),
+    "3-4": (SITH | HIGH_JUMP | HOVER,),
+    "3-5": (SITH | HIGH_JUMP | BLASTER | HOVER | BOUNTY_HUNTER | IMPERIAL,),
+    "3-6": (HOVER,),
+    "4-1": (SITH | BOUNTY_HUNTER | IMPERIAL,),
+    "4-2": (SITH | SHORTIE,),
+    "4-3": (SITH | BOUNTY_HUNTER | SHORTIE,),
+    "4-4": (SITH | BOUNTY_HUNTER | IMPERIAL,),
+    "4-5": (SITH | BOUNTY_HUNTER | IMPERIAL | SHORTIE,),
+    "4-6": (VEHICLE_TOW | VEHICLE_TIE,),
+    "5-1": (VEHICLE_TIE,),
+    "5-2": (SITH | HOVER | ASTROMECH | BOUNTY_HUNTER | SHORTIE,),
+    "5-3": (VEHICLE_TOW | VEHICLE_TIE,),
+    "5-4": (SITH | BOUNTY_HUNTER | SHORTIE,),
+    "5-5": (SITH | BOUNTY_HUNTER | IMPERIAL | SHORTIE,),
+    "5-6": (SITH | BOUNTY_HUNTER,),
+    "6-1": (SITH | SHORTIE | CAN_WEAR_HAT, SITH | SHORTIE | IMPERIAL),
+    "6-2": (SITH | HOVER | SHORTIE,),
+    "6-3": (SITH | BOUNTY_HUNTER | IMPERIAL | SHORTIE,),
+    "6-4": (BOUNTY_HUNTER,),
+    "6-5": (BLASTER | BOUNTY_HUNTER | SHORTIE | ASTROMECH,),
+    "6-6": (VEHICLE_TIE,),
 }
 
 BOSS_CHARACTERS_BY_SHORTNAME: dict[str, str] = {
@@ -500,6 +518,38 @@ DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI: set[str] = {
     # I am assuming that the extra room where the door needs to be blown up is required to get True Jedi in 6-5.
     "6-5",
 }
+
+
+HAT_MACHINE_CHAPTERS: dict[str, tuple[CharacterAbility, CharacterAbility]] = {
+    # There is a Hat Machine in Level D, which you can take all the way back to behind spawn to the Imperial Panel with
+    # a Minikit behind.
+    # All the characters that can wear hats can jump and can make it back to the panel.
+    # todo: Maybe the most basic logic level should use (CAN_WEAR_HAT_AND_GRAPPLE or CAN_WEAR_HAT_AND_DOUBLE_JUMP)
+    #  because CAN_WEAR_HAT on its own requires either a tight jump, or jumping off a small garbage bin than can be
+    #  destroyed by accident.
+    "4-3": (CAN_WEAR_HAT, CharacterAbility.IMPERIAL),
+    # There is a section where a Stormtrooper helmet needs to be taken across a gap that requires grappling if you want
+    # to keep the hat.
+    "4-4": (CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE, CharacterAbility.IMPERIAL),
+    # In 4-5, there is an Imperial Hat Machine with an Imperial panel that requires grappling across a gap to reach
+    # (Level A), so, if the player has no Imperial character, they need a BLASTER character that can wear hats.
+    # This additionally covers a later use of an Imperial Hat Machine where the panel is at the top of an elevator
+    # (level B), and another later use of an Imperial Hat Machine where the panel is at the end of a Zipup, across a gap
+    # (level C).
+    "4-5": (CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE, CharacterAbility.IMPERIAL),
+    # In 5-5, there is an Imperial Hat Machine with an Imperial panel that requires double-jumping across a gap to
+    # reach, so, if the player has no Imperial character, they need a Jedi/Sith that can wear hats.
+    # This gets its own flag, instead of being JEDI | CAN_WEAR_HAT, for logic performance reasons. The complexity comes
+    # from the fact that characters may have additional flags, but the logic system prefers to store only the combined
+    # flag of all currently usable abilities.
+    "5-5": (CharacterAbility.CAN_WEAR_HAT_AND_DOUBLE_JUMP, CharacterAbility.IMPERIAL),
+    # Level A has a Hat Machine where you need to walk to an elevator with the hat.
+    "5-6": (CAN_WEAR_HAT, CharacterAbility.IMPERIAL),
+    # The level is played in Story with a character than can wear hats instead of needing a bounty hunter.
+    "6-1": (CAN_WEAR_HAT, CharacterAbility.BOUNTY_HUNTER),
+}
+"""Chapter completions that require Hat Machine logic."""
+
 
 # TODO: Record Level IDs, these would mostly be there to help make map switching in the tracker easier, and would
 #  serve as a record of data that might be useful for others.

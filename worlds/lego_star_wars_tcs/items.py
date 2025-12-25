@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, ClassVar, Literal, Iterable, Mapping, AbstractSet
+from typing import Optional, ClassVar, Literal, Mapping, AbstractSet
 
 from BaseClasses import Item, ItemClassification
 from .constants import (
@@ -17,6 +17,16 @@ from .constants import (
     SITH,
     VEHICLE_TIE,
     VEHICLE_TOW,
+    VEHICLE_BLASTER,
+    CAN_WEAR_HAT,
+    CAN_WEAR_HAT_AND_GRAPPLE,
+    CAN_WEAR_HAT_AND_DOUBLE_JUMP,
+    CAN_RIDE_VEHICLES,
+    CAN_PULL_LEVERS,
+    CAN_PUSH_OBJECTS,
+    CAN_BUILD_BRICKS,
+    CAN_JUMP_NORMALLY,
+    CAN_ATTACK_UP_CLOSE,
 )
 
 
@@ -71,6 +81,26 @@ class GenericCharacterData(GenericItemData):
         object.__setattr__(self, "shop_slot", shop_slot)
         _unlock_method, studs_cost = CHARACTER_SHOP_SLOTS.get(self.name, (..., 0))
         object.__setattr__(self, "purchase_cost", studs_cost)
+
+        # Automatically set some implied abilities as a safeguard.
+        abilities = self.abilities
+        if SITH in self.abilities:
+            abilities |= JEDI
+
+        # Automatically set some implied abilities.
+        if JEDI in self.abilities or HIGH_JUMP in self.abilities:
+            abilities |= CAN_JUMP_NORMALLY
+        if JEDI in self.abilities or BLASTER in self.abilities or BOUNTY_HUNTER in self.abilities:
+            abilities |= CAN_ATTACK_UP_CLOSE
+
+        # Automatically set special Hat Machine abilities that are not set explicitly.
+        if CAN_WEAR_HAT in self.abilities and BLASTER in self.abilities:
+            abilities |= CAN_WEAR_HAT_AND_GRAPPLE
+        if CAN_WEAR_HAT in self.abilities and JEDI in self.abilities:
+            abilities |= CAN_WEAR_HAT_AND_DOUBLE_JUMP
+
+        if abilities is not self.abilities:
+            object.__setattr__(self, "abilities", abilities)
 
     @property
     def purchase_location_name(self) -> str:
@@ -298,128 +328,165 @@ _vehicle = VehicleData
 _extra = ExtraData
 
 
+COMMON_PACIFIST_NON_DROID = CAN_BUILD_BRICKS | CAN_PULL_LEVERS | CAN_PUSH_OBJECTS | CAN_JUMP_NORMALLY | CAN_RIDE_VEHICLES
+COMMON_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_ATTACK_UP_CLOSE
+HATLESS_COMMON_NON_DROID = COMMON_NON_DROID | CAN_WEAR_HAT
+HATLESS_PACIFIST_COMMON_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_WEAR_HAT
+COMMON_SITH = COMMON_NON_DROID | JEDI | SITH
+HATLESS_COMMON_SITH = COMMON_SITH | CAN_WEAR_HAT
+
+
 ITEM_DATA: list[GenericItemData] = [
     MinikitItemData(1, "5 Minikits", 5),
-    _char(2, "Jar Jar Binks", 99, abilities=HIGH_JUMP),
-    _char(3, "Queen Amidala", 80, abilities=BLASTER),
-    _char(4, "Captain Panaka", 98, abilities=BLASTER),
-    _char(5, "Padmé (Battle)", 77, abilities=BLASTER),
+    # Jar Jar has a vanilla bug where there is a typo in the lever pulling animation, which prevents Jar Jar, and
+    # Gungans based on him, from being able to pull levers.
+    _char(2, "Jar Jar Binks", 99, abilities=HIGH_JUMP | CAN_BUILD_BRICKS | CAN_PUSH_OBJECTS | CAN_RIDE_VEHICLES),
+    _char(3, "Queen Amidala", 80, abilities=BLASTER | COMMON_NON_DROID),
+    _char(4, "Captain Panaka", 98, abilities=BLASTER | COMMON_NON_DROID),
+    _char(5, "Padmé (Battle)", 77, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(6, "R2-D2", 8, abilities=ASTROMECH | HOVER),
-    _char(7, "Anakin Skywalker (Boy)", 93, abilities=SHORTIE),
-    _char(8, "Obi-Wan Kenobi (Jedi Master)", 75, abilities=JEDI),
+    _char(7, "Anakin Skywalker (Boy)", 93, abilities=SHORTIE | HATLESS_PACIFIST_COMMON_NON_DROID),
+    _char(8, "Obi-Wan Kenobi (Jedi Master)", 75, abilities=JEDI | HATLESS_COMMON_NON_DROID),
     _char(9, "R4-P17", 66, abilities=ASTROMECH | HOVER),
-    _char(10, "Anakin Skywalker (Padawan)", 97, abilities=JEDI),
-    _char(11, "Padmé (Geonosis)", 79, abilities=BLASTER),
+    _char(10, "Anakin Skywalker (Padawan)", 97, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(11, "Padmé (Geonosis)", 79, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(12, "C-3PO", 12, abilities=PROTOCOL_DROID),
-    _char(13, "Mace Windu", 62, abilities=JEDI),
-    _char(14, "Padmé (Clawed)", 78, abilities=BLASTER),
-    _char(15, "Yoda", 10, abilities=JEDI),
-    _char(16, "Obi-Wan Kenobi (Episode 3)", 74, abilities=JEDI),
-    _char(17, "Anakin Skywalker (Jedi)", 96, abilities=JEDI),
-    _char(18, "Chancellor Palpatine", 73),
-    _char(19, "Commander Cody", 89, abilities=BLASTER | IMPERIAL),
-    _char(20, "Chewbacca", 16, abilities=BLASTER),
-    _char(21, "Princess Leia", 23, abilities=BLASTER),
-    _char(22, "Captain Antilles", 207, abilities=BLASTER),
-    _char(23, "Rebel Friend", 190, abilities=BLASTER),
-    _char(24, "Luke Skywalker (Tatooine)", 28, abilities=BLASTER),
-    _char(25, "Ben Kenobi", 56, abilities=JEDI),
-    _char(26, "Han Solo", 33, abilities=BLASTER),
-    _char(27, "Luke Skywalker (Stormtrooper)", 29, abilities=BLASTER),
-    _char(28, "Han Solo (Stormtrooper)", 34, abilities=BLASTER),
-    _char(29, "Han Solo (Hoth)", 143, abilities=BLASTER),
-    _char(30, "Princess Leia (Hoth)", 24, abilities=BLASTER),
-    _char(31, "Luke Skywalker (Pilot)", 156, abilities=BLASTER),  # Ability missing from manual
-    _char(32, "Luke Skywalker (Dagobah)", 157, abilities=JEDI),  # Ability missing from manual
-    _char(33, "Luke Skywalker (Bespin)", 25, abilities=JEDI),  # Ability missing from manual
-    _char(34, "Princess Leia (Boushh)", 129, abilities=BLASTER),
-    _char(35, "Luke Skywalker (Jedi)", 27, abilities=JEDI),
-    _char(36, "Han Solo (Skiff)", 141, abilities=BLASTER),
-    _char(37, "Lando Calrissian (Palace Guard)", 201, abilities=BLASTER),
-    _char(38, "Princess Leia (Slave)", 161, abilities=BLASTER),
-    _char(39, "Luke Skywalker (Endor)", 26, abilities=JEDI),
-    _char(40, "Princess Leia (Endor)", 162, abilities=BLASTER),
-    _char(41, "Han Solo (Endor)", 206, abilities=BLASTER),
-    _char(42, "Wicket", 223, abilities=SHORTIE),
-    _char(43, "Darth Vader", 40, abilities=IMPERIAL | JEDI | SITH),
-    _char(44, "Lando Calrissian", 35, abilities=BLASTER),
-    _char(45, "Princess Leia (Bespin)", 57, abilities=BLASTER),
+    _char(13, "Mace Windu", 62, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(14, "Padmé (Clawed)", 78, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(15, "Yoda", 10, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(16, "Obi-Wan Kenobi (Episode 3)", 74, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(17, "Anakin Skywalker (Jedi)", 96, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(18, "Chancellor Palpatine", 73, abilities=HATLESS_PACIFIST_COMMON_NON_DROID),
+    _char(19, "Commander Cody", 89, abilities=BLASTER | IMPERIAL | COMMON_NON_DROID),
+    _char(20, "Chewbacca", 16, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(21, "Princess Leia", 23, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(22, "Captain Antilles", 207, abilities=BLASTER | COMMON_NON_DROID),
+    _char(23, "Rebel Friend", 190, abilities=BLASTER | COMMON_NON_DROID),
+    _char(24, "Luke Skywalker (Tatooine)", 28, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(25, "Ben Kenobi", 56, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(26, "Han Solo", 33, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(27, "Luke Skywalker (Stormtrooper)", 29, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(28, "Han Solo (Stormtrooper)", 34, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(29, "Han Solo (Hoth)", 143, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(30, "Princess Leia (Hoth)", 24, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(31, "Luke Skywalker (Pilot)", 156, abilities=BLASTER | COMMON_NON_DROID),
+    _char(32, "Luke Skywalker (Dagobah)", 157, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(33, "Luke Skywalker (Bespin)", 25, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(34, "Princess Leia (Boushh)", 129, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(35, "Luke Skywalker (Jedi)", 27, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(36, "Han Solo (Skiff)", 141, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(37, "Lando Calrissian (Palace Guard)", 201, abilities=BLASTER | COMMON_NON_DROID),
+    _char(38, "Princess Leia (Slave)", 161, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(39, "Luke Skywalker (Endor)", 26, abilities=JEDI | COMMON_NON_DROID),
+    _char(40, "Princess Leia (Endor)", 162, abilities=BLASTER | COMMON_NON_DROID),
+    _char(41, "Han Solo (Endor)", 206, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(42, "Wicket", 223, abilities=SHORTIE | COMMON_NON_DROID),
+    _char(43, "Darth Vader", 40, abilities=IMPERIAL | COMMON_SITH),
+    _char(44, "Lando Calrissian", 35, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    # Has special hair that apparently counts as a hat.
+    _char(45, "Princess Leia (Bespin)", 57, abilities=BLASTER | COMMON_NON_DROID),
     _char(46, "Gonk Droid", 17),
     _char(47, "PK Droid", 100),
-    _char(48, "Battle Droid", 67),
-    _char(49, "Battle Droid (Security)", 70),
-    _char(50, "Battle Droid (Commander)", 68),
-    _char(51, "Droideka", 65),
-    _char(52, "Captain Tarpals", 276, abilities=HIGH_JUMP),
-    _char(53, "Boss Nass", 254),
-    _char(54, "Royal Guard", 101, abilities=BLASTER),
-    _char(55, "Watto", 269),
+    _char(48, "Battle Droid", 67, abilities=CAN_ATTACK_UP_CLOSE),
+    _char(49, "Battle Droid (Security)", 70, abilities=CAN_ATTACK_UP_CLOSE),
+    _char(50, "Battle Droid (Commander)", 68, abilities=CAN_ATTACK_UP_CLOSE),
+    _char(51, "Droideka", 65, abilities=CAN_ATTACK_UP_CLOSE),
+    # Due to being based on Jar Jar, he cannot pull levers.
+    _char(52, "Captain Tarpals", 276,
+          abilities=HIGH_JUMP | CAN_BUILD_BRICKS | CAN_PUSH_OBJECTS | CAN_RIDE_VEHICLES | CAN_ATTACK_UP_CLOSE),
+    _char(53, "Boss Nass", 254, abilities=COMMON_PACIFIST_NON_DROID),
+    _char(54, "Royal Guard", 101, abilities=BLASTER | COMMON_NON_DROID),
+    # Cannot build.
+    # I am unsure if he should be considered able to jump normally because he flies around instead, but does not hover
+    # over gaps.
+    _char(55, "Watto", 269, abilities=CAN_PULL_LEVERS | CAN_PUSH_OBJECTS | CAN_RIDE_VEHICLES),
     _char(56, "Pit Droid", 268),
-    _char(57, "Darth Maul", 61, abilities=JEDI | SITH),
-    _char(58, "Zam Wesell", 2, abilities=BOUNTY_HUNTER | BLASTER),  # There is a second, incorrect Zam Wesell at 305
-    _char(59, "Dexter Jettster", 304),
-    _char(60, "Clone", 86, abilities=IMPERIAL | BLASTER),
-    _char(61, "Lama Su", 280),
-    _char(62, "Taun We", 281),
-    _char(63, "Geonosian", 95),
-    _char(64, "Battle Droid (Geonosis)", 69),
-    _char(65, "Super Battle Droid", 81),
-    _char(66, "Jango Fett", 59, abilities=BOUNTY_HUNTER | BLASTER | HOVER),
-    _char(67, "Boba Fett (Boy)", 94, abilities=SHORTIE),
-    _char(68, "Luminara", 84, abilities=JEDI),
-    _char(69, "Ki-Adi Mundi", 82, abilities=JEDI),
-    _char(70, "Kit Fisto", 83, abilities=JEDI),
-    _char(71, "Shaak Ti", 85, abilities=JEDI),
-    _char(72, "Aayla Secura", 315, abilities=JEDI),
-    _char(73, "Plo Koon", 316, abilities=JEDI),
-    _char(74, "Count Dooku", 103, abilities=JEDI | SITH),
-    _char(75, "Grievous' Bodyguard", 64, abilities=HIGH_JUMP),
-    _char(76, "General Grievous", 60, abilities=HIGH_JUMP),
-    _char(77, "Wookiee", 72, abilities=BLASTER),
-    _char(78, "Clone (Episode 3)", 87, abilities=IMPERIAL | BLASTER),
-    _char(79, "Clone (Episode 3, Pilot)", 88, abilities=IMPERIAL | BLASTER),
-    _char(80, "Clone (Episode 3, Swamp)", 90, abilities=IMPERIAL | BLASTER),
-    _char(81, "Clone (Episode 3, Walker)", 91, abilities=IMPERIAL | BLASTER),
-    _char(82, "Mace Windu (Episode 3)", 63, abilities=JEDI),
-    _char(83, "Disguised Clone", 92, abilities=IMPERIAL | BLASTER),
-    _char(84, "Rebel Trooper", 13, abilities=BLASTER),
-    _char(85, "Stormtrooper", 20, abilities=IMPERIAL | BLASTER),
-    _char(86, "Imperial Shuttle Pilot", 53, abilities=IMPERIAL | BLASTER),
-    _char(87, "Tusken Raider", 9, abilities=BLASTER),
-    _char(88, "Jawa", 22, abilities=SHORTIE),  # Note: Cannot grapple
-    _char(89, "Sandtrooper", 51, abilities=IMPERIAL | BLASTER),
-    _char(90, "Greedo", 171, abilities=BOUNTY_HUNTER | BLASTER),
-    _char(91, "Imperial Spy", 172),
-    _char(92, "Beach Trooper", 48, abilities=IMPERIAL | BLASTER),
-    _char(93, "Death Star Trooper", 49, abilities=IMPERIAL | BLASTER),
-    _char(94, "TIE Fighter Pilot", 50, abilities=IMPERIAL | BLASTER),
-    _char(95, "Imperial Officer", 14, abilities=IMPERIAL | BLASTER),
-    _char(96, "Grand Moff Tarkin", 131, abilities=IMPERIAL | BLASTER),
-    _char(97, "Han Solo (Hood)", 142, abilities=BLASTER),
-    _char(98, "Rebel Trooper (Hoth)", 107, abilities=BLASTER),
-    _char(99, "Rebel Pilot", 58, abilities=BLASTER),
-    _char(100, "Snowtrooper", 45, abilities=IMPERIAL | BLASTER),
-    _char(101, "Lobot", 192),
-    _char(102, "Ugnaught", 158, abilities=SHORTIE),
-    _char(103, "Bespin Guard", 193, abilities=BLASTER),
-    _char(104, "Gamorrean Guard", 102),
-    _char(105, "Bib Fortuna", 185),
-    _char(106, "Palace Guard", 196, abilities=BLASTER),
-    _char(107, "Bossk", 212, abilities=BOUNTY_HUNTER | BLASTER),
-    _char(108, "Skiff Guard", 186, abilities=BLASTER),
-    _char(109, "Boba Fett", 7, abilities=BOUNTY_HUNTER | BLASTER | HOVER),
-    _char(110, "Ewok", 199, abilities=SHORTIE),
-    _char(111, "Imperial Guard", 194, abilities=IMPERIAL),
-    _char(112, "The Emperor", 6, abilities=JEDI | SITH | IMPERIAL),
-    _char(113, "Admiral Ackbar", 211, abilities=BLASTER),
-    _char(114, "IG-88", 197, abilities=BOUNTY_HUNTER | BLASTER | ASTROMECH | PROTOCOL_DROID),
-    _char(115, "Dengar", 213, abilities=BOUNTY_HUNTER | BLASTER),
-    _char(116, "4-LOM", 225, abilities=BOUNTY_HUNTER | BLASTER | ASTROMECH | PROTOCOL_DROID),
-    _char(117, "Ben Kenobi (Ghost)", 195, abilities=JEDI),
-    _char(118, "Yoda (Ghost)", 227, abilities=JEDI),
+    _char(57, "Darth Maul", 61, abilities=COMMON_SITH),
+    _char(58, "Zam Wesell", 2, abilities=BOUNTY_HUNTER | BLASTER | COMMON_NON_DROID),  # There is a second, incorrect Zam Wesell at 305
+    _char(59, "Dexter Jettster", 304, abilities=COMMON_PACIFIST_NON_DROID),
+    _char(60, "Clone", 86, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(61, "Lama Su", 280, abilities=COMMON_NON_DROID),
+    _char(62, "Taun We", 281, abilities=COMMON_NON_DROID),
+    # Cannot build.
+    # Like Watto, they cannot jump normally, but fly instead.
+    _char(63, "Geonosian", 95, abilities=CAN_PULL_LEVERS | CAN_PUSH_OBJECTS | CAN_RIDE_VEHICLES | CAN_ATTACK_UP_CLOSE),
+    _char(64, "Battle Droid (Geonosis)", 69, abilities=CAN_ATTACK_UP_CLOSE),
+    _char(65, "Super Battle Droid", 81, abilities=CAN_ATTACK_UP_CLOSE),
+    _char(66, "Jango Fett", 59, abilities=BOUNTY_HUNTER | BLASTER | HOVER | COMMON_NON_DROID),
+    _char(67, "Boba Fett (Boy)", 94, abilities=SHORTIE | COMMON_PACIFIST_NON_DROID),
+    _char(68, "Luminara", 84, abilities=JEDI | COMMON_NON_DROID),
+    _char(69, "Ki-Adi Mundi", 82, abilities=JEDI | COMMON_NON_DROID),
+    _char(70, "Kit Fisto", 83, abilities=JEDI | COMMON_NON_DROID),
+    _char(71, "Shaak Ti", 85, abilities=JEDI | COMMON_NON_DROID),
+    _char(72, "Aayla Secura", 315, abilities=JEDI | COMMON_NON_DROID),
+    _char(73, "Plo Koon", 316, abilities=JEDI | COMMON_NON_DROID),
+    _char(74, "Count Dooku", 103, abilities=HATLESS_COMMON_SITH),
+    _char(75, "Grievous' Bodyguard", 64, abilities=HIGH_JUMP | CAN_ATTACK_UP_CLOSE),
+    # Can build for some reason???
+    _char(76, "General Grievous", 60, abilities=HIGH_JUMP | CAN_ATTACK_UP_CLOSE | CAN_BUILD_BRICKS),
+    # An extension of Chewbacca, who is specially allowed to wear hats.
+    _char(77, "Wookiee", 72, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(78, "Clone (Episode 3)", 87, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(79, "Clone (Episode 3, Pilot)", 88, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(80, "Clone (Episode 3, Swamp)", 90, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(81, "Clone (Episode 3, Walker)", 91, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(82, "Mace Windu (Episode 3)", 63, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(83, "Disguised Clone", 92, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(84, "Rebel Trooper", 13, abilities=BLASTER | COMMON_NON_DROID),
+    _char(85, "Stormtrooper", 20, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(86, "Imperial Shuttle Pilot", 53, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(87, "Tusken Raider", 9, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(88, "Jawa", 22, abilities=SHORTIE | COMMON_PACIFIST_NON_DROID),  # Note: Cannot grapple
+    _char(89, "Sandtrooper", 51, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(90, "Greedo", 171, abilities=BOUNTY_HUNTER | BLASTER | COMMON_NON_DROID),
+    _char(91, "Imperial Spy", 172, abilities=COMMON_PACIFIST_NON_DROID),
+    _char(92, "Beach Trooper", 48, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(93, "Death Star Trooper", 49, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(94, "TIE Fighter Pilot", 50, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(95, "Imperial Officer", 14, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(96, "Grand Moff Tarkin", 131, abilities=IMPERIAL | BLASTER | HATLESS_COMMON_NON_DROID),
+    # Can wear hats despite the hood.
+    _char(97, "Han Solo (Hood)", 142, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(98, "Rebel Trooper (Hoth)", 107, abilities=BLASTER | COMMON_NON_DROID),
+    _char(99, "Rebel Pilot", 58, abilities=BLASTER | COMMON_NON_DROID),
+    _char(100, "Snowtrooper", 45, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
+    _char(101, "Lobot", 192, abilities=HATLESS_COMMON_NON_DROID),
+    _char(102, "Ugnaught", 158, abilities=SHORTIE | COMMON_PACIFIST_NON_DROID),
+    _char(103, "Bespin Guard", 193, abilities=BLASTER | COMMON_NON_DROID),
+    _char(104, "Gamorrean Guard", 102, abilities=COMMON_NON_DROID),
+    _char(105, "Bib Fortuna", 185, abilities=COMMON_NON_DROID),
+    _char(106, "Palace Guard", 196, abilities=BLASTER | COMMON_NON_DROID),
+    _char(107, "Bossk", 212, abilities=BOUNTY_HUNTER | BLASTER | COMMON_NON_DROID),
+    _char(108, "Skiff Guard", 186, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(109, "Boba Fett", 7, abilities=BOUNTY_HUNTER | BLASTER | HOVER | COMMON_NON_DROID),
+    _char(110, "Ewok", 199, abilities=SHORTIE | COMMON_NON_DROID),
+    _char(111, "Imperial Guard", 194, abilities=IMPERIAL | COMMON_NON_DROID),
+    _char(112, "The Emperor", 6, abilities=IMPERIAL | COMMON_SITH),
+    _char(113, "Admiral Ackbar", 211, abilities=BLASTER | COMMON_NON_DROID),
+    _char(114, "IG-88", 197,
+          abilities=
+          BOUNTY_HUNTER
+          | BLASTER
+          | ASTROMECH
+          | PROTOCOL_DROID
+          | CAN_PUSH_OBJECTS
+          | CAN_JUMP_NORMALLY
+          | CAN_RIDE_VEHICLES),
+    _char(115, "Dengar", 213, abilities=BOUNTY_HUNTER | BLASTER | COMMON_NON_DROID),
+    _char(116, "4-LOM", 225,
+          abilities=
+          BOUNTY_HUNTER
+          | BLASTER
+          | ASTROMECH
+          | PROTOCOL_DROID
+          | CAN_PUSH_OBJECTS
+          | CAN_JUMP_NORMALLY
+          | CAN_RIDE_VEHICLES),
+    _char(117, "Ben Kenobi (Ghost)", 195, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(118, "Yoda (Ghost)", 227, abilities=JEDI | COMMON_NON_DROID),
     _char(119, "R2-Q5", 314, abilities=ASTROMECH | HOVER),
-    _char(120, "Padmé", 76, abilities=BLASTER),
-    _char(121, "Luke Skywalker (Hoth)", 204, abilities=BLASTER),  # Ability missing from manual
+    _char(120, "Padmé", 76, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(121, "Luke Skywalker (Hoth)", 204, abilities=BLASTER | COMMON_NON_DROID),  # Ability missing from manual
     _extra(122, "Super Gonk", 0x8, "1-1"),
     _extra(123, "Poo Money", 0x9, "1-2"),  # "Fertilizer" in manual
     _extra(124, "Walkie Talkie Disable", 0xA, "1-3"),
@@ -464,25 +531,25 @@ ITEM_DATA: list[GenericItemData] = [
     _generic(158, "Episode 4 Unlock"),
     _generic(159, "Episode 5 Unlock"),
     _generic(160, "Episode 6 Unlock"),
-    _char(161, "Anakin Skywalker (Ghost)", 226, abilities=JEDI),
-    _char(162, "Indiana Jones", 317, abilities=BLASTER),
-    _char(163, "Princess Leia (Prisoner)", 205, abilities=BLASTER),
+    _char(161, "Anakin Skywalker (Ghost)", 226, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(162, "Indiana Jones", 317, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(163, "Princess Leia (Prisoner)", 205, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _vehicle(164, "Anakin's Pod", 259),
-    _vehicle(165, "Naboo Starfighter", 272, abilities=VEHICLE_TOW),
-    _vehicle(166, "Republic Gunship", 285, abilities=VEHICLE_TOW),
-    _vehicle(167, "Anakin's Starfighter", 221),
-    _vehicle(168, "Obi-Wan's Starfighter", 291),
-    _vehicle(169, "X-Wing", 36),
-    _vehicle(170, "Y-Wing", 39),
-    _vehicle(171, "Millennium Falcon", 38),
-    _vehicle(172, "TIE Interceptor", 128, abilities=VEHICLE_TIE),
-    _vehicle(173, "Snowspeeder", 32, abilities=VEHICLE_TOW),
+    _vehicle(165, "Naboo Starfighter", 272, abilities=VEHICLE_TOW | VEHICLE_BLASTER),
+    _vehicle(166, "Republic Gunship", 285, abilities=VEHICLE_TOW | VEHICLE_BLASTER),
+    _vehicle(167, "Anakin's Starfighter", 221, abilities=VEHICLE_BLASTER),
+    _vehicle(168, "Obi-Wan's Starfighter", 291, abilities=VEHICLE_BLASTER),
+    _vehicle(169, "X-Wing", 36, abilities=VEHICLE_BLASTER),
+    _vehicle(170, "Y-Wing", 39, abilities=VEHICLE_BLASTER),
+    _vehicle(171, "Millennium Falcon", 38, abilities=VEHICLE_BLASTER),
+    _vehicle(172, "TIE Interceptor", 128, abilities=VEHICLE_TIE | VEHICLE_BLASTER),
+    _vehicle(173, "Snowspeeder", 32, abilities=VEHICLE_TOW | VEHICLE_BLASTER),
     _vehicle(174, "Anakin's Speeder", 3),
     _generic(175, "Purple Stud"),
     # NEW. Items below here did not exist in the manual.
     # TODO: Redo all the item IDs to make more sense. Either internal order in chars.txt, or in character grid order.
-    _char(176, "Qui-Gon Jinn", 104, abilities=JEDI),
-    _char(177, "Obi-Wan Kenobi", 1, abilities=JEDI),
+    _char(176, "Qui-Gon Jinn", 104, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(177, "Obi-Wan Kenobi", 1, abilities=JEDI | HATLESS_COMMON_NON_DROID),
     _char(178, "TC-14", 71, abilities=PROTOCOL_DROID),
     NonPowerBrickExtraData(179, "Extra Toggle", 0x0, None, 30000),
     NonPowerBrickExtraData(180, "Fertilizer", 0x1, None, 8000),
@@ -495,8 +562,8 @@ ITEM_DATA: list[GenericItemData] = [
     _extra(-1, "Adaptive Difficulty", 0x2C, None),  # Effectively a difficulty setting, so not randomized.
     # Custom characters can only use unlocked character equipment, besides some blasters. They do not get access to
     # lightsabers/force unless Jedi are unlocked.
-    _char(188, "STRANGER 1", 168, abilities=BLASTER),
-    _char(189, "STRANGER 2", 169, abilities=BLASTER),
+    _char(188, "STRANGER 1", 168, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
+    _char(189, "STRANGER 2", 169, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _vehicle(190, "Sebulba's Pod", 261),
     _vehicle(191, "Zam's Airspeeder", 277),
     _vehicle(192, "Droid Trifighter", 292),
@@ -523,6 +590,19 @@ ITEM_DATA: list[GenericItemData] = [
     # This is the vehicle present in the outside area of the Cantina. 'map' is the internal name for the Cantina.
     _char(-1, "mapcar", 303),
 ]
+
+
+# Programmatically add Chapter Unlock items, starting from ID 1000 so that they avoid clashing with manually defined
+# items.
+def _add_chapter_unlock_item_data():
+    import itertools
+    for i, (episode, chapter) in enumerate(itertools.product(range(1, 7), range(1, 7)), start=1000):
+        ITEM_DATA.append(_generic(i, f"{episode}-{chapter} Unlock"))
+
+
+_add_chapter_unlock_item_data()
+del _add_chapter_unlock_item_data
+
 
 USEFUL_NON_PROGRESSION_CHARACTERS: set[str] = {
     # There is currently no Ghost logic for bypassing gas and other hazards, so give the Ghosts at least Useful

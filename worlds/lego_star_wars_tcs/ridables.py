@@ -113,7 +113,13 @@ RIDABLES_REQUIREMENTS: dict[str, dict[str, tuple[CharacterAbility, ...]]] = {
 
 
 def get_ridable_requirements(chapter_short_name_or_bonus: str, ridable_name: str) -> tuple[CharacterAbility, ...]:
-    return RIDABLES_REQUIREMENTS.get(chapter_short_name_or_bonus, {}).get(ridable_name, ())
+    # todo: Requiring CAN_RIDE_VEHICLES is not strictly necessary currently because the player is always forced to start
+    #  with a Jedi.
+    requirements = RIDABLES_REQUIREMENTS.get(chapter_short_name_or_bonus, {}).get(ridable_name, ())
+    if not requirements:
+        return (CharacterAbility.CAN_RIDE_VEHICLES,)
+    else:
+        return tuple(CharacterAbility.CAN_RIDE_VEHICLES | ability for ability in requirements)
 
 
 def _make_lookups() -> tuple[dict[str, list[Ridable]], dict[str, list[Ridable]]]:

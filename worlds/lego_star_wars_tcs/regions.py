@@ -61,10 +61,11 @@ class _RegionBuilder:
             assert chapter.number_in_episode == chapter_number
             if chapter.short_name not in world.enabled_chapters:
                 continue
-            # Update the count of how many chapters this character blocks access to.
-            # `character_requirements` is a `set`, so sort to ensure that `world.character_chapter_access_counts`
-            # maintains a deterministic order.
-            world.character_chapter_access_counts.update(sorted(chapter.character_requirements))
+            if self.world.options.chapter_unlock_requirement == "story_characters":
+                # Update the count of how many chapters this character blocks access to.
+                # `character_requirements` is a `set`, so sort to ensure that `world.character_chapter_access_counts`
+                # maintains a deterministic order.
+                world.character_chapter_access_counts.update(sorted(chapter.character_requirements))
             chapter_region = world.create_region(chapter.name)
 
             entrance_name = f"Episode {episode_number} Room, Chapter {chapter_number} Door"
@@ -250,9 +251,10 @@ class _RegionBuilder:
                 world.add_location(area.completion_location_name, area_region)
                 # todo: Item requirements have been removed for now because it is not currently possible to lock
                 #  access to the bonus levels.
-                for item in area.item_requirements:
-                    if item in CHARACTERS_AND_VEHICLES_BY_NAME:
-                        world.character_chapter_access_counts[item] += 1
+                if self.world.options.chapter_unlock_requirement == "story_characters":
+                    for item in area.item_requirements:
+                        if item in CHARACTERS_AND_VEHICLES_BY_NAME:
+                            world.character_chapter_access_counts[item] += 1
                 assert area.gold_brick, "Every bonus that requires Gold Bricks to access should award a Gold Brick"
 
                 world.add_gold_brick_event(f"{area.name} - Gold Brick", area_region)
