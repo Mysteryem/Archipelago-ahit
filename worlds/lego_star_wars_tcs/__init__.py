@@ -543,8 +543,7 @@ class LegoStarWarsTCSWorld(World):
                 if CharacterAbility.SITH in char.abilities:
                     # Skip Sith because they are rarer.
                     continue
-                # todo: Only characters that unlock **enabled** chapters should be skipped.
-                if chapters_unlock_with_characters and char.name in ALL_AREA_REQUIREMENT_CHARACTERS:
+                if chapters_unlock_with_characters and self.character_chapter_access_counts[char.name] > 0:
                     # Skip characters used to unlock chapters.
                     continue
                 choices.append(char)
