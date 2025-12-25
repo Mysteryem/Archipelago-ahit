@@ -18,7 +18,7 @@ import typing
 from pymem import pymem
 from pymem.exception import ProcessNotFound, ProcessError, PymemError, WinAPIError
 
-from CommonClient import CommonContext, server_loop, gui_enabled, ClientCommandProcessor
+from CommonClient import server_loop, gui_enabled
 
 from .. import options
 from ..constants import GAME_NAME, AP_WORLD_VERSION
@@ -52,6 +52,13 @@ from .game_state_modifiers.studs import STUDS_AP_ID_TO_VALUE, give_studs_item
 from .game_state_modifiers.text_display import InGameTextDisplay
 from .game_state_modifiers.text_replacer import TextReplacer
 from .game_state_modifiers.uncap_high_jump import UncapHighJump
+
+
+# Universal Tracker client integration.
+try:
+    from worlds.tracker import TrackerGameContext as CommonContext, TrackerCommandProcessor as ClientCommandProcessor
+except ImportError:
+    from CommonClient import CommonContext, ClientCommandProcessor
 
 
 logger = logging.getLogger("Client")
