@@ -14,6 +14,7 @@ from Options import (
     OptionGroup,
     DeathLink,
     ItemDict,
+    Removed,
 )
 
 from .levels import BOSS_UNIQUE_NAME_TO_CHAPTER, VEHICLE_CHAPTER_SHORTNAMES, EPISODE_TO_CHAPTER_AREAS
@@ -558,25 +559,31 @@ class EnableTrueJediLocations(DefaultOnToggle):
     rich_text_doc = True
 
 
-class EnableChapterCompletionCharacterUnlockLocations(DefaultOnToggle):
+class EnableChapterCompletionCharacterUnlockLocations(Removed):
+    pass
+
+
+class EnableStoryCharacterUnlockLocations(DefaultOnToggle):
     """
-    Enable locations for unlocking Story mode characters that would normally unlock when completing a Chapter in
+    Enable locations for unlocking Story mode characters that would normally unlock when completing a Chapter/Bonus in
     vanilla.
 
-    In vanilla, completing any Chapter with C-3PO as a playable Story mode character would unlock C-3PO. In vanilla,
-    this would mean completing either 2-3, 4-1, 5-2 or 6-1 because Chapters within an Episode unlock in order in
-    vanilla, but the AP randomizer allows for Chapters to be unlocked out-of-order, so, additionally, completing any of
-    4-2, 4-3, 4-4, 4-5, 5-6, 6-2 or 6-4, would also send the Story Character Unlock location for C-3PO.
+    In vanilla, completing any Chapter/Bonus with C-3PO as a playable Story mode character would unlock C-3PO. In
+    vanilla, this would mean completing either 2-3, 4-1, 5-2, 6-1 or A New Hope, because Chapters within an Episode
+    unlock in order in vanilla, but the AP randomizer allows for Chapters to be unlocked out-of-order, so, additionally,
+    completing any of 4-2, 4-3, 4-4, 4-5, 5-6, 6-2 or 6-4, would also send the Story Character Unlock location for
+    C-3PO.
 
-    The first Chapter completed that would unlock a Story mode character will send the Unlock location for that
+    The first Chapter/Bonus completed that would unlock a Story mode character will send the Unlock location for that
     character.
 
     Because Story mode is skipped in the AP randomizer, these character unlock locations are sent when the Chapters are
     completed in Free Play.
 
     With all Chapters enabled, this adds 56 locations.
+    With all Chapters and all Bonuses enabled, this adds 57 locations.
     """
-    display_name = "Chapter Completion Character Unlocks"
+    display_name = "Level Completion Character Unlocks"
     rich_text_doc = True
 
 
@@ -1352,7 +1359,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     starting_chapter: StartingChapter
     preferred_chapters: PreferredChapters
     prefer_entire_episodes: PreferEntireEpisodes
-    enable_story_character_unlock_locations: EnableChapterCompletionCharacterUnlockLocations
+    enable_story_character_unlock_locations: EnableStoryCharacterUnlockLocations
     enable_bonus_locations: EnableBonusLocations
     enable_all_episodes_purchases: EnableAllEpisodesCharacterPurchaseLocations
     enable_minikit_locations: EnableMinikitLocations
@@ -1428,7 +1435,7 @@ OPTION_GROUPS: list[OptionGroup] = [
     OptionGroup("Location Options", [
         EnableMinikitLocations,
         EnableTrueJediLocations,
-        EnableChapterCompletionCharacterUnlockLocations,
+        EnableStoryCharacterUnlockLocations,
         EnableBonusLocations,
         EnableAllEpisodesCharacterPurchaseLocations,
         EnableNonPowerBrickExtraLocations,

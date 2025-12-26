@@ -165,6 +165,10 @@ class BonusArea:
     completion_ability_requirements: CharacterAbility = CharacterAbility.NONE
     gold_bricks_required: int = 0
     gold_brick: bool = True
+    story_characters: frozenset[str] = field(init=False)
+
+    def __post_init__(self):
+        object.__setattr__(self, "story_characters", BONUS_AREA_STORY_CHARACTERS.get(self.name, frozenset()))
 
     @property
     def completion_location_name(self) -> str:
@@ -376,6 +380,25 @@ CHAPTER_AREA_STORY_CHARACTERS: dict[str, frozenset[str]] = {
         "6-6": {
             "Millennium Falcon",
             "X-Wing",
+        }
+    }.items()
+}
+
+
+BONUS_AREA_STORY_CHARACTERS: dict[str, frozenset[str]] = {
+    k: frozenset(v) for k, v in {
+        "Mos Espa Pod Race (Original)": {
+            "Anakin's Pod",
+        },
+        "Anakin's Flight": {
+            "Naboo Starfighter",
+        },
+        "Gunship Cavalry (Original)": {
+            "Republic Gunship",
+        },
+        "A New Hope (Bonus Level)": {
+            "Darth Vader",
+            "C-3PO",
         }
     }.items()
 }

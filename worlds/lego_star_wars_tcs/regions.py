@@ -190,7 +190,7 @@ class _RegionBuilder:
             excluded_goal_region = None
 
         for character, parent_regions in self.story_character_unlock_regions.items():
-            loc_name = f"Chapter Completion - Unlock {character}"
+            loc_name = f"Level Completion - Unlock {character}"
             if len(parent_regions) == 1:
                 parent_region = parent_regions[0]
                 # The location is only accessed from 1 region, so put the location in that region. This slightly
@@ -249,6 +249,10 @@ class _RegionBuilder:
                 area_region = world.create_region(area.name)
                 region.connect(area_region)
                 world.add_location(area.completion_location_name, area_region)
+
+                if world.options.enable_story_character_unlock_locations:
+                    for character in area.story_characters:
+                        self.story_character_unlock_regions[character].append(area_region)
                 # todo: Item requirements have been removed for now because it is not currently possible to lock
                 #  access to the bonus levels.
                 if self.world.options.chapter_unlock_requirement == "story_characters":
@@ -343,13 +347,6 @@ def create_regions(world: TCSWorld) -> None:
 
     builder.create_episodes()
 
-    if builder.story_character_unlock_regions:
-        builder.create_story_character_unlock_locations()
-    else:
-        # Every Chapter has at least 1 Story Character, so if none exist in a generation, the locations should be
-        # disabled.
-        assert not builder.world.options.enable_story_character_unlock_locations
-
     # Available minikit count is calculated in generate_early.
     if world.available_minikits != builder.available_minikits_check:
         world.raise_error(AssertionError,
@@ -360,6 +357,14 @@ def create_regions(world: TCSWorld) -> None:
 
     if world.options.enable_bonus_locations:
         builder.create_bonus_locations()
+
+    if world.options.enable_story_character_unlock_locations:
+        if builder.story_character_unlock_regions:
+            builder.create_story_character_unlock_locations()
+        else:
+            # Every Chapter has at least 1 Story Character, so if none exist in a generation, the locations should be
+            # disabled.
+            assert not builder.world.options.enable_story_character_unlock_locations
 
     if world.options.ridesanity:
         builder.create_ridesanity_locations()
