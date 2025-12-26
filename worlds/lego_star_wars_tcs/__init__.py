@@ -307,10 +307,11 @@ class LegoStarWarsTCSWorld(World):
         effective_item_classifications: dict[str, ItemClassification] = {}
         effective_item_abilities: dict[str, CharacterAbility] = {}
         for item in self.item_name_to_id:
-            # fixme: The return of `effective_abilities` here is pointless when we already have them in
-            #  `effective_character_abilities`.
             classification, effective_abilities = self.evaluate_effective_item(item, effective_character_abilities)
             effective_item_classifications[item] = classification
+            # The returned `effective_abiltiies` should be the same as what was in `effective_character_abilities`.
+            # The returned `effective_abiltiies` is not actually needed here, but `effective_character_abilities` is not
+            # always available when `self.evaluate_effective_item()` is called.
             assert effective_abilities is effective_character_abilities.get(item, CharacterAbility.NONE)
             effective_item_abilities[item] = effective_abilities
         return effective_item_classifications, effective_item_abilities
