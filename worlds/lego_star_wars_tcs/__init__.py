@@ -487,7 +487,6 @@ class LegoStarWarsTCSWorld(World):
                 self.push_precollected(self.create_item(picked.name))
                 del possible_pool_character_items[picked.name]
                 fulfilled_abilities.update(picked.abilities)
-                logging.info("Picked %s to fulfil %s requirement", picked.name, repr(individual_ability))
                 for ability in picked.abilities:
                     # The ability is provided by the picked character, so it is no longer relevant for sorting future
                     # picks.
