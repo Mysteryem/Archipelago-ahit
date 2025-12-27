@@ -43,6 +43,7 @@ class BonusAreaCompletionChecker(ClientComponent):
                            for character in bonus_area.story_characters]
                 server_locations = event.context.server_locations
                 bonus_area_completion_locations[bonus_area.area_id] = list(filter(server_locations.__contains__, loc_ids))
+            self.remaining_bonus_area_completion_locations = bonus_area_completion_locations
 
     @staticmethod
     def update_from_datastorage(ctx: TCSContext, area_ids: Iterable[AreaId]):
