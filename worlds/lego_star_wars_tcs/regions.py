@@ -252,7 +252,7 @@ class _RegionBuilder:
 
                 if world.options.enable_story_character_unlock_locations:
                     for character in area.story_characters:
-                        self.story_character_unlock_regions[character].append(area_region)
+                        self.story_character_unlock_regions.setdefault(character, []).append(area_region)
                 # todo: Item requirements have been removed for now because it is not currently possible to lock
                 #  access to the bonus levels.
                 if self.world.options.chapter_unlock_requirement == "story_characters":
