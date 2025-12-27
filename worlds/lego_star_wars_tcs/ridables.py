@@ -108,6 +108,14 @@ RIDABLES_REQUIREMENTS: dict[str, dict[str, tuple[CharacterAbility, ...]]] = {
     "New Town": {
         # The car is hidden within Silver Bricks.
         "Moon Car": (CharacterAbility.BOUNTY_HUNTER,),
+    },
+    "cantina": {
+        # There are two cars, one is accessed by destroying garbage cans and then building it, and the other is accessed
+        # by pulling a lever.
+        "Cantina Car": (
+            CharacterAbility.CAN_ATTACK_UP_CLOSE | CharacterAbility.CAN_BUILD_BRICKS,
+            CharacterAbility.CAN_PULL_LEVERS,
+        )
     }
 }
 
