@@ -329,13 +329,21 @@ _vehicle = VehicleData
 _extra = ExtraData
 
 
-COMMON_PACIFIST_NON_DROID = CAN_BUILD_BRICKS | CAN_PULL_LEVERS | CAN_PUSH_OBJECTS | CAN_JUMP_NORMALLY | CAN_RIDE_VEHICLES
+COMMON_PACIFIST_NON_DROID = (
+        CAN_BUILD_BRICKS
+        | CAN_PULL_LEVERS
+        | CAN_PUSH_OBJECTS
+        | CAN_JUMP_NORMALLY
+        | CAN_RIDE_VEHICLES
+)
 COMMON_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_ATTACK_UP_CLOSE
 HATLESS_COMMON_NON_DROID = COMMON_NON_DROID | CAN_WEAR_HAT
 HATLESS_PACIFIST_COMMON_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_WEAR_HAT
-COMMON_SITH = COMMON_NON_DROID | JEDI | SITH
-HATLESS_COMMON_SITH = COMMON_SITH | CAN_WEAR_HAT
 ASTROMECH_DROID = ASTROMECH | HOVER | CAN_DAGOBAH_SWAMP
+COMMON_JEDI = JEDI | COMMON_NON_DROID
+HATLESS_COMMON_JEDI = JEDI | HATLESS_COMMON_NON_DROID
+COMMON_SITH = COMMON_JEDI | SITH
+HATLESS_COMMON_SITH = HATLESS_COMMON_JEDI | SITH
 
 
 ITEM_DATA: list[GenericItemData] = [
@@ -348,16 +356,16 @@ ITEM_DATA: list[GenericItemData] = [
     _char(5, "Padmé (Battle)", 77, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(6, "R2-D2", 8, abilities=ASTROMECH_DROID),
     _char(7, "Anakin Skywalker (Boy)", 93, abilities=SHORTIE | HATLESS_PACIFIST_COMMON_NON_DROID),
-    _char(8, "Obi-Wan Kenobi (Jedi Master)", 75, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(8, "Obi-Wan Kenobi (Jedi Master)", 75, abilities=HATLESS_COMMON_JEDI),
     _char(9, "R4-P17", 66, abilities=ASTROMECH_DROID),
-    _char(10, "Anakin Skywalker (Padawan)", 97, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(10, "Anakin Skywalker (Padawan)", 97, abilities=HATLESS_COMMON_JEDI),
     _char(11, "Padmé (Geonosis)", 79, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(12, "C-3PO", 12, abilities=PROTOCOL_DROID),
-    _char(13, "Mace Windu", 62, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(13, "Mace Windu", 62, abilities=HATLESS_COMMON_JEDI),
     _char(14, "Padmé (Clawed)", 78, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
-    _char(15, "Yoda", 10, abilities=JEDI | HATLESS_COMMON_NON_DROID),
-    _char(16, "Obi-Wan Kenobi (Episode 3)", 74, abilities=JEDI | HATLESS_COMMON_NON_DROID),
-    _char(17, "Anakin Skywalker (Jedi)", 96, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(15, "Yoda", 10, abilities=HATLESS_COMMON_JEDI),
+    _char(16, "Obi-Wan Kenobi (Episode 3)", 74, abilities=HATLESS_COMMON_JEDI),
+    _char(17, "Anakin Skywalker (Jedi)", 96, abilities=HATLESS_COMMON_JEDI),
     _char(18, "Chancellor Palpatine", 73, abilities=HATLESS_PACIFIST_COMMON_NON_DROID),
     _char(19, "Commander Cody", 89, abilities=BLASTER | IMPERIAL | COMMON_NON_DROID),
     _char(20, "Chewbacca", 16, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
@@ -365,21 +373,21 @@ ITEM_DATA: list[GenericItemData] = [
     _char(22, "Captain Antilles", 207, abilities=BLASTER | COMMON_NON_DROID),
     _char(23, "Rebel Friend", 190, abilities=BLASTER | COMMON_NON_DROID),
     _char(24, "Luke Skywalker (Tatooine)", 28, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
-    _char(25, "Ben Kenobi", 56, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(25, "Ben Kenobi", 56, abilities=HATLESS_COMMON_JEDI),
     _char(26, "Han Solo", 33, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(27, "Luke Skywalker (Stormtrooper)", 29, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(28, "Han Solo (Stormtrooper)", 34, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(29, "Han Solo (Hoth)", 143, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(30, "Princess Leia (Hoth)", 24, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(31, "Luke Skywalker (Pilot)", 156, abilities=BLASTER | COMMON_NON_DROID),
-    _char(32, "Luke Skywalker (Dagobah)", 157, abilities=JEDI | HATLESS_COMMON_NON_DROID),
-    _char(33, "Luke Skywalker (Bespin)", 25, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(32, "Luke Skywalker (Dagobah)", 157, abilities=HATLESS_COMMON_JEDI),
+    _char(33, "Luke Skywalker (Bespin)", 25, abilities=HATLESS_COMMON_JEDI),
     _char(34, "Princess Leia (Boushh)", 129, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
-    _char(35, "Luke Skywalker (Jedi)", 27, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(35, "Luke Skywalker (Jedi)", 27, abilities=HATLESS_COMMON_JEDI),
     _char(36, "Han Solo (Skiff)", 141, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(37, "Lando Calrissian (Palace Guard)", 201, abilities=BLASTER | COMMON_NON_DROID),
     _char(38, "Princess Leia (Slave)", 161, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
-    _char(39, "Luke Skywalker (Endor)", 26, abilities=JEDI | COMMON_NON_DROID),
+    _char(39, "Luke Skywalker (Endor)", 26, abilities=COMMON_JEDI),
     _char(40, "Princess Leia (Endor)", 162, abilities=BLASTER | COMMON_NON_DROID),
     _char(41, "Han Solo (Endor)", 206, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(42, "Wicket", 223, abilities=SHORTIE | COMMON_NON_DROID),
@@ -416,12 +424,12 @@ ITEM_DATA: list[GenericItemData] = [
     _char(65, "Super Battle Droid", 81, abilities=CAN_ATTACK_UP_CLOSE),
     _char(66, "Jango Fett", 59, abilities=BOUNTY_HUNTER | BLASTER | HOVER | COMMON_NON_DROID),
     _char(67, "Boba Fett (Boy)", 94, abilities=SHORTIE | COMMON_PACIFIST_NON_DROID),
-    _char(68, "Luminara", 84, abilities=JEDI | COMMON_NON_DROID),
-    _char(69, "Ki-Adi Mundi", 82, abilities=JEDI | COMMON_NON_DROID),
-    _char(70, "Kit Fisto", 83, abilities=JEDI | COMMON_NON_DROID),
-    _char(71, "Shaak Ti", 85, abilities=JEDI | COMMON_NON_DROID),
-    _char(72, "Aayla Secura", 315, abilities=JEDI | COMMON_NON_DROID),
-    _char(73, "Plo Koon", 316, abilities=JEDI | COMMON_NON_DROID),
+    _char(68, "Luminara", 84, abilities=COMMON_JEDI),
+    _char(69, "Ki-Adi Mundi", 82, abilities=COMMON_JEDI),
+    _char(70, "Kit Fisto", 83, abilities=COMMON_JEDI),
+    _char(71, "Shaak Ti", 85, abilities=COMMON_JEDI),
+    _char(72, "Aayla Secura", 315, abilities=COMMON_JEDI),
+    _char(73, "Plo Koon", 316, abilities=COMMON_JEDI),
     _char(74, "Count Dooku", 103, abilities=HATLESS_COMMON_SITH),
     _char(75, "Grievous' Bodyguard", 64, abilities=HIGH_JUMP | CAN_ATTACK_UP_CLOSE),
     # Can build for some reason???
@@ -432,7 +440,7 @@ ITEM_DATA: list[GenericItemData] = [
     _char(79, "Clone (Episode 3, Pilot)", 88, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
     _char(80, "Clone (Episode 3, Swamp)", 90, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
     _char(81, "Clone (Episode 3, Walker)", 91, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
-    _char(82, "Mace Windu (Episode 3)", 63, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(82, "Mace Windu (Episode 3)", 63, abilities=HATLESS_COMMON_JEDI),
     _char(83, "Disguised Clone", 92, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
     _char(84, "Rebel Trooper", 13, abilities=BLASTER | COMMON_NON_DROID),
     _char(85, "Stormtrooper", 20, abilities=IMPERIAL | BLASTER | COMMON_NON_DROID),
@@ -484,8 +492,8 @@ ITEM_DATA: list[GenericItemData] = [
           | CAN_PUSH_OBJECTS
           | CAN_JUMP_NORMALLY
           | CAN_RIDE_VEHICLES),
-    _char(117, "Ben Kenobi (Ghost)", 195, abilities=JEDI | HATLESS_COMMON_NON_DROID),
-    _char(118, "Yoda (Ghost)", 227, abilities=JEDI | COMMON_NON_DROID),
+    _char(117, "Ben Kenobi (Ghost)", 195, abilities=HATLESS_COMMON_JEDI),
+    _char(118, "Yoda (Ghost)", 227, abilities=COMMON_JEDI),
     _char(119, "R2-Q5", 314, abilities=ASTROMECH_DROID),
     _char(120, "Padmé", 76, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(121, "Luke Skywalker (Hoth)", 204, abilities=BLASTER | COMMON_NON_DROID),  # Ability missing from manual
@@ -533,7 +541,7 @@ ITEM_DATA: list[GenericItemData] = [
     _generic(158, "Episode 4 Unlock"),
     _generic(159, "Episode 5 Unlock"),
     _generic(160, "Episode 6 Unlock"),
-    _char(161, "Anakin Skywalker (Ghost)", 226, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(161, "Anakin Skywalker (Ghost)", 226, abilities=HATLESS_COMMON_JEDI),
     _char(162, "Indiana Jones", 317, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(163, "Princess Leia (Prisoner)", 205, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _vehicle(164, "Anakin's Pod", 259),
@@ -550,8 +558,8 @@ ITEM_DATA: list[GenericItemData] = [
     _generic(175, "Purple Stud"),
     # NEW. Items below here did not exist in the manual.
     # TODO: Redo all the item IDs to make more sense. Either internal order in chars.txt, or in character grid order.
-    _char(176, "Qui-Gon Jinn", 104, abilities=JEDI | HATLESS_COMMON_NON_DROID),
-    _char(177, "Obi-Wan Kenobi", 1, abilities=JEDI | HATLESS_COMMON_NON_DROID),
+    _char(176, "Qui-Gon Jinn", 104, abilities=HATLESS_COMMON_JEDI),
+    _char(177, "Obi-Wan Kenobi", 1, abilities=HATLESS_COMMON_JEDI),
     _char(178, "TC-14", 71, abilities=PROTOCOL_DROID),
     NonPowerBrickExtraData(179, "Extra Toggle", 0x0, None, 30000),
     NonPowerBrickExtraData(180, "Fertilizer", 0x1, None, 8000),
