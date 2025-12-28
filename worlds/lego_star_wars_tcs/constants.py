@@ -37,6 +37,7 @@ class CharacterAbility(IntFlag):
     CAN_BUILD_BRICKS = auto()
     CAN_JUMP_NORMALLY = auto()  # Has at least a basic jump
     CAN_ATTACK_UP_CLOSE = auto()
+    CAN_DAGOBAH_SWAMP = auto()  # Basically just "this character is an Astromech Droid"
     # todo: Lots more abilities to add to split up and replace the basic existing ones...
     # GHOST = auto()
     # DROID = auto()
@@ -71,9 +72,14 @@ SITH = CharacterAbility.SITH
 VEHICLE_TIE = CharacterAbility.VEHICLE_TIE
 VEHICLE_TOW = CharacterAbility.VEHICLE_TOW
 VEHICLE_BLASTER = CharacterAbility.VEHICLE_BLASTER
+
+# Chapter-specific flags.
 CAN_WEAR_HAT = CharacterAbility.CAN_WEAR_HAT
 CAN_WEAR_HAT_AND_GRAPPLE = CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE
 CAN_WEAR_HAT_AND_DOUBLE_JUMP = CharacterAbility.CAN_WEAR_HAT_AND_DOUBLE_JUMP
+CAN_DAGOBAH_SWAMP = CharacterAbility.CAN_DAGOBAH_SWAMP
+
+# Extremely common ability flags.
 CAN_RIDE_VEHICLES = CharacterAbility.CAN_RIDE_VEHICLES
 CAN_PULL_LEVERS = CharacterAbility.CAN_PULL_LEVERS
 CAN_PUSH_OBJECTS = CharacterAbility.CAN_PUSH_OBJECTS
@@ -86,10 +92,11 @@ CAN_ATTACK_UP_CLOSE = CharacterAbility.CAN_ATTACK_UP_CLOSE
 # todo: PROTOCOL_DROID_PANEL can probably be included in the future too.
 RARE_AND_USEFUL_ABILITIES = ASTROMECH | BOUNTY_HUNTER | HIGH_JUMP | SHORTIE | SITH | PROTOCOL_DROID | HOVER
 
-HAT_MACHINE_FLAGS = (
+CHAPTER_SPECIFIC_FLAGS = (
         CAN_WEAR_HAT_AND_GRAPPLE
         | CAN_WEAR_HAT_AND_DOUBLE_JUMP
         | CAN_WEAR_HAT
+        | CAN_DAGOBAH_SWAMP
 )
 """
 These flags should not be required to access chapters based on the abilities of the Story characters because they are

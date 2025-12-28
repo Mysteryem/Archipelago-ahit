@@ -129,18 +129,17 @@ class ChapterArea:
         entrance_abilities = CharacterAbility.NONE
         for character in character_requirements:
             entrance_abilities |= CHARACTERS_AND_VEHICLES_BY_NAME[character].abilities
-        if hat_machine_optional := HAT_MACHINE_CHAPTERS.get(self.short_name):
-            hat_machine_logic, alternative_ability = hat_machine_optional
-            assert hat_machine_logic in entrance_abilities
-            if alternative_ability in entrance_abilities:
+        if chapter_specific_requirement := CHAPTER_SPECIFIC_REQUIREMENTS.get(self.short_name):
+            story_logic, alternative_ability = chapter_specific_requirement
+            assert story_logic in entrance_abilities
+            if alternative_ability is None or alternative_ability in entrance_abilities:
                 ability_requirements_from_characters = (entrance_abilities,)
             else:
-                alternative_entrance_abilities = (entrance_abilities & ~hat_machine_logic) | alternative_ability
+                alternative_entrance_abilities = (entrance_abilities & ~story_logic) | alternative_ability
                 ability_requirements_from_characters = (entrance_abilities, alternative_entrance_abilities)
         else:
             ability_requirements_from_characters = (entrance_abilities,)
         object.__setattr__(self, "ability_requirements_from_characters", ability_requirements_from_characters)
-
 
     @property
     def unique_boss_name(self) -> str | None:
@@ -543,7 +542,7 @@ DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI: set[str] = {
 }
 
 
-HAT_MACHINE_CHAPTERS: dict[str, tuple[CharacterAbility, CharacterAbility]] = {
+CHAPTER_SPECIFIC_REQUIREMENTS: dict[str, tuple[CharacterAbility, CharacterAbility | None]] = {
     # There is a Hat Machine in Level D, which you can take all the way back to behind spawn to the Imperial Panel with
     # a Minikit behind.
     # All the characters that can wear hats can jump and can make it back to the panel.
@@ -560,6 +559,7 @@ HAT_MACHINE_CHAPTERS: dict[str, tuple[CharacterAbility, CharacterAbility]] = {
     # (level B), and another later use of an Imperial Hat Machine where the panel is at the end of a Zipup, across a gap
     # (level C).
     "4-5": (CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE, CharacterAbility.IMPERIAL),
+    "5-4": (CharacterAbility.CAN_DAGOBAH_SWAMP, None),
     # In 5-5, there is an Imperial Hat Machine with an Imperial panel that requires double-jumping across a gap to
     # reach, so, if the player has no Imperial character, they need a Jedi/Sith that can wear hats.
     # This gets its own flag, instead of being JEDI | CAN_WEAR_HAT, for logic performance reasons. The complexity comes
@@ -571,7 +571,14 @@ HAT_MACHINE_CHAPTERS: dict[str, tuple[CharacterAbility, CharacterAbility]] = {
     # The level is played in Story with a character than can wear hats instead of needing a bounty hunter.
     "6-1": (CAN_WEAR_HAT, CharacterAbility.BOUNTY_HUNTER),
 }
-"""Chapter completions that require Hat Machine logic."""
+"""
+Chapter completions that require logic that is specific to that chapter.
+
+The first element of each value are the abilities that would normally be used in Story mode.
+
+The second element of each value is an optional alternative ability that can be used instead, but often requires a rarer
+ability. 
+"""
 
 
 # TODO: Record Level IDs, these would mostly be there to help make map switching in the tracker easier, and would

@@ -27,6 +27,7 @@ from .constants import (
     CAN_BUILD_BRICKS,
     CAN_JUMP_NORMALLY,
     CAN_ATTACK_UP_CLOSE,
+    CAN_DAGOBAH_SWAMP,
 )
 
 
@@ -334,6 +335,7 @@ HATLESS_COMMON_NON_DROID = COMMON_NON_DROID | CAN_WEAR_HAT
 HATLESS_PACIFIST_COMMON_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_WEAR_HAT
 COMMON_SITH = COMMON_NON_DROID | JEDI | SITH
 HATLESS_COMMON_SITH = COMMON_SITH | CAN_WEAR_HAT
+ASTROMECH_DROID = ASTROMECH | HOVER | CAN_DAGOBAH_SWAMP
 
 
 ITEM_DATA: list[GenericItemData] = [
@@ -344,10 +346,10 @@ ITEM_DATA: list[GenericItemData] = [
     _char(3, "Queen Amidala", 80, abilities=BLASTER | COMMON_NON_DROID),
     _char(4, "Captain Panaka", 98, abilities=BLASTER | COMMON_NON_DROID),
     _char(5, "Padmé (Battle)", 77, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
-    _char(6, "R2-D2", 8, abilities=ASTROMECH | HOVER),
+    _char(6, "R2-D2", 8, abilities=ASTROMECH_DROID),
     _char(7, "Anakin Skywalker (Boy)", 93, abilities=SHORTIE | HATLESS_PACIFIST_COMMON_NON_DROID),
     _char(8, "Obi-Wan Kenobi (Jedi Master)", 75, abilities=JEDI | HATLESS_COMMON_NON_DROID),
-    _char(9, "R4-P17", 66, abilities=ASTROMECH | HOVER),
+    _char(9, "R4-P17", 66, abilities=ASTROMECH_DROID),
     _char(10, "Anakin Skywalker (Padawan)", 97, abilities=JEDI | HATLESS_COMMON_NON_DROID),
     _char(11, "Padmé (Geonosis)", 79, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(12, "C-3PO", 12, abilities=PROTOCOL_DROID),
@@ -484,7 +486,7 @@ ITEM_DATA: list[GenericItemData] = [
           | CAN_RIDE_VEHICLES),
     _char(117, "Ben Kenobi (Ghost)", 195, abilities=JEDI | HATLESS_COMMON_NON_DROID),
     _char(118, "Yoda (Ghost)", 227, abilities=JEDI | COMMON_NON_DROID),
-    _char(119, "R2-Q5", 314, abilities=ASTROMECH | HOVER),
+    _char(119, "R2-Q5", 314, abilities=ASTROMECH_DROID),
     _char(120, "Padmé", 76, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(121, "Luke Skywalker (Hoth)", 204, abilities=BLASTER | COMMON_NON_DROID),  # Ability missing from manual
     _extra(122, "Super Gonk", 0x8, "1-1"),

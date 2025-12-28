@@ -19,7 +19,7 @@ from worlds.LauncherComponents import components, Component, launch_subprocess, 
 from worlds.generic.Rules import set_rule, add_rule
 
 from . import constants, regions
-from .constants import CharacterAbility, GOLD_BRICK_EVENT_NAME, GAME_NAME, HAT_MACHINE_FLAGS
+from .constants import CharacterAbility, GOLD_BRICK_EVENT_NAME, GAME_NAME, CHAPTER_SPECIFIC_FLAGS
 from .items import (
     ITEM_NAME_TO_ID,
     LegoStarWarsTCSItem,
@@ -52,7 +52,7 @@ from .levels import (
     BONUS_NAME_TO_BONUS_AREA,
     BOSS_UNIQUE_NAME_TO_CHAPTER,
     DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
-    HAT_MACHINE_CHAPTERS,
+    CHAPTER_SPECIFIC_REQUIREMENTS,
 )
 from .locations import LOCATION_NAME_TO_ID, LegoStarWarsTCSLocation, LEVEL_SHORT_NAMES_SET, LegoStarWarsTCSShopLocation
 from .options import (
@@ -407,10 +407,13 @@ class LegoStarWarsTCSWorld(World):
             for character_name in CHAPTER_AREA_STORY_CHARACTERS[starting_chapter_short_name]:
                 starting_chapter_entrance_abilities |= CHARACTERS_AND_VEHICLES_BY_NAME[character_name].abilities
 
-            # Remove special chapter access flags
-            starting_chapter_entrance_abilities &= ~HAT_MACHINE_FLAGS
-            special_flag_pair = HAT_MACHINE_CHAPTERS.get(self.starting_chapter.short_name)
+            # Remove all chapter-specific access flags.
+            starting_chapter_entrance_abilities &= ~CHAPTER_SPECIFIC_FLAGS
+            special_flag_pair = CHAPTER_SPECIFIC_REQUIREMENTS.get(self.starting_chapter.short_name)
             if special_flag_pair:
+                # Add any chapter-specific access flags for this chapter. The first element is considered the standard
+                # way to logically complete the chapter, that would be used if the chapter was played in Story mode.
+                # The second element is an optional alternative, that often uses rarer abilities.
                 starting_chapter_entrance_abilities |= special_flag_pair[0]
 
             starting_chapter_entrance_abilities_list = sorted(starting_chapter_entrance_abilities)
@@ -419,8 +422,6 @@ class LegoStarWarsTCSWorld(World):
             fulfilled_abilities: set[CharacterAbility] = set()
             self.random.shuffle(starting_chapter_entrance_abilities_list)
 
-            # Always pick a Tow Vehicle first to avoid cases where a Blaster Vehicle is picked, and then a Tow
-            # Vehicle is also picked.
             # Always pick CAN_ abilities last to avoid picking very boring characters at the start with basically no
             # actual abilities.
             # Always pick VEHICLE_BLASTER last to avoid picking a VEHICLE_BLASTER, and then picking a VEHICLE_TOW that
@@ -434,7 +435,7 @@ class LegoStarWarsTCSWorld(World):
                 CharacterAbility.CAN_PUSH_OBJECTS,
                 CharacterAbility.CAN_BUILD_BRICKS,
                 CharacterAbility.VEHICLE_BLASTER,
-                *HAT_MACHINE_FLAGS,
+                *CHAPTER_SPECIFIC_FLAGS,
             }
             starting_chapter_entrance_abilities_list.sort(key=pick_last.__contains__)
 
@@ -616,9 +617,9 @@ class LegoStarWarsTCSWorld(World):
                 for character_name in required_character_names:
                     generic_character = CHARACTERS_AND_VEHICLES_BY_NAME[character_name]
                     required_character_abilities_in_pool |= generic_character.abilities
-                hat_machine_optional = HAT_MACHINE_CHAPTERS.get(chapter)
-                if hat_machine_optional:
-                    _hat_machine_logic, alternative_ability = hat_machine_optional
+                chapter_specific_requirement = CHAPTER_SPECIFIC_REQUIREMENTS.get(chapter)
+                if chapter_specific_requirement:
+                    _story_ability, alternative_ability = chapter_specific_requirement
                     optional_character_abilities |= alternative_ability
         required_character_abilities_in_pool &= ~starting_abilities
         optional_character_abilities &= ~starting_abilities
@@ -1373,17 +1374,18 @@ class LegoStarWarsTCSWorld(World):
                     # The logic is not fully prepared for this currently, so the entrance rule is also set to require
                     # all the logical abilities of the Story characters of the Chapter, which will be overly
                     # restrictive for many locations, but overly restrictive logic cannot result in impossible seeds.
-                    hat_machine_optional = HAT_MACHINE_CHAPTERS.get(chapter.short_name)
-                    if hat_machine_optional:
-                        hat_machine_logic, alternative_ability = hat_machine_optional
-                        assert hat_machine_logic in entrance_abilities
-                        if alternative_ability in entrance_abilities:
-                            # todo: I'm not sure this should ever happen.
-                            # The alternative is also required.
+                    # A few chapters have chapter-specific logical requirements that get stripped from the requirements
+                    # of other chapters.
+                    chapter_specific_requirement = CHAPTER_SPECIFIC_REQUIREMENTS.get(chapter.short_name)
+                    if chapter_specific_requirement:
+                        story_ability, alternative_ability = chapter_specific_requirement
+                        assert story_ability in entrance_abilities
+                        if alternative_ability is None or alternative_ability in entrance_abilities:
+                            # There is no alternative. Or the alternative is also required (unsure if this can happen).
                             self.set_abilities_rule(entrance, entrance_abilities)
                             strictly_required_entrance_abilities = entrance_abilities
                         else:
-                            alternative_entrance_abilities = (entrance_abilities & ~hat_machine_logic) | alternative_ability
+                            alternative_entrance_abilities = (entrance_abilities & ~story_ability) | alternative_ability
                             self.set_any_abilities_rule(entrance, entrance_abilities, alternative_entrance_abilities)
                             strictly_required_entrance_abilities = entrance_abilities & alternative_entrance_abilities
                     else:
