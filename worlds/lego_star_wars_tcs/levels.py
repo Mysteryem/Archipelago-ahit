@@ -445,7 +445,7 @@ POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
     "6-1": _PowerBrickData("Super Zapper", None, 14_000),
     "6-2": _PowerBrickData("Bounty Hunter Rockets", None, 20_000),
     "6-3": _PowerBrickData("Score x8", SHORTIE, 10_000_000),
-    "6-4": _PowerBrickData("Super Ewok Catapult", (SHORTIE | IMPERIAL, SHORTIE | CAN_WEAR_HAT), 25_000),
+    "6-4": _PowerBrickData("Super Ewok Catapult", (SHORTIE | SITH | IMPERIAL, SHORTIE | SITH | CAN_WEAR_HAT), 25_000),
     "6-5": _PowerBrickData("Score x10", None, 20_000_000),  # Note: In memory after Infinite Torpedos
     "6-6": _PowerBrickData("Infinite Torpedos", None, 25_000),  # Note: In memory before Score x10
 }
