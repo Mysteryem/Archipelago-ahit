@@ -508,53 +508,6 @@ class LegoStarWarsTCSWorld(World):
         for item in initial_starting_items:
             starting_abilities |= item.abilities
 
-        # todo: In the future, it will be necessary to ensure the player has at least 1 (maybe better to be 2) starting
-        #  non-vehicle characters when starting with a non-vehicle level, and at least 1 (maybe better to be 2) starting
-        #  vehicles when starting with a vehicle level.
-
-        # todo: Logic currently assumes the player always has Protocol Droid access, so it is necessary to start with a
-        #  Protocol Droid access character.
-        if CharacterAbility.PROTOCOL_DROID not in starting_abilities:
-            # Pick whichever character out of TC-14 and C-3PO is required for the least chapters, which is basically
-            # always TC-14 because TC-14 is only required for 1-1. The other characters with Protocol Droid access are
-            # 4-LOM and IG-88, which both have a bunch of extra abilities that it is better for the player to not start
-            # with.
-            tc14_count = self.character_chapter_access_counts.get("TC-14", 0)
-            c3po_count = self.character_chapter_access_counts.get("C-3PO", 0)
-            if tc14_count < c3po_count:
-                to_start_with = "TC-14"
-            elif c3po_count < tc14_count:
-                to_start_with = "C-3PO"
-            else:
-                to_start_with = self.random.choice(("TC-14", "C-3PO"))
-            self.push_precollected(self.create_item(to_start_with))
-            starting_abilities |= CharacterAbility.PROTOCOL_DROID
-            del possible_pool_character_items[to_start_with]
-
-        # todo: Logic currently assumes the player always has a Jedi, so it is necessary to start with a Jedi character.
-        if CharacterAbility.JEDI not in starting_abilities:
-            # Pick a Jedi that is not a Sith, and not a requirement to access a chapter.
-            choices: list[CharacterData] = []
-            for char in CHARACTERS_AND_VEHICLES_BY_NAME.values():
-                if not char.is_sendable:
-                    # The character is not an AP item.
-                    continue
-                if CharacterAbility.JEDI not in char.abilities:
-                    # The character is not a Jedi.
-                    continue
-                assert isinstance(char, CharacterData), "Vehicles cannot be Jedi"
-                if CharacterAbility.SITH in char.abilities:
-                    # Skip Sith because they are rarer.
-                    continue
-                if chapters_unlock_with_characters and self.character_chapter_access_counts[char.name] > 0:
-                    # Skip characters used to unlock chapters.
-                    continue
-                choices.append(char)
-            starting_jedi = self.random.choice(choices)
-            starting_abilities |= starting_jedi.abilities
-            self.push_precollected(self.create_item(starting_jedi.name))
-            del possible_pool_character_items[starting_jedi.name]
-
         # Determine what abilities must be supplied by the item pool for all locations to be reachable with all items in
         # the item pool.
         required_character_abilities_in_pool = CharacterAbility.NONE
