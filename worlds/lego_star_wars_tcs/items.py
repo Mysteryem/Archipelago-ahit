@@ -28,6 +28,7 @@ from .constants import (
     CAN_JUMP_NORMALLY,
     CAN_ATTACK_UP_CLOSE,
     CAN_DAGOBAH_SWAMP,
+    IS_A_VEHICLE,
 )
 
 
@@ -99,6 +100,8 @@ class GenericCharacterData(GenericItemData):
             abilities |= CAN_WEAR_HAT_AND_GRAPPLE
         if CAN_WEAR_HAT in self.abilities and JEDI in self.abilities:
             abilities |= CAN_WEAR_HAT_AND_DOUBLE_JUMP
+        if VEHICLE_BLASTER in self.abilities or VEHICLE_TOW in self.abilities or VEHICLE_TIE in self.abilities:
+            abilities |= IS_A_VEHICLE
 
         if abilities is not self.abilities:
             object.__setattr__(self, "abilities", abilities)
@@ -544,7 +547,7 @@ ITEM_DATA: list[GenericItemData] = [
     _char(161, "Anakin Skywalker (Ghost)", 226, abilities=HATLESS_COMMON_JEDI),
     _char(162, "Indiana Jones", 317, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(163, "Princess Leia (Prisoner)", 205, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
-    _vehicle(164, "Anakin's Pod", 259),
+    _vehicle(164, "Anakin's Pod", 259, abilities=IS_A_VEHICLE),
     _vehicle(165, "Naboo Starfighter", 272, abilities=VEHICLE_TOW | VEHICLE_BLASTER),
     _vehicle(166, "Republic Gunship", 285, abilities=VEHICLE_TOW | VEHICLE_BLASTER),
     _vehicle(167, "Anakin's Starfighter", 221, abilities=VEHICLE_BLASTER),
@@ -574,7 +577,7 @@ ITEM_DATA: list[GenericItemData] = [
     # lightsabers/force unless Jedi are unlocked.
     _char(188, "STRANGER 1", 168, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
     _char(189, "STRANGER 2", 169, abilities=BLASTER | HATLESS_COMMON_NON_DROID),
-    _vehicle(190, "Sebulba's Pod", 261),
+    _vehicle(190, "Sebulba's Pod", 261, abilities=IS_A_VEHICLE),
     _vehicle(191, "Zam's Airspeeder", 277, abilities=VEHICLE_BLASTER),
     _vehicle(192, "Droid Trifighter", 292, abilities=VEHICLE_BLASTER),
     _vehicle(193, "Vulture Droid", 293, abilities=VEHICLE_BLASTER),

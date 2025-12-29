@@ -435,6 +435,7 @@ class LegoStarWarsTCSWorld(World):
                 CharacterAbility.CAN_PUSH_OBJECTS,
                 CharacterAbility.CAN_BUILD_BRICKS,
                 CharacterAbility.VEHICLE_BLASTER,
+                CharacterAbility.IS_A_VEHICLE,
                 *CHAPTER_SPECIFIC_FLAGS,
             }
             starting_chapter_entrance_abilities_list.sort(key=pick_last.__contains__)
@@ -458,6 +459,7 @@ class LegoStarWarsTCSWorld(World):
                 CharacterAbility.VEHICLE_TOW: 10,
                 CharacterAbility.VEHICLE_TIE: 8,
                 CharacterAbility.VEHICLE_BLASTER: 2,
+                CharacterAbility.IS_A_VEHICLE: 0,
             }
 
             def sort_func(data: GenericCharacterData):

@@ -42,6 +42,7 @@ class CharacterAbility(IntFlag):
     # GHOST = auto()
     # DROID = auto()
     # UNTARGETABLE = auto()  # Are there any characters other than Ghosts?
+    IS_A_VEHICLE = auto()
     VEHICLE_TIE = auto()
     VEHICLE_TOW = auto()
     VEHICLE_BLASTER = auto()
@@ -86,6 +87,7 @@ CAN_PUSH_OBJECTS = CharacterAbility.CAN_PUSH_OBJECTS
 CAN_BUILD_BRICKS = CharacterAbility.CAN_BUILD_BRICKS
 CAN_JUMP_NORMALLY = CharacterAbility.CAN_JUMP_NORMALLY
 CAN_ATTACK_UP_CLOSE = CharacterAbility.CAN_ATTACK_UP_CLOSE
+IS_A_VEHICLE = CharacterAbility.IS_A_VEHICLE
 
 # todo: VEHICLE_TOW can probably be included in the future too.
 # todo: GHOST can probably be included in the future too.
@@ -97,6 +99,7 @@ CHAPTER_SPECIFIC_FLAGS = (
         | CAN_WEAR_HAT_AND_DOUBLE_JUMP
         | CAN_WEAR_HAT
         | CAN_DAGOBAH_SWAMP
+        | IS_A_VEHICLE
 )
 """
 These flags should not be required to access chapters based on the abilities of the Story characters because they are

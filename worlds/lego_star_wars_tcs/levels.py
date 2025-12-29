@@ -543,6 +543,9 @@ DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI: set[str] = {
 
 
 CHAPTER_SPECIFIC_REQUIREMENTS: dict[str, tuple[CharacterAbility, CharacterAbility | None]] = {
+    # Mos Espa Pod Race does not require any Vehicle abilities, but does require having at least one vehicle character
+    # unlocked, so extra logic is needed to ensure the player actually has a vehicle character.
+    "1-4": (IS_A_VEHICLE, None),
     # There is a Hat Machine in Level D, which you can take all the way back to behind spawn to the Imperial Panel with
     # a Minikit behind.
     # All the characters that can wear hats can jump and can make it back to the panel.
