@@ -469,7 +469,7 @@ ALL_MINIKITS_REQUIREMENTS: dict[str, tuple[CharacterAbility, ...]] = {
     "3-5": (SITH | HIGH_JUMP | BLASTER | HOVER | BOUNTY_HUNTER | IMPERIAL,),
     "3-6": (HOVER,),
     "4-1": (SITH | BOUNTY_HUNTER | IMPERIAL,),
-    "4-2": (SITH | SHORTIE,),
+    "4-2": (SITH | BOUNTY_HUNTER | SHORTIE,),
     "4-3": (SITH | BOUNTY_HUNTER | SHORTIE,),
     "4-4": (SITH | BOUNTY_HUNTER | IMPERIAL,),
     "4-5": (SITH | BOUNTY_HUNTER | IMPERIAL | SHORTIE,),
