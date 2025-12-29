@@ -12,6 +12,7 @@ from .constants import (
     BOUNTY_HUNTER,
     ASTROMECH,
     BLASTER,
+    PROTOCOL_DROID,
     VEHICLE_TIE,
     VEHICLE_TOW,
     CAN_WEAR_HAT,
@@ -427,7 +428,7 @@ POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
     "3-2": _PowerBrickData("Super Astromech", BOUNTY_HUNTER, 10_000),
     "3-3": _PowerBrickData("Super Jedi Slam", (HOVER, HIGH_JUMP), 11_000),
     "3-4": _PowerBrickData("Super Thermal Detonator", BOUNTY_HUNTER | SITH, 25_000),
-    "3-5": _PowerBrickData("Deflect Bolts", SITH | HIGH_JUMP, 150_000),
+    "3-5": _PowerBrickData("Deflect Bolts", SITH | HIGH_JUMP | PROTOCOL_DROID, 150_000),
     "3-6": _PowerBrickData("Dark Side", ASTROMECH, 25_000),
     "4-1": _PowerBrickData("Super Blasters", (BOUNTY_HUNTER, IMPERIAL), 15_000),
     "4-2": _PowerBrickData("Fast Force", BOUNTY_HUNTER, 40_000),
@@ -463,10 +464,12 @@ ALL_MINIKITS_REQUIREMENTS: dict[str, tuple[CharacterAbility, ...]] = {
     "2-5": (VEHICLE_TIE,),
     "2-6": (HIGH_JUMP | BLASTER | ASTROMECH,),
     "3-1": (CharacterAbility.NONE,),
-    "3-2": (HIGH_JUMP | BLASTER | SHORTIE,),
+    "3-2": (HIGH_JUMP | BLASTER | SHORTIE | PROTOCOL_DROID,),
     "3-3": (HOVER | BOUNTY_HUNTER | HIGH_JUMP,),
     "3-4": (SITH | HIGH_JUMP | HOVER,),
-    "3-5": (SITH | HIGH_JUMP | BLASTER | HOVER | BOUNTY_HUNTER | IMPERIAL,),
+    # Technically PROTOCOL_DROID is not required, but you must save and exit after getting the kit if you don't have
+    # PROTOCOL_DROID, so PROTOCOL_DROID can be expected for the most basic logic difficulty only.
+    "3-5": (SITH | HIGH_JUMP | BLASTER | HOVER | BOUNTY_HUNTER | IMPERIAL | PROTOCOL_DROID,),
     "3-6": (HOVER,),
     "4-1": (SITH | BOUNTY_HUNTER | IMPERIAL,),
     "4-2": (SITH | BOUNTY_HUNTER | SHORTIE,),
@@ -484,7 +487,7 @@ ALL_MINIKITS_REQUIREMENTS: dict[str, tuple[CharacterAbility, ...]] = {
     "6-2": (SITH | HOVER | SHORTIE,),
     "6-3": (SITH | BOUNTY_HUNTER | IMPERIAL | SHORTIE,),
     "6-4": (BOUNTY_HUNTER,),
-    "6-5": (BLASTER | BOUNTY_HUNTER | SHORTIE | ASTROMECH,),
+    "6-5": (BLASTER | BOUNTY_HUNTER | SHORTIE | ASTROMECH | PROTOCOL_DROID,),
     "6-6": (VEHICLE_TIE,),
 }
 
