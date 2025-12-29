@@ -572,7 +572,8 @@ class LegoStarWarsTCSWorld(World):
                 chapter_specific_requirement = CHAPTER_SPECIFIC_REQUIREMENTS.get(chapter)
                 if chapter_specific_requirement:
                     _story_ability, alternative_ability = chapter_specific_requirement
-                    optional_character_abilities |= alternative_ability
+                    if alternative_ability is not None:
+                        optional_character_abilities |= alternative_ability
         required_character_abilities_in_pool &= ~starting_abilities
         optional_character_abilities &= ~starting_abilities
 
