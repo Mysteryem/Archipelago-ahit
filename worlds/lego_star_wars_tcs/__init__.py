@@ -472,7 +472,6 @@ class LegoStarWarsTCSWorld(World):
                 for ability in character_data.abilities:
                     characters_by_ability.setdefault(ability, []).append(character_data)
 
-            logging.info("Starting chapter is %s (%s)", self.starting_chapter.name, self.starting_chapter.short_name)
             for individual_ability in starting_chapter_entrance_abilities_list:
                 if individual_ability in fulfilled_abilities:
                     # A character picked earlier also had this ability, so there does not need to be another character
