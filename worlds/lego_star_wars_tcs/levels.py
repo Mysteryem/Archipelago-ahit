@@ -17,6 +17,13 @@ from .constants import (
     VEHICLE_TIE,
     VEHICLE_TOW,
     CAN_WEAR_HAT,
+    CAN_BUILD_BRICKS,
+    CAN_PULL_LEVERS,
+    CAN_ATTACK_UP_CLOSE,
+    CAN_PUSH_OBJECTS,
+    CAN_RIDE_VEHICLES,
+    IS_A_VEHICLE,
+    CHAPTER_SPECIFIC_FLAGS,
 )
 from .items import SHOP_SLOT_REQUIREMENT_TO_UNLOCKS, CHARACTERS_AND_VEHICLES_BY_NAME
 
@@ -686,9 +693,30 @@ BONUS_AREAS = [
     # Could require: "Darth Vader" + "Stormtrooper" + "C-3PO"
     BonusArea("A New Hope (Bonus Level)", 0x86E249, 0x8, 150, 29, gold_bricks_required=20),
     BonusArea("LEGO City", 0x86E3B8, 0x1, 311, 59,
-              gold_bricks_required=10, completion_ability_requirements=SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER),
+              gold_bricks_required=10,
+              completion_ability_requirements=(
+                      JEDI
+                      | SITH
+                      | BLASTER
+                      | BOUNTY_HUNTER
+                      | CAN_BUILD_BRICKS
+                      | CAN_PULL_LEVERS
+                      | CAN_ATTACK_UP_CLOSE
+                      | CAN_RIDE_VEHICLES
+              )),
     BonusArea("New Town", 0x86E3A0, 0x1, 309, 57,
-              gold_bricks_required=50, completion_ability_requirements=SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER),
+              gold_bricks_required=50,
+              completion_ability_requirements=(
+                      JEDI
+                      | SITH
+                      | BLASTER
+                      | BOUNTY_HUNTER
+                      | CAN_BUILD_BRICKS
+                      | CAN_PULL_LEVERS
+                      | CAN_ATTACK_UP_CLOSE
+                      | CAN_PUSH_OBJECTS
+                      | CAN_RIDE_VEHICLES
+              )),
     # The bonus level was never completed, so there is just the trailer to watch (which can be skipped immediately).
     # No gold brick for watching the trailer, but it does unlock the shop slot for purchasing Indiana Jones in vanilla
     # todo: Add the Purchase Indiana Jones location.
