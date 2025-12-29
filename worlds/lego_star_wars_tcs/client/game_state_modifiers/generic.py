@@ -15,6 +15,9 @@ from . import ItemReceiver
 
 
 _SEPARATELY_HANDLED_GENERIC = {
+    "Silver Stud",
+    "Gold Stud",
+    "Blue Stud",
     "Purple Stud",
     "Power Up"
 }
