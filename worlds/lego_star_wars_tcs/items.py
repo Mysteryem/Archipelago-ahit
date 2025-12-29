@@ -594,6 +594,7 @@ ITEM_DATA: list[GenericItemData] = [
     _generic(204, "Silver Stud"),
     _generic(205, "Gold Stud"),
     _generic(206, "Blue Stud"),
+    _vehicle(207, "Slave 1", 11, abilities=VEHICLE_BLASTER),
 
     # "Extra Toggle" characters.
     _char(-1, "Womp Rat", 165),
