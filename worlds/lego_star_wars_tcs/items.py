@@ -554,7 +554,7 @@ ITEM_DATA: list[GenericItemData] = [
     _vehicle(171, "Millennium Falcon", 38, abilities=VEHICLE_BLASTER),
     _vehicle(172, "TIE Interceptor", 128, abilities=VEHICLE_TIE | VEHICLE_BLASTER),
     _vehicle(173, "Snowspeeder", 32, abilities=VEHICLE_TOW | VEHICLE_BLASTER),
-    _vehicle(174, "Anakin's Speeder", 3),
+    _vehicle(174, "Anakin's Speeder", 3, abilities=VEHICLE_BLASTER),
     _generic(175, "Purple Stud"),
     # NEW. Items below here did not exist in the manual.
     # TODO: Redo all the item IDs to make more sense. Either internal order in chars.txt, or in character grid order.
