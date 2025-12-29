@@ -426,19 +426,17 @@ class LegoStarWarsTCSWorld(World):
             # actual abilities.
             # Always pick VEHICLE_BLASTER last to avoid picking a VEHICLE_BLASTER, and then picking a VEHICLE_TOW that
             # also has VEHICLE_BLASTER.
-            pick_last = {
-                # CharacterAbility.CAN_WEAR_HAT,
-                CharacterAbility.CAN_ATTACK_UP_CLOSE,
-                CharacterAbility.CAN_RIDE_VEHICLES,
-                CharacterAbility.CAN_JUMP_NORMALLY,
-                CharacterAbility.CAN_PULL_LEVERS,
-                CharacterAbility.CAN_PUSH_OBJECTS,
-                CharacterAbility.CAN_BUILD_BRICKS,
-                CharacterAbility.VEHICLE_BLASTER,
-                CharacterAbility.IS_A_VEHICLE,
-                *CHAPTER_SPECIFIC_FLAGS,
+            pick_order = {
+                CharacterAbility.CAN_ATTACK_UP_CLOSE: 1,
+                CharacterAbility.CAN_RIDE_VEHICLES: 1,
+                CharacterAbility.CAN_JUMP_NORMALLY: 1,
+                CharacterAbility.CAN_PULL_LEVERS: 1,
+                CharacterAbility.CAN_PUSH_OBJECTS: 1,
+                CharacterAbility.CAN_BUILD_BRICKS: 1,
+                CharacterAbility.VEHICLE_BLASTER: 1,
+                **dict.fromkeys(CHAPTER_SPECIFIC_FLAGS, 2),
             }
-            starting_chapter_entrance_abilities_list.sort(key=pick_last.__contains__)
+            starting_chapter_entrance_abilities_list.sort(key=lambda ability: pick_order.get(ability, 0))
 
             # Finally pick characters to fulfil the abilities.
             ability_costs = {

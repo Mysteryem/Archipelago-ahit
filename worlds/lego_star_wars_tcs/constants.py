@@ -79,6 +79,7 @@ CAN_WEAR_HAT = CharacterAbility.CAN_WEAR_HAT
 CAN_WEAR_HAT_AND_GRAPPLE = CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE
 CAN_WEAR_HAT_AND_DOUBLE_JUMP = CharacterAbility.CAN_WEAR_HAT_AND_DOUBLE_JUMP
 CAN_DAGOBAH_SWAMP = CharacterAbility.CAN_DAGOBAH_SWAMP
+IS_A_VEHICLE = CharacterAbility.IS_A_VEHICLE
 
 # Extremely common ability flags.
 CAN_RIDE_VEHICLES = CharacterAbility.CAN_RIDE_VEHICLES
@@ -87,7 +88,6 @@ CAN_PUSH_OBJECTS = CharacterAbility.CAN_PUSH_OBJECTS
 CAN_BUILD_BRICKS = CharacterAbility.CAN_BUILD_BRICKS
 CAN_JUMP_NORMALLY = CharacterAbility.CAN_JUMP_NORMALLY
 CAN_ATTACK_UP_CLOSE = CharacterAbility.CAN_ATTACK_UP_CLOSE
-IS_A_VEHICLE = CharacterAbility.IS_A_VEHICLE
 
 # todo: VEHICLE_TOW can probably be included in the future too.
 # todo: GHOST can probably be included in the future too.
