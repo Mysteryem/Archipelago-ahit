@@ -142,7 +142,10 @@ class ExtraData(GenericItemData):
 
     @property
     def purchase_location_name(self) -> str:
-        return f"Purchase {self.name}"
+        if self.level_shortname:
+            return f"Purchase {self.name} ({self.level_shortname})"
+        else:
+            return f"Purchase {self.name}"
 
 
 @dataclass(frozen=True)
