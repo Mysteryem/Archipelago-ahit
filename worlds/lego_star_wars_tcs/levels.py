@@ -114,7 +114,7 @@ class ChapterArea:
         character_requirements = CHAPTER_AREA_STORY_CHARACTERS[self.short_name]
         object.__setattr__(self, "character_requirements", character_requirements)
 
-        character_shop_unlocks = {f"Purchase {character}": price for character, price
+        character_shop_unlocks = {f"Purchase {character} ({self.short_name})": price for character, price
                                   in SHOP_SLOT_REQUIREMENT_TO_UNLOCKS.get(self.short_name, {}).items()}
         object.__setattr__(self, "character_shop_unlocks", character_shop_unlocks)
 

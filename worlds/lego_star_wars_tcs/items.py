@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass, field
 from typing import Optional, ClassVar, Literal, Mapping, AbstractSet
 
@@ -110,7 +111,11 @@ class GenericCharacterData(GenericItemData):
     def purchase_location_name(self) -> str:
         if self.shop_slot == -1:
             raise RuntimeError(f"{self.name} has no shop slot, so cannot be purchased.")
-        return f"Purchase {self.name}"
+        chapter_short_name, _slot = CHARACTER_SHOP_SLOTS[self.name]
+        if chapter_short_name and re.fullmatch(r"\d-\d", chapter_short_name[:3]):
+            return f"Purchase {self.name} ({chapter_short_name[:3]})"
+        else:
+            return f"Purchase {self.name}"
 
 
 @dataclass(frozen=True)
