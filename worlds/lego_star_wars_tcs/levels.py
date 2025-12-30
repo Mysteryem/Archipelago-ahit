@@ -419,7 +419,8 @@ class _PowerBrickData(NamedTuple):
 
 
 POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
-    # TODO: For future version, it is necessary to determine which Extras need Jedi/Protocol Droids to access.
+    # Currently, these requirements assume access to the chapter requires all the abilities of the Story characters of
+    # that chapter.
     "1-1": _PowerBrickData("Super Gonk", ASTROMECH, 100_000),
     "1-2": _PowerBrickData("Poo Money", BOUNTY_HUNTER, 100_000),
     "1-3": _PowerBrickData("Walkie Talkie Disable", BOUNTY_HUNTER | SITH, 5_000),
@@ -459,6 +460,8 @@ POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
 }
 
 ALL_MINIKITS_REQUIREMENTS: dict[str, tuple[CharacterAbility, ...]] = {
+    # Currently, these requirements assume access to the chapter requires all the abilities of the Story characters of
+    # that chapter.
     "1-1": (HIGH_JUMP | ASTROMECH | HOVER | SHORTIE,),
     "1-2": (SHORTIE | BLASTER,),
     "1-3": (SITH | HIGH_JUMP | HOVER | BOUNTY_HUNTER | SHORTIE,),
