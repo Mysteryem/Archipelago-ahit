@@ -196,7 +196,7 @@ FILLER_COLOR = COLOR_FORMATTING["cyan"]
 USEFUL_COLOR = COLOR_FORMATTING["blue"]
 PROGRESSION_COLOR = COLOR_FORMATTING["pink"]
 PROGRESSION_USEFUL_COLOR = COLOR_FORMATTING["yellow"]
-TRAP_COLOR = PROGRESSION_COLOR
+TRAP_COLOR = COLOR_FORMATTING["red"]
 
 
 # These characters become special symbols.
@@ -391,8 +391,9 @@ class ShopNamesReplacer(ClientComponent):
                 else:
                     classification = ItemClassification(info.flags)
                     # Fake the names for items that are purely traps, and don't have any other classification(s).
-                    if classification == ItemClassification.trap:
+                    if classification == ItemClassification.trap and shop_random.random() < 0.5:
                         slot_info = ctx.slot_info.get(info.player)
+                        color_code = PROGRESSION_COLOR
                         game = slot_info.game if slot_info else "unknown"
                         if game not in FAKE_TRAP_NAMES:
                             games = list(FAKE_TRAP_NAMES)
@@ -412,8 +413,8 @@ class ShopNamesReplacer(ClientComponent):
                         # Get the name of the item.
                         item_name = ctx.item_names.lookup_in_slot(info.item, info.player)
                         cleaned_item_name = clean_string(item_name)
-                    # Determine the color code to use when displaying this item.
-                    color_code = classification_to_colour_code(classification)
+                        # Determine the color code to use when displaying this item.
+                        color_code = classification_to_colour_code(classification)
                     names_dict[slot_or_extra_data] = ShopSlotData(
                         color_code, cleaned_item_name.encode("utf-8", errors="replace"), info.player)
         self._cached_character_shop_slot_item_names = characters_shop_names
