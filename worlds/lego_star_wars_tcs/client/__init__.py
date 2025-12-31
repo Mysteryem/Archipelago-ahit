@@ -48,6 +48,7 @@ from .game_state_modifiers.goal_manager import GoalManager
 from .game_state_modifiers.levels import UnlockedChapterManager
 from .game_state_modifiers.minikits import AcquiredMinikits
 from .game_state_modifiers.power_ups import PowerUpReceiver
+from .game_state_modifiers.shop_names_replacer import ShopNamesReplacer
 from .game_state_modifiers.studs import STUDS_AP_ID_TO_VALUE, give_studs_item
 from .game_state_modifiers.text_display import InGameTextDisplay
 from .game_state_modifiers.text_replacer import TextReplacer
@@ -355,6 +356,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     death_link_manager: DeathLinkManager
     uncap_high_jump: UncapHighJump
     cantina_reloader: CantinaReloader
+    shop_names_replacer: ShopNamesReplacer
 
     # Customizable client behaviour
     received_item_messages: options.ReceivedItemMessages = options.ReceivedItemMessages(
@@ -389,6 +391,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.permanent_components = (self.text_display, self.uncap_high_jump, self.cantina_reloader)
 
         self.death_link_manager = DeathLinkManager()
+        self.shop_names_replacer = ShopNamesReplacer()
 
         # It is not ideal to leak `self` in __init__. The TextReplacer methods could be updated to include a TCSContext
         # parameter if needed, instead of leaking `self`. Alternatively, the TextReplacer could be created only when
@@ -702,6 +705,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             completed_minikit_goal = keys.get(self._get_datastorage_key(MINIKIT_GOAL_SUBMITTED_PREFIX))
             if completed_minikit_goal:
                 self.goal_manager.complete_minikit_goal_from_datastorage(self)
+        elif cmd == "RoomUpdate":
+            self.shop_names_replacer.update_player_names(self)
 
     def on_deathlink(self, data: typing.Dict[str, typing.Any]) -> None:
         text = data.get("cause", "")
@@ -1340,6 +1345,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         self.goal_manager = GoalManager()
         self.power_up_receiver = PowerUpReceiver()
+        self.shop_names_replacer = ShopNamesReplacer()
 
         if clear_text_display_queue:
             self.text_display.message_queue.clear()
