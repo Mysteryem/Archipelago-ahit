@@ -19,7 +19,8 @@ from ..events import (
 )
 from ..type_aliases import ApLocationId, TCSContext
 from ...constants import GAME_NAME
-from ...items import CHARACTERS_AND_VEHICLES_BY_NAME, EXTRAS_BY_NAME
+from ...items import CHARACTERS_AND_VEHICLES_BY_NAME, EXTRAS_BY_NAME, ExtraData
+from ...levels import SHORT_NAME_TO_CHAPTER_AREA
 from ...locations import LOCATION_NAME_TO_ID
 
 
@@ -284,7 +285,7 @@ def _make_character_shop_slot_mapping() -> dict[ShopSlotNumber, ApLocationId]:
     return mapping
 
 
-def _make_extra_localization_id_mapping() -> dict[LocalizationId, ApLocationId]:
+def _make_extra_localization_id_mapping() -> dict[ExtraData, ApLocationId]:
     # The score modifiers are not Archipelago items currently, but there are still locations for purchasing them from
     # the shop.
     score_modifiers = {
@@ -302,7 +303,7 @@ def _make_extra_localization_id_mapping() -> dict[LocalizationId, ApLocationId]:
         if extra.code == -1 and extra not in score_modifiers:
             continue
         location_name = extra.purchase_location_name
-        mapping[extra.localization_id] = LOCATION_NAME_TO_ID[location_name]
+        mapping[extra] = LOCATION_NAME_TO_ID[location_name]
     return mapping
 
 
@@ -319,14 +320,14 @@ class ShopSlotData(NamedTuple):
 class ShopNamesReplacer(ClientComponent):
     _scout_locations: set[int]
     _enabled_character_slots: dict[ShopSlotNumber, ApLocationId]
-    _enabled_extra_slots: dict[LocalizationId, ApLocationId]
+    _enabled_extra_slots: dict[ExtraData, ApLocationId]
 
     _player_names_as_bytes: dict[int, bytes]
     _cached_ctx_player_names: dict[int, str]
     _cached_character_shop_slot_item_names: dict[ShopSlotNumber, ShopSlotData]
     _cached_character_shop_slot_names: dict[ShopSlotNumber, bytes]
-    _cached_extras_shop_slot_item_names: dict[LocalizationId, ShopSlotData]
-    _cached_extras_shop_slot_names: dict[LocalizationId, bytes]
+    _cached_extras_shop_slot_item_names: dict[ExtraData, ShopSlotData]
+    _cached_extras_shop_slot_names: dict[ExtraData, bytes]
 
     _got_scouts: bool = False
     _calculated_player_names: bool = False
@@ -382,11 +383,11 @@ class ShopNamesReplacer(ClientComponent):
                 (self._enabled_character_slots, characters_shop_names),
                 (self._enabled_extra_slots, extras_shop_names),
         ):
-            for slot_or_localization_id, location_id in slots_dict.items():
+            for slot_or_extra_data, location_id in slots_dict.items():
                 info = locations_info.get(location_id)
                 if info is None:
                     debug_logger.error("Missing location info for location ID %i", location_id)
-                    names_dict[slot_or_localization_id] = ShopSlotData(FILLER_COLOR, b"Unknown", -1)
+                    names_dict[slot_or_extra_data] = ShopSlotData(FILLER_COLOR, b"Unknown", -1)
                 else:
                     classification = ItemClassification(info.flags)
                     # Fake the names for items that are purely traps, and don't have any other classification(s).
@@ -413,7 +414,7 @@ class ShopNamesReplacer(ClientComponent):
                         cleaned_item_name = clean_string(item_name)
                     # Determine the color code to use when displaying this item.
                     color_code = classification_to_colour_code(classification)
-                    names_dict[slot_or_localization_id] = ShopSlotData(
+                    names_dict[slot_or_extra_data] = ShopSlotData(
                         color_code, cleaned_item_name.encode("utf-8", errors="replace"), info.player)
         self._cached_character_shop_slot_item_names = characters_shop_names
         self._cached_extras_shop_slot_item_names = extras_shop_names
@@ -523,6 +524,30 @@ class ShopNamesReplacer(ClientComponent):
                 and set(self._enabled_extra_slots.values()) <= scouted_location_ids
         )
 
+    def _replace_extras_names_with_shop_checks(self, ctx: TCSContext):
+        # Replace Extras names with what they unlock.
+        text_replacer = ctx.text_replacer
+        power_brick_checker = ctx.true_jedi_and_power_brick_and_minikit_checker
+        unfound_power_bricks_by_area_id = power_brick_checker.remaining_power_bricks_by_area_id
+        for extra_data, data in self._cached_extras_shop_slot_names.items():
+            shortname = extra_data.level_shortname
+            if shortname is not None:
+                chapter_area = SHORT_NAME_TO_CHAPTER_AREA[shortname]
+                area_id = chapter_area.area_id
+                if area_id in unfound_power_bricks_by_area_id:
+                    # The shop slot for this Extra is not unlocked yet, so skip replacing the name of the Extra in the
+                    # shop. The shop says "Locked" for locked Extra purchases, but other parts of the game also display
+                    # the names of the Extras, so only changing the names of the unlocked slots means that information
+                    # about the locked slots cannot be leaked.
+                    continue
+            text_replacer.write_raw_custom_string(extra_data.localization_id, data)
+
+    def _restore_extras_names(self, ctx: TCSContext):
+        # Restore Extras names to their defaults.
+        text_replacer = ctx.text_replacer
+        for extra_data in self._cached_extras_shop_slot_names.keys():
+            text_replacer.write_raw_vanilla_string(extra_data.localization_id)
+
     @subscribe_event
     def on_tick(self, event: OnGameWatcherTickEvent):
         if not self._got_scouts:
@@ -542,14 +567,10 @@ class ShopNamesReplacer(ClientComponent):
                 if is_in_shop != self._is_in_shop:
                     text_replacer = event.context.text_replacer
                     if is_in_shop:
-                        # Replace Extras names with what they unlock.
-                        for localization_id, data in self._cached_extras_shop_slot_names.items():
-                            text_replacer.write_raw_custom_string(localization_id, data)
+                        self._replace_extras_names_with_shop_checks(event.context)
                     else:
-                        # Restore Extras names to their defaults.
-                        for localization_id in self._cached_extras_shop_slot_names.keys():
-                            text_replacer.write_raw_vanilla_string(localization_id)
-                self._is_in_shop = is_in_shop
+                        self._restore_extras_names(event.context)
+                    self._is_in_shop = is_in_shop
 
             # Character shop slots do not need to update with a high frequency.
             if event.tick_count % 10 == 0:
@@ -576,4 +597,11 @@ class ShopNamesReplacer(ClientComponent):
         self._is_in_cantina = event.new_level_id == LEVEL_ID_CANTINA
         self._is_in_shop = False
         self._character_shop_slot_names_replaced = False
+
+    def reset_persisted_client_data(self, ctx: TCSContext):
+        # Restore Extras names to their defaults.
+        # This is just some extra cleanup in-case the user disconnects
+        text_replacer = ctx.text_replacer
+        for extra_data in self._cached_extras_shop_slot_names.keys():
+            text_replacer.write_raw_vanilla_string(extra_data.localization_id)
 

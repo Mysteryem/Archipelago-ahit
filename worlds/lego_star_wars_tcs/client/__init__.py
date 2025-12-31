@@ -1345,6 +1345,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         self.goal_manager = GoalManager()
         self.power_up_receiver = PowerUpReceiver()
+
+        self.shop_names_replacer.reset_persisted_client_data(self)
         self.shop_names_replacer = ShopNamesReplacer()
 
         if clear_text_display_queue:
