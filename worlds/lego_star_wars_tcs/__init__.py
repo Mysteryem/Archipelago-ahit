@@ -1554,6 +1554,7 @@ class LegoStarWarsTCSWorld(World):
             "enabled_bosses": self.enabled_bosses,
             "goal_area_completion_count": self.goal_area_completion_count,
             "goal_chapter": self.goal_chapter,
+            "item_colors": self.options.item_colors_to_slot_data(),
             **self.options.as_dict(
                 "received_item_messages",
                 "checked_location_messages",

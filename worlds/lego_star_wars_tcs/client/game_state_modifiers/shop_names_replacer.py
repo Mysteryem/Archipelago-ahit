@@ -22,6 +22,7 @@ from ...constants import GAME_NAME
 from ...items import CHARACTERS_AND_VEHICLES_BY_NAME, EXTRAS_BY_NAME, ExtraData
 from ...levels import SHORT_NAME_TO_CHAPTER_AREA
 from ...locations import LOCATION_NAME_TO_ID
+from ...options import TextColorChoice
 
 
 try:
@@ -210,20 +211,6 @@ _SYMBOLS = {
 }
 
 
-# TODO: The colors should be configurable by the player.
-def classification_to_colour_code(classification: ItemClassification) -> str:
-    if (ItemClassification.progression | ItemClassification.useful) in classification:
-        return PROGRESSION_USEFUL_COLOR
-    elif ItemClassification.progression in classification:
-        return PROGRESSION_COLOR
-    elif ItemClassification.trap in classification:
-        return TRAP_COLOR
-    elif ItemClassification.useful in classification:
-        return USEFUL_COLOR
-    else:
-        return FILLER_COLOR
-
-
 # TODO: This should be part of text_replacer, or a common module shared between text_replacer and shop_names_replacer.
 def clean_string(s: str) -> str:
     """Clean up a string to be displayed in-game."""
@@ -338,6 +325,12 @@ class ShopNamesReplacer(ClientComponent):
     _is_in_cantina: bool = False
     _is_in_shop: bool = False
 
+    prog_useful_color = COLOR_FORMATTING["yellow"]
+    progression_color = COLOR_FORMATTING["pink"]
+    useful_color = COLOR_FORMATTING["blue"]
+    filler_color = COLOR_FORMATTING["cyan"]
+    trap_color = COLOR_FORMATTING["red"]
+
     def __init__(self):
         super().__init__()
         self._scout_locations = set()
@@ -414,7 +407,7 @@ class ShopNamesReplacer(ClientComponent):
                         item_name = ctx.item_names.lookup_in_slot(info.item, info.player)
                         cleaned_item_name = clean_string(item_name)
                         # Determine the color code to use when displaying this item.
-                        color_code = classification_to_colour_code(classification)
+                        color_code = self.classification_to_colour_code(classification)
                     names_dict[slot_or_extra_data] = ShopSlotData(
                         color_code, cleaned_item_name.encode("utf-8", errors="replace"), info.player)
         self._cached_character_shop_slot_item_names = characters_shop_names
@@ -503,7 +496,7 @@ class ShopNamesReplacer(ClientComponent):
         self._character_shop_slot_names_replaced = True
 
     @subscribe_event
-    def on_receive_slot_data(self, event: OnReceiveSlotDataEvent):
+    def init_from_slot_data(self, event: OnReceiveSlotDataEvent):
         self._set_enabled_locations(event.context.server_locations)
         self._scout_locations = set().union(self._enabled_character_slots.values(), self._enabled_extra_slots.values())
         if not self._scout_locations:
@@ -517,6 +510,24 @@ class ShopNamesReplacer(ClientComponent):
             # Fire and forget.
             async_start(event.context.send_msgs([{"cmd": "LocationScouts", "locations": list(self._scout_locations)}]))
         self.update_player_names(event.context)
+        if "item_colors" in event.slot_data:
+            item_colors = event.slot_data["item_colors"]
+            self.prog_useful_color, self.progression_color, self.useful_color, self.filler_color, self.trap_color = (
+                COLOR_FORMATTING[v.current_key] for v in TextColorChoice.colors_from_slot_data(item_colors)
+            )
+
+    def classification_to_colour_code(self, classification: ItemClassification) -> str:
+        if (ItemClassification.progression | ItemClassification.useful) in classification:
+            return self.prog_useful_color
+        elif ItemClassification.progression in classification:
+            return self.progression_color
+        # Whether a Useful + Trap item should show up as Useful or Trap color is questionable.
+        elif ItemClassification.trap in classification:
+            return self.trap_color
+        elif ItemClassification.useful in classification:
+            return self.useful_color
+        else:
+            return self.filler_color
 
     def _are_scouts_received(self, ctx: TCSContext) -> bool:
         scouted_location_ids = set(ctx.locations_info.keys())

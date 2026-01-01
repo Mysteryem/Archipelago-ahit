@@ -54,6 +54,60 @@ class ChoiceFromStringExtension(Choice):
         raise ValueError(f"{s} is not a valid string for {type(self)}. Expected: {sorted(self.name_lookup.values())}")
 
 
+class TextColorChoice(ChoiceFromStringExtension):
+    option_white = 0
+    option_red = 1
+    option_green = 2
+    option_blue = 3
+    option_cyan = 4
+    option_pink = 5
+    option_yellow = 6
+    option_orange = 7
+    # option_black = 8  # Black is basically unreadable.
+    rich_text_doc = True
+
+    @staticmethod
+    def colors_from_slot_data(
+            colors_from_slot_data: list[int]
+    ) -> "tuple[TextColorChoice, TextColorChoice, TextColorChoice, TextColorChoice, TextColorChoice]":
+        default_colors = [
+            ProgressionUsefulItemColor.default,
+            ProgressionItemColor.default,
+            UsefulItemColor.default,
+            FillerItemColor.default,
+            TrapItemColor.default,
+        ]
+
+        # If the list of colours changes at some point, make sure that reading colors from slot_data is future-proofed.
+        if len(colors_from_slot_data) < len(default_colors):
+            colors_from_slot_data = colors_from_slot_data + default_colors[len(colors_from_slot_data):]
+        elif len(colors_from_slot_data) > len(default_colors):
+            colors_from_slot_data = colors_from_slot_data[:len(default_colors)]
+
+        colors = []
+        for i, value in enumerate(colors_from_slot_data):
+            # Type variables cannot be used in ClassVars, but AP does anyway, so Mypy complains.
+            if value in TextColorChoice.name_lookup:  # type: ignore
+                color = TextColorChoice(value)
+            else:
+                color = TextColorChoice(default_colors[i])
+            colors.append(color)
+
+        # The only reason a tuple of `colors` isn't returned directly, is to make type checkers happy.
+        prog_useful, prog, useful, filler, trap = colors
+        return prog_useful, prog, useful, filler, trap
+
+    @staticmethod
+    def colors_to_slot_data(options: "LegoStarWarsTCSOptions") -> tuple[int, int, int, int, int]:
+        return (
+            options.progression_useful_item_color.value,
+            options.progression_item_color.value,
+            options.useful_item_color.value,
+            options.filler_item_color.value,
+            options.trap_item_color.value,
+        )
+
+
 class ChapterChoice(ChoiceFromStringExtension):
     """ChoiceFromStringExtension for picking Chapters"""
     # Variable names cannot use hyphens, so the options for specific levels are set programmatically.
@@ -1196,6 +1250,40 @@ class CheckedLocationMessages(ChoiceFromStringExtension):
     option_all = 1
 
 
+class ProgressionUsefulItemColor(TextColorChoice):
+    """
+    Choose the color used to display the names of items that have both the Progression classification and the Useful
+    classification.
+    These are typically the most powerful progression items for a game.
+    """
+    display_name = "Progression + Useful Item Color"
+    default = TextColorChoice.option_yellow
+
+
+class ProgressionItemColor(TextColorChoice):
+    """Choose the color used to display Progression classification item names."""
+    display_name = "Progression Item Color"
+    default = TextColorChoice.option_pink
+
+
+class UsefulItemColor(TextColorChoice):
+    """Choose the color used to display Useful classification item names."""
+    display_name = "Useful Item Color"
+    default = TextColorChoice.option_blue
+
+
+class FillerItemColor(TextColorChoice):
+    """Choose the color used to display Filler classification item names."""
+    display_name = "Filler Item Color"
+    default = TextColorChoice.option_cyan
+
+
+class TrapItemColor(TextColorChoice):
+    """Choose the color used to display Trap classification item names."""
+    display_name = "Trap Item Color"
+    default = TextColorChoice.option_red
+
+
 class LogicDifficulty(ChoiceFromStringExtension):
     # todo: Maybe just remove Extras (other than score multipliers) logic from None difficulty?
     """
@@ -1391,6 +1479,11 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     received_item_messages: ReceivedItemMessages
     checked_location_messages: CheckedLocationMessages
     uncap_original_trilogy_high_jump: UncapOriginalTrilogyHighJump
+    progression_useful_item_color: ProgressionUsefulItemColor
+    progression_item_color: ProgressionItemColor
+    useful_item_color: UsefulItemColor
+    filler_item_color: FillerItemColor
+    trap_item_color: TrapItemColor
 
     # Death Link.
     death_link: LegoStarWarsTCSDeathLink
@@ -1401,6 +1494,9 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
 
     # Future options, not implemented yet.
     # random_starting_level_max_starting_characters: RandomStartingLevelMaxStartingCharacters
+
+    def item_colors_to_slot_data(self) -> tuple[int, int, int, int, int]:
+        return TextColorChoice.colors_to_slot_data(self)
 
 
 OPTION_GROUPS: list[OptionGroup] = [
@@ -1465,6 +1561,11 @@ OPTION_GROUPS: list[OptionGroup] = [
         ReceivedItemMessages,
         CheckedLocationMessages,
         UncapOriginalTrilogyHighJump,
+        ProgressionUsefulItemColor,
+        ProgressionItemColor,
+        UsefulItemColor,
+        FillerItemColor,
+        TrapItemColor,
     ]),
     OptionGroup("Death Link Options", [
         LegoStarWarsTCSDeathLink,
