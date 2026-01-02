@@ -55,27 +55,62 @@ class ChoiceFromStringExtension(Choice):
 
 
 class TextColorChoice(ChoiceFromStringExtension):
-    option_white = 0
-    option_red = 1
-    option_green = 2
-    option_blue = 3
-    option_cyan = 4
-    option_pink = 5
-    option_yellow = 6
-    option_orange = 7
-    # option_black = 8  # Black is basically unreadable.
+    _COMMON_DOC_SUFFIX = "\n\n``/color_test`` in the game's client will demonstrate each of the colors in-game."
+    option_white_ffffff = 0xFFFFFF  # Location name default
+    option_white_green_outline_ffffff = 0xFFFFFF01  # with a green outline
+    option_white_red_outline_ffffff = 0xFFFFFF02  # with a red outline
+    # option_overbrightened_white = 0xFFFFFF03  # with brighter outlines
+    # option_black = 0x000000  # Black is basically unreadable.
+
+    option_bright_red_ff0000 = 0xFF0000
+    option_red_de0000 = 0xDE0000  # Trap default.
+    option_dark_red_7e0000 = 0x7E0000
+    option_darker_red_640000 = 0x640000
+
+    option_red_pink_ff007e = 0xFF007E
+    option_magenta_ff00ff = 0xFF00FF
+
+    option_purple_6e00de = 0x6E00DE  # Progression default.
+    option_light_blue_purple_7e7eff = 0x7E7EFF
+
+    option_deep_blue_0000ff = 0x0000FF
+    option_blue_007eff = 0x007EFF  # Useful default.
+    option_dark_blue_00007e = 0x00007E
+
+    option_cyan_00ffff = 0x00FFFF  # Filler default.
+    option_dark_cyan_007e7e = 0x007E7E
+    option_dark_sea_green_007e76 = 0x007E76
+    option_mint_green_7effc0 = 0x7EFFC0  # Player name default.
+
+    option_dark_green_007e00 = 0x007E00
+    option_bright_green_00ff00 = 0x00FF00
+    option_pea_green_80ff00 = 0x80FF00  # Location name default.
+
+    option_near_white_yellow_feffea = 0xFEFFEA
+    option_pale_yellow_ffff7e = 0xFFFF7E
+    option_yellow_ffff00 = 0xFFFF00  # Progression + Useful default.
+    option_dark_yellow_7e7e00 = 0x7E7E00
+    option_orange_ffc000 = 0xFFC000
+    option_dark_orange_ff7e00 = 0xFF7E00
+
     rich_text_doc = True
 
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        # Append common docstring parts to the end of the subclass' docstring.
+        if not cls.__doc__.endswith(cls._COMMON_DOC_SUFFIX):
+            cls.__doc__ = cls.__doc__ + cls._COMMON_DOC_SUFFIX
+
     @staticmethod
-    def colors_from_slot_data(
-            colors_from_slot_data: list[int]
-    ) -> "tuple[TextColorChoice, TextColorChoice, TextColorChoice, TextColorChoice, TextColorChoice]":
+    def colors_from_slot_data(colors_from_slot_data: list[int]) -> tuple[str, str, str, str, str, str, str]:
         default_colors = [
             ProgressionUsefulItemColor.default,
             ProgressionItemColor.default,
             UsefulItemColor.default,
             FillerItemColor.default,
             TrapItemColor.default,
+            PlayerNameColor.default,
+            LocationNameColor.default,
         ]
 
         # If the list of colours changes at some point, make sure that reading colors from slot_data is future-proofed.
@@ -91,21 +126,27 @@ class TextColorChoice(ChoiceFromStringExtension):
                 color = TextColorChoice(value)
             else:
                 color = TextColorChoice(default_colors[i])
-            colors.append(color)
+            colors.append(color.current_key_no_hex_value)
 
         # The only reason a tuple of `colors` isn't returned directly, is to make type checkers happy.
-        prog_useful, prog, useful, filler, trap = colors
-        return prog_useful, prog, useful, filler, trap
+        prog_useful, prog, useful, filler, trap, player, location = colors
+        return prog_useful, prog, useful, filler, trap, player, location
 
     @staticmethod
-    def colors_to_slot_data(options: "LegoStarWarsTCSOptions") -> tuple[int, int, int, int, int]:
+    def colors_to_slot_data(options: "LegoStarWarsTCSOptions") -> tuple[int, int, int, int, int, int, int]:
         return (
             options.progression_useful_item_color.value,
             options.progression_item_color.value,
             options.useful_item_color.value,
             options.filler_item_color.value,
             options.trap_item_color.value,
+            options.player_name_color.value,
+            options.location_name_color.value,
         )
+
+    @property
+    def current_key_no_hex_value(self) -> str:
+        return self.current_key[:-7]
 
 
 class ChapterChoice(ChoiceFromStringExtension):
@@ -1257,31 +1298,43 @@ class ProgressionUsefulItemColor(TextColorChoice):
     These are typically the most powerful progression items for a game.
     """
     display_name = "Progression + Useful Item Color"
-    default = TextColorChoice.option_yellow
+    default = TextColorChoice.option_yellow_ffff00
 
 
 class ProgressionItemColor(TextColorChoice):
     """Choose the color used to display Progression classification item names."""
     display_name = "Progression Item Color"
-    default = TextColorChoice.option_pink
+    default = TextColorChoice.option_purple_6e00de
 
 
 class UsefulItemColor(TextColorChoice):
     """Choose the color used to display Useful classification item names."""
     display_name = "Useful Item Color"
-    default = TextColorChoice.option_blue
+    default = TextColorChoice.option_blue_007eff
 
 
 class FillerItemColor(TextColorChoice):
     """Choose the color used to display Filler classification item names."""
     display_name = "Filler Item Color"
-    default = TextColorChoice.option_cyan
+    default = TextColorChoice.option_cyan_00ffff
 
 
 class TrapItemColor(TextColorChoice):
     """Choose the color used to display Trap classification item names."""
     display_name = "Trap Item Color"
-    default = TextColorChoice.option_red
+    default = TextColorChoice.option_red_de0000
+
+
+class PlayerNameColor(TextColorChoice):
+    """Choose the color used to display player names in Received Item and Checked Location messages."""
+    display_name = "Player Name Color"
+    default = TextColorChoice.option_mint_green_7effc0
+
+
+class LocationNameColor(TextColorChoice):
+    """Choose the color used to display location names in Received Item and Checked Location messages."""
+    display_name = "Location Name Color"
+    default = TextColorChoice.option_white_ffffff
 
 
 class LogicDifficulty(ChoiceFromStringExtension):
@@ -1484,6 +1537,8 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     useful_item_color: UsefulItemColor
     filler_item_color: FillerItemColor
     trap_item_color: TrapItemColor
+    player_name_color: PlayerNameColor
+    location_name_color: LocationNameColor
 
     # Death Link.
     death_link: LegoStarWarsTCSDeathLink
@@ -1495,7 +1550,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     # Future options, not implemented yet.
     # random_starting_level_max_starting_characters: RandomStartingLevelMaxStartingCharacters
 
-    def item_colors_to_slot_data(self) -> tuple[int, int, int, int, int]:
+    def item_colors_to_slot_data(self) -> tuple[int, int, int, int, int, int, int]:
         return TextColorChoice.colors_to_slot_data(self)
 
 
@@ -1566,6 +1621,8 @@ OPTION_GROUPS: list[OptionGroup] = [
         UsefulItemColor,
         FillerItemColor,
         TrapItemColor,
+        PlayerNameColor,
+        LocationNameColor,
     ]),
     OptionGroup("Death Link Options", [
         LegoStarWarsTCSDeathLink,

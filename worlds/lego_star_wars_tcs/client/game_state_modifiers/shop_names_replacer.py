@@ -1,7 +1,4 @@
 import logging
-import re
-
-import unicodedata
 
 from random import Random
 from typing import NamedTuple
@@ -17,12 +14,12 @@ from ..events import (
     OnLevelChangeEvent,
     OnGameWatcherTickEvent,
 )
+from ..client_text import ClientText, clean_string
 from ..type_aliases import ApLocationId, TCSContext
 from ...constants import GAME_NAME
 from ...items import CHARACTERS_AND_VEHICLES_BY_NAME, EXTRAS_BY_NAME, ExtraData
 from ...levels import SHORT_NAME_TO_CHAPTER_AREA
 from ...locations import LOCATION_NAME_TO_ID
-from ...options import TextColorChoice
 
 
 try:
@@ -102,158 +99,6 @@ FAKE_TRAP_NAMES[GAME_NAME] = VERY_FAKE_TCS_ITEM_NAMES + (
 
 
 LEVEL_ID_CANTINA = 325
-
-
-USABLE_CHARACTERS = set(
-    # No ".
-    # No $ because it becomes a checkmark/tick like would be seen in a checkbox.
-    " !#%&'()*+,-./"
-    "0123456789"
-    ":;<=>?@"
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "[\\]^_`"
-    "abcdefghijklmnopqrstuvwxyz"
-    # No | because it becomes the R1 Button.
-    # No ~ because it is used for color formatting and symbol replacement.
-    "{}"
-    # These both display as "'" for some reason. Ignoring them for now.
-    # "\x91\x92"
-    "¡©®²´º¿"
-    "ÀÁÃÄÅÆÈÉÍÏÑÓØÙÚÜßàáâãäåæçèéêëìíîïñòóôöøùúüĄąĆćĘęŁłńœŚśźŻż"
-    "’“”…™"
-    # No Ъ. я seems to become a special - sometimes, I'm not sure how it works.
-    "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя"
-)
-
-_REPLACEMENTS = {
-    "Đ": "D",
-    "Ħ": "H",
-    "Ŀ": "L",
-    "Ŋ": "N",
-    "Œ": "OE",
-    "Ŧ": "T",
-    "Ð": "TH",
-    "¢": "c",
-    "đ": "d",
-    "ħ": "h",
-    "ı": "i",
-    "ĸ": "k",
-    "ŀ": "l",
-    "ŋŉ": "n",
-    "Þðþ": "th",
-    "×χ˟": "x",
-    # " does not exist for some reason, so replace it with "“".
-    '"': "“",
-    # $ becomes a checkmark/tick like would be seen in a checkbox.
-    # £ becomes a down arrow, like how < and > become left and right arrows.
-    # € is not supported.
-    # | becomes an R1 Button.
-    # ~ is used as a special character for formatting.
-    # ¤ becomes a down arrow with a tail, like ↓.
-    # ¬ becomes an up arrow with a tail.
-    # ¶ becomes an L1 Button.
-    # ѐ becomes a "-"
-    "$£€|~¤ѐ": "?",
-    "‘": "'",
-    "‚": ",",
-    "Ω": "?",
-    "˂": "<",
-    "˃": ">",
-    "˄": "^",
-    "˅": "¤",
-    "Ъ": "Ь",
-    "♥": "<3",
-}
-REPLACEMENTS = {c: v for k, v in _REPLACEMENTS.items() for c in k}
-
-
-# Development helper to check if any explicit replacements would get replaced automatically using `unicodedata`.
-# for k, expected_v in REPLACEMENTS.items():
-#     normalized_nfkd = unicodedata.normalize("NFKD", k)
-#     normalized_no_combining_characters = "".join(c2 for c2 in normalized_nfkd
-#                                                  if unicodedata.category(c2) != "Mn")
-#     if normalized_no_combining_characters == expected_v:
-#         print(f"Do not need to handle: '{k}'")
-
-
-# ~{color}{text to color}~~
-COLOR_FORMATTING = {
-    "white": "0",
-    "red": "1",  # May be associated with use of the B XBox controller button which is red.
-    "green": "2",  # May be associated with use of the A XBox controller button which is green.
-    "blue": "3",
-    "cyan": "4",
-    "pink": "5",
-    "yellow": "6",
-    "orange": "7",  # Orange is a commonly used color by the game for general text.
-    "black": "8",  # Almost unreadable if the text has black outlines.
-    # "black2": "9",
-    # "cyan2": "a",  # Cyan text and cyan outline?
-    # "cyan3": "\\",  # Cyan text and cyan outline?
-}
-
-
-FILLER_COLOR = COLOR_FORMATTING["cyan"]
-USEFUL_COLOR = COLOR_FORMATTING["blue"]
-PROGRESSION_COLOR = COLOR_FORMATTING["pink"]
-PROGRESSION_USEFUL_COLOR = COLOR_FORMATTING["yellow"]
-TRAP_COLOR = COLOR_FORMATTING["red"]
-
-
-# These characters become special symbols.
-_SYMBOLS = {
-    "R1 Button": "|",  # 124
-    "L1 Button": "¶",  # 182
-    "Square Button": "û",  # 251
-    "X Button": "ý",  # 253
-    "Circle Button": "þ",  # 254
-    "Triangle Button": "ÿ",  # 255
-}
-
-
-# TODO: This should be part of text_replacer, or a common module shared between text_replacer and shop_names_replacer.
-def clean_string(s: str) -> str:
-    """Clean up a string to be displayed in-game."""
-    # Double [[<special value>]] gets replaced with an icon or similar through _TextDecodeCodeword(). e.g. "[[start]]"
-    # becomes a 'start button'.
-    s = re.sub(r"\[\[+", "[", s)
-    s = re.sub(r"]]+", "]", s)
-    if any(unicodedata.category(c) == "Mn" for c in s):
-        # Combine combining characters with their base character if possible, e.g. "e"+"́" ("é") -> "é".
-        # This can mess with other characters in ways we don't want, so it is only run when a combining character is
-        # found, which should be very rare.
-        s = unicodedata.normalize("NFKC", s)
-    to_convert = list(reversed(s))
-    initial_length = len(s)
-    characters = []
-    while to_convert:
-        c = to_convert.pop()
-        if c in USABLE_CHARACTERS:
-            # The character can be used as-is.
-            characters.append(c)
-        elif c in REPLACEMENTS:
-            # The character has a hardcoded replacement, which could be more than one character.
-            characters.extend(REPLACEMENTS[c])
-        else:
-            # Turn characters with diacritics into the base character plus a combining diacritic character(s).
-            normalized_nfkd = unicodedata.normalize("NFKD", c)
-            if len(normalized_nfkd) == 1:
-                # If the single character did not become more than one character, then there were no combining
-                # characters.
-                characters.append("?")
-            else:
-                # Remove all combining characters.
-                normalized_no_combining_characters = "".join(c2 for c2 in normalized_nfkd
-                                                             if unicodedata.category(c2) != "Mn")
-                # Warning: If there is a character that repeatedly produces the same extra character over and over, then
-                # this could loop infinitely.
-                to_convert.extend(reversed(normalized_no_combining_characters))
-                if len(characters) > (2 * initial_length):
-                    # Abort to prevent infinite loops.
-                    return s
-    return "".join(characters)
-
-
 ShopSlotNumber = int
 LocalizationId = int
 
@@ -299,7 +144,7 @@ EXTRA_LOCALIZATION_ID_MAPPING = _make_extra_localization_id_mapping()
 
 
 class ShopSlotData(NamedTuple):
-    color_code: str
+    item_classification: ItemClassification
     name: bytes
     player: int
 
@@ -325,11 +170,7 @@ class ShopNamesReplacer(ClientComponent):
     _is_in_cantina: bool = False
     _is_in_shop: bool = False
 
-    prog_useful_color = COLOR_FORMATTING["yellow"]
-    progression_color = COLOR_FORMATTING["pink"]
-    useful_color = COLOR_FORMATTING["blue"]
-    filler_color = COLOR_FORMATTING["cyan"]
-    trap_color = COLOR_FORMATTING["red"]
+    _client_colors: ClientText
 
     def __init__(self):
         super().__init__()
@@ -342,6 +183,7 @@ class ShopNamesReplacer(ClientComponent):
         self._cached_character_shop_slot_names = {}
         self._cached_extras_shop_slot_item_names = {}
         self._cached_extras_shop_slot_names = {}
+        self._client_colors = ClientText()
 
     def _set_enabled_locations(self, enabled_locations: set[int]):
         self._enabled_character_slots = {k: v for k, v in CHARACTER_SLOTS_MAPPING.items() if v in enabled_locations}
@@ -380,13 +222,14 @@ class ShopNamesReplacer(ClientComponent):
                 info = locations_info.get(location_id)
                 if info is None:
                     debug_logger.error("Missing location info for location ID %i", location_id)
-                    names_dict[slot_or_extra_data] = ShopSlotData(FILLER_COLOR, b"Unknown", -1)
+                    names_dict[slot_or_extra_data] = ShopSlotData(ItemClassification.filler, b"Unknown", -1)
                 else:
                     classification = ItemClassification(info.flags)
                     # Fake the names for items that are purely traps, and don't have any other classification(s).
                     if classification == ItemClassification.trap and shop_random.random() < 0.5:
                         slot_info = ctx.slot_info.get(info.player)
-                        color_code = PROGRESSION_COLOR
+                        # Change the classification to Progression.
+                        classification = ItemClassification.progression
                         game = slot_info.game if slot_info else "unknown"
                         if game not in FAKE_TRAP_NAMES:
                             games = list(FAKE_TRAP_NAMES)
@@ -406,10 +249,8 @@ class ShopNamesReplacer(ClientComponent):
                         # Get the name of the item.
                         item_name = ctx.item_names.lookup_in_slot(info.item, info.player)
                         cleaned_item_name = clean_string(item_name)
-                        # Determine the color code to use when displaying this item.
-                        color_code = self.classification_to_colour_code(classification)
                     names_dict[slot_or_extra_data] = ShopSlotData(
-                        color_code, cleaned_item_name.encode("utf-8", errors="replace"), info.player)
+                        classification, cleaned_item_name.encode("utf-8", errors="replace"), info.player)
         self._cached_character_shop_slot_item_names = characters_shop_names
         self._cached_extras_shop_slot_item_names = extras_shop_names
         self._calculated_item_names = True
@@ -472,11 +313,10 @@ class ShopNamesReplacer(ClientComponent):
                             dropped_count += player_name_length - len(player_name)
                             player_name_length = len(player_name)
                 full_shop_slot_name = (
-                        f"~{data.color_code}".encode("utf-8")
-                        + item_name
-                        + b"~~ ("
-                        + player_name
-                        + b")\x00"
+                    self._client_colors.from_classification(data.item_classification, item_name)
+                    + b" ("
+                    + player_name
+                    + b")\x00"
                 )
                 output_dict[slot_or_localization_id] = full_shop_slot_name
         self._calculated_shop_slot_names = True
@@ -510,24 +350,7 @@ class ShopNamesReplacer(ClientComponent):
             # Fire and forget.
             async_start(event.context.send_msgs([{"cmd": "LocationScouts", "locations": list(self._scout_locations)}]))
         self.update_player_names(event.context)
-        if "item_colors" in event.slot_data:
-            item_colors = event.slot_data["item_colors"]
-            self.prog_useful_color, self.progression_color, self.useful_color, self.filler_color, self.trap_color = (
-                COLOR_FORMATTING[v.current_key] for v in TextColorChoice.colors_from_slot_data(item_colors)
-            )
-
-    def classification_to_colour_code(self, classification: ItemClassification) -> str:
-        if (ItemClassification.progression | ItemClassification.useful) in classification:
-            return self.prog_useful_color
-        elif ItemClassification.progression in classification:
-            return self.progression_color
-        # Whether a Useful + Trap item should show up as Useful or Trap color is questionable.
-        elif ItemClassification.trap in classification:
-            return self.trap_color
-        elif ItemClassification.useful in classification:
-            return self.useful_color
-        else:
-            return self.filler_color
+        self._client_colors = ClientText.from_slot_data(event.slot_data)
 
     def _are_scouts_received(self, ctx: TCSContext) -> bool:
         scouted_location_ids = set(ctx.locations_info.keys())

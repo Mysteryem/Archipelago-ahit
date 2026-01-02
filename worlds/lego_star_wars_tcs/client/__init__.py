@@ -24,6 +24,7 @@ from .. import options
 from ..constants import GAME_NAME, AP_WORLD_VERSION
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, CHAPTER_AREAS, ChapterArea
 from ..locations import LOCATION_NAME_TO_ID
+from .client_text import ClientText, clean_string
 from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from .location_checkers.free_play_completion import FreePlayChapterCompletionChecker
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
@@ -291,13 +292,32 @@ class LegoStarWarsTheCompleteSagaCommandProcessor(ClientCommandProcessor):
     def __init__(self, ctx: CommonContext):
         super().__init__(ctx)
 
+    def _cmd_color_test(self):
+        """
+        Test text color choices. You need to be connected to a server to use this command.
+
+        A number of these colors are probably reading parts of the game's memory that are not supposed to be colors. If
+        some of these colors display the wrong color while playing, please report that as an issue in the discord thread
+        for Lego Star Wars: The Complete Saga.
+        """
+        ctx = self.ctx
+        if isinstance(ctx, LegoStarWarsTheCompleteSagaContext):
+            if ctx.last_connected_slot is None or not ctx.is_in_game():
+                logger.info("Load into the game and connect to a server first.")
+                return
+            from ..options import TextColorChoice
+            for value, name in TextColorChoice.name_lookup.items():
+                msg = ctx.client_text.from_text_color_choice(TextColorChoice(value), name)
+                ctx.text_display.queue_message(msg)
+            logger.info("Demonstrating text color choices.")
+
     def _cmd_toggle_death_link(self):
         """Toggle Death Link on/off. Whether Death Link is enabled is stored in your save data, so the client will
         remember if Death Link was toggled the next time you connect."""
         ctx = self.ctx
         if isinstance(ctx, LegoStarWarsTheCompleteSagaContext):
             if ctx.last_connected_slot is None or not ctx.is_in_game():
-                logger.info("Load into a game and connect first.")
+                logger.info("Load into the game and connect to a server first.")
                 return
             ctx.death_link_manager.toggle_death_link(ctx)
             if ctx.death_link_manager.death_link_enabled:
@@ -362,6 +382,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     received_item_messages: options.ReceivedItemMessages = options.ReceivedItemMessages(
         options.ReceivedItemMessages.option_all)
     checked_location_messages: bool = True
+    client_text: ClientText
 
     # A few components are permanent and will need to be manually re-subscribed to receive events because the components
     # won't be re-created.
@@ -385,6 +406,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         # subscribing to events on the other attributes.
         self.event_manager = EventManager()
 
+        self.client_text = ClientText()
         self.text_display = InGameTextDisplay()
         self.uncap_high_jump = UncapHighJump()
         self.cantina_reloader = CantinaReloader()
@@ -432,11 +454,13 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             item = args["item"]
             recipient = args["receiving"]
 
-            is_progression = ItemClassification.progression in ItemClassification(item.flags)
+            classification = ItemClassification(item.flags)
+            is_progression = ItemClassification.progression in classification
 
             # Receiving an item from the server
             if self.slot_concerns_self(recipient):
                 item_name = self.item_names.lookup_in_game(item.item)
+                item_str = self.client_text.from_classification(classification, clean_string(item_name))
                 if self.slot_concerns_self(item.player):
                     # This counts as both a checked location and a received item.
                     if (
@@ -445,28 +469,35 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                                 (is_progression or self.received_item_messages == "all"))
                     ):
                         location_name = self.location_names.lookup_in_game(item.location)
-                        message = f"Found {item_name} ({location_name})"
+                        location_str = self.client_text.location_name(clean_string(location_name))
+                        message = f"Found {item_str} ({location_str})"
                         self.text_display.queue_message(message)
                 else:
                     if self.received_item_messages and (is_progression or self.received_item_messages == "all"):
                         finder = self.player_names[item.player]
+                        finder_str = self.client_text.player_name(clean_string(finder))
                         location_name = self.location_names.lookup_in_slot(item.location, item.player)
-                        message = f"Received {item_name} from {finder} ({location_name})"
+                        location_str = self.client_text.location_name(clean_string(location_name))
+                        message = f"Received {item_str} from {finder_str} ({location_str})"
                         self.text_display.queue_message(message)
             # Sending an item to the server.
             elif self.slot_concerns_self(item.player):
                 item_name = self.item_names.lookup_in_slot(item.item, recipient)
+                item_str = self.client_text.from_classification(classification, clean_string(item_name))
 
                 if self.slot_concerns_self(recipient):
                     # Should not happen?
                     location_name = self.location_names.lookup_in_game(item.location)
-                    message = f"Sent {item_name}...to myself? ({location_name}) Please report this."
+                    location_str = self.client_text.location_name(clean_string(location_name))
+                    message = f"Sent {item_str}...to myself? ({location_str}) Please report this."
                     self.text_display.queue_message(message)
                 else:
                     if self.checked_location_messages:
                         owner = self.player_names[recipient]
+                        owner_str = self.client_text.player_name(clean_string(owner))
                         location_name = self.location_names.lookup_in_game(item.location)
-                        message = f"Sent {item_name} to {owner} ({location_name})"
+                        location_str = self.client_text.location_name(clean_string(location_name))
+                        message = f"Sent {item_str} to {owner_str} ({location_str})"
                         self.text_display.queue_message(message)
 
     @staticmethod
@@ -526,6 +557,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         # The connection to the server is assumed to be OK by this point, so slot_data can now be used to adjust client
         # behaviour.
         received_item_messages = slot_data["received_item_messages"]
+
+        self.client_text = ClientText.from_slot_data(slot_data)
 
         on_receive_slot_data_event = OnReceiveSlotDataEvent(self, slot_data, first_time_setup)
         generator_apworld_version = on_receive_slot_data_event.generator_version
