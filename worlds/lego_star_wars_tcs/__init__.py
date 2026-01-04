@@ -403,18 +403,9 @@ class LegoStarWarsTCSWorld(World):
             pool_required_chapter_unlock_items = [f"{short_name} Unlock" for short_name in self.enabled_chapters
                                                   if short_name != starting_chapter_short_name]
 
-            starting_chapter_entrance_abilities = CharacterAbility.NONE
-            for character_name in CHAPTER_AREA_STORY_CHARACTERS[starting_chapter_short_name]:
-                starting_chapter_entrance_abilities |= CHARACTERS_AND_VEHICLES_BY_NAME[character_name].abilities
-
-            # Remove all chapter-specific access flags.
-            starting_chapter_entrance_abilities &= ~CHAPTER_SPECIFIC_FLAGS
-            special_flag_pair = CHAPTER_SPECIFIC_REQUIREMENTS.get(self.starting_chapter.short_name)
-            if special_flag_pair:
-                # Add any chapter-specific access flags for this chapter. The first element is considered the standard
-                # way to logically complete the chapter, that would be used if the chapter was played in Story mode.
-                # The second element is an optional alternative, that often uses rarer abilities.
-                starting_chapter_entrance_abilities |= special_flag_pair[0]
+            # Only give enough characters to fulfil the main requirements of the starting chapter.
+            # The alt requirements, if they exist, often replace a common requirement with a rarer requirement.
+            starting_chapter_entrance_abilities = self.starting_chapter.completion_main_ability_requirements
 
             starting_chapter_entrance_abilities_list = sorted(starting_chapter_entrance_abilities)
 
@@ -564,16 +555,15 @@ class LegoStarWarsTCSWorld(World):
         else:
             level_access_character_counts = Counter()
             for chapter in sorted(self.enabled_chapters):
-                # TODO: This is copied from `set_rules`, the code should be deduplicated.
-                required_character_names = CHAPTER_AREA_STORY_CHARACTERS[chapter]
-                for character_name in required_character_names:
-                    generic_character = CHARACTERS_AND_VEHICLES_BY_NAME[character_name]
-                    required_character_abilities_in_pool |= generic_character.abilities
-                chapter_specific_requirement = CHAPTER_SPECIFIC_REQUIREMENTS.get(chapter)
-                if chapter_specific_requirement:
-                    _story_ability, alternative_ability = chapter_specific_requirement
-                    if alternative_ability is not None:
-                        optional_character_abilities |= alternative_ability
+                chapter_obj = SHORT_NAME_TO_CHAPTER_AREA[chapter]
+                # The item pool must provide the abilities require to complete the chapter.
+                required_character_abilities_in_pool |= chapter_obj.completion_main_ability_requirements
+                # Alternative requirements that swap out a common ability for a rarer ability are relevant to logic, but
+                # are not required to be included in the item pool.
+                alt_requirements = chapter_obj.completion_alt_ability_requirements
+                if alt_requirements:
+                    optional_character_abilities |= alt_requirements
+
         required_character_abilities_in_pool &= ~starting_abilities
         optional_character_abilities &= ~starting_abilities
 
@@ -1308,20 +1298,28 @@ class LegoStarWarsTCSWorld(World):
                         and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
                 )
 
-                required_character_names = CHAPTER_AREA_STORY_CHARACTERS[chapter.short_name]
-                entrance_abilities = CharacterAbility.NONE
-                for character_name in required_character_names:
-                    generic_character = CHARACTERS_AND_VEHICLES_BY_NAME[character_name]
-                    entrance_abilities |= generic_character.abilities
-
                 if story_characters_for_chapters:
+                    required_character_names = CHAPTER_AREA_STORY_CHARACTERS[chapter.short_name]
+                    entrance_abilities = CharacterAbility.NONE
+                    for character_name in required_character_names:
+                        generic_character = CHARACTERS_AND_VEHICLES_BY_NAME[character_name]
+                        entrance_abilities |= generic_character.abilities
+
                     if len(required_character_names) == 1:
-                        item = next(iter(required_character_names))
-                        set_rule(entrance, lambda state, item_=item: state.has(item_, player))
+                        character_name = next(iter(required_character_names))
+                        set_rule(entrance, lambda state, item_=character_name: state.has(item_, player))
                     elif len(required_character_names) > 1:
-                        items = tuple(sorted(required_character_names))
-                        set_rule(entrance, lambda state, items_=items: state.has_all(items_, player))
+                        character_names = tuple(sorted(required_character_names))
+                        set_rule(entrance, lambda state, items_=character_names: state.has_all(items_, player))
+                    # Even if some of the abilities are chapter-specific, it doesn't matter, the player needs all of
+                    # these characters to access the chapter at all, and will therefore have access to all their
+                    # combined abilities, chapter-specific abilities included.
                     strictly_required_entrance_abilities = entrance_abilities
+                    assert (set(chapter.completion_main_ability_requirements)
+                            <= set(strictly_required_entrance_abilities)), \
+                        ("The main abilities were not a subset of the character abilities. The main abilities should be"
+                         " calculated from the character abilities, with chapter-specific abilities removed besides the"
+                         " chapter-specific abilities of this chapter, so something is wrong.")
                 else:
                     # The entrance requires a 'Chapter Unlock' item.
                     # The logic is not fully prepared for this currently, so the entrance rule is also set to require
@@ -1329,21 +1327,15 @@ class LegoStarWarsTCSWorld(World):
                     # restrictive for many locations, but overly restrictive logic cannot result in impossible seeds.
                     # A few chapters have chapter-specific logical requirements that get stripped from the requirements
                     # of other chapters.
-                    chapter_specific_requirement = CHAPTER_SPECIFIC_REQUIREMENTS.get(chapter.short_name)
-                    if chapter_specific_requirement:
-                        story_ability, alternative_ability = chapter_specific_requirement
-                        assert story_ability in entrance_abilities
-                        if alternative_ability is None or alternative_ability in entrance_abilities:
-                            # There is no alternative. Or the alternative is also required (unsure if this can happen).
-                            self.set_abilities_rule(entrance, entrance_abilities)
-                            strictly_required_entrance_abilities = entrance_abilities
-                        else:
-                            alternative_entrance_abilities = (entrance_abilities & ~story_ability) | alternative_ability
-                            self.set_any_abilities_rule(entrance, entrance_abilities, alternative_entrance_abilities)
-                            strictly_required_entrance_abilities = entrance_abilities & alternative_entrance_abilities
+                    main_ability_requirements = chapter.completion_main_ability_requirements
+                    alt_ability_requirements = chapter.completion_alt_ability_requirements
+                    if alt_ability_requirements:
+                        self.set_any_abilities_rule(entrance, main_ability_requirements, alt_ability_requirements)
+                        strictly_required_entrance_abilities = main_ability_requirements & alt_ability_requirements
                     else:
-                        self.set_abilities_rule(entrance, entrance_abilities)
-                        strictly_required_entrance_abilities = entrance_abilities
+                        self.set_abilities_rule(entrance, main_ability_requirements)
+                        strictly_required_entrance_abilities = main_ability_requirements
+
                     add_rule(entrance,
                              lambda state, item_=f"{episode_number}-{chapter_number} Unlock": state.has(item_, player))
                     # TODO: .levels.HAT_MACHINE_CHAPTERS provides alternative logic to Hat Machine logic abilities.

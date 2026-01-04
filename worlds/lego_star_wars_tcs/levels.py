@@ -105,7 +105,18 @@ class ChapterArea:
     power_brick_location_name: str = field(init=False)
     power_brick_studs_cost: int = field(init=False)
     all_minikits_ability_requirements: tuple[CharacterAbility, ...] = field(init=False)
-    ability_requirements_from_characters: tuple[CharacterAbility, ...] = field(init=False)
+    completion_main_ability_requirements: CharacterAbility = field(init=False)
+    """
+    The combined, main abilities of the Story mode characters for this chapter.
+    """
+    completion_alt_ability_requirements: CharacterAbility | None = field(init=False)
+    """
+    Alternative chapter-specific logic that usually replaces a common requirement from the main ability requirements
+    with a rarer ability, e.g. replacing "CAN_WEAR_HAT" with "IMPERIAL" if the normal requirement would be to use a Hat
+    Machine to use an Imperial panel.
+    These requirements should not be used for the starting chapter because it is undesirable to force the player to
+    start with a rarer ability.
+    """
     boss: str | None = field(init=False)
 
     def __post_init__(self):
@@ -135,20 +146,29 @@ class ChapterArea:
         boss = BOSS_CHARACTERS_BY_SHORTNAME.get(self.short_name)
         object.__setattr__(self, "boss", boss)
 
-        entrance_abilities = CharacterAbility.NONE
+        base_entrance_abilities = CharacterAbility.NONE
         for character in character_requirements:
-            entrance_abilities |= CHARACTERS_AND_VEHICLES_BY_NAME[character].abilities
+            base_entrance_abilities |= CHARACTERS_AND_VEHICLES_BY_NAME[character].abilities
+        # Strip all chapter-specific flags. If there are any that are relevant to this chapter, they will be re-added in
+        # the next step.
+        base_entrance_abilities &= ~CHAPTER_SPECIFIC_FLAGS
+        # Add any chapter-specific flags and set possible alternatives
+        completion_alt_ability_requirements = None
         if chapter_specific_requirement := CHAPTER_SPECIFIC_REQUIREMENTS.get(self.short_name):
             story_logic, alternative_ability = chapter_specific_requirement
-            assert story_logic in entrance_abilities
-            if alternative_ability is None or alternative_ability in entrance_abilities:
-                ability_requirements_from_characters = (entrance_abilities,)
-            else:
-                alternative_entrance_abilities = (entrance_abilities & ~story_logic) | alternative_ability
-                ability_requirements_from_characters = (entrance_abilities, alternative_entrance_abilities)
+            completion_main_ability_requirements = base_entrance_abilities | story_logic
+            if alternative_ability is not None and alternative_ability not in base_entrance_abilities:
+                # Define an alternative set of requirements.
+                completion_alt_ability_requirements = (base_entrance_abilities & ~story_logic) | alternative_ability
         else:
-            ability_requirements_from_characters = (entrance_abilities,)
-        object.__setattr__(self, "ability_requirements_from_characters", ability_requirements_from_characters)
+            completion_main_ability_requirements = base_entrance_abilities
+        if completion_main_ability_requirements is CharacterAbility.NONE:
+            raise AssertionError("Every chapter should have at least one CharacterAbility requirement.")
+        if completion_alt_ability_requirements is CharacterAbility.NONE:
+            raise AssertionError("Every chapter's alternate requiremenents should have at least one CharacterAbility"
+                                 " requirement.")
+        object.__setattr__(self, "completion_main_ability_requirements", completion_main_ability_requirements)
+        object.__setattr__(self, "completion_alt_ability_requirements", completion_alt_ability_requirements)
 
     @property
     def unique_boss_name(self) -> str | None:
