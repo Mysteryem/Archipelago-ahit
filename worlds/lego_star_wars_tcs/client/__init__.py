@@ -58,9 +58,15 @@ from .game_state_modifiers.uncap_high_jump import UncapHighJump
 
 # Universal Tracker client integration.
 try:
-    from worlds.tracker import TrackerGameContext as CommonContext, TrackerCommandProcessor as ClientCommandProcessor
-except ImportError:
+    from worlds.tracker.TrackerClient import (
+        TrackerGameContext as CommonContext,
+        TrackerCommandProcessor as ClientCommandProcessor,
+    )
+except ImportError as ex:
     from CommonClient import CommonContext, ClientCommandProcessor
+    UNIVERSAL_TRACKER_LOADED = False
+else:
+    UNIVERSAL_TRACKER_LOADED = True
 
 
 logger = logging.getLogger("Client")
@@ -1726,6 +1732,10 @@ async def main():
 
     ctx = LegoStarWarsTheCompleteSagaContext()
     ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
+
+    if UNIVERSAL_TRACKER_LOADED:
+        # noinspection PyUnresolvedReferences
+        ctx.run_generator()
 
     if gui_enabled:
         ctx.run_gui()
