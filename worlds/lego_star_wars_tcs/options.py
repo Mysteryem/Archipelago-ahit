@@ -245,6 +245,7 @@ class MinikitGoalCompletionMethod(ChoiceFromStringExtension):
     recommended to enable a Goal Chapter when the Minikit Goal Completion Method is set to Instant.
     - Junkyard Minikit Display: Once you have enough Minikit items to meet your goal, the goal must be completed by
     using the Minikit Display in the outside Junkyard area of the Cantina.
+
     """
     display_name = "Minikit Goal Completion Method"
     rich_text_doc = True
@@ -289,6 +290,7 @@ class KyberBrickGoalCompletionMethod(ChoiceFromStringExtension):
 
     - Instant: The Kyber Brick goal is completed as soon as 7 Kyber Brick items are acquired. It is recommended to
     enable a Goal Chapter when the Kyber Brick Goal Completion Method is set to Instant.
+
     """
     display_name = "Kyber Brick Goal Completion Method"
     rich_text_doc = True
@@ -306,6 +308,7 @@ class GoalChapterLocationsMode(ChoiceFromStringExtension):
     placed there. Gold Bricks from the Goal Chapter will not be included in Gold Brick logic.
     - Normal: No changes will be made to the locations in the Goal Chapter, or to Gold Brick logic. Not recommended
     unless playing without ``!release`` after goaling.
+
     """
     display_name = "Goal Chapter Locations Mode"
     rich_text_doc = True
@@ -736,6 +739,7 @@ class Ridesanity(Toggle):
     Ridesanity adds up to 27 locations.
 
     There are 27 unique ridable characters:
+
     - AT-AT (6-3)
     - AT-ST (4-3, 6-3, 6-4, LEGO City)
     - Bantha (4-2, LEGO City, New Town)
@@ -764,26 +768,6 @@ class Ridesanity(Toggle):
     - Tractor (5-4, 6-4, LEGO City, New Town)
     - Wookie Flyer (LEGO City)
 
-    Alternatively listed by levels and the ridable characters found within them:
-    - Cantina: Cantina Car
-    - 1-1 (Negotiations): STAP
-    - 1-5 (Retake Theed Palace): Flash Speeder, Service Car
-    - 1-6 (Darth Maul): Service Car
-    - 3-4 (Defense of Kashyyyk): Clone Walker
-    - 4-1 (Secret Plans): Crane Control, Moon Car, Town Car
-    - 4-2 (Through The Jundland Wastes): Bantha, Dewback, Landspeeder
-    - 4-3 (Mos Eisley Spaceport): AT-ST, Dewback, Landspeeder, Mos Eisley Cannon
-    - 4-4 (Rescue The Princess): Crane Control
-    - 4-5 (Death Star Escape): Crane Control, Service Car
-    - 5-2 (Escape From Echo Base): Snowmobile, Stormtrooper Cannon, Tauntaun
-    - 5-4 (Dagobah): Tractor
-    - 5-5 (Cloud City Trap): Crane Control, Stormtrooper Cannon
-    - 5-6 (Betrayal Over Bespin): Cloud Car, Crane Control
-    - 6-2 (The Great Pit Of Carkoon): Big Skiff Cannon, Skiff Cannon
-    - 6-3 (Speeder Showdown): AT-AT, AT-ST, Speeder Bike
-    - 6-4 (The Battle Of Endor): AT-ST, Ewok Catapult, Tractor
-    - LEGO City: AT-ST, Bantha, Cloud Car, Dewback, Landspeeder, Moon Car, Tauntaun, Town Car, Tractor, Wookie flyer
-    - New Town: Bantha, Basketball Cannon, Clone Walker, Cloud Car, Dewback, Firetruck, Landspeeder, Lifeboat, Moon Car, Tauntaun, Town Car, Tractor
     """
     display_name = "Ridesanity Locations"
     rich_text_doc = True
@@ -827,6 +811,7 @@ class ChapterUnlockRequirement(ChoiceFromStringExtension):
     out-of-logic. The logic is in the process of being overhauled to be more accurate.
     - Random Characters (not implemented): Each Chapter requires randomly chosen characters to unlock.
     - Open (not implemented): All chapters within an Episode are unlocked as soon as the Episode is unlocked.
+
     """
     display_name = "Chapter Unlock Requirements"
     rich_text_doc = True
@@ -849,6 +834,7 @@ class EpisodeUnlockRequirement(ChoiceFromStringExtension):
 
     - Open: All Episodes will be unlocked from the start.
     - Episode Item: Each Episode will unlock after receiving an unlock item for that Episode, e.g. "Episode 5 Unlock".
+
     """
     display_name = "Episode Unlock Requirements"
     rich_text_doc = True
@@ -871,6 +857,7 @@ class AllEpisodesCharacterPurchaseRequirements(ChoiceFromStringExtension):
     and rounded to the nearest integer, but always at least 1. The remaining "Episode Completion Token" items will be
     added to your starting inventory. For example, if you have 28 chapters enabled, 28 / 6 = 4.666 -> 5 in the pool and
     1 in your starting inventory.
+
     """
     display_name = "'All Episodes' Character Purchase Unlock Requirements"
     rich_text_doc = True
@@ -942,7 +929,7 @@ class PreferredCharacters(OptionSet):
     reduced, so not all characters may get added to the item pool.
 
     The names of all items can be found by starting the Lego Star Wars: The Complete Saga client and entering the
-    `/items` command.
+    ``/items`` command.
 
     If no vehicle Chapters are enabled, no vehicle characters will be included in the item pool.
     """
@@ -1263,6 +1250,7 @@ class ReceivedItemMessages(ChoiceFromStringExtension):
 
     - All: Every item shows a message
     - None: All items are received silently.
+
     """
     display_name = "Received Item Messages"
     rich_text_doc = True
@@ -1283,6 +1271,7 @@ class CheckedLocationMessages(ChoiceFromStringExtension):
 
     - All: Every checked location shows a message
     - None: No checked locations show a message
+
     """
     display_name = "Checked Location Messages"
     rich_text_doc = True
@@ -1432,6 +1421,7 @@ class VehicleDeathLinkAmnesty(Range):
 
     - 1-4 (Mos Espa Pod Race)
     - 3-1 (Battle Over Coruscant)
+
     """
     display_name = "Vehicle* Death Link Amnesty"
     rich_text_doc = True
