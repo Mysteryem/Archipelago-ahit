@@ -2,7 +2,6 @@ import asyncio
 import traceback
 import colorama
 import hashlib
-import random
 
 import ModuleUpdate
 import Utils
