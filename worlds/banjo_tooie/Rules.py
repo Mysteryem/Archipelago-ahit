@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 # Shamelessly Stolen from KH2 :D
 
-class BanjoTooieRules:
+class _BanjoTooieRules:
     world: "BanjoTooieWorld"
 
     def __init__(self, world: "BanjoTooieWorld") -> None:
@@ -6792,15 +6792,71 @@ class BanjoTooieRules:
             self.world.multiworld.completion_condition[self.player] = self.victory_hag1
 
 
-class BanjoTooieUniversalTrackerRules(BanjoTooieRules):
+class BanjoTooieIntendedRules(_BanjoTooieRules):
+    def intended_logic(self, _state: CollectionState) -> bool:
+        return True
+
+    def easy_tricks_logic(self, _state: CollectionState) -> bool:
+        return False
+
+    def hard_tricks_logic(self, _state: CollectionState) -> bool:
+        return False
+
+    def glitches_logic(self, _state: CollectionState) -> bool:
+        return False
+
+
+class BanjoTooieEasyRules(_BanjoTooieRules):
+    def intended_logic(self, _state: CollectionState) -> bool:
+        return False
+
+    def easy_tricks_logic(self, _state: CollectionState) -> bool:
+        return True
+
+    def hard_tricks_logic(self, _state: CollectionState) -> bool:
+        return False
+
+    def glitches_logic(self, _state: CollectionState) -> bool:
+        return False
+
+
+class BanjoTooieHardRules(_BanjoTooieRules):
+    def intended_logic(self, _state: CollectionState) -> bool:
+        return False
+
+    def easy_tricks_logic(self, _state: CollectionState) -> bool:
+        return False
+
+    def hard_tricks_logic(self, _state: CollectionState) -> bool:
+        return True
+
+    def glitches_logic(self, _state: CollectionState) -> bool:
+        return False
+
+
+class BanjoTooieGlitchesRules(_BanjoTooieRules):
+    def intended_logic(self, _state: CollectionState) -> bool:
+        return False
+
+    def easy_tricks_logic(self, _state: CollectionState) -> bool:
+        return False
+
+    def hard_tricks_logic(self, _state: CollectionState) -> bool:
+        return False
+
+    def glitches_logic(self, _state: CollectionState) -> bool:
+        return True
+
+
+class BanjoTooieUniversalTrackerRules(_BanjoTooieRules):
     def intended_logic(self, state: CollectionState) -> bool:
-        return super().intended_logic(state) and not state.has(itemName.UT_GLITCHED, self.player)
+        return self.world.options.logic_type.value == LogicType.option_intended and not state.has(itemName.UT_GLITCHED, self.player)
 
     def easy_tricks_logic(self, state: CollectionState) -> bool:
-        return super().easy_tricks_logic(state) and not state.has(itemName.UT_GLITCHED, self.player)
+        return self.world.options.logic_type.value == LogicType.option_easy_tricks and not state.has(itemName.UT_GLITCHED, self.player)
 
     def hard_tricks_logic(self, state: CollectionState) -> bool:
-        return super().hard_tricks_logic(state) and not state.has(itemName.UT_GLITCHED, self.player)
+        return self.world.options.logic_type.value == LogicType.option_hard_tricks and not state.has(itemName.UT_GLITCHED, self.player)
 
     def glitches_logic(self, state: CollectionState) -> bool:
-        return super().glitches_logic(state) or state.has(itemName.UT_GLITCHED, self.player)
+        return self.world.options.logic_type.value or state.has(itemName.UT_GLITCHED, self.player)

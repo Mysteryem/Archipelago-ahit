@@ -19,7 +19,8 @@ from .Locations import LocationData, all_location_table, MTLoc_Table, GMLoc_tabl
 from .Regions import create_regions, connect_regions
 from .Options import BanjoTooieOptions, EggsBehaviour, JamjarsSiloCosts, LogicType, ProgressiveEggAim, \
     ProgressiveWaterTraining, RandomizeBKMoveList, VictoryCondition, bt_option_groups, WorldRequirements
-from .Rules import BanjoTooieRules, BanjoTooieUniversalTrackerRules
+from .Rules import BanjoTooieUniversalTrackerRules, BanjoTooieIntendedRules, BanjoTooieEasyRules, BanjoTooieHardRules, \
+    BanjoTooieGlitchesRules
 from .Names import itemName, locationName, regionName
 from .WorldOrder import randomize_world_progression
 from BaseClasses import ItemClassification, Location, MultiWorld, Tutorial, Item
@@ -733,7 +734,16 @@ class BanjoTooieWorld(World):
         if hasattr(self.multiworld, "generation_is_fake"):
             rules = BanjoTooieUniversalTrackerRules(self)
         else:
-            rules = BanjoTooieRules(self)
+            if self.options.logic_type.value == LogicType.option_intended:
+                rules = BanjoTooieIntendedRules(self)
+            elif self.options.logic_type.value == LogicType.option_easy_tricks:
+                rules = BanjoTooieEasyRules(self)
+            elif self.options.logic_type.value == LogicType.option_hard_tricks:
+                rules = BanjoTooieHardRules(self)
+            elif self.options.logic_type.value == LogicType.option_glitches:
+                rules = BanjoTooieGlitchesRules(self)
+            else:
+                raise Exception(f"Unexpected logic_type: {self.options.logic_type}")
         return rules.set_rules()
 
     def pre_fill_me(self) -> None:

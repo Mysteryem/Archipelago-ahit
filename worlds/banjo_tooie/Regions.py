@@ -2,11 +2,12 @@ import copy
 from dataclasses import dataclass
 from typing import List, Dict
 from BaseClasses import Region
-from .Options import VictoryCondition
+from .Options import VictoryCondition, LogicType
 
 from .Names import regionName, locationName, itemName
 from .Locations import BanjoTooieLocation
-from .Rules import BanjoTooieRules, BanjoTooieUniversalTrackerRules
+from .Rules import BanjoTooieIntendedRules, BanjoTooieEasyRules, BanjoTooieHardRules, BanjoTooieGlitchesRules, \
+    BanjoTooieUniversalTrackerRules
 
 # This dict contains all the regions, as well as all the locations that are always tracked by Archipelago.
 BANJO_TOOIE_REGIONS: Dict[str, List[str]] = {
@@ -1619,7 +1620,16 @@ def connect_regions(self):
     if hasattr(self.multiworld, "generation_is_fake"):
         rules = BanjoTooieUniversalTrackerRules(self)
     else:
-        rules = BanjoTooieRules(self)
+        if self.options.logic_type.value == LogicType.option_intended:
+            rules = BanjoTooieIntendedRules(self)
+        elif self.options.logic_type.value == LogicType.option_easy_tricks:
+            rules = BanjoTooieEasyRules(self)
+        elif self.options.logic_type.value == LogicType.option_hard_tricks:
+            rules = BanjoTooieHardRules(self)
+        elif self.options.logic_type.value == LogicType.option_glitches:
+            rules = BanjoTooieGlitchesRules(self)
+        else:
+            raise Exception(f"Unexpected logic_type: {self.options.logic_type}")
 
     region_menu = self.get_region(regionName.MENU)
     region_menu.add_exits({regionName.SM})
