@@ -1172,10 +1172,10 @@ class LegoStarWarsTCSWorld(World):
             set_rule(spot, Location.access_rule if isinstance(spot, Location) else Entrance.access_rule)
         elif abilities_as_int.bit_count == 1:
             # There is only 1 bit, so a match is all that is needed.
-            set_rule(spot, lambda state: state.tcs_combined_ability_flags[player] & abilities_as_int)
+            set_rule(spot, lambda state: state.count("COMBINED_ABILITIES", player) & abilities_as_int)
         else:
             # There are multiple bits, so all bits need to be present.
-            set_rule(spot, lambda state: state.tcs_combined_ability_flags[player] & abilities_as_int == abilities_as_int)
+            set_rule(spot, lambda state: state.count("COMBINED_ABILITIES", player) & abilities_as_int == abilities_as_int)
 
     def set_any_abilities_rule(self, spot: Location | Entrance, *any_abilities: CharacterAbility):
         for any_ability in any_abilities:
@@ -1191,18 +1191,18 @@ class LegoStarWarsTCSWorld(World):
             self.set_abilities_rule(spot, next(iter(any_abilities_set)))
         else:
             sorted_abilities = sorted(any_abilities_set, key=lambda a: (a.bit_count(), a.value))
-            abilities_as_ints = [any_ability.value for any_ability in sorted_abilities]
+            abilities_as_ints: list[int] = [any_ability.value for any_ability in sorted_abilities]
             if all(ability_as_int.bit_count() == 1 for ability_as_int in abilities_as_ints):
                 # Optimize for all abilities being only a single bit each.
                 single_bit_abilities = 0
                 for ability_as_int in abilities_as_ints:
                     single_bit_abilities |= ability_as_int
                 # Any bit matching is all that is needed.
-                set_rule(spot, lambda state, p=self.player: state.tcs_combined_ability_flags[p] & single_bit_abilities)
+                set_rule(spot, lambda state, p=self.player: state.count("COMBINED_ABILITIES", p) & single_bit_abilities)
             elif all(ability_as_int.bit_count() > 1 for ability_as_int in abilities_as_ints):
                 # Optimize for all abilities being multiple bits each.
                 def rule(state: CollectionState):
-                    combined_abilities = state.tcs_combined_ability_flags[self.player]
+                    combined_abilities = state.count("COMBINED_ABILITIES", self.player)
                     for ability_as_int in abilities_as_ints:
                         # All the bits in the ability need to be present.
                         if combined_abilities & ability_as_int == ability_as_int:
@@ -1221,7 +1221,7 @@ class LegoStarWarsTCSWorld(World):
                         multi_bit_abilities.append(ability_as_int)
 
                 def rule(state: CollectionState):
-                    combined_abilities = state.tcs_combined_ability_flags[self.player]
+                    combined_abilities = state.count("COMBINED_ABILITIES", self.player)
                     if combined_abilities & single_bit_abilities:
                         # Any 1 of the bits matching is enough because each ability to check here is only a single bit.
                         return True
@@ -1500,11 +1500,10 @@ class LegoStarWarsTCSWorld(World):
             if abilities_as_int is not None:
                 # The collected item has abilities, so collect them into the state too.
                 player_prog = state.prog_items[self.player]
-                current_abilities_int_count = player_prog[abilities_as_int]
-                if current_abilities_int_count == 0:
-                    # The combination of abilities provided by `item` are new, so update the combined abilities.
-                    state.tcs_combined_ability_flags[self.player] |= abilities_as_int
-                player_prog[abilities_as_int] = current_abilities_int_count + 1
+                player_prog["COMBINED_ABILITIES"] |= abilities_as_int
+                # state.prog_items is typed as Counter[str], but `abilities_as_int` is an `int`, so this is technically
+                # not allowed, but works for now.
+                player_prog[abilities_as_int] += 1
             return True
         return False
 
@@ -1525,7 +1524,7 @@ class LegoStarWarsTCSWorld(World):
                     for key in player_prog:
                         if type(key) is int:
                             new_combined_abilities |= key
-                    state.tcs_combined_ability_flags[self.player] = new_combined_abilities
+                    player_prog["COMBINED_ABILITIES"] = new_combined_abilities
                 else:
                     # At least one other collected item is providing the same combination of abilities, so the combined
                     # abilities won't have changed.
@@ -1609,12 +1608,3 @@ class LegoStarWarsTCSWorld(World):
                                f" ({slot_data_version}) does not match the version of your installed apworld"
                                f" ({constants.AP_WORLD_VERSION}).")
         return slot_data
-
-
-class TCSLogicMixin(LogicMixin):
-    def init_mixin(self: CollectionState, parent: MultiWorld):
-        self.tcs_combined_ability_flags = dict.fromkeys(parent.get_game_players(GAME_NAME), 0)
-
-    def copy_mixin(self: CollectionState, ret: CollectionState):
-        ret.tcs_combined_ability_flags = self.tcs_combined_ability_flags.copy()
-        return ret
