@@ -337,6 +337,9 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     game = GAME_NAME
     items_handling = 0b111  # Fully remote
 
+    # Need to override Universal Tracker's "Tracker" tag, otherwise it sets self.game = "" when disconnecting.
+    tags = set()
+
     # Copied from BizHawkClientContext
     server_seed_name: str | None = None
     auth_status: AuthStatus
@@ -813,23 +816,12 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         """Return whether a location exists according to server state."""
         return location_id not in self.disabled_locations
 
-    def run_gui(self):
-        from kvui import GameManager
-
-        class LegoStarWarsTheCompleteSagaManager(GameManager):
-            if not Utils.is_frozen():
-                logging_pairs = [
-                    ("Client", "Archipelago"),
-                    ("TCS Debug", "Debug"),
-                ]
-            else:
-                logging_pairs = [
-                    ("Client", "Archipelago"),
-                ]
-            base_title = "Archipelago Lego Star Wars: The Complete Saga Client"
-
-        self.ui = LegoStarWarsTheCompleteSagaManager(self)
-        self.ui_task = asyncio.create_task(self.ui.async_run(), name="UI")
+    def make_gui(self):
+        ui = super().make_gui()
+        ui.base_title = f"Archipelago {self.game} Client"
+        if __debug__ and not Utils.is_frozen():
+            ui.logging_pairs.append(("TCS Debug", "Debug"))
+        return ui
 
     async def server_auth(self, password_requested: bool = False):
         self.password_requested = password_requested
