@@ -100,6 +100,11 @@ CHAPTER_SPECIFIC_FLAGS = (
         | CAN_WEAR_HAT
         | CAN_DAGOBAH_SWAMP
         | IS_A_VEHICLE
+        # Commander Cody in 3-3 and Darth Vader in 6-5 have IMPERIAL, but IMPERIAL is not needed to complete either
+        # chapter. In 6-5, it is at least used for the Minikits.
+        | IMPERIAL
+        # SITH could be included here, but there is only 6-5 with a SITH Story character, and SITH is needed to
+        # complete 6-5.
 )
 """
 These flags should not be required to access chapters based on the abilities of the Story characters because they are

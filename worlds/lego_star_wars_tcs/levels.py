@@ -522,7 +522,9 @@ ALL_MINIKITS_REQUIREMENTS: dict[str, tuple[CharacterAbility, ...]] = {
     "6-2": (SITH | HOVER | SHORTIE,),
     "6-3": (SITH | BOUNTY_HUNTER | IMPERIAL | SHORTIE,),
     "6-4": (JEDI | BOUNTY_HUNTER,),
-    "6-5": (BLASTER | BOUNTY_HUNTER | SHORTIE | ASTROMECH | PROTOCOL_DROID,),
+    # IMPERIAL has been considered a chapter-specific ability, so Darth Maul/Count Dooku are considered valid to
+    # complete the chapter, and IMPERIAL must be specified for the Minikits.
+    "6-5": (BLASTER | BOUNTY_HUNTER | SHORTIE | ASTROMECH | PROTOCOL_DROID | IMPERIAL,),
     "6-6": (VEHICLE_TIE,),
 }
 
