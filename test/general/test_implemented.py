@@ -37,6 +37,19 @@ class TestImplemented(unittest.TestCase):
 
     def test_slot_data(self):
         """Tests that if a world creates slot data, it's json serializable."""
+        def recursively_check_keys(d: dict, parent_keys: tuple[str, ...] = ()) -> None:
+            """Recursively check that all keys are str. Failures include the full path to the key."""
+            for key, data in d.items():
+                if not isinstance(key, str):
+                    # It is useful to know the full path to the key that is not a string.
+                    with_parents = {key: data}
+                    # Nest within each parent to reconstruct the full path to the key.
+                    for parent in reversed(parent_keys):
+                        with_parents = {parent: with_parents}
+                    self.fail(f"keys in slot data must be a string. Invalid key {key} found with path:\n{with_parents}")
+                if isinstance(data, dict):
+                    recursively_check_keys(data, parent_keys + (key,))
+
         # has an await for generate_output which isn't being called
         excluded_games = ("Ocarina of Time",)
         worlds_to_test = {game: world
@@ -48,9 +61,9 @@ class TestImplemented(unittest.TestCase):
                 call_all(multiworld, "post_fill")
                 call_all(multiworld, "finalize_multiworld")
                 call_all(multiworld, "pre_output")
-                for key, data in multiworld.worlds[1].fill_slot_data().items():
-                    self.assertIsInstance(key, str, "keys in slot data must be a string")
-                    convert_to_base_types(data)  # only put base data types into slot data
+                # Only base data types are put into slot data, using the convert_to_base_types function.
+                base_types_slot_data = convert_to_base_types(multiworld.worlds[1].fill_slot_data())
+                recursively_check_keys(base_types_slot_data)
 
     def test_no_failed_world_loads(self):
         if failed_world_loads:
