@@ -14,7 +14,7 @@ from BaseClasses import (
     LocationProgressType,
 )
 from Options import OptionError
-from worlds.AutoWorld import WebWorld, World, LogicMixin
+from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import components, Component, launch_subprocess, Type
 from worlds.generic.Rules import set_rule, add_rule
 
