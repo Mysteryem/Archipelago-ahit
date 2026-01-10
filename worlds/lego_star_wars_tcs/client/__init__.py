@@ -19,7 +19,7 @@ from pymem.exception import ProcessNotFound, ProcessError, PymemError, WinAPIErr
 
 from CommonClient import server_loop, gui_enabled
 
-from .. import options
+from .. import options, TCSUniversalTrackerAPWorldVersionMismatchError
 from ..constants import GAME_NAME, AP_WORLD_VERSION
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, CHAPTER_AREAS, ChapterArea
 from ..locations import LOCATION_NAME_TO_ID
@@ -591,7 +591,20 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.client_expected_idx = 0
 
     def on_package(self, cmd: str, args: dict):
-        super().on_package(cmd, args)
+        warn_universal_tracker_is_disabled = False
+        if UNIVERSAL_TRACKER_LOADED and cmd == "Connected":
+            try:
+                super().on_package(cmd, args)
+            except TCSUniversalTrackerAPWorldVersionMismatchError:
+                # If the multiworld apworld version does not match the client apworld version, TCS's Universal Tracker
+                # support raises this exception to reject Universal Tracker usage when the apworld versions do not match
+                # because there could be logic differences between apworld versions.
+                # The client, however, is allowed to connect to older versions that it has backwards compatibility for,
+                # so if the player has Universal Tracker installed, connecting should be allowed to continue, even if
+                # Universal Tracker will not be usable.
+                warn_universal_tracker_is_disabled = True
+        else:
+            super().on_package(cmd, args)
 
         if cmd == "RoomInfo":
             new_seed_name = args["seed_name"]
@@ -625,6 +638,9 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                     self.last_connected_seed_name = None
                     Utils.async_start(self.disconnect())
                     return
+                if warn_universal_tracker_is_disabled:
+                    logger.info("Universal Tracker features are disabled due to the client APWorld version not matching"
+                                " the APWorld version that generated the multiworld.")
             else:
                 logger.error("Error: slot_data missing from Connected message, something is probably broken.")
 

@@ -80,6 +80,14 @@ components.append(Component("Lego Star Wars: The Complete Saga Client",
                             func=launch_client,
                             component_type=Type.CLIENT))
 
+
+class TCSUniversalTrackerAPWorldVersionMismatchError(Exception):
+    """
+    Raised when Universal Tracker attempts to connect to a multiworld generated with a different APWorld version to the
+    client's APWorld version.
+    """
+
+
 # Use deprioritzed on AP 0.6.3+, but still allow generation on older AP versions.
 progression_deprioritized_skip_balancing: ItemClassification = getattr(
     ItemClassification,
@@ -1604,7 +1612,8 @@ class LegoStarWarsTCSWorld(World):
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any] | None:
         slot_data_version = tuple(slot_data["apworld_version"])
         if slot_data_version != constants.AP_WORLD_VERSION:
-            raise RuntimeError(f"LSW TCS version error: The version of the apworld used to generate this world"
-                               f" ({slot_data_version}) does not match the version of your installed apworld"
-                               f" ({constants.AP_WORLD_VERSION}).")
+            raise TCSUniversalTrackerAPWorldVersionMismatchError(
+                f"LSW TCS version error: The version of the apworld used to generate this world ({slot_data_version})"
+                f" does not match the version of your installed apworld ({constants.AP_WORLD_VERSION})."
+            )
         return slot_data
