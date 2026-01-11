@@ -439,6 +439,10 @@ class DeathLinkManager(ClientComponent):
             return
 
         if self.waiting_for_respawn:
+            # The player was killed by a received death link, and the client is still waiting for the player to respawn.
+
+            # Ignore any pending received deaths until the player has respawned.
+            self.pending_received_death = False
             dead_player_controlled_characters_found, _ = self._find_dead_player_controlled_character(ctx)
             if dead_player_controlled_characters_found:
                 # Still dead, so don't send any more deaths or receive any more deaths.
