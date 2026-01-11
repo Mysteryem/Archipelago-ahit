@@ -55,6 +55,14 @@ VEHICLE_AMNESTY_AREA_IDS = frozenset({
 })
 
 
+DEATH_COOLDOWN = 2.25
+"""
+Respawn is typically 2.0s, so ignore any deaths to send or receive within just above this time.
+If something goes horrendously wrong with this Death Link implementation, this has the added benefit of
+limiting death spam.
+"""
+
+
 class CharacterState(IntEnum):
     # # Original name "NoContext" is converted to NO_CONTEXT for enum names. Other names follow the same pattern.
     NO_CONTEXT = 0x0
@@ -223,7 +231,7 @@ class DeathLinkManager(ClientComponent):
     death_link_stud_loss: int = 0
     death_link_stud_loss_scaling: bool = False
 
-    _expected_area_death_count: int = 999_999_999
+    _last_area_death_count: int = 999_999_999
 
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
@@ -257,8 +265,8 @@ class DeathLinkManager(ClientComponent):
         self.normal_death_amnesty_remaining = self.normal_death_link_amnesty
         self.vehicle_death_amnesty_remaining = self.vehicle_death_link_amnesty
 
-        # Set the expected death count to its current value.
-        self._expected_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
+        # Set the last known death count to its current value.
+        self._last_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
 
     def _update_client_tags(self, ctx: TCSContext):
         """Update the client's tags to add/remove the DeathLink tag."""
@@ -269,7 +277,7 @@ class DeathLinkManager(ClientComponent):
             # The game's death counter increments even with Death Link is disabled, so update the current expected death
             # count to whatever the game's death counter is set to, to prevent sending a death as soon as Death Link is
             # enabled.
-            self._expected_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
+            self._last_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
             CustomSaveFlags1.DEATH_LINK_ENABLED.set(ctx)
         else:
             CustomSaveFlags1.DEATH_LINK_ENABLED.unset(ctx)
@@ -341,70 +349,13 @@ class DeathLinkManager(ClientComponent):
                 return True, player_number
         return False, -1
 
-    @subscribe_event
-    async def update_game_state(self, event: OnGameWatcherTickEvent) -> None:
-        ctx = event.context
-        if not self.death_link_enabled or not ctx.is_in_game() or not is_actively_playing(ctx):
-            return
+    async def attempt_to_send_death(self, now: float, ctx: TCSContext):
+        """
+        Attempt to send a death due to the last known in-area player death count being less than the current in-area
+        player death count.
 
-        now = time.time()
-
-        if now < ctx.last_death_link + 2.25:
-            # Respawn is typically 2.0s, so ignore any deaths to send and delay any received within just above this
-            # time.
-            # If something goes horrendously wrong with this Death Link implementation, this has the added benefit of
-            # limiting death spam.
-            return
-        if self.waiting_for_respawn:
-            dead_player_controlled_characters_found, _ = self._find_dead_player_controlled_character(ctx)
-            if dead_player_controlled_characters_found:
-                # Still dead, so don't send any more deaths or receive any more deaths.
-                return
-            else:
-                self.waiting_for_respawn = False
-                # Update the expected death count to match however many player controlled characters were killed by the
-                # received death.
-                self._expected_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
-        # Receive death.
-        if self.pending_received_death:
-            # Kill player characters
-            # TODO: Entirely skip the received death if all player characters are already dead.
-            if await self.kill_player_characters(ctx):
-                # At least one character was killed, so the death has been received.
-                self.pending_received_death = False
-                ctx.text_display.priority_message(self.last_received_death_message)
-                # Remove studs from the player.
-                studs_to_lose = self.death_link_stud_loss
-                if studs_to_lose > 0:
-                    if self.death_link_stud_loss_scaling:
-                        studs_to_lose *= ctx.acquired_generic.current_score_multiplier
-                    give_studs(ctx, -studs_to_lose, only_give_if_in_level=True, allow_power_up_multiplier=False)
-            return
-
-        if now < self.last_death_amnesty + 2.25:
-            # Do not send another death if sending a death through Death Link was recently prevented due to amnesty.
-            return
-
-        # Check if players have died by comparing the expected death count to the actual death count.
-        player_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
-        expected_death_count = self._expected_area_death_count
-        if player_death_count == expected_death_count:
-            # Nothing to do.
-            return
-        elif player_death_count < expected_death_count:
-            # The area has changed, resetting the game's death counter. Note that there is a delay between when the area
-            # changes and when the game's death counter gets updated.
-            self._expected_area_death_count = player_death_count
-            return
-        elif player_death_count == 1 and (CHEAT_FLAGS_STARTING_DEATH_COUNT & CHEAT_FLAGS.get(ctx)):
-            # The game's level update function sets the in-area death count to at least 1 when an Extra with this flag
-            # is active. I have no idea why.
-            self._expected_area_death_count = 1
-            return
-
-        # Update for new deaths.
-        self._expected_area_death_count = player_death_count
-
+        The attempt to send a death may be blocked by amnesty.
+        """
         # todo: Customise the death cause.
         #  Ideas:
         #  f"{alias name} crashed their {vehicle name}"
@@ -415,6 +366,10 @@ class DeathLinkManager(ClientComponent):
         #  f"{alias name}'s P{player number} lost their studs"
         #  Special messages only when both P1 and P2 are player controlled and are the same character?
         #  f"Caused by {alias name}'s {character name} (P{player number})"
+
+        if now < self.last_death_amnesty + DEATH_COOLDOWN:
+            # Do not send another death if sending a death through Death Link was recently prevented due to amnesty.
+            return
 
         amnesty_remaining = 0
         if CURRENT_AREA_ADDRESS.get(ctx) in VEHICLE_AMNESTY_AREA_IDS:
@@ -449,6 +404,68 @@ class DeathLinkManager(ClientComponent):
                 ctx.text_display.priority_message("DeathLink: No amnesty remaining")
             else:
                 ctx.text_display.priority_message(f"DeathLink: {amnesty_remaining} amnesty remaining")
+            self.last_death_amnesty = time.time()
+
+    @subscribe_event
+    async def update_game_state(self, event: OnGameWatcherTickEvent) -> None:
+        ctx = event.context
+        if not self.death_link_enabled or not ctx.is_in_game() or not is_actively_playing(ctx):
+            return
+
+        now = time.time()
+
+        # Check if players have died by comparing the expected death count to the actual death count.
+        player_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
+        expected_death_count = self._last_area_death_count
+        if player_death_count == expected_death_count:
+            # No death to send.
+            pass
+        elif player_death_count < expected_death_count:
+            # The area has changed, resetting the game's death counter. Note that there is a delay between when the area
+            # changes and when the game's death counter gets updated.
+            self._last_area_death_count = player_death_count
+            return
+        elif player_death_count == 1 and (CHEAT_FLAGS_STARTING_DEATH_COUNT & CHEAT_FLAGS.get(ctx)):
+            # The game's level update function sets the in-area death count to at least 1 when an Extra with this flag
+            # is active. I have no idea why.
+            expected_death_count = 1
+            self._last_area_death_count = 1
+            return
+
+        # Update for new deaths.
+        self._last_area_death_count = player_death_count
+
+        if now < ctx.last_death_link + DEATH_COOLDOWN:
+            return
+
+        if self.waiting_for_respawn:
+            dead_player_controlled_characters_found, _ = self._find_dead_player_controlled_character(ctx)
+            if dead_player_controlled_characters_found:
+                # Still dead, so don't send any more deaths or receive any more deaths.
+                return
+            else:
+                self.waiting_for_respawn = False
+                # Update the expected death count to match however many player controlled characters were killed by the
+                # received death.
+                self._last_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
+        # Receive death.
+        elif self.pending_received_death:
+            # Kill player characters
+            # TODO: Entirely skip the received death if all player characters are already dead.
+            if await self.kill_player_characters(ctx):
+                # At least one character was killed, so the death has been received.
+                self.pending_received_death = False
+                ctx.text_display.priority_message(self.last_received_death_message)
+                # Remove studs from the player.
+                studs_to_lose = self.death_link_stud_loss
+                if studs_to_lose > 0:
+                    if self.death_link_stud_loss_scaling:
+                        studs_to_lose *= ctx.acquired_generic.current_score_multiplier
+                    give_studs(ctx, -studs_to_lose, only_give_if_in_level=True, allow_power_up_multiplier=False)
+            return
+        elif player_death_count > expected_death_count:
+            # The player has died since the last time the in-area death count was checked.
+            await self.attempt_to_send_death(now, ctx)
 
     def on_deathlink(self, ctx: TCSContext, message: str):
         if self.pending_received_death:
@@ -463,5 +480,5 @@ class DeathLinkManager(ClientComponent):
         # The area has changed, so the expected death count should reset. The area changes before the game resets the
         # death count, so the DeathLinkManager relies on the OnGameWatcherTickEvent to reduce _expected_area_death_count
         # from this very large dummy value to the proper value.
-        self._expected_area_death_count = 999_999_999
+        self._last_area_death_count = 999_999_999
         debug_logger.info("Reset expected death count to 0 upon area change.")
