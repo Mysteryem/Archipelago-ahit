@@ -232,6 +232,7 @@ class DeathLinkManager(ClientComponent):
     death_link_stud_loss_scaling: bool = False
 
     _last_area_death_count: int = 999_999_999
+    _last_processed_received_death: float = float("-inf")
 
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
@@ -349,7 +350,7 @@ class DeathLinkManager(ClientComponent):
                 return True, player_number
         return False, -1
 
-    async def attempt_to_send_death(self, now: float, ctx: TCSContext):
+    async def attempt_to_send_death(self, ctx: TCSContext):
         """
         Attempt to send a death due to the last known in-area player death count being less than the current in-area
         player death count.
@@ -367,7 +368,7 @@ class DeathLinkManager(ClientComponent):
         #  Special messages only when both P1 and P2 are player controlled and are the same character?
         #  f"Caused by {alias name}'s {character name} (P{player number})"
 
-        if now < self.last_death_amnesty + DEATH_COOLDOWN:
+        if time.time() < self.last_death_amnesty + DEATH_COOLDOWN:
             # Do not send another death if sending a death through Death Link was recently prevented due to amnesty.
             return
 
@@ -428,55 +429,80 @@ class DeathLinkManager(ClientComponent):
         elif player_death_count == 1 and (CHEAT_FLAGS_STARTING_DEATH_COUNT & CHEAT_FLAGS.get(ctx)):
             # The game's level update function sets the in-area death count to at least 1 when an Extra with this flag
             # is active. I have no idea why.
-            expected_death_count = 1
+            # This means the player has not actually died.
             self._last_area_death_count = 1
             return
 
         # Update for new deaths.
         self._last_area_death_count = player_death_count
 
-        if now < ctx.last_death_link + DEATH_COOLDOWN:
-            return
-
+        # Wait for respawn from a received death.
         if self.waiting_for_respawn:
             # The player was killed by a received death link, and the client is still waiting for the player to respawn.
 
-            # Ignore any pending received deaths until the player has respawned.
+            # Ignore all received deaths until the player has respawned.
             self.pending_received_death = False
             dead_player_controlled_characters_found, _ = self._find_dead_player_controlled_character(ctx)
             if dead_player_controlled_characters_found:
                 # Still dead, so don't send any more deaths or receive any more deaths.
                 return
             else:
+                debug_logger.info("Players have respawned.")
                 self.waiting_for_respawn = False
+                # If it took a long time for the death to actually be processed, e.g. the game was paused, act as if the
+                # death was actually recently processed.
+                pretend_last_processed_death = now - DEATH_COOLDOWN
+                if pretend_last_processed_death > self._last_processed_received_death:
+                    debug_logger.info("Waiting for respawn took a while, so the last processed death time has been"
+                                      " increased.")
+                    self._last_processed_received_death = pretend_last_processed_death
                 # Update the expected death count to match however many player controlled characters were killed by the
                 # received death.
                 self._last_area_death_count = PLAYER_DEATH_COUNT_IN_CURRENT_AREA.get(ctx)
         # Receive death.
         elif self.pending_received_death:
+            self.pending_received_death = False
+            message = self.last_received_death_message
+            self.last_received_death_message = ""
             # Kill player characters
-            # TODO: Entirely skip the received death if all player characters are already dead.
             if await self.kill_player_characters(ctx):
-                # At least one character was killed, so the death has been received.
-                self.pending_received_death = False
-                ctx.text_display.priority_message(self.last_received_death_message)
+                # The client could have paused the current coroutine for a while when hitting the await, so re-get the
+                # current time instead of using `now`.
+                self._last_processed_received_death = time.time()
+                debug_logger.info("Killing player characters from received death")
+                # At least one character was alive and should now be dead or dying, so the death has been received.
+                ctx.text_display.priority_message(message)
                 # Remove studs from the player.
                 studs_to_lose = self.death_link_stud_loss
                 if studs_to_lose > 0:
                     if self.death_link_stud_loss_scaling:
                         studs_to_lose *= ctx.acquired_generic.current_score_multiplier
                     give_studs(ctx, -studs_to_lose, only_give_if_in_level=True, allow_power_up_multiplier=False)
-            return
+            else:
+                # There were no living players to kill, so skip the received death.
+                debug_logger.info("There were no living players to kill.")
+                pass
+        # Send death.
         elif player_death_count > expected_death_count:
             # The player has died since the last time the in-area death count was checked.
-            await self.attempt_to_send_death(now, ctx)
+            x = now - DEATH_COOLDOWN
+            if x < self._last_processed_received_death:
+                # The player only recently received a death, don't send another death just yet.
+                # This generally should not happen because the player has to wait to respawn to be able to die again.
+                debug_logger.info("Skipping sending a death because the player too recently received a death.")
+                return
+            if x < ctx.last_death_link:
+                # The player only recently sent/received a death, don't send another death just yet.
+                debug_logger.info("Skipping sending a death because the player too recently sent/received a death.")
+                return
+            await self.attempt_to_send_death(ctx)
 
-    def on_deathlink(self, ctx: TCSContext, message: str):
-        if self.pending_received_death:
-            # The current pending death is going to be skipped because another has been received before the current
-            # pending death could be processed.
-            ctx.text_display.priority_message(self.last_received_death_message)
-        self.last_received_death_message = message
+    def on_deathlink(self, previous_death: float, last_death: float, message: str):
+        if (not self.last_received_death_message
+                or ((previous_death < last_death) and (last_death - previous_death) < 0.5)):
+            # If there is no stored message or the new death is only just after the previous death, store the new death
+            # message instead.
+            self.last_received_death_message = message
         self.pending_received_death = True
 
     @subscribe_event
@@ -485,4 +511,5 @@ class DeathLinkManager(ClientComponent):
         # death count, so the DeathLinkManager relies on the OnGameWatcherTickEvent to reduce _expected_area_death_count
         # from this very large dummy value to the proper value.
         self._last_area_death_count = 999_999_999
+        self.waiting_for_respawn = False
         debug_logger.info("Reset expected death count to 0 upon area change.")

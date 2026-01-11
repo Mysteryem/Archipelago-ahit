@@ -771,8 +771,9 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             text = f"DeathLink: {text}"
         else:
             text = f"DeathLink: Received from {data['source']}"
-        self.death_link_manager.on_deathlink(self, text)
+        previous_death = self.last_death_link
         super().on_deathlink(data)
+        self.death_link_manager.on_deathlink(previous_death, self.last_death_link, text)
 
     def _update_datastorage_area_ids(self, key_prefix: str, area_ids: list[int], log_name: str):
         if self.server_version < (0, 6, 2):
