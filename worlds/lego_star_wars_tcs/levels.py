@@ -721,7 +721,6 @@ BONUS_AREAS = [
               gold_bricks_required=10,
               completion_ability_requirements=(
                       JEDI
-                      | SITH
                       | BLASTER
                       | BOUNTY_HUNTER
                       | CAN_BUILD_BRICKS
