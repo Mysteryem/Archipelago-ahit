@@ -736,15 +736,16 @@ class Ridesanity(Toggle):
     If none of your enabled levels contain a specific ridable character, then the location riding for that character
     will not exist in the generated world.
 
-    Ridesanity adds up to 27 locations.
+    Ridesanity adds up to 28 locations.
 
-    There are 27 unique ridable characters:
+    There are 28 unique ridable characters:
 
     - AT-AT (6-3)
     - AT-ST (4-3, 6-3, 6-4, LEGO City)
     - Bantha (4-2, LEGO City, New Town)
     - Basketball Cannon (New Town)
     - Big Skiff Cannon (6-2)
+    - B'omarr Monk (6-1)
     - Cantina Car (Cantina)
     - Clone Walker (3-4, New Town)
     - Cloud Car (5-6, LEGO City, New Town) (the red car)
