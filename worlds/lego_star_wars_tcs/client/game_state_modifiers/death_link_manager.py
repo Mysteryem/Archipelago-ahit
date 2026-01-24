@@ -9,7 +9,13 @@ from . import ClientComponent
 from .studs import give_studs
 from ..common import StaticUint
 from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing, player_character_entity_iter, CustomSaveFlags1
-from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent, OnAreaChangeEvent
+from ..events import (
+    subscribe_event,
+    OnReceiveSlotDataEvent,
+    OnGameWatcherTickEvent,
+    OnAreaChangeEvent,
+    OnPlayerCharacterIdChangeEvent,
+)
 from ..type_aliases import TCSContext
 from ...levels import (
     AREA_ID_TO_CHAPTER_AREA,
@@ -19,9 +25,12 @@ from ...levels import (
     SHORT_NAME_TO_CHAPTER_AREA,
     BONUS_NAME_TO_BONUS_AREA,
 )
+from ...ridables import RIDABLES_BY_NAME
 
 logger = logging.getLogger("Client")
 debug_logger = logging.getLogger("TCS Debug")
+
+AT_AT_CHARACTER_ID = RIDABLES_BY_NAME["AT-AT"].character_id
 
 
 # Player death count in the current area. Resets to zero upon area change.
@@ -234,6 +243,9 @@ class DeathLinkManager(ClientComponent):
     _last_area_death_count: int = 999_999_999
     _last_processed_received_death: float = float("-inf")
 
+    p1_is_allowed_to_be_killed: bool = True
+    p2_is_allowed_to_be_killed: bool = True
+
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         slot_data = event.slot_data
@@ -308,12 +320,15 @@ class DeathLinkManager(ClientComponent):
             # It is more pleasing for the character's parts to have physics instead of disappearing through the floor.
             return CharacterState.THROWN_BY_FORCE_LIGHTNING_OR_CHOKE_
 
-    @staticmethod
-    async def _kill_player_controlled_characters(ctx: TCSContext) -> bool:
+    async def _kill_player_controlled_characters(self, ctx: TCSContext) -> bool:
         kill_state = DeathLinkManager._get_kill_state_to_set(ctx)
         expecting_death = []
         for player_number, character_address in player_character_entity_iter(ctx):
             if CharacterDeathState.get(ctx, character_address) == CharacterDeathState.ALIVE:
+                if player_number == 1 and not self.p1_is_allowed_to_be_killed:
+                    continue
+                if player_number == 2 and not self.p2_is_allowed_to_be_killed:
+                    continue
                 expecting_death.append((player_number, character_address))
                 kill_state.set(ctx, character_address)
 
@@ -479,8 +494,9 @@ class DeathLinkManager(ClientComponent):
                         studs_to_lose *= ctx.acquired_generic.current_score_multiplier
                     give_studs(ctx, -studs_to_lose, only_give_if_in_level=True, allow_power_up_multiplier=False)
             else:
-                # There were no living players to kill, so skip the received death.
-                debug_logger.info("There were no living players to kill.")
+                # There were no living players to kill, or the living players are not currently allowed to be killed, so
+                # skip the received death.
+                debug_logger.info("There were no living players allowed to be killed.")
                 pass
         # Send death.
         elif player_death_count > expected_death_count:
@@ -513,3 +529,10 @@ class DeathLinkManager(ClientComponent):
         self._last_area_death_count = 999_999_999
         self.waiting_for_respawn = False
         debug_logger.info("Reset expected death count to 0 upon area change.")
+
+    @subscribe_event
+    def on_character_id_change(self, event: OnPlayerCharacterIdChangeEvent):
+        # If the player is the AT-AT in 6-3, it does not respawn when killed, breaking the level, so refuse to kill the
+        # player when they are the AT-AT.
+        self.p1_is_allowed_to_be_killed = event.new_p1_character_id != AT_AT_CHARACTER_ID
+        self.p2_is_allowed_to_be_killed = event.new_p2_character_id != AT_AT_CHARACTER_ID
