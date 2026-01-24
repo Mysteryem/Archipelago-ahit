@@ -191,15 +191,102 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                         minimal_game_beaten_players.update(newly_beaten_minimal_players)
         pending_placements = updated_pending_placements
 
-    # Finalize the placements.
-    for loc in pending_placements:
-        if on_place is not None:
-            on_place(loc)
-        loc.locked = lock
-        placements.append(loc)
-        placed_locs.add(loc)
+    _log_fill_progress(name + " (bulk: undoing invalid placements)", current_placements, total)
 
-    total_placements = len(placements)
+    # In rare cases, Item1 being placed at LocationA and Item2 being placed at LocationB may only be allowed because
+    # both of those placements have always_allow rules that allow the placements when the other location is filled with
+    # the other item. In a normal fill, each item is placed 1 at a time, so these always_allow rules would never happen,
+    # but the bulk fill places items simultaneously, allowing for a pair of placements that are each only valid because
+    # of each other. To resolve this, placements are undone, and then simulated.
+    #
+    # Find the spheres to know what order items should be collected, and therefore placed, during the verify step. And
+    # then do a pretend forwards fill in the order of the spheres.
+    potential_placed_item_ids = {id(loc.item) for loc in pending_placements}
+    unplaceable_item_pool = [item for item in item_pool if id(item) not in potential_placed_item_ids]
+    verify_spheres_state = CollectionState(multiworld)
+    for item in unplaceable_item_pool:
+        verify_spheres_state.collect(item, True)
+
+    verify_state = verify_spheres_state.copy()
+
+    filled_advancements = {loc for loc in multiworld.get_locations() if loc.advancement}
+    verify_spheres: list[list[Location]] = []
+    unreachable: set[Location] = set()
+    while filled_advancements:
+        reachable = [loc for loc in filled_advancements if loc.can_reach(verify_spheres_state)]
+        if not reachable:
+            logging.warning("Some locations were unreachable during Initial Bulk Fill verify spheres")
+            unreachable = filled_advancements
+            break
+        for loc in reachable:
+            verify_spheres_state.collect(loc.item, True, loc)
+        filled_advancements.difference_update(reachable)
+        verify_spheres.append(reachable)
+
+    # Collect the items at any unreachable locations from the spheres iteration.
+    for loc in unreachable:
+        verify_state.collect(loc.item, True)
+
+    placement_loc_to_item = {loc: loc.item for loc in pending_placements}
+    # Undo all placements so that they can be placed and collected in order of their spheres.
+    for loc in pending_placements:
+        item = loc.item
+        item.location = None
+        loc.item = None
+
+    final_placements: list[Location] = []
+    existing_placements_carry_over: list[Location] = []
+    current_placements = 0
+    for sphere_num, sphere in enumerate(verify_spheres, start=1):
+        # Try to reach carried over existing placements first. These locations were expected to be reachable beforehand,
+        # but a logic bug could have resulted in them not being reachable. The hope is that they will be reachable soon,
+        # or already, which can happen when there are missing indirect conditions in worlds.
+        next_existing_placements_carry_over = []
+        carry_over_reachable = []
+        for loc in existing_placements_carry_over:
+            if loc.can_reach(verify_state):
+                carry_over_reachable.append(loc)
+            else:
+                next_existing_placements_carry_over.append(loc)
+        existing_placements_carry_over = next_existing_placements_carry_over
+        for loc in carry_over_reachable:
+            verify_state.collect(loc.item, True, loc)
+
+        # Try to reach all locations in the current sphere.
+        reachable = [loc for loc in sphere if loc.can_reach(verify_state)]
+        if len(reachable) != len(sphere):
+            # Some locations could not be reached.
+            logging.warning("Could not reach all locations in Initial Bulk Fill sphere %i. This could indicate a"
+                            " logic error in one of the worlds.", sphere_num)
+            unreachable_sphere_locs = set(sphere).difference(reachable)
+            for loc in unreachable_sphere_locs:
+                if loc in placement_loc_to_item:
+                    # The item will could not be placed at its location, so it will not be removed from `item_pool` and
+                    # will be retried for placement outside the bulk fill.
+                    item_unreachable = placement_loc_to_item.pop(loc)
+                    # Collect the item into the state's inventory, *assuming* that it will be reachable when it actually
+                    # gets placed.
+                    verify_state.collect(item_unreachable, True)
+                else:
+                    # The location is already filled from outside of this fill method, but could not be reached yet, so
+                    # continue trying to reach it in the next sphere.
+                    existing_placements_carry_over.append(loc)
+        for loc in reachable:
+            if loc in placement_loc_to_item:
+                # Finalize this placement.
+                item_to_place = placement_loc_to_item[loc]
+                multiworld.push_item(loc, item_to_place, False)
+                final_placements.append(loc)
+                if current_placements % 1000 == 0:
+                    _log_fill_progress(name + " (bulk: verify fill order)", current_placements, total)
+                current_placements += 1
+                if on_place is not None:
+                    on_place(loc)
+                loc.locked = lock
+                placed_locs.add(loc)
+            verify_state.collect(loc.item, True, loc)
+
+    total_placements = current_placements
     num_new_placements = total_placements - start_num_placements
     # Always log, so it can be seen how many items the bulk fill managed to place.
     _log_fill_progress(name + " (bulk: complete)", current_placements, total)
