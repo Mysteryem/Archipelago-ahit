@@ -281,7 +281,6 @@ class CrossCodeWorld(World):
 
         self.variables = defaultdict(list)
 
-        start_inventory = self.options.start_inventory.value
         # self.logic_mode = self.options.logic_mode.current_key
         self.logic_mode = "open"
         self.region_pack = self.world_data.region_packs[self.logic_mode]
@@ -332,16 +331,16 @@ class CrossCodeWorld(World):
             self.multiworld.push_precollected(self.create_item(green_leaf_shade_name))
 
         if self.options.start_with_chest_detector.value:
-            start_inventory["Chest Detector"] = 1
+            self.multiworld.push_precollected(self.create_item("Chest Detector"))
 
         if self.options.start_with_discs.value & StartWithDiscs.option_insight:
-            start_inventory["Disc of Insight"] = 1
+            self.multiworld.push_precollected(self.create_item("Disc of Insight"))
         if self.options.start_with_discs.value & StartWithDiscs.option_flora:
-            start_inventory["Disc of Flora"] = 1
+            self.multiworld.push_precollected(self.create_item("Disc of Flora"))
 
         if self.options.start_with_pet.value:
             chosen_pet = self.pools.pull_items_from_pool("pets", self.random)[0]
-            start_inventory[chosen_pet.name] = 1
+            self.multiworld.push_precollected(self.create_item(chosen_pet.name))
 
         if self.options.chest_lock_randomization.value:
             self._chest_lock_weights = list(itertools.accumulate([
