@@ -588,6 +588,12 @@ class CrossCodeWorld(World):
                 if loc.data.access.cond is not None:
                     add_rule(loc, condition_satisfied(self.player, loc.data.access.cond, loc.data.code, self.logic_dict))
 
+    def get_pre_fill_items(self) -> list[Item]:
+        pre_fill_items = self.pre_fill_any_dungeon.copy()
+        for dungeon in self.dungeon_areas:
+            pre_fill_items.extend(self.pre_fill_specific_dungeons[dungeon])
+        return pre_fill_items
+
     def pre_fill(self):
         allowed_locations_by_item: dict[Item, set[CrossCodeLocation]] = {}
         all_items_list = list(self.pre_fill_any_dungeon)
