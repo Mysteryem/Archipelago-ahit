@@ -645,7 +645,8 @@ class CrossCodeWorld(World):
             if allowed_locations_by_item[item] is all_locations:
                 i += 4
             return i
-        all_items_list.sort(key=priority)
+        # Items are placed starting from the end of the list.
+        all_items_list.sort(key=priority, reverse=True)
 
         # Set up state
         all_state = self.multiworld.get_all_state(use_cache=False)
