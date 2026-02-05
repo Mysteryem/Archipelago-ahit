@@ -875,30 +875,9 @@ class AllEpisodesCharacterPurchaseRequirements(ChoiceFromStringExtension):
 
 class StartingChapter(ChapterChoice):
     """
-    Choose the starting chapter. The Episode the starting Chapter belongs to will be accessible from the start.
+    Choose the starting chapter.
 
-    Known issues:
-
-    - If the starting Chapter belongs to an Episode other than Episode 1, when starting a new save file and connecting
-    to the Archipelago server, the starting Episode door will appear locked (red light), but this is only visual.
-    - If the starting Chapter belongs to an Episode other than Episode 1, when starting a new save file and connecting
-    to the Archipelago server, the Episode 1 door will be open, but it will correctly lock itself upon re-entering the
-    main room of the Cantina.
-    - Due to the way the logic currently assumes the player has access to a Jedi and a Protocol Droid, if access to the
-    chosen starting Chapter does not include a Jedi and Protocol Droid in its requirements, a Jedi character and/or
-    a Protocol Droid character will be added to the starting inventory.
-
-    Due to the character requirements being shared between some Chapters, some starting Chapters will result in
-    additional Chapters being open from the start:
-
-    Starting with 1-1 will also open 1-6.
-    Starting with 1-2 will also open 1-6.
-    Starting with 1-3 will also open 1-6.
-    Starting with 1-5 will also open 1-6.
-    Starting with 3-2 will also open 3-6.
-    Starting with 4-3 will also open 4-2.
-    Starting with 5-3 will also open 6-6 if the Episode Unlock Requirement is set to Open.
-    Starting with 6-6 will also open 5-3 if the Episode Unlock Requirement is set to Open.
+    All items required to access the starting chapter will be given to you from the start.
     """
     display_name = "Starting Chapter"
     rich_text_doc = True
