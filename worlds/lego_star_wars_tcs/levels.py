@@ -466,7 +466,7 @@ POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
     "4-5": _PowerBrickData("Invincibility", JEDI, 1_000_000),
     "4-6": _PowerBrickData("Score x2", None, 1_250_000),
     "5-1": _PowerBrickData("Self Destruct", VEHICLE_TIE, 25_000),
-    "5-2": _PowerBrickData("Fast Build", SITH, 30_000),
+    "5-2": _PowerBrickData("Fast Build", SITH | ASTROMECH, 30_000),
     "5-3": _PowerBrickData("Score x4", None, 2_500_000),
     "5-4": _PowerBrickData("Regenerate Hearts", SITH, 150_000),
     "5-5": _PowerBrickData("Score x6", BOUNTY_HUNTER | HOVER | JEDI, 5_000_000),  # Note: In memory after Minikit Detector
