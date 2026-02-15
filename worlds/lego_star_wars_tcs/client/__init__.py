@@ -1668,7 +1668,6 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                     # each game watcher tick.
                     ctx.update_current_level_id()
 
-                    await ctx.free_play_completion_checker.initialize(ctx)
                     await give_items(ctx)
 
                     # Check for changes to the current AreaData pointer, firing an event if it changes.

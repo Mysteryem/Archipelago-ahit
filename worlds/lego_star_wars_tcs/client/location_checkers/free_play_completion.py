@@ -105,7 +105,6 @@ class FreePlayChapterCompletionChecker(ClientComponent):
 
     sent_locations: set[ApLocationId]
     completed_free_play: set[AreaId]
-    initial_setup_complete: bool
     enabled_chapter_areas: set[AreaId] | None
     chapter_completion_locations: dict[AreaId, list[ApLocationId]]
 
@@ -113,7 +112,6 @@ class FreePlayChapterCompletionChecker(ClientComponent):
         self.sent_locations = set()
         self.completed_free_play = set()
         self.enabled_chapter_areas = set()
-        self.initial_setup_complete = False
         self.chapter_completion_locations = {}
 
     @subscribe_event
@@ -136,6 +134,11 @@ class FreePlayChapterCompletionChecker(ClientComponent):
                 self.completed_free_play.discard(area.area_id)
                 self.sent_locations.difference_update(chapter_locations)
         self.enabled_chapter_areas = enabled_chapter_areas
+
+        # Read any completions from save data. This should catch cases where the player has temporarily lost connection
+        # to the server, completed a chapter, and then automatically reconnected to the server. The save data will be
+        # read and should update datastorage.
+        self.read_completed_free_play_from_save_data(ctx)
 
     def read_completed_free_play_from_save_data(self, ctx: TCSContext):
         enabled_chapter_areas = self.enabled_chapter_areas
@@ -166,11 +169,6 @@ class FreePlayChapterCompletionChecker(ClientComponent):
             self.sent_locations.update(self.chapter_completion_locations.get(area_id, ()))
             # Tell the goal manager it should update for newly completed chapters.
             ctx.goal_manager.tag_for_update("area")
-
-    async def initialize(self, ctx: TCSContext):
-        if not self.initial_setup_complete:
-            self.read_completed_free_play_from_save_data(ctx)
-            self.initial_setup_complete = True
 
     async def check_completion(self, ctx: TCSContext, new_location_checks: list[ApLocationId]):
 
