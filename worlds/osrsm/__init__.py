@@ -804,7 +804,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
         return OSRSMCombatPointsItem(location_row.combat_point_reward, location_row.name, self.player)
 
     def collect(self, state: CollectionState, item: Item) -> bool:
-        if item.code:
+        if item.code is not None:
             return super().collect(state,item)
         # Asserts help type checking, but keep performance on frozen AP (`-O` command line argument), because
         # isinstance is slow, and asserts cease to exist with `-O`.
@@ -836,7 +836,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
         return super().collect(state, item)
     
     def remove(self, state: CollectionState, item: Item) -> bool:
-        if item.code:
+        if item.code is not None:
             return super().remove(state,item)
         # Asserts help type checking, but keep performance on frozen AP (`-O` command line argument), because
         # isinstance is slow, and asserts cease to exist with `-O`.
