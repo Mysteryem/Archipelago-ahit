@@ -786,6 +786,19 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             if qp_count > 1:
                 state.add_item(item="Kudo",player=self.player,count=(qp_count-1))
             super().collect(state,self.create_event("Kudo"))
+        elif item.name.startswith("Training_"):
+            name = item.name
+            last_underscore_index = name.rfind("_")
+            skill_level = int(name[last_underscore_index + 1:])
+            # Training only counts up to level 99, anything above that is ignored.
+            if skill_level < 100:
+                skill_name = name[len("Training_"):last_underscore_index]
+
+                # Check the current Max Training level for this skill, and increase it if `skill_level` is higher.
+                psuedo_item_name = "_Max_Training_" + skill_name
+                current_max_level = state.prog_items[self.player][psuedo_item_name]
+                if skill_level > current_max_level:
+                    state.prog_items[self.player][psuedo_item_name] = skill_level
         return super().collect(state, item)
     
     def remove(self, state: CollectionState, item: Item) -> bool:
@@ -806,6 +819,29 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             if qp_count > 1:
                 state.remove_item(item="Kudo",player=self.player,count=(qp_count-1))
             super().remove(state,self.create_event("Kudo"))
+        elif item.name.startswith("Training_"):
+            if state.count(item.name, self.player) == 1:
+                # The last Training event for this level is being removed, so the Max Training psuedo-item may need to
+                # be updated.
+                name = item.name
+                last_underscore_index = name.rfind("_")
+                skill_level = int(name[last_underscore_index + 1:])
+                # Training only counts up to level 99, anything above that is ignored.
+                if skill_level < 100:
+                    skill_name = name[len("Training_"):last_underscore_index]
+                    # Check the current Max Training level for this skill, and decrease it if it is equal to
+                    # `skill_level`.
+                    psuedo_item_name = "_Max_Training_" + skill_name
+                    current_max_level = state.prog_items[self.player][psuedo_item_name]
+                    if current_max_level == skill_level:
+                        # Find the next highest training level for this skill in the state.
+                        next_highest_level = 0
+                        for i in reversed(range(1, skill_level)):
+                            event_item_name = f"Training_{skill_name}_{i}"
+                            if state.has(event_item_name, self.player):
+                                next_highest_level = i
+                                break
+                        state.prog_items[self.player][psuedo_item_name] = next_highest_level
         return super().remove(state, item)
 
 
@@ -827,29 +863,26 @@ class HasTraining(Rule["OSRSMWorld"],game="OSRSMWorld"):
     def _instantiate(self, world: "OSRSMWorld") -> Rule.Resolved:
         if self.skill_name in world.options.starting_skill_levels and self.skill_level <= world.options.starting_skill_levels[self.skill_name]:
             return True_.Resolved(player=world.player)
-        all_relevant_items = tuple([f"Training_{self.skill_name}_{level}" for level in range(0, 100)])
-        main_relevant_items = all_relevant_items[self.skill_level:]
-        return self.Resolved(self.skill_name,self.skill_level,self.qp_run,self.qp_rise,main_relevant_items,all_relevant_items,player=world.player)
+        pseudo_item_name = f"_Max_Training_{self.skill_name}"
+        return self.Resolved(self.skill_name,self.skill_level,self.qp_run,self.qp_rise,pseudo_item_name,player=world.player)
 
     class Resolved(Rule.Resolved):
         skill_name: str
         skill_level: int
         qp_run: int
         qp_rise: int
-        _relevent_items: tuple[str,...]
-        _all_relevant_items: tuple[str,...]
+        _max_training_psuedo_item_name: str
         skip_cache=True
 
         @override
         def _evaluate(self, state: CollectionState) -> bool:
-            # Check for training between self.skill_level and 100.
-            if state.has_any(self._relevent_items,self.player):
+            # Check for training of self.skill_level and higher.
+            max_training_level = state.count(self._max_training_psuedo_item_name, self.player)
+            if max_training_level >= self.skill_level:
                 return True
-            # Check for training from lower levels, accounting for qp_rise.
-            # `self.skill_level-self.qp_rise*(state.count("Quest Point",self.player)//self.qp_run)` to self.skill_level.
-            lower_bound = max(0,self.skill_level-self.qp_rise*(state.count("Quest Point",self.player)//self.qp_run))
-            qp_rise_relevant_items = self._all_relevant_items[lower_bound:self.skill_level]
-            return state.has_any(qp_rise_relevant_items,self.player)
+            # Check for training from lower levels than self.skill_level, accounting for qp_rise.
+            allowed_lower_training_level = max(1,self.skill_level-self.qp_rise*(state.count("Quest Point",self.player)//self.qp_run))
+            return max_training_level >= allowed_lower_training_level
 
         @override
         def item_dependencies(self) -> dict[str, set[int]]:
