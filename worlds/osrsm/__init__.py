@@ -539,11 +539,11 @@ class OSRSMWorld(CachedRuleBuilderWorld):
 
         if not self.options.disable_chunk_culling:
 
-            event_list = [loc for _,loc in self.multiworld.regions.location_cache[self.player].items() if not loc.address]
+            pre_placed_advancements = [loc for loc in self.get_locations() if loc.advancement]
                 
 
             all_state = base_state.copy()
-            all_state.sweep_for_advancements(locations=event_list)
+            all_state.sweep_for_advancements(locations=pre_placed_advancements)
             max_chance = len([loc for region in all_state.reachable_regions[self.player] for loc in region.locations if loc.address]) - len(itempool)
             base_itempool = itempool.copy()
             self.random.shuffle(base_itempool)
@@ -553,7 +553,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
                 temp_state = base_state.copy()
                 for item in short_pool:
                     temp_state.remove(item)
-                temp_state.sweep_for_advancements(locations=event_list)
+                temp_state.sweep_for_advancements(locations=pre_placed_advancements)
                 if self.multiworld.completion_condition[self.player](temp_state):
                     curr_chance = len([loc for region in temp_state.reachable_regions[self.player] for loc in region.locations if loc.address]) - len(itempool)
                     for item in short_pool:
