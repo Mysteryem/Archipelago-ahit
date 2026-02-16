@@ -544,6 +544,8 @@ class OSRSMWorld(CachedRuleBuilderWorld):
 
             all_state = base_state.copy()
             all_state.sweep_for_advancements(locations=pre_placed_advancements)
+            if all_state.stale[self.player]:
+                all_state.update_reachable_regions(self.player)
             max_chance = len([loc for region in all_state.reachable_regions[self.player] for loc in region.locations if loc.address]) - len(itempool)
             base_itempool = itempool.copy()
             self.random.shuffle(base_itempool)
@@ -555,6 +557,8 @@ class OSRSMWorld(CachedRuleBuilderWorld):
                     temp_state.remove(item)
                 temp_state.sweep_for_advancements(locations=pre_placed_advancements)
                 if self.multiworld.completion_condition[self.player](temp_state):
+                    if temp_state.stale[self.player]:
+                        temp_state.update_reachable_regions(self.player)
                     curr_chance = len([loc for region in temp_state.reachable_regions[self.player] for loc in region.locations if loc.address]) - len(itempool)
                     for item in short_pool:
                         rand_value = 0 if curr_chance < 0 else self.random.randint(0,max_chance)
