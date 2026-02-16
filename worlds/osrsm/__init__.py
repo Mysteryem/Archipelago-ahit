@@ -48,6 +48,29 @@ class OSRSMWeb(WebWorld):
 base_id = 0x070000
 
 
+def _make_rule_builder_item_mapping() -> dict[str, str]:
+    """Rule Builder's item_mapping allows collected/removed items to tell Rule Builder's caching that they update a
+    particular cached item or pseudo-item that rules may check for."""
+    item_mapping: dict[str, str] = {}
+
+    # Training
+    for skill_name in skill_names:
+        map_from = [f"Training_{skill_name}_{level}" for level in range(1, 100)]
+        map_to = f"Training_{skill_name}"
+        item_mapping.update(dict.fromkeys(map_from, map_to))
+
+    # Quest Points, Kudos and Combat Points
+    for location_row in location_rows:
+        if location_row.quest_point_reward > 0:
+            item_mapping[f"QP {location_row.quest_point_reward} ({location_row.name})"] = "Quest Point"
+        if location_row.kudos_reward > 0:
+            item_mapping[f"Kudos {location_row.kudos_reward} ({location_row.name})"] = "Kudo"
+        if location_row.combat_point_reward > 0:
+            item_mapping[f"CombatPoints {location_row.combat_point_reward} ({location_row.name})"] = "Combat Point"
+
+    return item_mapping
+
+
 class OSRSMWorld(CachedRuleBuilderWorld):
     """
     The best retro fantasy MMORPG on the planet. Old School is RuneScape but… older! This is the open world you know and love, but as it was in 2007.
@@ -72,7 +95,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
 
     item_name_to_id = {item_rows[i].name: base_id + i for i in range(len(item_rows))}
     location_name_to_id = {location_rows[i].name: base_id + i for i in range(len(location_rows))}
-    item_mapping = {f"Training_{skill_name}_{level}":f"Training_{skill_name}" for level in range(1,100) for skill_name in skill_names}
+    item_mapping = _make_rule_builder_item_mapping()
     item_name_groups = { macro_name: set(item_list) for macro_name, item_list in rollable_chunks.items()}
     location_name_groups = { category : set([location_row.name for location_row in location_rs]) for category, location_rs in location_rows_by_category.items()}
 
@@ -790,21 +813,15 @@ class OSRSMWorld(CachedRuleBuilderWorld):
         if item_type == "quest_point":
             assert isinstance(item, OSRSMQuestPointItem)
             qp_count = item.quest_point_reward
-            if qp_count > 1:
-                state.add_item(item="Quest Point",player=self.player,count=(qp_count-1))
-            super().collect(state,self.create_event("Quest Point"))
+            state.add_item(item="Quest Point",player=self.player,count=qp_count)
         elif item_type == "combat_points":
             assert isinstance(item, OSRSMCombatPointsItem)
             combat_point_reward = item.combat_point_reward
-            if combat_point_reward > 1:
-                state.add_item(item="Combat Point", player=self.player, count=(combat_point_reward - 1))
-            super().collect(state, self.create_event("Combat Point"))
+            state.add_item(item="Combat Point", player=self.player, count=combat_point_reward)
         elif item_type == "kudos":
             assert isinstance(item, OSRSMKudosItem)
             kudos = item.kudos_reward
-            if kudos > 1:
-                state.add_item(item="Kudo",player=self.player,count=(kudos-1))
-            super().collect(state,self.create_event("Kudo"))
+            state.add_item(item="Kudo",player=self.player,count=kudos)
         elif item_type == "training":
             # Assert to help type checking, but keep performance on frozen AP or `-O` command line argument.
             assert isinstance(item, OSRSMTrainingItem)
@@ -828,21 +845,15 @@ class OSRSMWorld(CachedRuleBuilderWorld):
         if item_type == "quest_point":
             assert isinstance(item, OSRSMQuestPointItem)
             qp_count = item.quest_point_reward
-            if qp_count > 1:
-                state.remove_item(item="Quest Point",player=self.player,count=(qp_count-1))
-            super().remove(state,self.create_event("Quest Point"))
+            state.remove_item(item="Quest Point",player=self.player,count=qp_count)
         elif item_type == "combat_points":
             assert isinstance(item, OSRSMCombatPointsItem)
             combat_point_reward = item.combat_point_reward
-            if combat_point_reward > 1:
-                state.remove_item(item="Combat Point",player=self.player,count=(combat_point_reward-1))
-            super().remove(state,self.create_event("Combat Point"))
+            state.remove_item(item="Combat Point",player=self.player,count=combat_point_reward)
         elif item_type == "kudos":
             assert isinstance(item, OSRSMKudosItem)
             kudos = item.kudos_reward
-            if kudos > 1:
-                state.remove_item(item="Kudo",player=self.player,count=(kudos-1))
-            super().remove(state,self.create_event("Kudo"))
+            state.remove_item(item="Kudo",player=self.player,count=kudos)
         elif item_type == "training":
             if state.count(item.name, self.player) == 1:
                 # The last Training event for this level is being removed, so the Max Training psuedo-item may need to
