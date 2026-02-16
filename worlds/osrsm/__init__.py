@@ -7,7 +7,7 @@ from Fill import fill_restrictive, FillError
 from worlds.AutoWorld import WebWorld, World
 from Options import OptionError
 from .Items import OSRSMItem, starting_area_dict, chunksanity_starting_chunks, QP_Items, ItemRow, \
-    chunksanity_special_region_names, OSRSMTrainingItem
+    chunksanity_special_region_names, OSRSMTrainingItem, OSRSMQuestPointItem, OSRSMKudosItem, OSRSMCombatPointsItem
 from .Locations import OSRSMLocation
 from .Rules import *
 from .Options import OSRSMOptions, StartingArea
@@ -673,11 +673,11 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             #Don't do most of this, just add the events to precollected :)
             self.push_precollected(self.create_event(location_row.name))
             if location_row.quest_point_reward>0:
-                self.push_precollected(self.create_event(f"QP {location_row.quest_point_reward} ({location_row.name})"))
+                self.push_precollected(self.create_quest_point_event(location_row))
             if location_row.kudos_reward>0:
-                self.push_precollected(self.create_event(f"Kudos {location_row.kudos_reward} ({location_row.name})"))
+                self.push_precollected(self.create_kudos_event(location_row))
             if location_row.combat_point_reward > 0:
-                self.push_precollected(self.create_event(f"CombatPoints {location_row.combat_point_reward} ({location_row.name})"))
+                self.push_precollected(self.create_combat_points_event(location_row))
             return
         if location_row.parent_region in self.options.banned_chunks:
             return
@@ -716,7 +716,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             qp_loc.show_in_spoiler = False
             self.location_name_to_data[qp_name] = qp_loc
             qp_loc.parent_region = region
-            qp_loc.place_locked_item(self.create_event(f"QP {location_row.quest_point_reward} ({location_row.name})"))
+            qp_loc.place_locked_item(self.create_quest_point_event(location_row))
             region.locations.append(qp_loc)
         if location_row.kudos_reward > 0:
             qp_name = "Kudos: " + location_row.name
@@ -724,7 +724,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             qp_loc.show_in_spoiler = False
             self.location_name_to_data[qp_name] = qp_loc
             qp_loc.parent_region = region
-            qp_loc.place_locked_item(self.create_event(f"Kudos {location_row.kudos_reward} ({location_row.name})"))
+            qp_loc.place_locked_item(self.create_kudos_event(location_row))
             region.locations.append(qp_loc)
         if location_row.combat_point_reward > 0:
             qp_name = "CombatPoints: " + location_row.name
@@ -732,7 +732,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             qp_loc.show_in_spoiler = False
             self.location_name_to_data[qp_name] = qp_loc
             qp_loc.parent_region = region
-            qp_loc.place_locked_item(self.create_event(f"CombatPoints {location_row.combat_point_reward} ({location_row.name})"))
+            qp_loc.place_locked_item(self.create_combat_points_event(location_row))
             region.locations.append(qp_loc)
     
     def create_training(self, training_row:TrainingRow):
@@ -770,26 +770,42 @@ class OSRSMWorld(CachedRuleBuilderWorld):
 
     def create_training_event(self, skill_name: str, skill_level: int):
         return OSRSMTrainingItem(skill_name, skill_level, self.player)
-    
+
+    def create_quest_point_event(self, location_row: LocationRow):
+        return OSRSMQuestPointItem(location_row.quest_point_reward, location_row.name, self.player)
+
+    def create_kudos_event(self, location_row: LocationRow):
+        return OSRSMKudosItem(location_row.kudos_reward, location_row.name, self.player)
+
+    def create_combat_points_event(self, location_row: LocationRow):
+        return OSRSMCombatPointsItem(location_row.combat_point_reward, location_row.name, self.player)
+
     def collect(self, state: CollectionState, item: Item) -> bool:
         if item.code:
             return super().collect(state,item)
-        if item.name.startswith("QP "):
-            qp_count = int(item.name.split(" ",3)[1])
+        # Asserts help type checking, but keep performance on frozen AP (`-O` command line argument), because
+        # isinstance is slow, and asserts cease to exist with `-O`.
+        assert isinstance(item, OSRSMItem)
+        item_type = item.item_type
+        if item_type == "quest_point":
+            assert isinstance(item, OSRSMQuestPointItem)
+            qp_count = item.quest_point_reward
             if qp_count > 1:
                 state.add_item(item="Quest Point",player=self.player,count=(qp_count-1))
             super().collect(state,self.create_event("Quest Point"))
-        elif item.name.startswith("CombatPoints "):
-            qp_count = int(item.name.split(" ",3)[1])
-            if qp_count > 1:
-                state.add_item(item="Combat Point",player=self.player,count=(qp_count-1))
-            super().collect(state,self.create_event("Combat Point"))
-        elif item.name.startswith("Kudos "):
-            qp_count = int(item.name.split(" ",3)[1])
-            if qp_count > 1:
-                state.add_item(item="Kudo",player=self.player,count=(qp_count-1))
+        elif item_type == "combat_points":
+            assert isinstance(item, OSRSMCombatPointsItem)
+            combat_point_reward = item.combat_point_reward
+            if combat_point_reward > 1:
+                state.add_item(item="Combat Point", player=self.player, count=(combat_point_reward - 1))
+            super().collect(state, self.create_event("Combat Point"))
+        elif item_type == "kudos":
+            assert isinstance(item, OSRSMKudosItem)
+            kudos = item.kudos_reward
+            if kudos > 1:
+                state.add_item(item="Kudo",player=self.player,count=(kudos-1))
             super().collect(state,self.create_event("Kudo"))
-        elif item.name.startswith("Training_"):
+        elif item_type == "training":
             # Assert to help type checking, but keep performance on frozen AP or `-O` command line argument.
             assert isinstance(item, OSRSMTrainingItem)
             skill_level = item.skill_level
@@ -805,22 +821,29 @@ class OSRSMWorld(CachedRuleBuilderWorld):
     def remove(self, state: CollectionState, item: Item) -> bool:
         if item.code:
             return super().remove(state,item)
-        if item.name.startswith("QP "):
-            qp_count = int(item.name.split(" ",3)[1])
+        # Asserts help type checking, but keep performance on frozen AP (`-O` command line argument), because
+        # isinstance is slow, and asserts cease to exist with `-O`.
+        assert isinstance(item, OSRSMItem)
+        item_type = item.item_type
+        if item_type == "quest_point":
+            assert isinstance(item, OSRSMQuestPointItem)
+            qp_count = item.quest_point_reward
             if qp_count > 1:
                 state.remove_item(item="Quest Point",player=self.player,count=(qp_count-1))
             super().remove(state,self.create_event("Quest Point"))
-        elif item.name.startswith("CombatPoints "):
-            qp_count = int(item.name.split(" ",3)[1])
-            if qp_count > 1:
-                state.remove_item(item="Combat Point",player=self.player,count=(qp_count-1))
+        elif item_type == "combat_points":
+            assert isinstance(item, OSRSMCombatPointsItem)
+            combat_point_reward = item.combat_point_reward
+            if combat_point_reward > 1:
+                state.remove_item(item="Combat Point",player=self.player,count=(combat_point_reward-1))
             super().remove(state,self.create_event("Combat Point"))
-        elif item.name.startswith("Kudos "):
-            qp_count = int(item.name.split(" ",3)[1])
-            if qp_count > 1:
-                state.remove_item(item="Kudo",player=self.player,count=(qp_count-1))
+        elif item_type == "kudos":
+            assert isinstance(item, OSRSMKudosItem)
+            kudos = item.kudos_reward
+            if kudos > 1:
+                state.remove_item(item="Kudo",player=self.player,count=(kudos-1))
             super().remove(state,self.create_event("Kudo"))
-        elif item.name.startswith("Training_"):
+        elif item_type == "training":
             if state.count(item.name, self.player) == 1:
                 # The last Training event for this level is being removed, so the Max Training psuedo-item may need to
                 # be updated.
