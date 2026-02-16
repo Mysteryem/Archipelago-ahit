@@ -520,7 +520,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
 
         base_state = CollectionState(self.multiworld)
         for item in itempool:
-            base_state.add_item(item.name,self.player)
+            base_state.collect(item, True)
         temp_state = base_state.copy()
 
 
