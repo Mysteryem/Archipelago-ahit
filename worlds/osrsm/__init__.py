@@ -214,7 +214,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
         elif rule_element.type.startswith("task_macro"):
             if rule_element.value not in task_macros:
                 raise Exception("Task macro but it doesn't exist..."+rule_element.value)
-            if rule_element.value.startswith("task_macrox"):
+            if rule_element.type.startswith("task_macrox"):
                 _,count = rule_element.type.split("x",2)
                 if count.isdigit():
                     count = int(count)
@@ -803,10 +803,12 @@ class HasCount(Rule[OSRSMWorld],game="OSRSMWorld"):
     task_list: list[str]
     needed_count: int
     def _instantiate(self, world: OSRSMWorld) -> Rule.Resolved:
-        return self.Resolved(self.task_list,self.needed_count,player=world.player,cacheable=True)
+        # Sort first so that hashing is consistent regardless of the order of the initial task_list.
+        task_list_tuple = tuple(sorted(self.task_list))
+        return self.Resolved(task_list_tuple,self.needed_count,player=world.player)
     
     class Resolved(Rule.Resolved):
-        task_list: list[str]
+        task_list: tuple[str, ...]
         needed_count: int
 
         @override
