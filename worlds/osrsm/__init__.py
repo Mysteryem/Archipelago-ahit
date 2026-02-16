@@ -827,7 +827,9 @@ class HasTraining(Rule["OSRSMWorld"],game="OSRSMWorld"):
     def _instantiate(self, world: "OSRSMWorld") -> Rule.Resolved:
         if self.skill_name in world.options.starting_skill_levels and self.skill_level <= world.options.starting_skill_levels[self.skill_name]:
             return True_.Resolved(player=world.player)
-        return self.Resolved(self.skill_name,self.skill_level,self.qp_run,self.qp_rise,tuple([f"Training_{self.skill_name}_{level}" for level in range(self.skill_level,100)]),player=world.player)
+        all_relevant_items = tuple([f"Training_{self.skill_name}_{level}" for level in range(0, 100)])
+        main_relevant_items = all_relevant_items[self.skill_level:]
+        return self.Resolved(self.skill_name,self.skill_level,self.qp_run,self.qp_rise,main_relevant_items,all_relevant_items,player=world.player)
 
     class Resolved(Rule.Resolved):
         skill_name: str
@@ -835,12 +837,19 @@ class HasTraining(Rule["OSRSMWorld"],game="OSRSMWorld"):
         qp_run: int
         qp_rise: int
         _relevent_items: tuple[str,...]
+        _all_relevant_items: tuple[str,...]
         skip_cache=True
 
         @override
         def _evaluate(self, state: CollectionState) -> bool:
-            return state.has_any(self._relevent_items,self.player) or \
-                state.has_any([f"Training_{self.skill_name}_{level}" for level in range(max(0,self.skill_level-self.qp_rise*(state.count("Quest Point",self.player)//self.qp_run)),self.skill_level)],self.player)
+            # Check for training between self.skill_level and 100.
+            if state.has_any(self._relevent_items,self.player):
+                return True
+            # Check for training from lower levels, accounting for qp_rise.
+            # `self.skill_level-self.qp_rise*(state.count("Quest Point",self.player)//self.qp_run)` to self.skill_level.
+            lower_bound = max(0,self.skill_level-self.qp_rise*(state.count("Quest Point",self.player)//self.qp_run))
+            qp_rise_relevant_items = self._all_relevant_items[lower_bound:self.skill_level]
+            return state.has_any(qp_rise_relevant_items,self.player)
 
         @override
         def item_dependencies(self) -> dict[str, set[int]]:
