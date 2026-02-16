@@ -15,6 +15,19 @@ class OSRSMItem(Item):
     game: str = "Old School Runescape"
 
 
+class OSRSMTrainingItem(OSRSMItem):
+    skill_name: str
+    skill_level: int
+    pseudo_item_name: str
+
+    def __init__(self, skill_name: str, skill_level: int, player: int):
+        name = f"Training_{skill_name}_{skill_level}"
+        super().__init__(name, ItemClassification.progression, None, player)
+        self.skill_name = skill_name
+        self.skill_level = skill_level
+        self.pseudo_item_name = "_Max_Training_" + skill_name
+
+
 QP_Items: typing.List[str] = [
     ItemNames.QP_Cooks_Assistant,
     ItemNames.QP_Demon_Slayer,

@@ -7,7 +7,7 @@ from Fill import fill_restrictive, FillError
 from worlds.AutoWorld import WebWorld, World
 from Options import OptionError
 from .Items import OSRSMItem, starting_area_dict, chunksanity_starting_chunks, QP_Items, ItemRow, \
-    chunksanity_special_region_names
+    chunksanity_special_region_names, OSRSMTrainingItem
 from .Locations import OSRSMLocation
 from .Rules import *
 from .Options import OSRSMOptions, StartingArea
@@ -741,9 +741,9 @@ class OSRSMWorld(CachedRuleBuilderWorld):
         parent_region = self.get_region(training_row.parent_region)
         method = OSRSMLocation(self.player,f"Training {training_row.skill_name}: {training_row.task_name}",None,parent_region)
         if training_row.task_name == "Unlock ~|Herblore|~ after Druidic Ritual": #We don't want to be herblore 10 etc after druidic ritual
-            method.place_locked_item(self.create_event(f"Training_{training_row.skill_name}_{training_row.required_level+3}"))
+            method.place_locked_item(self.create_training_event(training_row.skill_name,training_row.required_level+3))
         else:
-            method.place_locked_item(self.create_event(f"Training_{training_row.skill_name}_{training_row.required_level+self.options.base_training_levels.value}"))
+            method.place_locked_item(self.create_training_event(training_row.skill_name,training_row.required_level+self.options.base_training_levels.value))
         method.show_in_spoiler = False
         parent_region.locations.append(method)
         self.training_to_data[method.name] = method
@@ -767,6 +767,9 @@ class OSRSMWorld(CachedRuleBuilderWorld):
     def create_event(self, event: str):
         # while we are at it, we can also add a helper to create events
         return OSRSMItem(event, ItemClassification.progression, None, self.player)
+
+    def create_training_event(self, skill_name: str, skill_level: int):
+        return OSRSMTrainingItem(skill_name, skill_level, self.player)
     
     def collect(self, state: CollectionState, item: Item) -> bool:
         if item.code:
@@ -787,15 +790,13 @@ class OSRSMWorld(CachedRuleBuilderWorld):
                 state.add_item(item="Kudo",player=self.player,count=(qp_count-1))
             super().collect(state,self.create_event("Kudo"))
         elif item.name.startswith("Training_"):
-            name = item.name
-            last_underscore_index = name.rfind("_")
-            skill_level = int(name[last_underscore_index + 1:])
+            # Assert to help type checking, but keep performance on frozen AP or `-O` command line argument.
+            assert isinstance(item, OSRSMTrainingItem)
+            skill_level = item.skill_level
             # Training only counts up to level 99, anything above that is ignored.
             if skill_level < 100:
-                skill_name = name[len("Training_"):last_underscore_index]
-
                 # Check the current Max Training level for this skill, and increase it if `skill_level` is higher.
-                psuedo_item_name = "_Max_Training_" + skill_name
+                psuedo_item_name = item.pseudo_item_name
                 current_max_level = state.prog_items[self.player][psuedo_item_name]
                 if skill_level > current_max_level:
                     state.prog_items[self.player][psuedo_item_name] = skill_level
@@ -823,15 +824,15 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             if state.count(item.name, self.player) == 1:
                 # The last Training event for this level is being removed, so the Max Training psuedo-item may need to
                 # be updated.
-                name = item.name
-                last_underscore_index = name.rfind("_")
-                skill_level = int(name[last_underscore_index + 1:])
+                # Assert to help type checking, but keep performance on frozen AP or `-O` command line argument.
+                assert isinstance(item, OSRSMTrainingItem)
+                skill_level = item.skill_level
                 # Training only counts up to level 99, anything above that is ignored.
                 if skill_level < 100:
-                    skill_name = name[len("Training_"):last_underscore_index]
+                    skill_name = item.skill_name
                     # Check the current Max Training level for this skill, and decrease it if it is equal to
                     # `skill_level`.
-                    psuedo_item_name = "_Max_Training_" + skill_name
+                    psuedo_item_name = item.pseudo_item_name
                     current_max_level = state.prog_items[self.player][psuedo_item_name]
                     if current_max_level == skill_level:
                         # Find the next highest training level for this skill in the state.
