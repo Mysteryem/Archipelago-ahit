@@ -776,12 +776,12 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             if qp_count > 1:
                 state.add_item(item="Quest Point",player=self.player,count=(qp_count-1))
             super().collect(state,self.create_event("Quest Point"))
-        if item.name.startswith("CombatPoints "):
+        elif item.name.startswith("CombatPoints "):
             qp_count = int(item.name.split(" ",3)[1])
             if qp_count > 1:
                 state.add_item(item="Combat Point",player=self.player,count=(qp_count-1))
             super().collect(state,self.create_event("Combat Point"))
-        if item.name.startswith("Kudos "):
+        elif item.name.startswith("Kudos "):
             qp_count = int(item.name.split(" ",3)[1])
             if qp_count > 1:
                 state.add_item(item="Kudo",player=self.player,count=(qp_count-1))
@@ -796,12 +796,12 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             if qp_count > 1:
                 state.remove_item(item="Quest Point",player=self.player,count=(qp_count-1))
             super().remove(state,self.create_event("Quest Point"))
-        if item.name.startswith("CombatPoints "):
+        elif item.name.startswith("CombatPoints "):
             qp_count = int(item.name.split(" ",3)[1])
             if qp_count > 1:
                 state.remove_item(item="Combat Point",player=self.player,count=(qp_count-1))
             super().remove(state,self.create_event("Combat Point"))
-        if item.name.startswith("Kudos "):
+        elif item.name.startswith("Kudos "):
             qp_count = int(item.name.split(" ",3)[1])
             if qp_count > 1:
                 state.remove_item(item="Kudo",player=self.player,count=(qp_count-1))
