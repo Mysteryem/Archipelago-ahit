@@ -538,6 +538,9 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             raise OptionError("Game isn't beatable with current settings")
 
         if not self.options.disable_chunk_culling:
+            region_loc_count_lookup = {
+                region: len([loc for loc in region.locations if loc.address]) for region in self.get_regions()
+            }
 
             pre_placed_advancements = [loc for loc in self.get_locations() if loc.advancement]
                 
@@ -546,7 +549,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
             all_state.sweep_for_advancements(locations=pre_placed_advancements)
             if all_state.stale[self.player]:
                 all_state.update_reachable_regions(self.player)
-            max_chance = len([loc for region in all_state.reachable_regions[self.player] for loc in region.locations if loc.address]) - len(itempool)
+            max_chance = sum([region_loc_count_lookup[region] for region in all_state.reachable_regions[self.player]]) - len(itempool)
             base_itempool = itempool.copy()
             self.random.shuffle(base_itempool)
             exit_counter = 0
@@ -559,7 +562,7 @@ class OSRSMWorld(CachedRuleBuilderWorld):
                 if self.multiworld.completion_condition[self.player](temp_state):
                     if temp_state.stale[self.player]:
                         temp_state.update_reachable_regions(self.player)
-                    curr_chance = len([loc for region in temp_state.reachable_regions[self.player] for loc in region.locations if loc.address]) - len(itempool)
+                    curr_chance = sum([region_loc_count_lookup[region] for region in temp_state.reachable_regions[self.player]]) - len(itempool)
                     for item in short_pool:
                         rand_value = 0 if curr_chance < 0 else self.random.randint(0,max_chance)
                         if rand_value<curr_chance:
