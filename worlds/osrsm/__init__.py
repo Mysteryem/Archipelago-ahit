@@ -560,11 +560,11 @@ class OSRSMWorld(CachedRuleBuilderWorld):
                         rand_value = 0 if curr_chance < 0 else self.random.randint(0,max_chance)
                         if rand_value<curr_chance:
                             rand_value = 0 if curr_chance < 0 else self.random.randint(0,max_chance) #Roll the dice again, if we pass this time just demote to useful
+                            base_state.remove(item) #Either it's being removed from the item pool or converted to Useful
                             if rand_value<curr_chance:
                                 itempool.remove(item)
                             else: #This way an item that had a low chance to get removed that got unlucky will probally stay, but dice be dice :)
                                 item.classification = ItemClassification.useful
-                            base_state.remove(item) #Either way it's not a prog item, remove from base_state
                         if rand_value == 0:
                             exit_counter += 1
                             if exit_counter > 5:
