@@ -60,13 +60,14 @@ def _make_rule_builder_item_mapping() -> dict[str, str]:
         item_mapping.update(dict.fromkeys(map_from, map_to))
 
     # Quest Points, Kudos and Combat Points
-    for location_row in location_rows:
-        if location_row.quest_point_reward > 0:
-            item_mapping[f"QP {location_row.quest_point_reward} ({location_row.name})"] = "Quest Point"
-        if location_row.kudos_reward > 0:
-            item_mapping[f"Kudos {location_row.kudos_reward} ({location_row.name})"] = "Kudo"
-        if location_row.combat_point_reward > 0:
-            item_mapping[f"CombatPoints {location_row.combat_point_reward} ({location_row.name})"] = "Combat Point"
+    for location_rows_list in [location_rows, sub_quests]:
+        for location_row in location_rows_list:
+            if location_row.quest_point_reward > 0:
+                item_mapping[f"QP {location_row.quest_point_reward} ({location_row.name})"] = "Quest Point"
+            if location_row.kudos_reward > 0:
+                item_mapping[f"Kudos {location_row.kudos_reward} ({location_row.name})"] = "Kudo"
+            if location_row.combat_point_reward > 0:
+                item_mapping[f"CombatPoints {location_row.combat_point_reward} ({location_row.name})"] = "Combat Point"
 
     return item_mapping
 
