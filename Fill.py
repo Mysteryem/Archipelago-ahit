@@ -126,8 +126,8 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     percent_total_unplaced_to_sweep = total // 500
 
     # Minimal players that have beaten their game ignore location reachability for placements.
-    minimal_players_remaining = {player for player in all_players
-                                 if multiworld.worlds[player].options.accessibility == "minimal"}
+    minimal_players = {player for player in all_players if multiworld.worlds[player].options.accessibility == "minimal"}
+    minimal_players_remaining = minimal_players.copy()
     minimal_game_beaten_players = {player for player in minimal_players_remaining
                                    if multiworld.has_beaten_game(bulk_fill_state, player)}
     minimal_players_remaining.difference_update(minimal_game_beaten_players)
@@ -211,24 +211,44 @@ def _restrictive_bulk_fill(base_state: CollectionState,
 
     filled_advancements = {loc for loc in multiworld.get_locations() if loc.advancement}
     verify_spheres: list[list[Location]] = []
-    unreachable: set[Location] = set()
+    unreachable_minimal: list[Location] = []
+    unreachable_non_minimal: set[Location] = set()
     while filled_advancements:
         reachable = [loc for loc in filled_advancements if loc.can_reach(verify_spheres_state)]
         if not reachable:
-            logging.warning("Some locations were unreachable during Initial Bulk Fill verify spheres")
-            unreachable = filled_advancements
+            for loc in sorted(filled_advancements):
+                if loc.player not in minimal_players:
+                    # An item being unreachable for a non-minimal player probably means that the item was placed on the
+                    # assumption that a minimal player's item would be reachable, but the minimal player's item ended up
+                    # being placed in an unreachable location. Normally, AP would clean up these placements after the
+                    # fill is complete, using `accessibility_corrections`.
+                    # For now, un-place the item and collect it into the state. Collecting iteratively instead of all at
+                    # once is slower, but can improve the chances of some of the unreachable locations becoming
+                    # reachable because of earlier collected items.
+                    # These previously unreachable collected items could cause locations to be reachable in earlier
+                    # spheres than we are expecting from the sphere iteration, but that should not cause any problems
+                    # because the spheres were expecting to not need these items to begin with.
+                    item = loc.item
+                    verify_spheres_state.collect(item, True)
+                    unreachable_non_minimal.add(loc)
+                    # Undo the placement.
+                    item.location = None
+                    loc.item = None
+                else:
+                    # Unreachable minimal accessibility placements are allowed.
+                    unreachable_minimal.add(loc)
             break
         for loc in reachable:
             verify_spheres_state.collect(loc.item, True, loc)
         filled_advancements.difference_update(reachable)
         verify_spheres.append(reachable)
 
-    # Collect the items at any unreachable locations from the spheres iteration.
-    for loc in unreachable:
-        verify_state.collect(loc.item, True)
+    if unreachable_non_minimal:
+        # Remove locations belonging to non-minimal players that ended up unreachable.
+        pending_placements = [loc for loc in pending_placements if loc not in unreachable_non_minimal]
 
     placement_loc_to_item = {loc: loc.item for loc in pending_placements}
-    # Undo all placements so that they can be placed and collected in order of their spheres.
+    # Undo all pending placements so that they can be placed and collected in order of their spheres.
     for loc in pending_placements:
         item = loc.item
         item.location = None
