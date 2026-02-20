@@ -216,7 +216,12 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     while filled_advancements:
         reachable = [loc for loc in filled_advancements if loc.can_reach(verify_spheres_state)]
         if not reachable:
+            # All remaining filled locations are unreachable.
             for loc in sorted(filled_advancements):
+                item = loc.item
+                if id(item) not in potential_placed_item_ids:
+                    # The item was not placed by the bulk fill, so don't touch it.
+                    continue
                 if loc.player not in minimal_players:
                     # An item being unreachable for a non-minimal player probably means that the item was placed on the
                     # assumption that a minimal player's item would be reachable, but the minimal player's item ended up
@@ -228,12 +233,12 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     # These previously unreachable collected items could cause locations to be reachable in earlier
                     # spheres than we are expecting from the sphere iteration, but that should not cause any problems
                     # because the spheres were expecting to not need these items to begin with.
-                    item = loc.item
                     verify_spheres_state.collect(item, True)
                     unreachable_non_minimal.add(loc)
                     # Undo the placement.
                     item.location = None
                     loc.item = None
+                    potential_placed_item_ids.remove(id(item))
                 else:
                     # Unreachable minimal accessibility placements are allowed.
                     unreachable_minimal.append(loc)
