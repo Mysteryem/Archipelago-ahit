@@ -236,7 +236,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     loc.item = None
                 else:
                     # Unreachable minimal accessibility placements are allowed.
-                    unreachable_minimal.add(loc)
+                    unreachable_minimal.append(loc)
             break
         for loc in reachable:
             verify_spheres_state.collect(loc.item, True, loc)
@@ -305,6 +305,21 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                 loc.locked = lock
                 placed_locs.add(loc)
             verify_state.collect(loc.item, True, loc)
+
+    # Finalize unreachable placements for minimal accessibility players.
+    for loc in unreachable_minimal:
+        if loc not in placement_loc_to_item:
+            continue
+        item_to_place = placement_loc_to_item[loc]
+        multiworld.push_item(loc, item_to_place, False)
+        final_placements.append(loc)
+        if current_placements % 1000 == 0:
+            _log_fill_progress(name + " (bulk: verify fill order)", current_placements, total)
+        current_placements += 1
+        if on_place is not None:
+            on_place(loc)
+        loc.locked = lock
+        placed_locs.add(loc)
 
     total_placements = current_placements
     num_new_placements = total_placements - start_num_placements
