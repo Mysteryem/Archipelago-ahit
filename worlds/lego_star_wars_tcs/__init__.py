@@ -266,8 +266,8 @@ class LegoStarWarsTCSWorld(World):
                 # A goal macguffin.
                 if self.goal_minikit_count > 0:
                     if self.options.accessibility == "minimal" or self.minikit_bundle_count > 10:
-                        # Minikits are sorted first for minimal players in stage_pre_fill to reduce generation failures,
-                        # so should always be deprioritized for minimal players.
+                        # Minikits are sorted first for minimal players in stage_fill_hook to reduce generation
+                        # failures, so should always be deprioritized for minimal players.
                         classification = progression_deprioritized_skip_balancing
                     else:
                         # If there are only very few bundles, e.g. the bundles are 10 minikits at a time and there are
