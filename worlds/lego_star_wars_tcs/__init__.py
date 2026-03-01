@@ -71,9 +71,10 @@ from .item_groups import ITEM_GROUPS
 from .location_groups import LOCATION_GROUPS
 
 
-def launch_client():
+def launch_client(*args: str):
+    # Lazy import. Generation does not need to even load client modules, it would just be a waste of memory.
     from .client import launch
-    launch_subprocess(launch, name="LegoStarWarsTheCompleteSagaClient")
+    launch_subprocess(launch, name="LegoStarWarsTheCompleteSagaClient", args=args)
 
 
 components.append(Component("Lego Star Wars: The Complete Saga Client",

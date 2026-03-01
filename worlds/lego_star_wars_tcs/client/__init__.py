@@ -17,7 +17,7 @@ import typing
 from pymem import pymem
 from pymem.exception import ProcessNotFound, ProcessError, PymemError, WinAPIError
 
-from CommonClient import server_loop, gui_enabled
+from CommonClient import server_loop, gui_enabled, get_base_parser
 
 from .. import options, TCSUniversalTrackerAPWorldVersionMismatchError
 from ..constants import GAME_NAME, AP_WORLD_VERSION
@@ -1760,10 +1760,13 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
             ctx.auth_status = AuthStatus.NOT_AUTHENTICATED
 
 
-async def main():
+async def main(*launch_args: str):
     Utils.init_logging("LegoStarWarsTheCompleteSagaClient", exception_logger="ClientException")
 
-    ctx = LegoStarWarsTheCompleteSagaContext()
+    parser = get_base_parser()
+    args = parser.parse_args(launch_args)
+
+    ctx = LegoStarWarsTheCompleteSagaContext(args.connect, args.password)
     ctx.server_task = asyncio.create_task(server_loop(ctx), name="server loop")
 
     if UNIVERSAL_TRACKER_LOADED:
@@ -1789,7 +1792,7 @@ async def main():
     await ctx.shutdown()
 
 
-def launch():
+def launch(*launch_args: str):
     colorama.just_fix_windows_console()
-    asyncio.run(main())
+    asyncio.run(main(*launch_args))
     colorama.deinit()
