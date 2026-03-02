@@ -420,7 +420,7 @@ class LegoStarWarsTCSWorld(World):
 
                 set_rule(spot, rule)
 
-    def _get_score_multiplier_requirement(self, studs_cost: int):
+    def get_score_multiplier_requirement(self, studs_cost: int):
         max_no_multiplier_cost = self.options.most_expensive_purchase_with_no_multiplier.value * 1000
         count: int
         if studs_cost <= max_no_multiplier_cost:
@@ -442,7 +442,7 @@ class LegoStarWarsTCSWorld(World):
         return count
 
     def _add_score_multiplier_rule(self, spot: Location, studs_cost: int):
-        count = self._get_score_multiplier_requirement(studs_cost)
+        count = self.get_score_multiplier_requirement(studs_cost)
         if count > 0:
             add_rule(spot, lambda state, p=self.player, c=count: state.has("Progressive Score Multiplier", p, c))
 

@@ -615,36 +615,42 @@ def _append_remaining_required_characters(
             del possible_pool_character_items[character.name]
 
 
-def _get_extras_item_names_lists(self: LegoStarWarsTCSWorld) -> tuple[list[str], list[str]]:
+def prepare_extras(world: LegoStarWarsTCSWorld) -> tuple[list[str], list[str]]:
+    """
+    Pre-collect starting Extras and get lists of the required and non-required Extras to be included in the item pool.
+    :param world: The world that is creating items.
+    :return: A list of item names required to be included in the item pool and a list of item names not required to be
+     included in the item pool.
+    """
     # Start with all sendable Extras as possible to add to the item pool.
     possible_pool_extras = {name: extra for name, extra in EXTRAS_BY_NAME.items() if extra.is_sendable}
 
-    if not self.options.enable_starting_extras_locations:
+    if not world.options.enable_starting_extras_locations:
         # The starting Extra purchases are vanilla, so don't include their Extras in the pool.
         for extra in PURCHASABLE_NON_POWER_BRICK_EXTRAS:
             del possible_pool_extras[extra.name]
 
-    if self.options.start_with_detectors:
+    if world.options.start_with_detectors:
         detectors = {"Minikit Detector", "Power Brick Detector"}
         assert detectors <= set(possible_pool_extras.keys())
         # The detector Extras are being given to the player at the start, so don't include their Extras in the pool.
         for extra_name in detectors:
             del possible_pool_extras[extra_name]
         for detector in sorted(detectors):
-            self.push_precollected(self.create_item(detector))
+            world.push_precollected(world.create_item(detector))
 
     non_required_extras: list[str] = list(possible_pool_extras.keys())
 
-    max_studs_purchase = max(loc.studs_cost for loc in self.get_locations()
+    max_studs_purchase = max(loc.studs_cost for loc in world.get_locations()
                              if isinstance(loc, LegoStarWarsTCSShopLocation))
 
-    required_score_multipliers = self._get_score_multiplier_requirement(max_studs_purchase)
+    required_score_multipliers = world.get_score_multiplier_requirement(max_studs_purchase)
     # Increase required_score_multipliers to at least 1 if there are any enabled chapters with difficult or
     # potentially impossible True Jedi.
     if (required_score_multipliers < 1
-            and self.options.enable_true_jedi_locations
-            and not self.options.easier_true_jedi
-            and not DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI.isdisjoint(self.enabled_chapters_with_locations)):
+            and world.options.enable_true_jedi_locations
+            and not world.options.easier_true_jedi
+            and not DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI.isdisjoint(world.enabled_chapters_with_locations)):
         required_score_multipliers = 1
 
     non_required_score_multipliers = 5 - required_score_multipliers
@@ -773,7 +779,7 @@ def _create_items(
             "The abilities of the required characters are not a subset of the required abilities.")
 
     # Get the required, and non-required extras.
-    pool_required_extras, non_required_extras = _get_extras_item_names_lists(self)
+    pool_required_extras, non_required_extras = prepare_extras(self)
 
     item_location_counts = ItemLocationCounts(self, non_excluded_chapter_count, goal_chapter_locations_excluded)
     item_location_counts.set_character_counts(pool_required_characters)
