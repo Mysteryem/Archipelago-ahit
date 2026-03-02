@@ -176,6 +176,134 @@ class ItemCreator:
         return LegoStarWarsTCSItem(name, classification, code, self._world.player, abilities)
 
 
+@dataclass
+class ItemLocationCounts:
+    world: LegoStarWarsTCSWorld
+    non_excluded_chapter_count: int
+    goal_chapter_locations_excluded: bool
+
+    completion: int = 0
+    """Free spaces in the item pool for Level completion locations."""
+    true_jedi: int = 0
+    """Free spaces in the item pool for True Jedi locations."""
+
+    free_minikit: int = 0
+    """Free spaces in the item pool for Minikit locations."""
+    free_character: int = 0
+    """Free spaces in the item pool for Character unlock/purchase locations."""
+    free_extra: int = 0
+    """Free spaces in the item pool for Extra purchase locations."""
+    free_ridesanity: int = 0
+    """Free spaces in the item pool for ridesanity locations."""
+
+    required_minikit: int = 0
+    """The number of Minikit bundles that are required to exist in the item pool."""
+    required_character: int = 0
+    """The number of Characters that are required to exist in the item pool."""
+    required_extra: int = 0
+    """The number of Extras that are required to exist in the item pool."""
+
+    reserved_character: int = 0
+    """Try to add at least as many characters to the item pool as this."""
+    reserved_extra: int = 0
+    """Try to add at least as many Extras to the item pool as this."""
+
+    def set_character_counts(self, pool_required_characters: list[GenericCharacterData]) -> None:
+        self.required_character = len(pool_required_characters)
+
+        non_excluded_character_unlock_location_count = (
+                self.world.character_unlock_location_count - self.world.goal_excluded_character_unlock_location_count
+        )
+        if (self.world.options.filler_reserve_characters
+                or self.required_character >= non_excluded_character_unlock_location_count):
+            self.reserved_character = non_excluded_character_unlock_location_count
+            self.free_character = 0
+        else:
+            self.reserved_character = self.required_character
+            self.free_character = non_excluded_character_unlock_location_count - self.reserved_character
+
+        # Any goal excluded character unlock locations do not contribute Characters to the item pool (unless those
+        # characters happen to be Filler classification). Enough Filler items for Excluded locations is checked and
+        # satisfied later, so these locations are effectively free locations.
+        self.free_character += self.world.goal_excluded_character_unlock_location_count
+
+    def set_extra_counts(self, pool_required_extras: list[str]) -> None:
+        self.required_extra = len(pool_required_extras)
+
+        self.reserved_extra = self.non_excluded_chapter_count
+
+        if self.world.options.enable_starting_extras_locations:
+            self.reserved_extra += len(PURCHASABLE_NON_POWER_BRICK_EXTRAS)
+
+        free_extra_location_count: int
+        if self.world.options.filler_reserve_extras:
+            # All the locations from Extras are reserved for putting Extra items into the item pool.
+            free_extra_location_count = 0
+        else:
+            # Reserve only as many locations for Extras as the number of Extras that are required to be in the item
+            # pool.
+            starting_reserved_count = self.reserved_extra
+            reserved_extras_location_count = min(self.required_extra, starting_reserved_count)
+            free_extra_location_count = starting_reserved_count - reserved_extras_location_count
+        if self.goal_chapter_locations_excluded:
+            # The Extra location of the Goal Chapter is excluded, and does not contribute an Extra to the item pool.
+            free_extra_location_count += 1
+
+    def set_true_jedi_counts(self) -> None:
+        # The vanilla rewards for True Jedi are Gold Bricks, which are events, so these are effectively free locations
+        # for any kind of item when enabled.
+        if self.world.options.enable_true_jedi_locations:
+            self.true_jedi = self.non_excluded_chapter_count
+
+            if self.goal_chapter_locations_excluded:
+                # True Jedi locations are already free locations for any kind of item.
+                self.true_jedi += 1
+        else:
+            self.true_jedi = 0
+
+    def set_completion_counts(self) -> None:
+        self.completion = self.non_excluded_chapter_count + len(self.world.enabled_bonuses)
+        if self.goal_chapter_locations_excluded:
+            # The completion location for the goal chapter is excluded, but is still a free location in the item pool
+            # (space for filler needed to be placed at excluded locations is calculated separately from free locations).
+            self.completion += 1
+
+    def set_minikit_counts(self):
+        # As many minikit bundles as this will always be created. This may be fewer than is required to goal, but
+        # reducing the total bundle count can make a seed longer, so all minikit bundles should be considered to be
+        # required.
+        self.required_minikit = self.world.minikit_bundle_count
+
+        if self.world.options.enable_minikit_locations:
+            self.free_minikit = self.non_excluded_chapter_count * 10 - self.required_minikit
+            if self.goal_chapter_locations_excluded:
+                # The locations are excluded, but still count as free locations.
+                self.free_minikit += 10
+        else:
+            if self.world.options.minikit_goal_amount != 0:
+                assert self.world.options.minikit_bundle_size == 10
+                assert self.world.minikit_bundle_name == "10 Minikits"
+                assert self.world.minikit_bundle_count == len(self.world.enabled_non_goal_chapters)
+                # Consume the free Chapter Completion locations to fit the Minikits.
+                self.completion -= self.required_minikit
+                self.free_minikit = 0
+            else:
+                assert self.required_minikit == 0
+                self.free_minikit = 0
+
+    def set_ridesanity_counts(self) -> None:
+        # There are no corresponding items for ridesanity locations, so they are free locations for any item.
+        self.free_ridesanity = self.world.ridesanity_location_count
+
+    @property
+    def free_location_count(self):
+        return self.completion + self.true_jedi + self.free_minikit + self.free_character + self.free_extra + self.free_ridesanity
+
+    @property
+    def locations_to_fill(self):
+        return self.reserved_character + self.reserved_extra + self.required_minikit + self.free_location_count + self.required_additional
+
+
 def _determine_chapters(self: LegoStarWarsTCSWorld) -> tuple[set[str], set[str]]:
     """
     Return the set of chapter short names that have locations, and the set of chapter short names that have non-excluded
@@ -647,94 +775,15 @@ def _create_items(
     # Get the required, and non-required extras.
     pool_required_extras, non_required_extras = _get_extras_item_names_lists(self)
 
-    non_excluded_character_unlock_location_count = (
-            self.character_unlock_location_count - self.goal_excluded_character_unlock_location_count
-    )
+    item_location_counts = ItemLocationCounts(self, non_excluded_chapter_count, goal_chapter_locations_excluded)
+    item_location_counts.set_character_counts(pool_required_characters)
+    item_location_counts.set_extra_counts(pool_required_extras)
+    item_location_counts.set_true_jedi_counts()
+    item_location_counts.set_completion_counts()
+    item_location_counts.set_minikit_counts()
+    item_location_counts.set_ridesanity_counts()
 
-    required_characters_count = len(pool_required_characters)
-    # Try to add as many characters to the pool as this.
-    reserved_character_location_count: int
-    if self.options.filler_reserve_characters:
-        reserved_character_location_count = non_excluded_character_unlock_location_count
-    else:
-        reserved_character_location_count = min(required_characters_count,
-                                                non_excluded_character_unlock_location_count)
-
-    free_character_location_count: int = (non_excluded_character_unlock_location_count
-                                          - reserved_character_location_count)
-    # Any goal excluded character unlock locations do not contribute Characters to the item pool (unless those
-    # characters happen to be Filler classification). Enough Filler items for Excluded locations is checked and
-    # satisfied later, so these locations are effectively free locations.
-    free_character_location_count += self.goal_excluded_character_unlock_location_count
-
-    # Try to create as many Extras as this.
-    reserved_extras_location_count = non_excluded_chapter_count
-    if self.options.enable_starting_extras_locations:
-        reserved_extras_location_count += len(PURCHASABLE_NON_POWER_BRICK_EXTRAS)
-
-    required_extras_count = len(pool_required_extras)
-    free_extra_location_count: int
-    if self.options.filler_reserve_extras:
-        # All the locations from Extras are reserved for putting Extra items into the item pool.
-        free_extra_location_count = 0
-    else:
-        # Reserve only as many locations for Extras as the number of Extras that are required to be in the item
-        # pool.
-        starting_reserved_count = reserved_extras_location_count
-        reserved_extras_location_count = min(required_extras_count, starting_reserved_count)
-        free_extra_location_count = starting_reserved_count - reserved_extras_location_count
-    if goal_chapter_locations_excluded:
-        # The Extra location of the Goal Chapter is excluded, and does not contribute an Extra to the item pool.
-        free_extra_location_count += 1
-
-    # As many minikit bundles as this will always be created. This may be fewer than is required to goal, but
-    # reducing the total bundle count can make a seed longer, so all minikit bundles should be considered to be
-    # required.
-    required_minikit_location_count = self.minikit_bundle_count
-
-    # The vanilla rewards for these are Gold Bricks, which are events, so these are effectively free locations for
-    # any kind of item when enabled.
-    if self.options.enable_true_jedi_locations:
-        true_jedi_location_count = non_excluded_chapter_count
-
-        if goal_chapter_locations_excluded:
-            # True Jedi locations are already free locations for any kind of item.
-            true_jedi_location_count += 1
-    else:
-        true_jedi_location_count = 0
-
-    completion_location_count = non_excluded_chapter_count + len(self.enabled_bonuses)
-    if goal_chapter_locations_excluded:
-        # The location is excluded, but still counted as a free location.
-        completion_location_count += 1
-
-    if self.options.enable_minikit_locations:
-        free_minikit_location_count = non_excluded_chapter_count * 10 - required_minikit_location_count
-        if goal_chapter_locations_excluded:
-            # The locations are excluded, but still count as free locations.
-            free_minikit_location_count += 10
-    else:
-        if self.options.minikit_goal_amount != 0:
-            assert self.options.minikit_bundle_size == 10
-            assert self.minikit_bundle_name == "10 Minikits"
-            assert self.minikit_bundle_count == len(self.enabled_non_goal_chapters)
-            # Consume the free Chapter Completion locations to fit the Minikits.
-            completion_location_count -= self.minikit_bundle_count
-            free_minikit_location_count = 0
-        else:
-            assert required_minikit_location_count == 0
-            free_minikit_location_count = 0
-    # There are no corresponding items for ridesanity locations, so they are free locations for any item.
-    free_ridesanity_location_count = self.ridesanity_location_count
-
-    free_location_count = (
-            completion_location_count
-            + true_jedi_location_count
-            + free_minikit_location_count
-            + free_character_location_count
-            + free_extra_location_count
-            + free_ridesanity_location_count
-    )
+    free_location_count = item_location_counts.free_location_count
 
     assert free_location_count >= 0, "initial free_location_count should always be >= 0"
 
@@ -770,8 +819,8 @@ def _create_items(
         # Attempt to reduce reserved items until there is enough space.
         needed = -free_location_count
         # Subtract from reserved, but not required, counts.
-        ok_to_replace_character_count = max(0, reserved_character_location_count - required_characters_count)
-        ok_to_replace_extras_count = max(0, reserved_extras_location_count - required_extras_count)
+        ok_to_replace_character_count = max(0, item_location_counts.reserved_character - item_location_counts.required_character)
+        ok_to_replace_extras_count = max(0, item_location_counts.reserved_extra - item_location_counts.required_extra)
         total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
         if needed > total_replaceable:
             if self.options.goal_requires_kyber_bricks:
@@ -789,16 +838,16 @@ def _create_items(
         character_percentage = ok_to_replace_character_count / total_replaceable
         character_subtract = min(needed, round(character_percentage * needed))
         extra_subtract = needed - character_subtract
-        reserved_character_location_count -= character_subtract
-        reserved_extras_location_count -= extra_subtract
+        item_location_counts.reserved_character -= character_subtract
+        item_location_counts.reserved_extra -= extra_subtract
         free_location_count = 0
 
     assert free_location_count >= 0, "free_location_count must always be >= 0"
 
     expected_num_to_fill = (
-            reserved_character_location_count
-            + reserved_extras_location_count
-            + required_minikit_location_count
+            item_location_counts.reserved_character
+            + item_location_counts.reserved_extra
+            + item_location_counts.required_minikit
             + free_location_count
             + len(extra_required_items)
     )
@@ -806,7 +855,6 @@ def _create_items(
     assert num_to_fill == expected_num_to_fill, \
         f"Expected {expected_num_to_fill} locations to fill, but got {num_to_fill}"
 
-    required_extras_count = len(pool_required_extras)
     required_excludable_count = (
             sum(loc.progress_type == LocationProgressType.EXCLUDED for loc in unfilled_locations)
     )
@@ -819,8 +867,8 @@ def _create_items(
         # are enabled.
         needed = required_excludable_count - free_location_count
         # Find how many character/extra locations can be used for filler placement without issue.
-        ok_to_replace_character_count = max(0, reserved_character_location_count - required_characters_count)
-        ok_to_replace_extras_count = max(0, reserved_extras_location_count - required_extras_count)
+        ok_to_replace_character_count = max(0, item_location_counts.reserved_character - item_location_counts.required_character)
+        ok_to_replace_extras_count = max(0, item_location_counts.reserved_extra - item_location_counts.required_extra)
         total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
         if needed > total_replaceable:
             # There are too many non-excludable items for the number of excluded locations.
@@ -829,9 +877,9 @@ def _create_items(
             # to start inventory instead of erroring here.
             non_excluded_count = num_to_fill - required_excludable_count
             required_count = (
-                    required_extras_count
-                    + required_characters_count
-                    + required_minikit_location_count
+                    item_location_counts.required_extra
+                    + item_location_counts.required_character
+                    + item_location_counts.required_minikit
                     + len(extra_required_items)
             )
             self.option_error("There are too few non-excluded locations to fit all required progression items."
@@ -841,8 +889,8 @@ def _create_items(
         character_percentage = ok_to_replace_character_count / total_replaceable
         character_subtract = min(needed, round(character_percentage * needed))
         extra_subtract = needed - character_subtract
-        reserved_character_location_count -= character_subtract
-        reserved_extras_location_count -= extra_subtract
+        item_location_counts.reserved_character -= character_subtract
+        item_location_counts.reserved_extra -= extra_subtract
         free_location_count = 0
     else:
         free_location_count -= required_excludable_count
@@ -862,10 +910,10 @@ def _create_items(
 
     # Create required characters.
     start_inventory_required_characters_count: int
-    if reserved_character_location_count < required_characters_count:
+    if item_location_counts.reserved_character < item_location_counts.required_character:
         # If there are not enough reserved character unlock locations for the required characters, subtract from the
         # free location count.
-        to_subtract = required_characters_count - reserved_character_location_count
+        to_subtract = item_location_counts.required_character - item_location_counts.reserved_character
         if free_location_count < to_subtract:
             # If there are not enough free locations, some of the required characters will have to be added to start
             # inventory.
@@ -876,9 +924,9 @@ def _create_items(
         else:
             free_location_count -= to_subtract
             start_inventory_required_characters_count = 0
-        reserved_character_location_count = 0
+        item_location_counts.reserved_character = 0
     else:
-        reserved_character_location_count -= required_characters_count
+        item_location_counts.reserved_character -= item_location_counts.required_character
         start_inventory_required_characters_count = 0
 
     self.random.shuffle(pool_required_characters)
@@ -893,8 +941,8 @@ def _create_items(
 
     # Create required extras.
     start_inventory_required_extras_count: int
-    if reserved_extras_location_count < required_extras_count:
-        to_subtract = required_extras_count - reserved_extras_location_count
+    if item_location_counts.reserved_extra < item_location_counts.required_extra:
+        to_subtract = item_location_counts.required_extra - item_location_counts.reserved_extra
         if free_location_count < to_subtract:
             start_inventory_required_extras_count = to_subtract - free_location_count
             self.log_warning("There were not enough locations to add all required Extras to the item pool,"
@@ -903,9 +951,9 @@ def _create_items(
         else:
             free_location_count -= to_subtract
             start_inventory_required_extras_count = 0
-        reserved_extras_location_count = 0
+        item_location_counts.reserved_extra = 0
     else:
-        reserved_extras_location_count -= required_extras_count
+        item_location_counts.reserved_extra -= item_location_counts.required_extra
         start_inventory_required_extras_count = 0
 
     self.random.shuffle(pool_required_extras)
@@ -930,8 +978,8 @@ def _create_items(
     preferred_characters = self.options.preferred_characters.value
     if preferred_characters:
         non_required_characters.sort(key=lambda char: -1 if char.name in preferred_characters else 0)
-    picked_chars = non_required_characters[:reserved_character_location_count]
-    leftover_chars = non_required_characters[reserved_character_location_count:]
+    picked_chars = non_required_characters[:item_location_counts.reserved_character]
+    leftover_chars = non_required_characters[item_location_counts.reserved_character:]
     for char in picked_chars:
         item = item_creator.create_item(char.name)
         add_to_pool(item)
@@ -945,8 +993,8 @@ def _create_items(
     # Sort preferred Extras first so that they are picked in preference.
     non_required_extras = _sort_for_preferred_extras(non_required_extras, self)
 
-    picked_extras = non_required_extras[:reserved_extras_location_count]
-    leftover_extras = non_required_extras[reserved_extras_location_count:]
+    picked_extras = non_required_extras[:item_location_counts.reserved_extra]
+    leftover_extras = non_required_extras[item_location_counts.reserved_extra:]
     for extra in picked_extras:
         item = item_creator.create_item(extra)
         add_to_pool(item)
