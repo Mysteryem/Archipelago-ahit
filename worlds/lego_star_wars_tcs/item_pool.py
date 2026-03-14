@@ -771,12 +771,11 @@ def _create_items(
 
     non_required_characters = list(possible_pool_character_items.values())
 
-    assert (item_pool_ability_requirements.required is CharacterAbility.NONE,
-            "There are required abilities remaining that have not been fulfilled.")
-    assert (required_abilities_to_fulfil in reduce(or_,
-                                                   (data.abilities for data in pool_required_characters),
-                                                   CharacterAbility.NONE),
-            "The abilities of the required characters are not a subset of the required abilities.")
+    assert item_pool_ability_requirements.required is CharacterAbility.NONE, \
+           "There are required abilities remaining that have not been fulfilled."
+    assert required_abilities_to_fulfil in reduce(
+        or_, (data.abilities for data in pool_required_characters), CharacterAbility.NONE), \
+        "The abilities of the required characters are not a subset of the required abilities."
 
     # Get the required, and non-required extras.
     pool_required_extras, non_required_extras = prepare_extras(self)
