@@ -792,29 +792,29 @@ def _create_items(
 
     assert free_location_count >= 0, "initial free_location_count should always be >= 0"
 
-    extra_required_items = []
+    other_required_items = []
     # A few free locations may need to be used for episode unlock items and/or episode tokens.
     if self.options.episode_unlock_requirement == "episode_item":
         for i in self.enabled_episodes:
             if i != self.starting_episode:
-                extra_required_items.append(f"Episode {i} Unlock")
+                other_required_items.append(f"Episode {i} Unlock")
     if self.options.all_episodes_character_purchase_requirements == "episodes_tokens":
         # One token is added to the item pool for every episode's worth of (6) chapters that are enabled.
         tokens_in_pool = max(1, round(len(self.enabled_chapters) / 6))
         start_inventory_tokens = 6 - tokens_in_pool
         assert 5 >= start_inventory_tokens >= 0
         for _ in range(tokens_in_pool):
-            extra_required_items.append("Episode Completion Token")
+            other_required_items.append("Episode Completion Token")
         for _ in range(start_inventory_tokens):
             self.push_precollected(self.create_item("Episode Completion Token"))
     # 7 free locations may need to be used for Kyber Bricks.
     if self.options.goal_requires_kyber_bricks:
-        extra_required_items.extend(("Kyber Brick",) * 7)
+        other_required_items.extend(("Kyber Brick",) * 7)
 
     # As many Chapter Unlock items as there are enabled Chapters, excluding the starting chapter.
-    extra_required_items.extend(pool_required_chapter_unlock_items)
+    other_required_items.extend(pool_required_chapter_unlock_items)
 
-    free_location_count -= len(extra_required_items)
+    free_location_count -= len(other_required_items)
 
     unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
     num_to_fill = len(self.multiworld.get_unfilled_locations(self.player))
@@ -854,7 +854,7 @@ def _create_items(
             + item_location_counts.reserved_extra
             + item_location_counts.required_minikit
             + free_location_count
-            + len(extra_required_items)
+            + len(other_required_items)
     )
 
     assert num_to_fill == expected_num_to_fill, \
@@ -885,7 +885,7 @@ def _create_items(
                     item_location_counts.required_extra
                     + item_location_counts.required_character
                     + item_location_counts.required_minikit
-                    + len(extra_required_items)
+                    + len(other_required_items)
             )
             self.option_error("There are too few non-excluded locations to fit all required progression items."
                               " There are %i locations, %i of which are not excluded, but there are %i required"
@@ -908,10 +908,10 @@ def _create_items(
         item_pool.append(item)
         created_item_names.add(item.name)
 
-    # Create Episode related items.
-    for name in extra_required_items:
+    # Create required generic items that don't fall into any particular category.
+    for name in other_required_items:
         add_to_pool(item_creator.create_item(name))
-    num_to_fill -= len(extra_required_items)
+    num_to_fill -= len(other_required_items)
 
     # Create required characters.
     start_inventory_required_characters_count: int
