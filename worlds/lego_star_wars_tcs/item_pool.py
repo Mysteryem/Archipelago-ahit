@@ -238,16 +238,16 @@ class ItemLocationCounts:
         free_extra_location_count: int
         if self.world.options.filler_reserve_extras:
             # All the locations from Extras are reserved for putting Extra items into the item pool.
-            free_extra_location_count = 0
+            self.free_extra = 0
         else:
             # Reserve only as many locations for Extras as the number of Extras that are required to be in the item
             # pool.
-            starting_reserved_count = self.reserved_extra
-            reserved_extras_location_count = min(self.required_extra, starting_reserved_count)
-            free_extra_location_count = starting_reserved_count - reserved_extras_location_count
+            initial_reserved_count = self.reserved_extra
+            self.reserved_extra = min(self.required_extra, initial_reserved_count)
+            self.free_extra = initial_reserved_count - self.reserved_extra
         if self.goal_chapter_locations_excluded:
             # The Extra location of the Goal Chapter is excluded, and does not contribute an Extra to the item pool.
-            free_extra_location_count += 1
+            self.free_extra += 1
 
     def set_true_jedi_counts(self) -> None:
         # The vanilla rewards for True Jedi are Gold Bricks, which are events, so these are effectively free locations
