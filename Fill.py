@@ -79,6 +79,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     remaining_locations = locations.copy()
     remaining_locations.reverse()
 
+    unplaceable_items: list[Item] = []
     while remaining_items:
         item = remaining_items.pop()
 
@@ -93,6 +94,9 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                 break
             else:
                 skipped_locations.append(loc)
+        else:
+            # No suitable location was found to place the item at.
+            unplaceable_items.append(item)
         if skipped_locations:
             # Reverse skipped locations to that the first skipped locations go to the end.
             reversed_skipped_locations_iter = reversed(skipped_locations)
@@ -104,7 +108,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
 
     potential_state = base_state.copy()
     # Collect all items that could not be placed anywhere.
-    for item in remaining_items:
+    for item in unplaceable_items:
         potential_state.collect(item, True)
 
     # Minimal players that have beaten their game ignore location reachability for placements.
