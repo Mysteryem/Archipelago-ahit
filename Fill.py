@@ -74,10 +74,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
 
     multiworld = base_state.multiworld
 
-    base_checked_advancements = base_state.advancements
-    filled_advancements_to_check = {loc for loc in multiworld.get_locations()
-                                    if loc.advancement and loc not in base_checked_advancements}
-    filled_locs: typing.List[Location] = []
+    potential_placements: list[tuple[Location, Item]] = []
 
     remaining_locations = locations.copy()
     remaining_locations.reverse()
@@ -92,10 +89,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
         while remaining_locations:
             loc = remaining_locations.pop()
             if loc.can_fill(base_state, item, check_access=False):
-                multiworld.push_item(loc, item, False)
-                filled_locs.append(loc)
-                if item.advancement:
-                    filled_advancements_to_check.add(loc)
+                potential_placements.append((loc, item))
                 break
             else:
                 skipped_locations.append(loc)
@@ -107,13 +101,6 @@ def _restrictive_bulk_fill(base_state: CollectionState,
         if not remaining_locations:
             # There are no remaining locations
             break
-
-    potential_placements = [(loc, loc.item) for loc in filled_locs]
-
-    for loc, item in potential_placements:
-        # Undo the potential placement.
-        item.location = None
-        loc.item = None
 
     potential_state = base_state.copy()
     # Collect all items that could not be placed anywhere.
