@@ -100,6 +100,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                 pool_with_spaces.append(next(picked_iter))
                 last_was_spacer = False
         remaining_items[player] = pool_with_spaces
+    assert all(sum(i if type(i) is int else 1 for i in pool) == largest_pool for pool in remaining_items.values())
 
     # Placed items are removed from `item_pool`, so if all items for a player get placed, no deque for that player
     # will be added to `reachable_items` in fill_restrictive, but swap may need to un-place one of those items back into
@@ -112,8 +113,10 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     remaining_locations.reverse()
 
     unplaceable_items: list[Item] = []
-    items_remaining = True
-    while remaining_items and items_remaining:
+    # The pools all start the same length, when accounting for combined spaces, and one item/space is popped from each
+    # pool in each loop, so `any` is sufficient to check that there are still items/spaces remaining, and is faster than
+    # `all`.
+    while remaining_items and any(remaining_items.values()):
         for pool in remaining_items.values():
             item = pool.pop()
             if type(item) is int:
@@ -122,7 +125,6 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     # Re-append the spacer with a reduced count.
                     pool.append(item - 1)
                 continue
-            items_remaining = bool(pool)
 
             # Iterate locations until finding a location that accepts the item.
             # Any locations that refuse the item are stored so that the next item can try being filled at those
