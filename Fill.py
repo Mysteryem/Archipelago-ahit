@@ -194,6 +194,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     # Place the item.
                     multiworld.push_item(loc, item, False)
                     successful_placements.add(loc)
+                    placements.append(loc)
                     successful_placed_item_ids.add(id(item))
                     if loc.can_reach(potential_state):
                         reachable.append(loc)
