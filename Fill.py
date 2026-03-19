@@ -39,7 +39,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                            lock: bool,
                            on_place: typing.Callable[[Location], None] | None,
                            name: str,
-                           placements: typing.List[Location]) -> tuple[typing.Iterable[int], int]:
+                           placements: typing.List[Location]) -> tuple[list[int], int]:
     """
     Place each item onto the first location that will accept it without checking reachability, then undo all placements
     that were invalid.
@@ -63,7 +63,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     :return: A tuple of: An iterable of all player IDs that had items to place, and the number of new placements made.
     """
     if not item_pool or not locations:
-        return (), 0
+        return [], 0
 
     # Gather items into per-player pools to match fill_restrictive placement behaviour.
     remaining_items: dict[int, list[Item | int]] = {}
@@ -275,7 +275,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
 
     _log_fill_progress(name + " (Bulk (completed))", len(successful_placements), total)
 
-    return all_players, len(placed_locs)
+    return sorted(all_players), len(placed_locs)
 
 
 def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locations: typing.List[Location],
