@@ -174,21 +174,24 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     unreachable_allowed = []
 
     # When running out of reachable locations, pop and collect this many items, giving up on placing them in
-    # _restrictive_bulk_fill.
-    # 1/1000th of the total pool size is a magic number. Fewer items means more accuracy, but is slower.
-    # Performance increases much more quickly than accuracy reduces, at very small numbers to pop, so there is a big
-    # performance increase going from 1 -> 2, but little loss in accuracy.
-    pop_and_collect_when_no_more_reachable = max(1, total // 1000)
+    # _restrictive_bulk_fill, and hopefully resulting in some more advancement locations becoming reachable by
+    # `potential_state`.
+    # 1/1000th of the locations to check is a magic number. Fewer items means more accuracy, but is slower.
+    # At very small numbers to pop, performance increases much more quickly than accuracy reduces, so there is a big
+    # performance increase going from 1 to 2, for example, but little loss in accuracy.
+    total_locations_to_check = len(potential_placements) + len(existing_advancements)
+    pop_and_collect_when_no_more_reachable = max(1, total_locations_to_check // 1000)
 
     collected_advancement = True
     while potential_placements:
         if not collected_advancement:
-            # Failed to collect any advancements into potential_state in the previous iteration, so items from
-            # potential_placements need to be collected instead.
+            # No advancements were collected into `potential_state` in the previous iteration, so items from
+            # `potential_placements` need to be collected instead.
             # The *last* items are popped because regular fill_restrictive places items in the order they were provided,
             # so it is better for _restrictive_bulk_fill to try to match this as close as possible, by making it more
             # likely that earlier items manage to be placed by _restrictive_bulk_fill.
-            # For much better performance, at a small loss to accuracy, multiple items are popped simultaneously.
+            # For much better performance, at a small loss to accuracy, multiple items are popped and collected instead
+            # of just one when the total number of locations to check is large.
             for _ in range(min(pop_and_collect_when_no_more_reachable, len(potential_placements))):
                 _failed_loc, failed_item = potential_placements.pop()
                 potential_state.collect(failed_item, True)
