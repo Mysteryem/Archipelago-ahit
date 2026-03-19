@@ -196,22 +196,6 @@ def _restrictive_bulk_fill(base_state: CollectionState,
             collected_advancement = True
         else:
             collected_advancement = False
-            reachable_existing = []
-            unreachable_existing = []
-            for loc in existing_advancements:
-                if loc.can_reach(potential_state):
-                    reachable_existing.append(loc)
-                else:
-                    unreachable_existing.append(loc)
-            # TODO: Do we really need to collect event items first? It helps get worlds beatable a sphere sooner I
-            #  guess.
-            if reachable_existing:
-                # Items are being collected, so the state is changed.
-                collected_advancement = True
-                for loc in reachable_existing:
-                    potential_state.collect(loc.item, True, loc)
-            existing_advancements = unreachable_existing
-
             # Try to fill each potential placement.
             still_unfilled = []
             filled = []
@@ -249,6 +233,15 @@ def _restrictive_bulk_fill(base_state: CollectionState,
             for loc in filled:
                 if loc.can_reach(potential_state):
                     reachable.append(loc)
+            # Find reachable existing placements.
+            reachable_existing = []
+            unreachable_existing = []
+            for loc in existing_advancements:
+                if loc.can_reach(potential_state):
+                    reachable_existing.append(loc)
+                else:
+                    unreachable_existing.append(loc)
+            existing_advancements = unreachable_existing
             # Collect the newly made placements that are reachable into `potential_state`.
             if reachable:
                 collected_advancement = True
@@ -259,6 +252,11 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     item_player = loc.item.player
                     if item_player in minimal_players_remaining:
                         minimal_stale.add(item_player)
+            if reachable_existing:
+                # Items are being collected, so the state is changed.
+                collected_advancement = True
+                for loc in reachable_existing:
+                    potential_state.collect(loc.item, True, loc)
             # Update the remaining potential placements.
             potential_placements = still_unfilled
 
