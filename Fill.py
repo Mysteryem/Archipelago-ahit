@@ -65,7 +65,8 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     if not item_pool or not locations:
         return (), 0
 
-    remaining_items: dict[int, list[Item | None]] = {}
+    # Gather items into per-player pools to match fill_restrictive placement behaviour.
+    remaining_items: dict[int, list[Item | int]] = {}
     for item in item_pool:
         if item.player in remaining_items:
             remaining_items[item.player].append(item)
@@ -74,7 +75,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
 
     multiworld = base_state.multiworld
 
-    # Increase each pool to the same length, randomly inserting spacers into smaller pools.
+    # Increase each pool to the same length, randomly inserting int spacers into smaller pools.
     # This maintains per-player placement order, but reduces the bias that the players with the highest percentage of
     # invalid placements, that have to be undone, belong to the player with the most items.
     largest_pool = max(map(len, remaining_items.values()))
@@ -86,11 +87,18 @@ def _restrictive_bulk_fill(base_state: CollectionState,
         iter_picks = [pool_iter] * len(pool) + [None] * spaces_needed
         multiworld.random.shuffle(iter_picks)
         pool_with_spaces = []
+        last_was_spacer = False
         for picked_iter in iter_picks:
             if picked_iter is None:
-                pool_with_spaces.append(None)
+                if last_was_spacer:
+                    # Combine spacers in a row to reduce list length, reducing memory usage.
+                    pool_with_spaces[-1] += 1
+                else:
+                    pool_with_spaces.append(1)
+                last_was_spacer = True
             else:
                 pool_with_spaces.append(next(picked_iter))
+                last_was_spacer = False
         remaining_items[player] = pool_with_spaces
 
     # Placed items are removed from `item_pool`, so if all items for a player get placed, no deque for that player
@@ -108,9 +116,11 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     while remaining_items and items_remaining:
         for pool in remaining_items.values():
             item = pool.pop()
-            if item is None:
-                # The popped element was a spacer to allow a better spread of placed items, so that most of the items
-                # that fail to be placed are not as heavily biased to belong to the player with the largest item pool.
+            if type(item) is int:
+                # The popped element was a spacer used to make each player's item pool the same length.
+                if item > 1:
+                    # Re-append the spacer with a reduced count.
+                    pool.append(item - 1)
                 continue
             items_remaining = bool(pool)
 
