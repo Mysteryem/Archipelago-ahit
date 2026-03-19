@@ -165,7 +165,6 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                              if loc.advancement and loc not in potential_state.advancements]
 
     successful_placements = set()
-    successful_placed_item_ids = set()
 
     total = min(len(item_pool), len(locations))
 
@@ -236,7 +235,6 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     multiworld.push_item(loc, item, False)
                     successful_placements.add(loc)
                     placements.append(loc)
-                    successful_placed_item_ids.add(id(item))
                     filled.append(loc)
                     if on_place is not None:
                         on_place(loc)
@@ -264,27 +262,25 @@ def _restrictive_bulk_fill(base_state: CollectionState,
             # Update the remaining potential placements.
             potential_placements = still_unfilled
 
-    placed_item_ids = successful_placed_item_ids
-    placed_locs = successful_placements
-
     # Update the item_pool and locations lists.
+    successful_placed_item_ids = {id(loc.item) for loc in successful_placements}
     item_indices_to_pop = []
-    for i, item in enumerate(item_pool):
-        if id(item) in placed_item_ids:
+    for i, item_id in enumerate(map(id, item_pool)):
+        if item_id in successful_placed_item_ids:
             item_indices_to_pop.append(i)
     for i in reversed(item_indices_to_pop):
         item_pool.pop(i)
 
     loc_indices_to_pop = []
     for i, loc in enumerate(locations):
-        if loc in placed_locs:
+        if loc in successful_placements:
             loc_indices_to_pop.append(i)
     for i in reversed(loc_indices_to_pop):
         locations.pop(i)
 
     _log_fill_progress(name + " (Bulk (completed))", len(successful_placements), total)
 
-    return sorted(all_players), len(placed_locs)
+    return sorted(all_players), len(successful_placements)
 
 
 def fill_restrictive(multiworld: MultiWorld, base_state: CollectionState, locations: typing.List[Location],
