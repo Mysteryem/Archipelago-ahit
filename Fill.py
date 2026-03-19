@@ -65,14 +65,38 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     if not item_pool or not locations:
         return (), 0
 
-    remaining_items = item_pool.copy()
+    remaining_items: dict[int, list[Item | None]] = {}
+    for item in item_pool:
+        if item.player in remaining_items:
+            remaining_items[item.player].append(item)
+        else:
+            remaining_items[item.player] = [item]
+
+    multiworld = base_state.multiworld
+
+    # Increase each pool to the same length, randomly inserting spacers into smaller pools.
+    # This maintains per-player placement order, but reduces the bias that the players with the highest percentage of
+    # invalid placements, that have to be undone, belong to the player with the most items.
+    largest_pool = max(map(len, remaining_items.values()))
+    for player, pool in remaining_items.items():
+        spaces_needed = largest_pool - len(pool)
+        if spaces_needed == 0:
+            continue
+        pool_iter = iter(pool)
+        iter_picks = [pool_iter] * len(pool) + [None] * spaces_needed
+        multiworld.random.shuffle(iter_picks)
+        pool_with_spaces = []
+        for picked_iter in iter_picks:
+            if picked_iter is None:
+                pool_with_spaces.append(None)
+            else:
+                pool_with_spaces.append(next(picked_iter))
+        remaining_items[player] = pool_with_spaces
 
     # Placed items are removed from `item_pool`, so if all items for a player get placed, no deque for that player
     # will be added to `reachable_items` in fill_restrictive, but swap may need to un-place one of those items back into
     # `reachable_items`, so ensure that a deque for each player exists.
-    all_players = {item.player for item in remaining_items}
-
-    multiworld = base_state.multiworld
+    all_players = set(remaining_items.keys())
 
     potential_placements: list[tuple[Location, Item]] = []
 
@@ -80,31 +104,38 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     remaining_locations.reverse()
 
     unplaceable_items: list[Item] = []
-    while remaining_items:
-        item = remaining_items.pop()
+    items_remaining = True
+    while remaining_items and items_remaining:
+        for pool in remaining_items.values():
+            item = pool.pop()
+            if item is None:
+                # The popped element was a spacer to allow a better spread of placed items, so that most of the items
+                # that fail to be placed are not as heavily biased to belong to the player with the largest item pool.
+                continue
+            items_remaining = bool(pool)
 
-        # Iterate locations until finding a location that accepts the item.
-        # Any locations that refuse the item are stored so that the next item can try being filled at those
-        # locations to start with.
-        skipped_locations = []
-        while remaining_locations:
-            loc = remaining_locations.pop()
-            if loc.can_fill(base_state, item, check_access=False):
-                potential_placements.append((loc, item))
-                break
+            # Iterate locations until finding a location that accepts the item.
+            # Any locations that refuse the item are stored so that the next item can try being filled at those
+            # locations to start with.
+            skipped_locations = []
+            while remaining_locations:
+                loc = remaining_locations.pop()
+                if loc.can_fill(base_state, item, check_access=False):
+                    potential_placements.append((loc, item))
+                    break
+                else:
+                    skipped_locations.append(loc)
             else:
-                skipped_locations.append(loc)
-        else:
-            # No suitable location was found to place the item at.
-            unplaceable_items.append(item)
-        if skipped_locations:
-            # Reverse skipped locations to that the first skipped locations go to the end.
-            reversed_skipped_locations_iter = reversed(skipped_locations)
-            # Put any skipped locations to the back of remaining_locations, so the next item tries them first.
-            remaining_locations.extend(reversed_skipped_locations_iter)
-        if not remaining_locations:
-            # There are no remaining locations
-            break
+                # No suitable location was found to place the item at.
+                unplaceable_items.append(item)
+            if skipped_locations:
+                # Reverse skipped locations to that the first skipped locations go to the end.
+                reversed_skipped_locations_iter = reversed(skipped_locations)
+                # Put any skipped locations to the back of remaining_locations, so the next item tries them first.
+                remaining_locations.extend(reversed_skipped_locations_iter)
+            if not remaining_locations:
+                # There are no remaining locations
+                break
 
     potential_state = base_state.copy()
     # Collect all items that could not be placed anywhere.
