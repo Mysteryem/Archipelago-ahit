@@ -171,7 +171,6 @@ def _restrictive_bulk_fill(base_state: CollectionState,
 
     # Minimal accessibility allows for unreachable progression item placements.
     minimal_stale = set()
-    unreachable_allowed = []
 
     # When running out of reachable locations, pop and collect this many items, giving up on placing them in
     # _restrictive_bulk_fill, and hopefully resulting in some more advancement locations becoming reachable by
@@ -214,8 +213,9 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     potential_state.collect(loc.item, True, loc)
             existing_advancements = unreachable_existing
 
-            reachable = []
-            unreachable = []
+            # Try to fill each potential placement.
+            still_unfilled = []
+            filled = []
             for loc, item in potential_placements:
                 item_player = item.player
                 if item_player in minimal_game_beaten_players:
@@ -237,10 +237,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     successful_placements.add(loc)
                     placements.append(loc)
                     successful_placed_item_ids.add(id(item))
-                    if loc.can_reach(potential_state):
-                        reachable.append(loc)
-                    else:
-                        unreachable_allowed.append(loc)
+                    filled.append(loc)
                     if on_place is not None:
                         on_place(loc)
                     if lock:
@@ -248,7 +245,13 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     if len(successful_placements) % 100 == 0:
                         _log_fill_progress(name + " (Bulk)", len(successful_placements), total)
                 else:
-                    unreachable.append((loc, item))
+                    still_unfilled.append((loc, item))
+            # Find the newly made placements that are reachable with `potential_state`.
+            reachable = []
+            for loc in filled:
+                if loc.can_reach(potential_state):
+                    reachable.append(loc)
+            # Collect the newly made placements that are reachable into `potential_state`.
             if reachable:
                 collected_advancement = True
                 for loc in reachable:
@@ -258,7 +261,8 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     item_player = loc.item.player
                     if item_player in minimal_players_remaining:
                         minimal_stale.add(item_player)
-            potential_placements = unreachable
+            # Update the remaining potential placements.
+            potential_placements = still_unfilled
 
     placed_item_ids = successful_placed_item_ids
     placed_locs = successful_placements
