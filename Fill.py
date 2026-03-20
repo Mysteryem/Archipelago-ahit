@@ -160,6 +160,9 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     unreached_pre_placed_advancements = [loc for loc in multiworld.get_locations()
                                          if loc.advancement and loc not in potential_state.advancements]
     # Minimal players that have beaten their game ignore location reachability for placements.
+    # Unlike the assumed-fill of fill_restrictive, items cannot go from being assumed to be eventually reachable to then
+    # being placed into unreachable locations, so once a minimal player has achieved their goal, their goal does not
+    # need to be checked again.
     minimal_players = {player for player in all_players if multiworld.worlds[player].options.accessibility == "minimal"}
     minimal_game_beaten_players = {player for player in minimal_players
                                    if multiworld.has_beaten_game(potential_state, player)}
