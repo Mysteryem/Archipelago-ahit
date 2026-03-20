@@ -689,9 +689,11 @@ class GeneratorOptions(Group):
 
     class BulkFill(IntEnum):
         """
-        Use a bulk filling algorithm at the start of priority and progression fill, to quickly fill a large percentage
-        of locations in a way that is fast for even very large multiworlds, but tends to result in a small bias towards
-        placing progression items on earlier locations on average.
+        Use a bulk filling algorithm at the start of priority and progression fill, that can quickly fill a large
+        percentage of locations in a way that is fast for even very large multiworlds. This bulk filling algorithm tends
+        to result in a small increase in bias towards placing progression items on earlier locations, on average,
+        compared to the regular filling algorithm's bias, however, the bulk filling algorithm's bias does not increase
+        as the number of players in the multiworld increases, unlike the regular filling algorithm's bias.
         0 -> Disabled
         1 -> Enabled
         """
