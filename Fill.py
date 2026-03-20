@@ -258,19 +258,8 @@ def _restrictive_bulk_fill(base_state: CollectionState,
 
     # Update the item_pool and locations lists.
     successful_placed_item_ids = {id(loc.item) for loc in successful_placements}
-    item_indices_to_pop = []
-    for i, item_id in enumerate(map(id, item_pool)):
-        if item_id in successful_placed_item_ids:
-            item_indices_to_pop.append(i)
-    for i in reversed(item_indices_to_pop):
-        item_pool.pop(i)
-
-    loc_indices_to_pop = []
-    for i, loc in enumerate(locations):
-        if loc in successful_placements:
-            loc_indices_to_pop.append(i)
-    for i in reversed(loc_indices_to_pop):
-        locations.pop(i)
+    item_pool[:] = [item for item in item_pool if id(item) not in successful_placed_item_ids]
+    locations[:] = [loc for loc in locations if loc not in successful_placements]
 
     _log_fill_progress(name + " (Bulk (completed))", len(successful_placements), total)
 
