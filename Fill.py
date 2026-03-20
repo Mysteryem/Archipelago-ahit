@@ -152,11 +152,6 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     for item in unplaceable_items:
         potential_state.collect(item, True)
 
-    # Minimal players that have beaten their game ignore location reachability for placements.
-    minimal_players = {player for player in all_players if multiworld.worlds[player].options.accessibility == "minimal"}
-    minimal_game_beaten_players = {player for player in minimal_players
-                                   if multiworld.has_beaten_game(potential_state, player)}
-
     # Perform what could be considered a forwards fill, but where each item is only allowed to be placed on a single
     # designated location, preventing the early bias that would typically be expected from a forwards fill.
     collected_advancement = True
@@ -164,6 +159,10 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     total = min(len(item_pool), len(locations))
     unreached_pre_placed_advancements = [loc for loc in multiworld.get_locations()
                                          if loc.advancement and loc not in potential_state.advancements]
+    # Minimal players that have beaten their game ignore location reachability for placements.
+    minimal_players = {player for player in all_players if multiworld.worlds[player].options.accessibility == "minimal"}
+    minimal_game_beaten_players = {player for player in minimal_players
+                                   if multiworld.has_beaten_game(potential_state, player)}
     # When running out of reachable locations, pop and collect this many items, giving up on placing them in
     # _restrictive_bulk_fill, and hopefully resulting in some more advancement locations becoming reachable by
     # `potential_state`.
