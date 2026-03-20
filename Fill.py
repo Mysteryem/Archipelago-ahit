@@ -166,7 +166,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     # being placed into unreachable locations, so once a player has achieved their goal, their goal does not need to be
     # checked again.
     minimal_players = {player for player in all_players if multiworld.worlds[player].options.accessibility == "minimal"}
-    goals_remaining = set(multiworld.player_ids)
+    goals_remaining = set(multiworld.player_ids) if minimal_players else set()
     # When running out of reachable locations, pop and collect this many items, giving up on placing them in
     # _restrictive_bulk_fill, and hopefully resulting in some more advancement locations becoming reachable by
     # `potential_state`.
