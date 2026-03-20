@@ -44,13 +44,15 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     Place each item onto the first location that will accept it without checking reachability, then undo all placements
     that were invalid.
 
-    The percentage of items successful placed varies depending on the games and options used, typically between 50-80%.
+    The percentage of items successfully placed varies depending on the games and options used, typically between
+    50-80%.
     The items that could not be placed will need to be filled using another fill function if all items need to be
     placed.
 
     The bulk fill uses the same general item placement order as the later fill_restrictive code, placing items from the
-    end of the item pool first, but does not guarantee this exact placement order because some placements will be
-    invalid and will be undone.
+    end of each player's item pool first onto locations from the start of `locations`, but does not guarantee this exact
+    placement order because some placements will be invalid and will be undone. However, the order that each placement
+    is confirmed to be valid, resulting in `on_place` being called, follows a forwards-fill-like order.
 
     :param base_state: The base state to fill from.
     :param locations: The locations to fill. Filled locations will be removed from this list.
@@ -60,7 +62,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     :param name: The name of the fill, used in logging.
     :param placements: Successful placements are appended to this list.
 
-    :return: A tuple of: An iterable of all player IDs that had items to place, and the number of new placements made.
+    :return: A tuple of: A list of all unique player IDs that had items to place, and the number of new placements made.
     """
     if not item_pool or not locations:
         return [], 0
