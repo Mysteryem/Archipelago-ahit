@@ -159,13 +159,12 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     total = min(len(item_pool), len(locations))
     unreached_pre_placed_advancements = [loc for loc in multiworld.get_locations()
                                          if loc.advancement and loc not in potential_state.advancements]
-    # Minimal players that have beaten their game ignore location reachability for placements.
+    # Minimal players ignore location reachability for placements when all goals are beaten.
     # Unlike the assumed-fill of fill_restrictive, items cannot go from being assumed to be eventually reachable to then
-    # being placed into unreachable locations, so once a minimal player has achieved their goal, their goal does not
-    # need to be checked again.
+    # being placed into unreachable locations, so once a player has achieved their goal, their goal does not need to be
+    # checked again.
     minimal_players = {player for player in all_players if multiworld.worlds[player].options.accessibility == "minimal"}
-    minimal_game_beaten_players = {player for player in minimal_players
-                                   if multiworld.has_beaten_game(potential_state, player)}
+    goals_remaining = set(multiworld.player_ids)
     # When running out of reachable locations, pop and collect this many items, giving up on placing them in
     # _restrictive_bulk_fill, and hopefully resulting in some more advancement locations becoming reachable by
     # `potential_state`.
@@ -192,22 +191,17 @@ def _restrictive_bulk_fill(base_state: CollectionState,
             # Try to fill each potential placement.
             still_unfilled = []
             filled_in_this_iteration = []
-            minimal_checked = set()
+            if goals_remaining:
+                goals_remaining = {player for player in goals_remaining
+                                   if not multiworld.has_beaten_game(potential_state, player)}
             for loc, item in potential_placements:
                 item_player = item.player
 
                 # Determine if access to the location needs to be checked.
-                if item_player in minimal_game_beaten_players:
-                    # If a minimal player has beaten their game, the locations their items are placed at do not need to
-                    # be reachable.
+                if item_player in minimal_players and not goals_remaining:
+                    # If all goals are beaten, a minimal player's items can be placed without checking if the location
+                    # is reachable.
                     check_access = False
-                elif item_player in minimal_players and item_player not in minimal_checked:
-                    minimal_checked.add(item_player)
-                    # Check if the player's game has been beaten.
-                    game_newly_beaten = multiworld.has_beaten_game(potential_state, item_player)
-                    if game_newly_beaten:
-                        minimal_game_beaten_players.add(item_player)
-                    check_access = not game_newly_beaten
                 else:
                     check_access = True
 
