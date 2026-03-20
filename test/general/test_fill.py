@@ -1,4 +1,4 @@
-from typing import List, Iterable
+from typing import List, Iterable, ClassVar
 import unittest
 
 from Options import Accessibility
@@ -7,6 +7,7 @@ from Fill import FillError, balance_multiworld_progression, fill_restrictive, \
     distribute_early_items, distribute_items_restrictive
 from BaseClasses import Entrance, LocationProgressType, MultiWorld, Region, Item, Location, \
     ItemClassification
+from test.param import classvar_matrix
 from worlds.generic.Rules import CollectionRule, add_item_rule, locality_rules, set_rule
 
 
@@ -464,7 +465,10 @@ class TestFillRestrictive(unittest.TestCase):
         self.assertIsNot(loc0.item, player1.prog_items[0], "Filled item was still present in item pool")
 
 
+@classvar_matrix(bulk_fill=[False, True])
 class TestDistributeItemsRestrictive(unittest.TestCase):
+    bulk_fill: ClassVar[bool] = False
+
     def test_basic_distribute(self):
         """Test that distribute_items_restrictive is deterministic"""
         multiworld = generate_test_multiworld()
@@ -474,7 +478,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         prog_items = player1.prog_items
         basic_items = player1.basic_items
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         self.assertEqual(locations[0].item, basic_items[1])
         self.assertFalse(locations[0].advancement)
@@ -495,7 +499,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         locations[1].progress_type = LocationProgressType.EXCLUDED
         locations[2].progress_type = LocationProgressType.EXCLUDED
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         self.assertFalse(locations[1].item.advancement)
         self.assertFalse(locations[2].item.advancement)
@@ -511,7 +515,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         locations[1].progress_type = LocationProgressType.EXCLUDED
         basic_items[1].classification = ItemClassification.useful
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         self.assertEqual(locations[1].item, basic_items[0])
 
@@ -526,7 +530,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         locations[1].progress_type = LocationProgressType.EXCLUDED
         locations[2].progress_type = LocationProgressType.EXCLUDED
 
-        self.assertRaises(FillError, distribute_items_restrictive, multiworld)
+        self.assertRaises(FillError, distribute_items_restrictive, multiworld, do_bulk_fill=self.bulk_fill)
 
     def test_non_excluded_item_must_distribute(self):
         """Test that fill fails if it can't place useful items due to too many excluded locations"""
@@ -541,7 +545,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         basic_items[0].classification = ItemClassification.useful
         basic_items[1].classification = ItemClassification.useful
 
-        self.assertRaises(FillError, distribute_items_restrictive, multiworld)
+        self.assertRaises(FillError, distribute_items_restrictive, multiworld, do_bulk_fill=self.bulk_fill)
 
     def test_priority_distribute(self):
         """Test that priority locations receive advancement items"""
@@ -553,7 +557,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         locations[0].progress_type = LocationProgressType.PRIORITY
         locations[3].progress_type = LocationProgressType.PRIORITY
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         self.assertTrue(locations[0].item.advancement)
         self.assertTrue(locations[3].item.advancement)
@@ -569,7 +573,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         locations[1].progress_type = LocationProgressType.PRIORITY
         locations[2].progress_type = LocationProgressType.PRIORITY
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         self.assertFalse(locations[3].item.advancement)
 
@@ -593,7 +597,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         player3.locations[2].progress_type = LocationProgressType.PRIORITY
         player3.locations[3].progress_type = LocationProgressType.PRIORITY
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         self.assertTrue(player1.locations[2].item.advancement)
         self.assertTrue(player1.locations[3].item.advancement)
@@ -610,7 +614,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         player1.prog_items[0].classification |= ItemClassification.deprioritized
         player1.locations[0].progress_type = LocationProgressType.PRIORITY
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         self.assertFalse(player1.locations[0].item.deprioritized)
 
@@ -621,7 +625,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         player1.prog_items[0].classification |= ItemClassification.deprioritized
         player1.locations[0].progress_type = LocationProgressType.PRIORITY
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         self.assertTrue(player1.locations[0].item.advancement)
 
@@ -640,7 +644,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
 
         multiworld.worlds[player1.id].fill_hook = fill_hook
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         self.assertIsNone(removed_item[0].location)
         self.assertIsNone(removed_location[0].item)
@@ -650,13 +654,13 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         mw1 = generate_test_multiworld()
         gen1 = generate_player_data(
             mw1, 1, 4, prog_item_count=2, basic_item_count=2)
-        distribute_items_restrictive(mw1)
+        distribute_items_restrictive(mw1, do_bulk_fill=self.bulk_fill)
 
         mw2 = generate_test_multiworld()
         gen2 = generate_player_data(
             mw2, 1, 4, prog_item_count=2, basic_item_count=2)
         mw2.itempool.append(mw2.itempool.pop(0))
-        distribute_items_restrictive(mw2)
+        distribute_items_restrictive(mw2, do_bulk_fill=self.bulk_fill)
 
         self.assertEqual(gen1.locations[0].item, gen2.locations[0].item)
         self.assertEqual(gen1.locations[1].item, gen2.locations[1].item)
@@ -668,14 +672,14 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         mw1 = generate_test_multiworld()
         gen1 = generate_player_data(
             mw1, 1, 4, prog_item_count=2, basic_item_count=2)
-        distribute_items_restrictive(mw1)
+        distribute_items_restrictive(mw1, do_bulk_fill=self.bulk_fill)
 
         mw2 = generate_test_multiworld()
         gen2 = generate_player_data(
             mw2, 1, 4, prog_item_count=2, basic_item_count=2)
         reg = mw2.get_region("Menu", gen2.id)
         reg.locations.append(reg.locations.pop(0))
-        distribute_items_restrictive(mw2)
+        distribute_items_restrictive(mw2, do_bulk_fill=self.bulk_fill)
 
         self.assertEqual(gen1.locations[0].item, gen2.locations[0].item)
         self.assertEqual(gen1.locations[1].item, gen2.locations[1].item)
@@ -695,7 +699,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         location.progress_type = LocationProgressType.PRIORITY
         location.item_rule = lambda item: item not in items[:4]
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         self.assertEqual(location.item, items[4])
 
@@ -714,7 +718,7 @@ class TestDistributeItemsRestrictive(unittest.TestCase):
         multiworld.worlds[player2.id].options.local_items.value = set(names(player2.basic_items))
         locality_rules(multiworld)
 
-        distribute_items_restrictive(multiworld)
+        distribute_items_restrictive(multiworld, do_bulk_fill=self.bulk_fill)
 
         for item in multiworld.get_items():
             self.assertEqual(item.player, item.location.player)
