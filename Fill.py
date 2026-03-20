@@ -121,7 +121,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     # The pools all start the same length, when accounting for combined spaces, and one item/space is popped from each
     # pool in each loop, so `any` is sufficient to check that there are still items/spaces remaining, and is faster than
     # `all`.
-    while remaining_items and any(remaining_items.values()):
+    while remaining_locations and any(remaining_items.values()):
         for pool in remaining_items.values():
             item = pool.pop()
             if type(item) is int:
