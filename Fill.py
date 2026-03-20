@@ -156,10 +156,8 @@ def _restrictive_bulk_fill(base_state: CollectionState,
 
     # Minimal players that have beaten their game ignore location reachability for placements.
     minimal_players = {player for player in all_players if multiworld.worlds[player].options.accessibility == "minimal"}
-    minimal_players_remaining = minimal_players.copy()
-    minimal_game_beaten_players = {player for player in minimal_players_remaining
+    minimal_game_beaten_players = {player for player in minimal_players
                                    if multiworld.has_beaten_game(potential_state, player)}
-    minimal_players_remaining.difference_update(minimal_game_beaten_players)
 
     existing_advancements = [loc for loc in multiworld.get_locations()
                              if loc.advancement and loc not in potential_state.advancements]
@@ -167,9 +165,6 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     successful_placements = set()
 
     total = min(len(item_pool), len(locations))
-
-    # Minimal accessibility allows for unreachable progression item placements.
-    minimal_stale = set()
 
     # When running out of reachable locations, pop and collect this many items, giving up on placing them in
     # _restrictive_bulk_fill, and hopefully resulting in some more advancement locations becoming reachable by
@@ -199,18 +194,19 @@ def _restrictive_bulk_fill(base_state: CollectionState,
             # Try to fill each potential placement.
             still_unfilled = []
             filled = []
+            minimal_checked = set()
             for loc, item in potential_placements:
                 item_player = item.player
                 if item_player in minimal_game_beaten_players:
-                    # If a minimal player has beaten their game, we don't care about the reachability of the location.
+                    # If a minimal player has beaten their game, the locations their items are placed at do not need to
+                    # be reachable.
                     check_access = False
-                elif item_player in minimal_players_remaining and item_player in minimal_stale:
-                    # Un-stale.
-                    minimal_stale.remove(item_player)
+                elif item_player in minimal_players and item_player not in minimal_checked:
+                    minimal_checked.add(item_player)
+                    # Check if the player's game has been beaten.
                     game_newly_beaten = multiworld.has_beaten_game(potential_state, item_player)
                     if game_newly_beaten:
                         minimal_game_beaten_players.add(item_player)
-                        minimal_players_remaining.remove(item_player)
                     check_access = not game_newly_beaten
                 else:
                     check_access = True
@@ -248,12 +244,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                 for loc in reachable:
                     # Collect the item at the location.
                     potential_state.collect(loc.item, True, loc)
-                    # If the player is a minimal accessibility player and has not beaten their game, mark them as stale.
-                    item_player = loc.item.player
-                    if item_player in minimal_players_remaining:
-                        minimal_stale.add(item_player)
             if reachable_existing:
-                # Items are being collected, so the state is changed.
                 collected_advancement = True
                 for loc in reachable_existing:
                     potential_state.collect(loc.item, True, loc)
