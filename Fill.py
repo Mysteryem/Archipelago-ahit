@@ -112,6 +112,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     potential_placements: list[tuple[Location, Item]] = []
 
     remaining_locations = locations.copy()
+    # Reverse so that locations can be removed from near the end for better performance.
     remaining_locations.reverse()
 
     unplaceable_items: list[Item] = []
@@ -129,24 +130,17 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                 continue
 
             # Iterate locations until finding a location that accepts the item.
-            # Any locations that refuse the item are stored so that the next item can try being filled at those
-            # locations to start with.
-            skipped_locations = []
-            while remaining_locations:
-                loc = remaining_locations.pop()
+            # Iterating starting from the end is the same as iterating from the start of `locations`, matching
+            # fill_restrictive behaviour.
+            # Any locations that refuse the item are tried first by the next item.
+            for i, loc in enumerate(reversed(remaining_locations), start=1):
                 if loc.can_fill(base_state, item, check_access=False):
                     potential_placements.append((loc, item))
+                    del remaining_locations[-i]
                     break
-                else:
-                    skipped_locations.append(loc)
             else:
                 # No suitable location was found to place the item at.
                 unplaceable_items.append(item)
-            if skipped_locations:
-                # Reverse skipped locations to that the first skipped locations go to the end.
-                reversed_skipped_locations_iter = reversed(skipped_locations)
-                # Put any skipped locations to the back of remaining_locations, so the next item tries them first.
-                remaining_locations.extend(reversed_skipped_locations_iter)
             if not remaining_locations:
                 # There are no remaining locations
                 break
