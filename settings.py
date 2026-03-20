@@ -692,6 +692,8 @@ class GeneratorOptions(Group):
         Use a bulk filling algorithm at the start of priority and progression fill, to quickly fill a large percentage
         of locations in a way that is fast for even very large multiworlds, but tends to result in a small bias towards
         placing progression items on earlier locations on average.
+        0 -> Disabled
+        1 -> Enabled
         """
         OFF = 0
         ON = 1
