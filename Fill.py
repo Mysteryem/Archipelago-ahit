@@ -155,23 +155,21 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     minimal_game_beaten_players = {player for player in minimal_players
                                    if multiworld.has_beaten_game(potential_state, player)}
 
-    existing_advancements = [loc for loc in multiworld.get_locations()
-                             if loc.advancement and loc not in potential_state.advancements]
-
+    # Perform what could be considered a forwards fill, but where each item is only allowed to be placed on a single
+    # designated location, preventing the early bias that would typically be expected from a forwards fill.
+    collected_advancement = True
     successful_placements = set()
-
     total = min(len(item_pool), len(locations))
-
+    unreached_pre_placed_advancements = [loc for loc in multiworld.get_locations()
+                                         if loc.advancement and loc not in potential_state.advancements]
     # When running out of reachable locations, pop and collect this many items, giving up on placing them in
     # _restrictive_bulk_fill, and hopefully resulting in some more advancement locations becoming reachable by
     # `potential_state`.
     # 1/1000th of the locations to check is a magic number. Fewer items means more accuracy, but is slower.
     # At very small numbers to pop, performance increases much more quickly than accuracy reduces, so there is a big
     # performance increase going from 1 to 2, for example, but little loss in accuracy.
-    total_locations_to_check = len(potential_placements) + len(existing_advancements)
+    total_locations_to_check = len(potential_placements) + len(unreached_pre_placed_advancements)
     pop_and_collect_when_no_more_reachable = max(1, total_locations_to_check // 1000)
-
-    collected_advancement = True
     while potential_placements:
         if not collected_advancement:
             # No advancements were collected into `potential_state` in the previous iteration, so items from
@@ -189,10 +187,12 @@ def _restrictive_bulk_fill(base_state: CollectionState,
             collected_advancement = False
             # Try to fill each potential placement.
             still_unfilled = []
-            filled = []
+            filled_in_this_iteration = []
             minimal_checked = set()
             for loc, item in potential_placements:
                 item_player = item.player
+
+                # Determine if access to the location needs to be checked.
                 if item_player in minimal_game_beaten_players:
                     # If a minimal player has beaten their game, the locations their items are placed at do not need to
                     # be reachable.
@@ -206,12 +206,14 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     check_access = not game_newly_beaten
                 else:
                     check_access = True
+
+                # If the location can be filled with the item given the current `potential_state`, place the item.
                 if loc.can_fill(potential_state, item, check_access):
                     # Place the item.
                     multiworld.push_item(loc, item, False)
                     successful_placements.add(loc)
                     placements.append(loc)
-                    filled.append(loc)
+                    filled_in_this_iteration.append(loc)
                     if on_place is not None:
                         on_place(loc)
                     if lock:
@@ -220,32 +222,35 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                         _log_fill_progress(name + " (Bulk)", len(successful_placements), total)
                 else:
                     still_unfilled.append((loc, item))
-            # Find the newly made placements that are reachable with `potential_state`.
+
+            # Find the newly made placements and pre-placements, that are reachable with `potential_state`.
             reachable = []
-            for loc in filled:
+            for loc in filled_in_this_iteration:
                 if loc.can_reach(potential_state):
                     reachable.append(loc)
-            # Find reachable existing placements.
-            reachable_existing = []
-            unreachable_existing = []
-            for loc in existing_advancements:
+            # Find reachable pre-placed placements.
+            reachable_pre_placed = []
+            unreachable_pre_placed = []
+            for loc in unreached_pre_placed_advancements:
                 if loc.can_reach(potential_state):
-                    reachable_existing.append(loc)
+                    reachable_pre_placed.append(loc)
                 else:
-                    unreachable_existing.append(loc)
-            existing_advancements = unreachable_existing
-            # Collect the newly made placements that are reachable into `potential_state`.
+                    unreachable_pre_placed.append(loc)
+
+            # Collect the newly made placements, and pre-placements, that are reachable, into `potential_state`.
             if reachable:
                 collected_advancement = True
                 for loc in reachable:
-                    # Collect the item at the location.
                     potential_state.collect(loc.item, True, loc)
-            if reachable_existing:
+            if reachable_pre_placed:
                 collected_advancement = True
-                for loc in reachable_existing:
+                for loc in reachable_pre_placed:
                     potential_state.collect(loc.item, True, loc)
+
             # Update the remaining potential placements.
             potential_placements = still_unfilled
+            # Update the unreachable pre-placed advancements.
+            unreached_pre_placed_advancements = unreachable_pre_placed
 
     # Update the item_pool and locations lists.
     successful_placed_item_ids = {id(loc.item) for loc in successful_placements}
