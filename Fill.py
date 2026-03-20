@@ -75,30 +75,32 @@ def _restrictive_bulk_fill(base_state: CollectionState,
 
     multiworld = base_state.multiworld
 
-    # Increase each pool to the same length, randomly inserting int spacers into smaller pools.
-    # This maintains per-player placement order, but reduces the bias that the players with the highest percentage of
-    # invalid placements, that have to be undone, belong to the player with the most items.
+    # Increase each pool to the same length by randomly inserting empty spaces into smaller pools.
+    # This maintains per-player placement order, but reduces the bias that the highest percentage of invalid placements,
+    # that have to be undone, belong to the player with the most items. This also reduces similar bias that can be
+    # caused by worlds sorting the combined progression item pool during fill_hook/stage_fill_hook, likely moving a
+    # number of their items to either the front or the back of the combined pool.
     largest_pool = max(map(len, remaining_items.values()))
     for player, pool in remaining_items.items():
         spaces_needed = largest_pool - len(pool)
         if spaces_needed == 0:
             continue
-        pool_iter = iter(pool)
-        iter_picks = [pool_iter] * len(pool) + [None] * spaces_needed
-        multiworld.random.shuffle(iter_picks)
+        iter_or_space_list = [iter(pool)] * len(pool) + [None] * spaces_needed
+        multiworld.random.shuffle(iter_or_space_list)
         pool_with_spaces = []
-        last_was_spacer = False
-        for picked_iter in iter_picks:
-            if picked_iter is None:
-                if last_was_spacer:
-                    # Combine spacers in a row to reduce list length, reducing memory usage.
+        last_element_was_a_space = False
+        for iter_or_space in iter_or_space_list:
+            if iter_or_space is None:
+                if last_element_was_a_space:
+                    # Combine spaces in a row to reduce overall list length, reducing memory usage.
                     pool_with_spaces[-1] += 1
                 else:
                     pool_with_spaces.append(1)
-                last_was_spacer = True
+                last_element_was_a_space = True
             else:
-                pool_with_spaces.append(next(picked_iter))
-                last_was_spacer = False
+                pool_with_spaces.append(next(iter_or_space))
+                last_element_was_a_space = False
+        # Replace the existing pool with the new one containing spaces.
         remaining_items[player] = pool_with_spaces
     assert all(sum(i if type(i) is int else 1 for i in pool) == largest_pool for pool in remaining_items.values())
 
@@ -120,9 +122,9 @@ def _restrictive_bulk_fill(base_state: CollectionState,
         for pool in remaining_items.values():
             item = pool.pop()
             if type(item) is int:
-                # The popped element was a spacer used to make each player's item pool the same length.
+                # The popped element was a space used to make each player's item pool the same length.
                 if item > 1:
-                    # Re-append the spacer with a reduced count.
+                    # Re-append the space with a reduced count.
                     pool.append(item - 1)
                 continue
 
