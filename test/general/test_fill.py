@@ -82,7 +82,10 @@ def names(objs: list) -> Iterable[str]:
     return map(lambda o: o.name, objs)
 
 
+@classvar_matrix(do_bulk_fill=[False, True])
 class TestFillRestrictive(unittest.TestCase):
+    do_bulk_fill: ClassVar[bool] = False
+
     def test_basic_fill(self):
         """Tests `fill_restrictive` fills and removes the locations and items from their respective lists"""
         multiworld = generate_test_multiworld()
@@ -94,7 +97,7 @@ class TestFillRestrictive(unittest.TestCase):
         loc1 = player1.locations[1]
 
         fill_restrictive(multiworld, multiworld.state,
-                         player1.locations, player1.prog_items)
+                         player1.locations, player1.prog_items, initial_bulk_fill=self.do_bulk_fill)
 
         self.assertEqual(loc0.item, item1)
         self.assertEqual(loc1.item, item0)
@@ -113,7 +116,7 @@ class TestFillRestrictive(unittest.TestCase):
         set_rule(locations[1], lambda state: state.has(
             items[0].name, player1.id))
         fill_restrictive(multiworld, multiworld.state,
-                         player1.locations.copy(), player1.prog_items.copy())
+                         player1.locations.copy(), player1.prog_items.copy(), initial_bulk_fill=self.do_bulk_fill)
 
         self.assertEqual(locations[0].item, items[0])
         self.assertEqual(locations[1].item, items[1])
@@ -137,7 +140,7 @@ class TestFillRestrictive(unittest.TestCase):
         set_rule(loc2, lambda state: state.has(
             item0.name, player1.id))
         fill_restrictive(multiworld, multiworld.state,
-                         player1.locations, player1.prog_items)
+                         player1.locations, player1.prog_items, initial_bulk_fill=self.do_bulk_fill)
 
         self.assertEqual(loc0.item, item0)
         self.assertEqual(loc1.item, item1)
@@ -159,7 +162,7 @@ class TestFillRestrictive(unittest.TestCase):
             items[0].name, player1.id))
 
         fill_restrictive(multiworld, multiworld.state,
-                         player1.locations.copy(), player1.prog_items.copy())
+                         player1.locations.copy(), player1.prog_items.copy(), initial_bulk_fill=self.do_bulk_fill)
 
         self.assertEqual(locations[0].item, items[1])
         # Unnecessary unreachable Item
@@ -192,7 +195,7 @@ class TestFillRestrictive(unittest.TestCase):
         # fill remaining locations with remaining items
         location_pool = player1.locations[1:] + player2.locations
         item_pool = player1.prog_items[:-1] + player2.prog_items
-        fill_restrictive(multiworld, multiworld.state, location_pool, item_pool)
+        fill_restrictive(multiworld, multiworld.state, location_pool, item_pool, initial_bulk_fill=self.do_bulk_fill)
         multiworld.state.sweep_for_advancements()  # collect everything
 
         # all of player2's locations and items should be accessible (not all of player1's)
@@ -214,7 +217,8 @@ class TestFillRestrictive(unittest.TestCase):
             item0.name, player1.id) and state.has(item1.name, player1.id)
         set_rule(loc1, lambda state: state.has(item1.name, player1.id))
         fill_restrictive(multiworld, multiworld.state,
-                         player1.locations, player1.prog_items)
+                         player1.locations, player1.prog_items,
+                         initial_bulk_fill=self.do_bulk_fill)
 
         self.assertEqual(loc0.item, item1)
         self.assertEqual(loc1.item, item0)
@@ -237,7 +241,8 @@ class TestFillRestrictive(unittest.TestCase):
             items[1].name, player1.id))
 
         fill_restrictive(multiworld, multiworld.state,
-                         player1.locations.copy(), player1.prog_items.copy())
+                         player1.locations.copy(), player1.prog_items.copy(),
+                         initial_bulk_fill=self.do_bulk_fill)
 
         self.assertEqual(locations[0].item, items[1])
         self.assertEqual(locations[1].item, items[2])
@@ -259,7 +264,8 @@ class TestFillRestrictive(unittest.TestCase):
             items[0].name, player1.id))
 
         self.assertRaises(FillError, fill_restrictive, multiworld, multiworld.state,
-                          player1.locations.copy(), player1.prog_items.copy())
+                          player1.locations.copy(), player1.prog_items.copy(),
+                          initial_bulk_fill=self.do_bulk_fill)
 
     def test_circular_fill(self):
         """Test that fill raises an error when it can't place all items"""
@@ -280,7 +286,8 @@ class TestFillRestrictive(unittest.TestCase):
         set_rule(loc0, lambda state: state.has(item2.name, player1.id))
 
         self.assertRaises(FillError, fill_restrictive, multiworld, multiworld.state,
-                          player1.locations.copy(), player1.prog_items.copy())
+                          player1.locations.copy(), player1.prog_items.copy(),
+                          initial_bulk_fill=self.do_bulk_fill)
 
     def test_competing_fill(self):
         """Test that fill raises an error when it can't place items in a way to satisfy the conditions"""
@@ -297,7 +304,8 @@ class TestFillRestrictive(unittest.TestCase):
                  and state.has(item1.name, player1.id))
 
         self.assertRaises(FillError, fill_restrictive, multiworld, multiworld.state,
-                          player1.locations.copy(), player1.prog_items.copy())
+                          player1.locations.copy(), player1.prog_items.copy(),
+                          initial_bulk_fill=self.do_bulk_fill)
 
     def test_multiplayer_fill(self):
         """Test that items can be placed across worlds"""
@@ -313,7 +321,8 @@ class TestFillRestrictive(unittest.TestCase):
             player2.prog_items[1].name, player2.id)
 
         fill_restrictive(multiworld, multiworld.state, player1.locations +
-                         player2.locations, player1.prog_items + player2.prog_items)
+                         player2.locations, player1.prog_items + player2.prog_items,
+                         initial_bulk_fill=self.do_bulk_fill)
 
         self.assertEqual(player1.locations[0].item, player1.prog_items[1])
         self.assertEqual(player1.locations[1].item, player2.prog_items[1])
@@ -337,7 +346,8 @@ class TestFillRestrictive(unittest.TestCase):
             player2.prog_items[0].name, player2.id))
 
         fill_restrictive(multiworld, multiworld.state, player1.locations +
-                         player2.locations, player1.prog_items + player2.prog_items)
+                         player2.locations, player1.prog_items + player2.prog_items,
+                         initial_bulk_fill=self.do_bulk_fill)
 
         self.assertEqual(player1.locations[0].item, player2.prog_items[0])
         self.assertEqual(player1.locations[1].item, player2.prog_items[1])
@@ -365,7 +375,8 @@ class TestFillRestrictive(unittest.TestCase):
         locations = multiworld.get_unfilled_locations()
 
         fill_restrictive(multiworld, multiworld.state,
-                         locations, player1.prog_items)
+                         locations, player1.prog_items,
+                         initial_bulk_fill=self.do_bulk_fill)
 
     def test_swap_to_earlier_location_with_item_rule(self):
         """Test that item swap happens and works as intended"""
@@ -388,7 +399,8 @@ class TestFillRestrictive(unittest.TestCase):
         self.assertTrue(sphere1_loc.can_fill(None, allowed_item, False), "Test is flawed")
         self.assertFalse(sphere1_loc.can_fill(None, items[2], False), "Test is flawed")
         # fill has to place items[1] in locations[0] which will result in a swap because of placement order
-        fill_restrictive(multiworld, multiworld.state, player1.locations, player1.prog_items)
+        fill_restrictive(multiworld, multiworld.state, player1.locations, player1.prog_items,
+                         initial_bulk_fill=self.do_bulk_fill)
         # assert swap happened
         self.assertTrue(sphere1_loc.item, "Did not swap required item into Sphere 1")
         self.assertEqual(sphere1_loc.item, allowed_item, "Wrong item in Sphere 1")
@@ -428,7 +440,8 @@ class TestFillRestrictive(unittest.TestCase):
 
         # Now fill should place one_to_two1 in sphere1_loc1 or sphere1_loc2 via swap,
         # which it will attempt before two_to_three and three_to_four are placed, testing the behavior.
-        fill_restrictive(multiworld, multiworld.state, player1.locations, player1.prog_items)
+        fill_restrictive(multiworld, multiworld.state, player1.locations, player1.prog_items,
+                         initial_bulk_fill=self.do_bulk_fill)
         # assert swap happened
         self.assertTrue(sphere1_loc1.item and sphere1_loc2.item, "Did not swap required item into Sphere 1")
         self.assertTrue(sphere1_loc1.item.name == one_to_two1 or
@@ -459,7 +472,8 @@ class TestFillRestrictive(unittest.TestCase):
         loc0 = player1.locations[0]
 
         fill_restrictive(multiworld, multiworld.state,
-                         [loc0], player1.prog_items)
+                         [loc0], player1.prog_items,
+                         initial_bulk_fill=self.do_bulk_fill)
 
         self.assertEqual(1, len(player1.prog_items))
         self.assertIsNot(loc0.item, player1.prog_items[0], "Filled item was still present in item pool")
