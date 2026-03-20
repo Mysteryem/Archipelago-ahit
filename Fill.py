@@ -222,7 +222,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                         on_place(loc)
                     if lock:
                         loc.locked = True
-                    if len(successful_placements) % 100 == 0:
+                    if len(successful_placements) % 1000 == 0:
                         _log_fill_progress(name + " (Bulk)", len(successful_placements), total)
                 else:
                     still_unfilled.append((loc, item))
