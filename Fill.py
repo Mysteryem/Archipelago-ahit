@@ -157,8 +157,10 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     collected_advancement = True
     successful_placements = set()
     total = min(len(item_pool), len(locations))
-    unreached_pre_placed_advancements = [loc for loc in multiworld.get_locations()
-                                         if loc.advancement and loc not in potential_state.advancements]
+    # Pre-placed advancements, and allowed unreachable placements, e.g. minimal accessibility, that might become
+    # reachable as more items are collected.
+    other_unreached_advancements = [loc for loc in multiworld.get_locations()
+                                    if loc.advancement and loc not in potential_state.advancements]
     # Minimal players ignore location reachability for placements when all goals are beaten.
     # Unlike the assumed-fill of fill_restrictive, items cannot go from being assumed to be eventually reachable to then
     # being placed into unreachable locations, so once a player has achieved their goal, their goal does not need to be
@@ -171,7 +173,7 @@ def _restrictive_bulk_fill(base_state: CollectionState,
     # 1/1000th of the locations to check is a magic number. Fewer items means more accuracy, but is slower.
     # At very small numbers to pop, performance increases much more quickly than accuracy reduces, so there is a big
     # performance increase going from 1 to 2, for example, but little loss in accuracy.
-    total_locations_to_check = len(potential_placements) + len(unreached_pre_placed_advancements)
+    total_locations_to_check = len(potential_placements) + len(other_unreached_advancements)
     pop_and_collect_when_no_more_reachable = max(1, total_locations_to_check // 1000)
     while potential_placements:
         if not collected_advancement:
@@ -222,33 +224,38 @@ def _restrictive_bulk_fill(base_state: CollectionState,
                     still_unfilled.append((loc, item))
 
             # Find the newly made placements and pre-placements, that are reachable with `potential_state`.
-            reachable = []
+            reachable_newly_filled = []
+            unreachable_newly_filled = []
             for loc in filled_in_this_iteration:
                 if loc.can_reach(potential_state):
-                    reachable.append(loc)
-            # Find reachable pre-placed placements.
-            reachable_pre_placed = []
-            unreachable_pre_placed = []
-            for loc in unreached_pre_placed_advancements:
-                if loc.can_reach(potential_state):
-                    reachable_pre_placed.append(loc)
+                    reachable_newly_filled.append(loc)
                 else:
-                    unreachable_pre_placed.append(loc)
+                    unreachable_newly_filled.append(loc)
+            # Find reachable pre-placed placements and placements that were allowed to be unreachable, but could have
+            # become reachable as more items have been collected.
+            newly_reachable_other = []
+            still_unreachable_other = []
+            for loc in other_unreached_advancements:
+                if loc.can_reach(potential_state):
+                    newly_reachable_other.append(loc)
+                else:
+                    still_unreachable_other.append(loc)
 
-            # Collect the newly made placements, and pre-placements, that are reachable, into `potential_state`.
-            if reachable:
+            # Collect the newly made placements, and other advancements, that are reachable, into `potential_state`.
+            if reachable_newly_filled:
                 collected_advancement = True
-                for loc in reachable:
+                for loc in reachable_newly_filled:
                     potential_state.collect(loc.item, True, loc)
-            if reachable_pre_placed:
+            if newly_reachable_other:
                 collected_advancement = True
-                for loc in reachable_pre_placed:
+                for loc in newly_reachable_other:
                     potential_state.collect(loc.item, True, loc)
 
             # Update the remaining potential placements.
             potential_placements = still_unfilled
-            # Update the unreachable pre-placed advancements.
-            unreached_pre_placed_advancements = unreachable_pre_placed
+            # Update the unreachable pre-placed advancements and allowed unreachable placements.
+            other_unreached_advancements = still_unreachable_other
+            other_unreached_advancements.extend(unreachable_newly_filled)
 
     # Update the item_pool and locations lists.
     successful_placed_item_ids = {id(loc.item) for loc in successful_placements}
