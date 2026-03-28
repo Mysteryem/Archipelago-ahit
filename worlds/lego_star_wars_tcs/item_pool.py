@@ -211,9 +211,12 @@ class ItemLocationCounts:
     reserved_extra: int = 0
     """Try to add at least as many Extras to the item pool as this."""
 
-    consumed_free: int = 0
+    free_consumed_for_required: int = 0
     """How many free locations have been consumed by items in the pool that do not have a corresponding vanilla 
     location."""
+    reserved_consumed_for_required: int = 0
+    """How many reserved locations have been consumed/un-reserved to ensure there is enough space in the item pool for
+    all required items."""
 
     def set_character_counts(self, pool_required_characters: list[GenericCharacterData]) -> None:
         self.required_character = len(pool_required_characters)
@@ -324,9 +327,42 @@ class ItemLocationCounts:
         # As many Chapter Unlock items as there are enabled Chapters, excluding the starting chapter.
         other_required_items.extend(pool_required_chapter_unlock_items)
 
-        self.consumed_free += len(other_required_items)
+        self.free_consumed_for_required += len(other_required_items)
         self.required_additional += len(other_required_items)
         return start_inventory_tokens, other_required_items
+
+    def free_space_for_required_items(self):
+        free_location_count = self.free_location_count
+        if free_location_count < 0:
+            # There are not enough non-excluded locations for all required progression items.
+            # Attempt to reduce reserved items until there is enough space.
+            needed = -free_location_count
+            # Subtract from reserved, but not required, counts.
+            ok_to_replace_character_count = max(0, self.reserved_character - self.required_character)
+            ok_to_replace_extras_count = max(0, self.reserved_extra - self.required_extra)
+            total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
+            if needed > total_replaceable:
+                if self.world.options.goal_requires_kyber_bricks:
+                    # The Kyber Bricks goal adds 7 items that have no corresponding vanilla locations.
+                    self.world.option_error(
+                        "There are not enough locations to fit all required items. Enable additional locations,"
+                        " increase the Minikit Bundle Size, or disable the Kyber Bricks goal to free up more locations."
+                        " There were %i more required progression items than non-excluded locations.",
+                        needed - total_replaceable)
+                else:
+                    self.world.option_error(
+                        "There are not enough locations to fit all required items. Enable additional locations or"
+                        " increase the Minikit Bundle Size to free up more locations. There were %i more required"
+                        " progression items than locations.",
+                        needed - total_replaceable)
+            character_percentage = ok_to_replace_character_count / total_replaceable
+            character_subtract = min(needed, round(character_percentage * needed))
+            extra_subtract = needed - character_subtract
+            self.reserved_character -= character_subtract
+            self.reserved_extra -= extra_subtract
+            self.reserved_consumed_for_required += (character_subtract + extra_subtract)
+            assert self.reserved_consumed_for_required == -free_location_count
+        assert self.free_location_count >= 0, "free_location_count must always be >= 0"
 
     @property
     def free_location_count(self):
@@ -336,7 +372,8 @@ class ItemLocationCounts:
                 + self.free_character
                 + self.free_extra
                 + self.free_ridesanity
-                - self.consumed_free)
+                - self.free_consumed_for_required
+                + self.reserved_consumed_for_required)
 
     @property
     def locations_to_fill(self):
@@ -833,50 +870,15 @@ def _create_items(
 
     start_inventory_token_count, other_required_items = item_location_counts.set_additional_item_counts(
         pool_required_chapter_unlock_items)
-    free_location_count = item_location_counts.free_location_count
     for _ in range(start_inventory_token_count):
         self.push_precollected(item_creator.create_item("Episode Completion Token"))
 
+    item_location_counts.free_space_for_required_items()
+
+    expected_num_to_fill = item_location_counts.locations_to_fill
+
     unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
     num_to_fill = len(self.multiworld.get_unfilled_locations(self.player))
-
-    if free_location_count < 0:
-        # There are not enough non-excluded locations for all required progression items.
-        # Attempt to reduce reserved items until there is enough space.
-        needed = -free_location_count
-        # Subtract from reserved, but not required, counts.
-        ok_to_replace_character_count = max(0, item_location_counts.reserved_character - item_location_counts.required_character)
-        ok_to_replace_extras_count = max(0, item_location_counts.reserved_extra - item_location_counts.required_extra)
-        total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
-        if needed > total_replaceable:
-            if self.options.goal_requires_kyber_bricks:
-                # The Kyber Bricks goal adds 7 items that have no corresponding vanilla locations.
-                self.option_error("There are not enough locations to fit all required items. Enable additional"
-                                  " locations, increase the Minikit Bundle Size, or disable the Kyber Bricks goal"
-                                  " to free up more locations. There were %i more required progression items than"
-                                  " non-excluded locations.",
-                                  needed - total_replaceable)
-            else:
-                self.option_error("There are not enough locations to fit all required items. Enable additional"
-                                  " locations or increase the Minikit Bundle Size to free up more locations. There"
-                                  " were %i more required progression items than locations.",
-                                  needed - total_replaceable)
-        character_percentage = ok_to_replace_character_count / total_replaceable
-        character_subtract = min(needed, round(character_percentage * needed))
-        extra_subtract = needed - character_subtract
-        item_location_counts.reserved_character -= character_subtract
-        item_location_counts.reserved_extra -= extra_subtract
-        free_location_count = 0
-
-    assert free_location_count >= 0, "free_location_count must always be >= 0"
-
-    expected_num_to_fill = (
-            item_location_counts.reserved_character
-            + item_location_counts.reserved_extra
-            + item_location_counts.required_minikit
-            + free_location_count
-            + len(other_required_items)
-    )
 
     assert num_to_fill == expected_num_to_fill, \
         f"Expected {expected_num_to_fill} locations to fill, but got {num_to_fill}"
