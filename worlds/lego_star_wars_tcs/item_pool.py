@@ -278,7 +278,7 @@ class ItemLocationCounts:
             # (space for filler needed to be placed at excluded locations is calculated separately from free locations).
             self.completion += 1
 
-    def set_minikit_counts(self):
+    def set_minikit_counts(self) -> None:
         # As many minikit bundles as this will always be created. This may be fewer than is required to goal, but
         # reducing the total bundle count can make a seed longer, so all minikit bundles should be considered to be
         # required.
@@ -332,6 +332,10 @@ class ItemLocationCounts:
         return start_inventory_tokens, other_required_items
 
     def free_space_for_required_items(self):
+        """
+        Replace space in the item pool, reserved by non-required Extras and Characters, until there is enough space in
+        the item pool for all required items.
+        """
         free_location_count = self.free_location_count
         if free_location_count < 0:
             # There are not enough non-excluded locations for all required progression items.
@@ -361,7 +365,7 @@ class ItemLocationCounts:
             self.reserved_character -= character_subtract
             self.reserved_extra -= extra_subtract
             self.reserved_consumed_for_required += (character_subtract + extra_subtract)
-            assert self.reserved_consumed_for_required == -free_location_count
+            assert self.reserved_consumed_for_required == needed
         assert self.free_location_count >= 0, "free_location_count must always be >= 0"
 
     @property
@@ -377,7 +381,12 @@ class ItemLocationCounts:
 
     @property
     def locations_to_fill(self):
-        return self.reserved_character + self.reserved_extra + self.required_minikit + self.free_location_count + self.required_additional
+        return (self.reserved_character
+                + self.reserved_extra
+                + self.required_minikit
+                + self.free_location_count
+                + self.required_additional)
+
 
 
 def _determine_chapters(self: LegoStarWarsTCSWorld) -> tuple[set[str], set[str]]:
@@ -868,21 +877,30 @@ def _create_items(
 
     assert free_location_count >= 0, "initial free_location_count should always be >= 0"
 
+    # Get other required items that don't belong to any particular category, and don't have associated vanilla
+    # locations, and consume free locations to fit these items into the pool.
     start_inventory_token_count, other_required_items = item_location_counts.set_additional_item_counts(
         pool_required_chapter_unlock_items)
+
+    # Pre-collect the Episode Completion Tokens that won't be in the pool, but the player will start with.
     for _ in range(start_inventory_token_count):
         self.push_precollected(item_creator.create_item("Episode Completion Token"))
 
+    # If there was not enough space for all required items, replace reserved space, for non-required items, until there
+    # is enough space, or raise an OptionError if there is still not enough space, even with all reserved space
+    # replaced.
     item_location_counts.free_space_for_required_items()
 
+    # Check that the number of locations that are expected to be filled matches the number of locations that are
+    # unfilled.
     expected_num_to_fill = item_location_counts.locations_to_fill
-
     unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
     num_to_fill = len(self.multiworld.get_unfilled_locations(self.player))
 
     assert num_to_fill == expected_num_to_fill, \
         f"Expected {expected_num_to_fill} locations to fill, but got {num_to_fill}"
 
+    # Ensure there is enough space in the item pool for as many filler items as there are excluded locations.
     required_excludable_count = (
             sum(loc.progress_type == LocationProgressType.EXCLUDED for loc in unfilled_locations)
     )
