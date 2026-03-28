@@ -202,11 +202,18 @@ class ItemLocationCounts:
     """The number of Characters that are required to exist in the item pool."""
     required_extra: int = 0
     """The number of Extras that are required to exist in the item pool."""
+    required_additional: int = 0
+    """The number of additional items that don't belong to a particular category, that are required to exist in the 
+    pool."""
 
     reserved_character: int = 0
     """Try to add at least as many characters to the item pool as this."""
     reserved_extra: int = 0
     """Try to add at least as many Extras to the item pool as this."""
+
+    consumed_free: int = 0
+    """How many free locations have been consumed by items in the pool that do not have a corresponding vanilla 
+    location."""
 
     def set_character_counts(self, pool_required_characters: list[GenericCharacterData]) -> None:
         self.required_character = len(pool_required_characters)
@@ -295,9 +302,41 @@ class ItemLocationCounts:
         # There are no corresponding items for ridesanity locations, so they are free locations for any item.
         self.free_ridesanity = self.world.ridesanity_location_count
 
+    def set_additional_item_counts(self, pool_required_chapter_unlock_items: list[str]) -> tuple[int, list[str]]:
+        other_required_items: list[str] = []
+        start_inventory_tokens = 0
+        # A few free locations may need to be used for episode unlock items and/or episode tokens.
+        if self.world.options.episode_unlock_requirement == "episode_item":
+            for i in self.world.enabled_episodes:
+                if i != self.world.starting_episode:
+                    other_required_items.append(f"Episode {i} Unlock")
+        if self.world.options.all_episodes_character_purchase_requirements == "episodes_tokens":
+            # One token is added to the item pool for every episode's worth of (6) chapters that are enabled.
+            tokens_in_pool = max(1, round(len(self.world.enabled_chapters) / 6))
+            start_inventory_tokens = 6 - tokens_in_pool
+            assert 5 >= start_inventory_tokens >= 0
+            for _ in range(tokens_in_pool):
+                other_required_items.append("Episode Completion Token")
+        # 7 free locations may need to be used for Kyber Bricks.
+        if self.world.options.goal_requires_kyber_bricks:
+            other_required_items.extend(("Kyber Brick",) * 7)
+
+        # As many Chapter Unlock items as there are enabled Chapters, excluding the starting chapter.
+        other_required_items.extend(pool_required_chapter_unlock_items)
+
+        self.consumed_free += len(other_required_items)
+        self.required_additional += len(other_required_items)
+        return start_inventory_tokens, other_required_items
+
     @property
     def free_location_count(self):
-        return self.completion + self.true_jedi + self.free_minikit + self.free_character + self.free_extra + self.free_ridesanity
+        return (self.completion
+                + self.true_jedi
+                + self.free_minikit
+                + self.free_character
+                + self.free_extra
+                + self.free_ridesanity
+                - self.consumed_free)
 
     @property
     def locations_to_fill(self):
@@ -792,29 +831,11 @@ def _create_items(
 
     assert free_location_count >= 0, "initial free_location_count should always be >= 0"
 
-    other_required_items = []
-    # A few free locations may need to be used for episode unlock items and/or episode tokens.
-    if self.options.episode_unlock_requirement == "episode_item":
-        for i in self.enabled_episodes:
-            if i != self.starting_episode:
-                other_required_items.append(f"Episode {i} Unlock")
-    if self.options.all_episodes_character_purchase_requirements == "episodes_tokens":
-        # One token is added to the item pool for every episode's worth of (6) chapters that are enabled.
-        tokens_in_pool = max(1, round(len(self.enabled_chapters) / 6))
-        start_inventory_tokens = 6 - tokens_in_pool
-        assert 5 >= start_inventory_tokens >= 0
-        for _ in range(tokens_in_pool):
-            other_required_items.append("Episode Completion Token")
-        for _ in range(start_inventory_tokens):
-            self.push_precollected(self.create_item("Episode Completion Token"))
-    # 7 free locations may need to be used for Kyber Bricks.
-    if self.options.goal_requires_kyber_bricks:
-        other_required_items.extend(("Kyber Brick",) * 7)
-
-    # As many Chapter Unlock items as there are enabled Chapters, excluding the starting chapter.
-    other_required_items.extend(pool_required_chapter_unlock_items)
-
-    free_location_count -= len(other_required_items)
+    start_inventory_token_count, other_required_items = item_location_counts.set_additional_item_counts(
+        pool_required_chapter_unlock_items)
+    free_location_count = item_location_counts.free_location_count
+    for _ in range(start_inventory_token_count):
+        self.push_precollected(item_creator.create_item("Episode Completion Token"))
 
     unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
     num_to_fill = len(self.multiworld.get_unfilled_locations(self.player))
