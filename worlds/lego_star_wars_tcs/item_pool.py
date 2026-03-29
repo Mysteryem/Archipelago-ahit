@@ -969,6 +969,13 @@ def _create_items(
     # Ensure there is enough space in the item pool for as many filler items as there are excluded locations.
     required_excludable_count = item_location_counts.free_space_for_excluded_locations()
 
+    assert num_to_fill == item_location_counts.locations_to_fill, \
+        f"Expected {item_location_counts.locations_to_fill} locations to fill, but got {num_to_fill}"
+
+    del free_location_count  # No longer accurate.
+
+    remaining_free_locations = item_location_counts.free_location_count
+
     item_pool: list[LegoStarWarsTCSItem] = []
 
     created_item_names: set[str] = set()
@@ -988,15 +995,15 @@ def _create_items(
         # If there are not enough reserved character unlock locations for the required characters, subtract from the
         # free location count.
         to_subtract = item_location_counts.required_character - item_location_counts.reserved_character
-        if free_location_count < to_subtract:
+        if remaining_free_locations < to_subtract:
             # If there are not enough free locations, some of the required characters will have to be added to start
             # inventory.
-            start_inventory_required_characters_count = to_subtract - free_location_count
+            start_inventory_required_characters_count = to_subtract - remaining_free_locations
             self.log_warning("There were not enough locations to add all required characters to the item pool,"
                              " some of them have been added to starting inventory")
-            free_location_count = 0
+            remaining_free_locations = 0
         else:
-            free_location_count -= to_subtract
+            remaining_free_locations -= to_subtract
             start_inventory_required_characters_count = 0
         item_location_counts.reserved_character = 0
     else:
@@ -1017,13 +1024,13 @@ def _create_items(
     start_inventory_required_extras_count: int
     if item_location_counts.reserved_extra < item_location_counts.required_extra:
         to_subtract = item_location_counts.required_extra - item_location_counts.reserved_extra
-        if free_location_count < to_subtract:
-            start_inventory_required_extras_count = to_subtract - free_location_count
+        if remaining_free_locations < to_subtract:
+            start_inventory_required_extras_count = to_subtract - remaining_free_locations
             self.log_warning("There were not enough locations to add all required Extras to the item pool,"
                              " some of them have been added to starting inventory")
-            free_location_count = 0
+            remaining_free_locations = 0
         else:
-            free_location_count -= to_subtract
+            remaining_free_locations -= to_subtract
             start_inventory_required_extras_count = 0
         item_location_counts.reserved_extra = 0
     else:
