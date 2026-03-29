@@ -223,8 +223,8 @@ class ItemLocationCounts:
     """How many reserved locations have been consumed/un-reserved to ensure there is enough space in the item pool for
     all required items."""
 
-    def set_character_counts(self, pool_required_characters: list[GenericCharacterData]) -> None:
-        self.required_character = len(pool_required_characters)
+    def set_character_counts(self, pool_required_characters_count: int) -> None:
+        self.required_character = pool_required_characters_count
 
         non_excluded_character_unlock_location_count = (
                 self.world.character_unlock_location_count - self.world.goal_excluded_character_unlock_location_count
@@ -242,8 +242,8 @@ class ItemLocationCounts:
         # satisfied later, so these locations are effectively free locations.
         self.free_character += self.world.goal_excluded_character_unlock_location_count
 
-    def set_extra_counts(self, pool_required_extras: list[str]) -> None:
-        self.required_extra = len(pool_required_extras)
+    def set_extra_counts(self, pool_required_extras_count: int) -> None:
+        self.required_extra = pool_required_extras_count
 
         self.reserved_extra = self.non_excluded_chapter_count
 
@@ -310,31 +310,9 @@ class ItemLocationCounts:
         # There are no corresponding items for ridesanity locations, so they are free locations for any item.
         self.free_ridesanity = self.world.ridesanity_location_count
 
-    def set_additional_item_counts(self, pool_required_chapter_unlock_items: list[str]) -> tuple[int, list[str]]:
-        other_required_items: list[str] = []
-        start_inventory_tokens = 0
-        # A few free locations may need to be used for episode unlock items and/or episode tokens.
-        if self.world.options.episode_unlock_requirement == "episode_item":
-            for i in self.world.enabled_episodes:
-                if i != self.world.starting_episode:
-                    other_required_items.append(f"Episode {i} Unlock")
-        if self.world.options.all_episodes_character_purchase_requirements == "episodes_tokens":
-            # One token is added to the item pool for every episode's worth of (6) chapters that are enabled.
-            tokens_in_pool = max(1, round(len(self.world.enabled_chapters) / 6))
-            start_inventory_tokens = 6 - tokens_in_pool
-            assert 5 >= start_inventory_tokens >= 0
-            for _ in range(tokens_in_pool):
-                other_required_items.append("Episode Completion Token")
-        # 7 free locations may need to be used for Kyber Bricks.
-        if self.world.options.goal_requires_kyber_bricks:
-            other_required_items.extend(("Kyber Brick",) * 7)
-
-        # As many Chapter Unlock items as there are enabled Chapters, excluding the starting chapter.
-        other_required_items.extend(pool_required_chapter_unlock_items)
-
-        self.free_consumed_for_required += len(other_required_items)
-        self.required_additional += len(other_required_items)
-        return start_inventory_tokens, other_required_items
+    def set_additional_item_counts(self, additional_required_items_count: int) -> None:
+        self.free_consumed_for_required += additional_required_items_count
+        self.required_additional += additional_required_items_count
 
     def _free_space_from_non_required(self, needed: int) -> tuple[bool, int]:
         """
@@ -385,7 +363,7 @@ class ItemLocationCounts:
             self.reserved_consumed_for_required += count
         assert self.free_location_count >= 0, "free_location_count must always be >= 0"
 
-    def free_space_for_excluded_locations(self) -> int:
+    def free_space_for_excluded_locations(self) -> None:
         """
         Replace space in the item pool, reserved by non-required Extras and Characters, until there is enough free space
         in the item pool for filler to be placed on excluded locations.
@@ -430,7 +408,6 @@ class ItemLocationCounts:
             self.free_consumed_for_excluded += required_excludable_count
         self.required_excluded += required_excludable_count
         assert self.free_location_count >= 0, "free_location_count must always be >= 0"
-        return required_excludable_count
 
     @property
     def free_location_count(self):
@@ -871,6 +848,81 @@ def _sort_for_preferred_extras(non_required_extras: list[str], self: LegoStarWar
         return preferred_extras_list + non_preferred_extras_list
 
 
+def _get_additional_required_items(
+        world: LegoStarWarsTCSWorld,
+        pool_required_chapter_unlock_items: list[str],
+) -> tuple[list[str], list[str]]:
+    other_required_items: list[str] = []
+    starting_other_required_items: list[str] = []
+    # A few free locations may need to be used for episode unlock items and/or episode tokens.
+    if world.options.episode_unlock_requirement == "episode_item":
+        for i in world.enabled_episodes:
+            if i != world.starting_episode:
+                other_required_items.append(f"Episode {i} Unlock")
+    if world.options.all_episodes_character_purchase_requirements == "episodes_tokens":
+        # One token is added to the item pool for every episode's worth of (6) chapters that are enabled.
+        tokens_in_pool = max(1, round(len(world.enabled_chapters) / 6))
+        start_inventory_tokens = 6 - tokens_in_pool
+        assert 5 >= start_inventory_tokens >= 0
+        for _ in range(tokens_in_pool):
+            other_required_items.append("Episode Completion Token")
+        for _ in range(start_inventory_tokens):
+            starting_other_required_items.append("Episode Completion Token")
+    # 7 free locations may need to be used for Kyber Bricks.
+    if world.options.goal_requires_kyber_bricks:
+        other_required_items.extend(("Kyber Brick",) * 7)
+
+    # As many Chapter Unlock items as there are enabled Chapters, excluding the starting chapter.
+    other_required_items.extend(pool_required_chapter_unlock_items)
+    return other_required_items, starting_other_required_items
+
+
+def _balance_item_location_counts(
+        self: LegoStarWarsTCSWorld,
+        num_to_fill: int,
+        non_excluded_chapter_count: int,
+        goal_chapter_locations_excluded: bool,
+        pool_required_characters_count: int,
+        pool_required_extras_count: int,
+        pool_required_additional_items_count: int,
+) -> ItemLocationCounts:
+    item_location_counts = ItemLocationCounts(self, non_excluded_chapter_count, goal_chapter_locations_excluded)
+    item_location_counts.set_character_counts(pool_required_characters_count)
+    item_location_counts.set_extra_counts(pool_required_extras_count)
+    item_location_counts.set_true_jedi_counts()
+    item_location_counts.set_completion_counts()
+    item_location_counts.set_minikit_counts()
+    item_location_counts.set_ridesanity_counts()
+
+    free_location_count = item_location_counts.free_location_count
+
+    assert free_location_count >= 0, "initial free_location_count should always be >= 0"
+
+    # These items don't have associated vanilla locations, so consume free locations to fit these items into the pool.
+    item_location_counts.set_additional_item_counts(pool_required_additional_items_count)
+
+    # If there was not enough space for all required items, replace reserved space, for non-required items, until there
+    # is enough space, or raise an OptionError if there is still not enough space, even with all reserved space
+    # replaced.
+    item_location_counts.free_space_for_required_items()
+
+    # Check that the number of locations that are expected to be filled matches the number of locations that are
+    # unfilled.
+    expected_num_to_fill = item_location_counts.locations_to_fill
+
+    assert num_to_fill == expected_num_to_fill, \
+        f"Expected {expected_num_to_fill} locations to fill, but got {num_to_fill}"
+
+    # Ensure there is enough space in the item pool for as many filler items as there are excluded locations.
+    item_location_counts.free_space_for_excluded_locations()
+
+    assert num_to_fill == item_location_counts.locations_to_fill, \
+        f"Expected {item_location_counts.locations_to_fill} locations to fill, but got {num_to_fill}"
+
+    del free_location_count  # No longer accurate.
+    return item_location_counts
+
+
 # todo: This function is still too large, and should be broken up into smaller parts.
 def _create_items(
         self: LegoStarWarsTCSWorld,
@@ -931,48 +983,29 @@ def _create_items(
     # Get the required, and non-required extras.
     pool_required_extras, non_required_extras = prepare_extras(self)
 
-    item_location_counts = ItemLocationCounts(self, non_excluded_chapter_count, goal_chapter_locations_excluded)
-    item_location_counts.set_character_counts(pool_required_characters)
-    item_location_counts.set_extra_counts(pool_required_extras)
-    item_location_counts.set_true_jedi_counts()
-    item_location_counts.set_completion_counts()
-    item_location_counts.set_minikit_counts()
-    item_location_counts.set_ridesanity_counts()
-
-    free_location_count = item_location_counts.free_location_count
-
-    assert free_location_count >= 0, "initial free_location_count should always be >= 0"
-
     # Get other required items that don't belong to any particular category, and don't have associated vanilla
-    # locations, and consume free locations to fit these items into the pool.
-    start_inventory_token_count, other_required_items = item_location_counts.set_additional_item_counts(
-        pool_required_chapter_unlock_items)
+    # locations.
+    other_required_items, starting_required_other_items = _get_additional_required_items(
+        self, pool_required_chapter_unlock_items)
 
-    # Pre-collect the Episode Completion Tokens that won't be in the pool, but the player will start with.
-    for _ in range(start_inventory_token_count):
-        self.push_precollected(item_creator.create_item("Episode Completion Token"))
+    # Pre-collect the items (Episode Completion Tokens) that won't be in the pool, but the player will start with.
+    for item_name in starting_required_other_items:
+        self.push_precollected(item_creator.create_item(item_name))
 
-    # If there was not enough space for all required items, replace reserved space, for non-required items, until there
-    # is enough space, or raise an OptionError if there is still not enough space, even with all reserved space
-    # replaced.
-    item_location_counts.free_space_for_required_items()
-
-    # Check that the number of locations that are expected to be filled matches the number of locations that are
-    # unfilled.
-    expected_num_to_fill = item_location_counts.locations_to_fill
     unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
-    num_to_fill = len(self.multiworld.get_unfilled_locations(self.player))
+    num_to_fill = len(unfilled_locations)
 
-    assert num_to_fill == expected_num_to_fill, \
-        f"Expected {expected_num_to_fill} locations to fill, but got {num_to_fill}"
+    item_location_counts = _balance_item_location_counts(
+        self,
+        num_to_fill,
+        non_excluded_chapter_count,
+        goal_chapter_locations_excluded,
+        len(pool_required_characters),
+        len(pool_required_extras),
+        len(other_required_items),
+    )
 
-    # Ensure there is enough space in the item pool for as many filler items as there are excluded locations.
-    required_excludable_count = item_location_counts.free_space_for_excluded_locations()
-
-    assert num_to_fill == item_location_counts.locations_to_fill, \
-        f"Expected {item_location_counts.locations_to_fill} locations to fill, but got {num_to_fill}"
-
-    del free_location_count  # No longer accurate.
+    required_excludable_count = item_location_counts.required_excluded
 
     remaining_free_locations = item_location_counts.free_location_count
 
