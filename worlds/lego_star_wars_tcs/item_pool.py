@@ -205,6 +205,8 @@ class ItemLocationCounts:
     required_additional: int = 0
     """The number of additional items that don't belong to a particular category, that are required to exist in the 
     pool."""
+    required_excluded: int = 0
+    """The number of excludable items that are required to exist in the item pool."""
 
     reserved_character: int = 0
     """Try to add at least as many characters to the item pool as this."""
@@ -214,6 +216,9 @@ class ItemLocationCounts:
     free_consumed_for_required: int = 0
     """How many free locations have been consumed by items in the pool that do not have a corresponding vanilla 
     location."""
+    free_consumed_for_excluded: int = 0
+    """How many free locations have been consumed by filler items in the pool that are needed to be able to satisfy
+    excluded locations."""
     reserved_consumed_for_required: int = 0
     """How many reserved locations have been consumed/un-reserved to ensure there is enough space in the item pool for
     all required items."""
@@ -331,6 +336,27 @@ class ItemLocationCounts:
         self.required_additional += len(other_required_items)
         return start_inventory_tokens, other_required_items
 
+    def _free_space_from_non_required(self, needed: int) -> tuple[bool, int]:
+        """
+
+        :param needed: How many free spaces should be
+        :return: True and the total reserved spaces consumed, or False and how many free spaces were missing.
+        """
+        # Subtract from reserved, but not required, counts.
+        ok_to_replace_character_count = max(0, self.reserved_character - self.required_character)
+        ok_to_replace_extras_count = max(0, self.reserved_extra - self.required_extra)
+        total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
+        if needed > total_replaceable:
+            return False, needed - total_replaceable
+        else:
+            character_percentage = ok_to_replace_character_count / total_replaceable
+            character_subtract = min(needed, round(character_percentage * needed))
+            extra_subtract = needed - character_subtract
+            self.reserved_character -= character_subtract
+            self.reserved_extra -= extra_subtract
+            assert (character_subtract + extra_subtract) == needed
+            return True, character_subtract + extra_subtract
+
     def free_space_for_required_items(self):
         """
         Replace space in the item pool, reserved by non-required Extras and Characters, until there is enough space in
@@ -341,32 +367,70 @@ class ItemLocationCounts:
             # There are not enough non-excluded locations for all required progression items.
             # Attempt to reduce reserved items until there is enough space.
             needed = -free_location_count
-            # Subtract from reserved, but not required, counts.
-            ok_to_replace_character_count = max(0, self.reserved_character - self.required_character)
-            ok_to_replace_extras_count = max(0, self.reserved_extra - self.required_extra)
-            total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
-            if needed > total_replaceable:
+            ok, count = self._free_space_from_non_required(needed)
+            if not ok:
                 if self.world.options.goal_requires_kyber_bricks:
                     # The Kyber Bricks goal adds 7 items that have no corresponding vanilla locations.
                     self.world.option_error(
                         "There are not enough locations to fit all required items. Enable additional locations,"
                         " increase the Minikit Bundle Size, or disable the Kyber Bricks goal to free up more locations."
                         " There were %i more required progression items than non-excluded locations.",
-                        needed - total_replaceable)
+                        count)
                 else:
                     self.world.option_error(
                         "There are not enough locations to fit all required items. Enable additional locations or"
                         " increase the Minikit Bundle Size to free up more locations. There were %i more required"
                         " progression items than locations.",
-                        needed - total_replaceable)
-            character_percentage = ok_to_replace_character_count / total_replaceable
-            character_subtract = min(needed, round(character_percentage * needed))
-            extra_subtract = needed - character_subtract
-            self.reserved_character -= character_subtract
-            self.reserved_extra -= extra_subtract
-            self.reserved_consumed_for_required += (character_subtract + extra_subtract)
-            assert self.reserved_consumed_for_required == needed
+                        count)
+            self.reserved_consumed_for_required += count
         assert self.free_location_count >= 0, "free_location_count must always be >= 0"
+
+    def free_space_for_excluded_locations(self) -> int:
+        """
+        Replace space in the item pool, reserved by non-required Extras and Characters, until there is enough free space
+        in the item pool for filler to be placed on excluded locations.
+        :return: The number of required excludable items.
+        """
+        # Ensure there is enough space in the item pool for as many filler items as there are unfilled excluded
+        # locations.
+        required_excludable_count = sum(loc.progress_type == LocationProgressType.EXCLUDED
+                                        for loc in self.world.get_locations() if loc.item is None)
+        free_location_count = self.free_location_count
+
+        # fixme: Some reserved characters can be Filler classification, which would be fine being placed on excluded
+        #  locations, so this check is currently overly strict because it assumes that reserved characters will be
+        #  Useful or Progression.
+        if free_location_count < required_excludable_count:
+            # This shouldn't really happen unless basically the entire world is excluded and/or barely any locations
+            # are enabled.
+            needed = required_excludable_count - free_location_count
+            ok, count = self._free_space_from_non_required(needed)
+            if not ok:
+                # There are too many non-excludable items for the number of excluded locations.
+                # Give up.
+                # If this is too common of an issue, it would be possible to add some of the required characters/extras
+                # to start inventory instead of erroring here.
+                all_unfilled = self.world.multiworld.get_unfilled_locations(self.world.player)
+                non_excluded_count = len(all_unfilled) - required_excludable_count
+                num_to_fill = len(all_unfilled)
+                required_count = (
+                        self.required_extra
+                        + self.required_character
+                        + self.required_minikit
+                        + self.required_additional
+                )
+                self.world.option_error(
+                    "There are too few non-excluded locations to fit all required progression items."
+                    " There are %i locations, %i of which are not excluded, but there are %i required"
+                    " items that cannot be placed on excluded locations.",
+                    num_to_fill, non_excluded_count, required_count)
+            else:
+                self.free_consumed_for_excluded += (required_excludable_count - count)
+        else:
+            self.free_consumed_for_excluded += required_excludable_count
+        self.required_excluded += required_excludable_count
+        assert self.free_location_count >= 0, "free_location_count must always be >= 0"
+        return required_excludable_count
 
     @property
     def free_location_count(self):
@@ -377,7 +441,8 @@ class ItemLocationCounts:
                 + self.free_extra
                 + self.free_ridesanity
                 - self.free_consumed_for_required
-                + self.reserved_consumed_for_required)
+                + self.reserved_consumed_for_required
+                - self.free_consumed_for_excluded)
 
     @property
     def locations_to_fill(self):
@@ -385,7 +450,8 @@ class ItemLocationCounts:
                 + self.reserved_extra
                 + self.required_minikit
                 + self.free_location_count
-                + self.required_additional)
+                + self.required_additional
+                + self.required_excluded)
 
 
 
@@ -901,45 +967,7 @@ def _create_items(
         f"Expected {expected_num_to_fill} locations to fill, but got {num_to_fill}"
 
     # Ensure there is enough space in the item pool for as many filler items as there are excluded locations.
-    required_excludable_count = (
-            sum(loc.progress_type == LocationProgressType.EXCLUDED for loc in unfilled_locations)
-    )
-
-    # fixme: Some reserved characters can be Filler classification, which would be fine being placed on excluded
-    #  locations, so this check is currently overly strict because it assumes that reserved characters will be
-    #  Useful or Progression.
-    if free_location_count < required_excludable_count:
-        # This shouldn't really happen unless basically the entire world is excluded and/or barely any locations
-        # are enabled.
-        needed = required_excludable_count - free_location_count
-        # Find how many character/extra locations can be used for filler placement without issue.
-        ok_to_replace_character_count = max(0, item_location_counts.reserved_character - item_location_counts.required_character)
-        ok_to_replace_extras_count = max(0, item_location_counts.reserved_extra - item_location_counts.required_extra)
-        total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
-        if needed > total_replaceable:
-            # There are too many non-excludable items for the number of excluded locations.
-            # Give up.
-            # If this is too common of an issue, it would be possible to add some of the required characters/extras
-            # to start inventory instead of erroring here.
-            non_excluded_count = num_to_fill - required_excludable_count
-            required_count = (
-                    item_location_counts.required_extra
-                    + item_location_counts.required_character
-                    + item_location_counts.required_minikit
-                    + len(other_required_items)
-            )
-            self.option_error("There are too few non-excluded locations to fit all required progression items."
-                              " There are %i locations, %i of which are not excluded, but there are %i required"
-                              " items that cannot be placed on excluded locations.",
-                              num_to_fill, non_excluded_count, required_count)
-        character_percentage = ok_to_replace_character_count / total_replaceable
-        character_subtract = min(needed, round(character_percentage * needed))
-        extra_subtract = needed - character_subtract
-        item_location_counts.reserved_character -= character_subtract
-        item_location_counts.reserved_extra -= extra_subtract
-        free_location_count = 0
-    else:
-        free_location_count -= required_excludable_count
+    required_excludable_count = item_location_counts.free_space_for_excluded_locations()
 
     item_pool: list[LegoStarWarsTCSItem] = []
 
