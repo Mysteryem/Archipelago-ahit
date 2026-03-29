@@ -1075,7 +1075,7 @@ def _create_items(
 
     junk_weight = self.options.filler_weight_junk.value
     if junk_weight:
-        leftover_junk = create_excludable_junk_items(num_to_fill)
+        leftover_junk = create_excludable_junk_items(max(num_to_fill, required_excludable_count))
         leftover_choices.append(leftover_junk)
         leftover_weights.append(junk_weight)
 
