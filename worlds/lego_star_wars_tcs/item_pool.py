@@ -1094,6 +1094,50 @@ def _create_pool(
     return item_pool
 
 
+def _apply_deprioritized_and_skip_balancing(
+        self: LegoStarWarsTCSWorld,
+        item_pool: list[LegoStarWarsTCSItem],
+        chapters_unlock_with_characters: bool,
+        level_access_character_counts: Counter[str],
+):
+    # todo: In the future, individual characters may be relevant to logic, e.g. Droideka, which should never be
+    #  given deprioritized + skip_balancing.
+    # Give deprioritized + skip_balancing to characters with only common abilities, and that do not give access to
+    # levels.
+    non_level_access_character_items: list[LegoStarWarsTCSItem] = []
+    non_deprioritize_ability_counts: Counter[CharacterAbility] = Counter()
+    for item in item_pool:
+        if item.advancement and item.name in CHARACTERS_AND_VEHICLES_BY_NAME:
+            if progression_deprioritized_skip_balancing in item.classification:
+                # Don't count abilities from characters that are already deprioritized + skip_balancing.
+                continue
+            abilities = item.abilities
+            if abilities:
+                non_deprioritize_ability_counts.update(abilities)
+            if chapters_unlock_with_characters:
+                if level_access_character_counts[item.name] == 0:
+                    assert abilities, ("No abilities should mean the character item is not progression currently if"
+                                       " the character does not unlock levels")
+                    non_level_access_character_items.append(item)
+            else:
+                non_level_access_character_items.append(item)
+    self.random.shuffle(non_level_access_character_items)
+    for item in non_level_access_character_items:
+        abilities = item.abilities
+        for ability in abilities:
+            # 3 is a magic number and could be changed if other values produce nicer results.
+            if non_deprioritize_ability_counts[ability] <= 3:
+                # One of the abilities is uncommon.
+                break
+        else:
+            # None of the abilities were uncommon, so add the deprioritize and skip balancing classifications.
+            item.classification |= progression_deprioritized_skip_balancing
+            if abilities:
+                # Reduce the remaining ability counts from non-deprioritized characters
+                non_deprioritize_ability_counts.subtract(abilities)
+    assert all(ability.bit_count() == 1 for ability in non_deprioritize_ability_counts)
+
+
 def _create_items(
         self: LegoStarWarsTCSWorld,
         level_access_character_counts: Counter[str],
@@ -1189,41 +1233,11 @@ def _create_items(
 
     assert len(item_pool) == len(unfilled_locations), f"Created {len(item_pool)} items, but there were {len(unfilled_locations)} unfilled locations"
 
-    # todo: In the future, individual characters may be relevant to logic, e.g. Droideka, which should never be
-    #  given deprioritized + skip_balancing.
-    # Give deprioritized + skip_balancing to characters with only common abilities, and that do not give access to
-    # levels.
-    non_level_access_character_items: list[LegoStarWarsTCSItem] = []
-    non_deprioritize_ability_counts: Counter[CharacterAbility] = Counter()
-    for item in item_pool:
-        if item.advancement and item.name in CHARACTERS_AND_VEHICLES_BY_NAME:
-            if progression_deprioritized_skip_balancing in item.classification:
-                # Don't count abilities from characters that are already deprioritized + skip_balancing.
-                continue
-            abilities = item.abilities
-            if abilities:
-                non_deprioritize_ability_counts.update(abilities)
-            if chapters_unlock_with_characters:
-                if level_access_character_counts[item.name] == 0:
-                    assert abilities, ("No abilities should mean the character item is not progression currently if"
-                                       " the character does not unlock levels")
-                    non_level_access_character_items.append(item)
-            else:
-                non_level_access_character_items.append(item)
-    self.random.shuffle(non_level_access_character_items)
-    for item in non_level_access_character_items:
-        abilities = item.abilities
-        for ability in abilities:
-            # 3 is a magic number and could be changed if other values produce nicer results.
-            if non_deprioritize_ability_counts[ability] <= 3:
-                # One of the abilities is uncommon.
-                break
-        else:
-            # None of the abilities were uncommon, so add the deprioritize and skip balancing classifications.
-            item.classification |= progression_deprioritized_skip_balancing
-            if abilities:
-                # Reduce the remaining ability counts from non-deprioritized characters
-                non_deprioritize_ability_counts.subtract(abilities)
-    assert all(ability.bit_count() == 1 for ability in non_deprioritize_ability_counts)
+    _apply_deprioritized_and_skip_balancing(
+        self,
+        item_pool,
+        chapters_unlock_with_characters,
+        level_access_character_counts,
+    )
 
     return item_pool
