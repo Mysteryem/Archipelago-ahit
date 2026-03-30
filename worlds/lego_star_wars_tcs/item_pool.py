@@ -182,19 +182,19 @@ class ItemLocationCounts:
     non_excluded_chapter_count: int
     goal_chapter_locations_excluded: bool
 
-    completion: int = 0
-    """Free spaces in the item pool for Level completion locations."""
-    true_jedi: int = 0
-    """Free spaces in the item pool for True Jedi locations."""
+    free_from_completions: int = 0
+    """Free spaces in the item pool from Level completion locations."""
+    free_from_true_jedi: int = 0
+    """Free spaces in the item pool from True Jedi locations."""
+    free_from_ridesanity: int = 0
+    """Free spaces in the item pool from ridesanity locations."""
 
-    free_minikit: int = 0
-    """Free spaces in the item pool for Minikit locations."""
-    free_character: int = 0
-    """Free spaces in the item pool for Character unlock/purchase locations."""
-    free_extra: int = 0
-    """Free spaces in the item pool for Extra purchase locations."""
-    free_ridesanity: int = 0
-    """Free spaces in the item pool for ridesanity locations."""
+    available_minikit: int = 0
+    """Count of enabled locations that give a minikit in vanilla."""
+    available_character: int = 0
+    """Count of enabled locations that unlock a character in vanilla."""
+    available_extra: int = 0
+    """Count of enabled locations that unlock an Extra in vanilla."""
 
     required_minikit: int = 0
     """The number of Minikit bundles that are required to exist in the item pool."""
@@ -205,83 +205,70 @@ class ItemLocationCounts:
     required_additional: int = 0
     """The number of additional items that don't belong to a particular category, that are required to exist in the 
     pool."""
-    required_excluded: int = 0
+    required_excludable: int = 0
     """The number of excludable items that are required to exist in the item pool."""
 
-    reserved_character: int = 0
-    """Try to add at least as many characters to the item pool as this."""
-    reserved_extra: int = 0
-    """Try to add at least as many Extras to the item pool as this."""
-
-    free_consumed_for_required: int = 0
-    """How many free locations have been consumed by items in the pool that do not have a corresponding vanilla 
-    location."""
-    free_consumed_for_excluded: int = 0
-    """How many free locations have been consumed by filler items in the pool that are needed to be able to satisfy
-    excluded locations."""
-    reserved_consumed_for_required: int = 0
-    """How many reserved locations have been consumed/un-reserved to ensure there is enough space in the item pool for
-    all required items."""
+    reserved_non_required_character: int = 0
+    """Try to add at least as many non-required characters to the item pool as this."""
+    reserved_non_required_extra: int = 0
+    """Try to add at least as many non-required Extras to the item pool as this."""
 
     def set_character_counts(self, pool_required_characters_count: int) -> None:
         self.required_character = pool_required_characters_count
 
-        non_excluded_character_unlock_location_count = (
+        self.available_character = (
                 self.world.character_unlock_location_count - self.world.goal_excluded_character_unlock_location_count
         )
-        if (self.world.options.filler_reserve_characters
-                or self.required_character >= non_excluded_character_unlock_location_count):
-            self.reserved_character = non_excluded_character_unlock_location_count
-            self.free_character = 0
+        if self.world.options.filler_reserve_characters:
+            characters_remaining_to_fit_in_pool = max(self.available_character, self.required_character)
+            # Leftover space for characters is reserved for non-required characters.
+            self.reserved_non_required_character = characters_remaining_to_fit_in_pool - self.required_character
         else:
-            self.reserved_character = self.required_character
-            self.free_character = non_excluded_character_unlock_location_count - self.reserved_character
+            self.reserved_non_required_character = 0
 
         # Any goal excluded character unlock locations do not contribute Characters to the item pool (unless those
         # characters happen to be Filler classification). Enough Filler items for Excluded locations is checked and
         # satisfied later, so these locations are effectively free locations.
-        self.free_character += self.world.goal_excluded_character_unlock_location_count
+        self.available_character += self.world.goal_excluded_character_unlock_location_count
 
     def set_extra_counts(self, pool_required_extras_count: int) -> None:
         self.required_extra = pool_required_extras_count
 
-        self.reserved_extra = self.non_excluded_chapter_count
+        self.available_extra = self.non_excluded_chapter_count
 
         if self.world.options.enable_starting_extras_locations:
-            self.reserved_extra += len(PURCHASABLE_NON_POWER_BRICK_EXTRAS)
+            self.available_extra += len(PURCHASABLE_NON_POWER_BRICK_EXTRAS)
 
         free_extra_location_count: int
         if self.world.options.filler_reserve_extras:
-            # All the locations from Extras are reserved for putting Extra items into the item pool.
-            self.free_extra = 0
+            extras_remaining_to_fit_in_pool = max(self.available_extra, self.required_extra)
+            # Leftover space for Extras is reserved for non-required Extras.
+            self.reserved_non_required_extra = extras_remaining_to_fit_in_pool - self.required_extra
         else:
-            # Reserve only as many locations for Extras as the number of Extras that are required to be in the item
-            # pool.
-            initial_reserved_count = self.reserved_extra
-            self.reserved_extra = min(self.required_extra, initial_reserved_count)
-            self.free_extra = initial_reserved_count - self.reserved_extra
+            self.reserved_non_required_extra = 0
+
         if self.goal_chapter_locations_excluded:
             # The Extra location of the Goal Chapter is excluded, and does not contribute an Extra to the item pool.
-            self.free_extra += 1
+            self.available_extra += 1
 
     def set_true_jedi_counts(self) -> None:
         # The vanilla rewards for True Jedi are Gold Bricks, which are events, so these are effectively free locations
         # for any kind of item when enabled.
         if self.world.options.enable_true_jedi_locations:
-            self.true_jedi = self.non_excluded_chapter_count
+            self.free_from_true_jedi = self.non_excluded_chapter_count
 
             if self.goal_chapter_locations_excluded:
                 # True Jedi locations are already free locations for any kind of item.
-                self.true_jedi += 1
+                self.free_from_true_jedi += 1
         else:
-            self.true_jedi = 0
+            self.free_from_true_jedi = 0
 
     def set_completion_counts(self) -> None:
-        self.completion = self.non_excluded_chapter_count + len(self.world.enabled_bonuses)
+        self.free_from_completions = self.non_excluded_chapter_count + len(self.world.enabled_bonuses)
         if self.goal_chapter_locations_excluded:
             # The completion location for the goal chapter is excluded, but is still a free location in the item pool
             # (space for filler needed to be placed at excluded locations is calculated separately from free locations).
-            self.completion += 1
+            self.free_from_completions += 1
 
     def set_minikit_counts(self) -> None:
         # As many minikit bundles as this will always be created. This may be fewer than is required to goal, but
@@ -290,28 +277,25 @@ class ItemLocationCounts:
         self.required_minikit = self.world.minikit_bundle_count
 
         if self.world.options.enable_minikit_locations:
-            self.free_minikit = self.non_excluded_chapter_count * 10 - self.required_minikit
+            self.available_minikit = self.non_excluded_chapter_count * 10
             if self.goal_chapter_locations_excluded:
                 # The locations are excluded, but still count as free locations.
-                self.free_minikit += 10
+                self.available_minikit += 10
         else:
             if self.world.options.minikit_goal_amount != 0:
                 assert self.world.options.minikit_bundle_size == 10
                 assert self.world.minikit_bundle_name == "10 Minikits"
                 assert self.world.minikit_bundle_count == len(self.world.enabled_non_goal_chapters)
-                # Consume the free Chapter Completion locations to fit the Minikits.
-                self.completion -= self.required_minikit
-                self.free_minikit = 0
+                self.available_minikit = 0
             else:
                 assert self.required_minikit == 0
-                self.free_minikit = 0
+                self.available_minikit = 0
 
     def set_ridesanity_counts(self) -> None:
         # There are no corresponding items for ridesanity locations, so they are free locations for any item.
-        self.free_ridesanity = self.world.ridesanity_location_count
+        self.free_from_ridesanity = self.world.ridesanity_location_count
 
     def set_additional_item_counts(self, additional_required_items_count: int) -> None:
-        self.free_consumed_for_required += additional_required_items_count
         self.required_additional += additional_required_items_count
 
     def _free_space_from_non_required(self, needed: int) -> tuple[bool, int]:
@@ -321,8 +305,8 @@ class ItemLocationCounts:
         :return: True and the total reserved spaces consumed, or False and how many free spaces were missing.
         """
         # Subtract from reserved, but not required, counts.
-        ok_to_replace_character_count = max(0, self.reserved_character - self.required_character)
-        ok_to_replace_extras_count = max(0, self.reserved_extra - self.required_extra)
+        ok_to_replace_character_count = self.reserved_non_required_character
+        ok_to_replace_extras_count = self.reserved_non_required_extra
         total_replaceable = ok_to_replace_character_count + ok_to_replace_extras_count
         if needed > total_replaceable:
             return False, needed - total_replaceable
@@ -330,8 +314,8 @@ class ItemLocationCounts:
             character_percentage = ok_to_replace_character_count / total_replaceable
             character_subtract = min(needed, round(character_percentage * needed))
             extra_subtract = needed - character_subtract
-            self.reserved_character -= character_subtract
-            self.reserved_extra -= extra_subtract
+            self.reserved_non_required_character -= character_subtract
+            self.reserved_non_required_extra -= extra_subtract
             assert (character_subtract + extra_subtract) == needed
             return True, character_subtract + extra_subtract
 
@@ -360,8 +344,11 @@ class ItemLocationCounts:
                         " increase the Minikit Bundle Size to free up more locations. There were %i more required"
                         " progression items than locations.",
                         count)
-            self.reserved_consumed_for_required += count
-        assert self.free_location_count >= 0, "free_location_count must always be >= 0"
+            self.world.log_warning("There was not enough space in the item pool to fit all required items and"
+                                   " all reserved non-required items. %i reserved non-required items had to be"
+                                   " un-reserved to fit all the required items.",
+                                   count)
+        assert self.free_location_count >= 0, "free_location_count must always be >= 0 after freeing required space"
 
     def free_space_for_excluded_locations(self) -> None:
         """
@@ -382,7 +369,7 @@ class ItemLocationCounts:
             # This shouldn't really happen unless basically the entire world is excluded and/or barely any locations
             # are enabled.
             needed = required_excludable_count - free_location_count
-            ok, count = self._free_space_from_non_required(needed)
+            ok, _count = self._free_space_from_non_required(needed)
             if not ok:
                 # There are too many non-excludable items for the number of excluded locations.
                 # Give up.
@@ -402,34 +389,38 @@ class ItemLocationCounts:
                     " There are %i locations, %i of which are not excluded, but there are %i required"
                     " items that cannot be placed on excluded locations.",
                     num_to_fill, non_excluded_count, required_count)
-            else:
-                self.free_consumed_for_excluded += (required_excludable_count - count)
-        else:
-            self.free_consumed_for_excluded += required_excludable_count
-        self.required_excluded += required_excludable_count
-        assert self.free_location_count >= 0, "free_location_count must always be >= 0"
+        self.required_excludable += required_excludable_count
+        assert self.free_location_count >= 0, \
+            "free_location_count must always be >= 0 after consuming space for excludable items"
+
+    @property
+    def explicit_items_to_create(self):
+        return self.required_items_to_create + self.reserved_non_required_character + self.reserved_non_required_extra
+
+    @property
+    def required_items_to_create(self):
+        return (
+            self.required_minikit
+            + self.required_character
+            + self.required_extra
+            + self.required_additional
+            + self.required_excludable
+        )
+
+    @property
+    def expected_locations_to_fill(self):
+        return (
+            self.free_from_completions
+            + self.free_from_true_jedi
+            + self.available_minikit
+            + self.available_character
+            + self.available_extra
+            + self.free_from_ridesanity
+        )
 
     @property
     def free_location_count(self):
-        return (self.completion
-                + self.true_jedi
-                + self.free_minikit
-                + self.free_character
-                + self.free_extra
-                + self.free_ridesanity
-                - self.free_consumed_for_required
-                + self.reserved_consumed_for_required
-                - self.free_consumed_for_excluded)
-
-    @property
-    def locations_to_fill(self):
-        return (self.reserved_character
-                + self.reserved_extra
-                + self.required_minikit
-                + self.free_location_count
-                + self.required_additional
-                + self.required_excluded)
-
+        return self.expected_locations_to_fill - self.explicit_items_to_create
 
 
 def _determine_chapters(self: LegoStarWarsTCSWorld) -> tuple[set[str], set[str]]:
@@ -887,39 +878,56 @@ def _balance_item_location_counts(
         pool_required_additional_items_count: int,
 ) -> ItemLocationCounts:
     item_location_counts = ItemLocationCounts(self, non_excluded_chapter_count, goal_chapter_locations_excluded)
-    item_location_counts.set_character_counts(pool_required_characters_count)
-    item_location_counts.set_extra_counts(pool_required_extras_count)
     item_location_counts.set_true_jedi_counts()
     item_location_counts.set_completion_counts()
-    item_location_counts.set_minikit_counts()
     item_location_counts.set_ridesanity_counts()
 
     free_location_count = item_location_counts.free_location_count
 
     assert free_location_count >= 0, "initial free_location_count should always be >= 0"
 
-    # These items don't have associated vanilla locations, so consume free locations to fit these items into the pool.
+    # There may be more minikits/characters/extras required/desired than enabled locations that provide those items in
+    # vanilla, so `item_location_counts.free_location_count` could now be negative.
+    item_location_counts.set_minikit_counts()
+    item_location_counts.set_character_counts(pool_required_characters_count)
+    item_location_counts.set_extra_counts(pool_required_extras_count)
+
+    # These items don't have associated vanilla locations at all, so will have to consume free locations to fit into the
+    # item pool.
     item_location_counts.set_additional_item_counts(pool_required_additional_items_count)
 
-    # If there was not enough space for all required items, replace reserved space, for non-required items, until there
-    # is enough space, or raise an OptionError if there is still not enough space, even with all reserved space
-    # replaced.
+    # If there was not enough space for all required items, replace reserved space, intended for non-required items,
+    # until there is enough space, or raise an OptionError if there is still not enough space, even with all reserved
+    # space replaced.
     item_location_counts.free_space_for_required_items()
 
     # Check that the number of locations that are expected to be filled matches the number of locations that are
     # unfilled.
-    expected_num_to_fill = item_location_counts.locations_to_fill
-
+    expected_num_to_fill = item_location_counts.expected_locations_to_fill
     assert num_to_fill == expected_num_to_fill, \
         f"Expected {expected_num_to_fill} locations to fill, but got {num_to_fill}"
 
     # Ensure there is enough space in the item pool for as many filler items as there are excluded locations.
     item_location_counts.free_space_for_excluded_locations()
 
-    assert num_to_fill == item_location_counts.locations_to_fill, \
-        f"Expected {item_location_counts.locations_to_fill} locations to fill, but got {num_to_fill}"
+    expected_num_to_fill = item_location_counts.expected_locations_to_fill
+    assert num_to_fill == expected_num_to_fill, \
+        (f"Expected {expected_num_to_fill} locations to fill, but got {num_to_fill} after"
+         f" freeing space for excludable items.")
 
-    del free_location_count  # No longer accurate.
+    assert num_to_fill >= item_location_counts.explicit_items_to_create
+    assert item_location_counts.required_minikit >= 0
+    assert item_location_counts.required_character >= 0
+    assert item_location_counts.required_extra >= 0
+    assert item_location_counts.required_additional >= 0
+    assert item_location_counts.required_excludable >= 0
+    assert item_location_counts.free_from_completions >= 0
+    assert item_location_counts.free_from_true_jedi >= 0
+    assert item_location_counts.available_minikit >= 0
+    assert item_location_counts.available_character >= 0
+    assert item_location_counts.available_extra >= 0
+    assert item_location_counts.free_from_ridesanity >= 0
+
     return item_location_counts
 
 
@@ -1005,15 +1013,17 @@ def _create_items(
         len(other_required_items),
     )
 
-    required_excludable_count = item_location_counts.required_excluded
-
-    remaining_free_locations = item_location_counts.free_location_count
+    remaining_locations = len(unfilled_locations)
 
     item_pool: list[LegoStarWarsTCSItem] = []
 
     created_item_names: set[str] = set()
 
     def add_to_pool(item: LegoStarWarsTCSItem):
+        nonlocal remaining_locations
+        remaining_locations -= 1
+        if remaining_locations < 0:
+            raise RuntimeError("Ran out of unfilled locations...")
         item_pool.append(item)
         created_item_names.add(item.name)
 
@@ -1021,79 +1031,41 @@ def _create_items(
     for name in other_required_items:
         add_to_pool(item_creator.create_item(name))
     num_to_fill -= len(other_required_items)
+    assert num_to_fill >= 0
+    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Create required characters.
-    start_inventory_required_characters_count: int
-    if item_location_counts.reserved_character < item_location_counts.required_character:
-        # If there are not enough reserved character unlock locations for the required characters, subtract from the
-        # free location count.
-        to_subtract = item_location_counts.required_character - item_location_counts.reserved_character
-        if remaining_free_locations < to_subtract:
-            # If there are not enough free locations, some of the required characters will have to be added to start
-            # inventory.
-            start_inventory_required_characters_count = to_subtract - remaining_free_locations
-            self.log_warning("There were not enough locations to add all required characters to the item pool,"
-                             " some of them have been added to starting inventory")
-            remaining_free_locations = 0
-        else:
-            remaining_free_locations -= to_subtract
-            start_inventory_required_characters_count = 0
-        item_location_counts.reserved_character = 0
-    else:
-        item_location_counts.reserved_character -= item_location_counts.required_character
-        start_inventory_required_characters_count = 0
-
-    self.random.shuffle(pool_required_characters)
-    pool_required_chars = pool_required_characters[start_inventory_required_characters_count:]
-    start_required_chars = pool_required_characters[:start_inventory_required_characters_count]
-    for character in pool_required_chars:
+    assert len(pool_required_characters) == item_location_counts.required_character
+    for character in pool_required_characters:
         add_to_pool(item_creator.create_item(character.name))
-    num_to_fill -= len(pool_required_chars)
+    num_to_fill -= len(pool_required_characters)
     assert num_to_fill >= 0
-    for character in start_required_chars:
-        self.push_precollected(item_creator.create_item(character.name))
+    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Create required extras.
-    start_inventory_required_extras_count: int
-    if item_location_counts.reserved_extra < item_location_counts.required_extra:
-        to_subtract = item_location_counts.required_extra - item_location_counts.reserved_extra
-        if remaining_free_locations < to_subtract:
-            start_inventory_required_extras_count = to_subtract - remaining_free_locations
-            self.log_warning("There were not enough locations to add all required Extras to the item pool,"
-                             " some of them have been added to starting inventory")
-            remaining_free_locations = 0
-        else:
-            remaining_free_locations -= to_subtract
-            start_inventory_required_extras_count = 0
-        item_location_counts.reserved_extra = 0
-    else:
-        item_location_counts.reserved_extra -= item_location_counts.required_extra
-        start_inventory_required_extras_count = 0
-
-    self.random.shuffle(pool_required_extras)
-    start_required_extras = pool_required_extras[:start_inventory_required_extras_count]
-    pool_required_extras = pool_required_extras[start_inventory_required_extras_count:]
+    assert len(pool_required_extras) == item_location_counts.required_extra
     for extra_name in pool_required_extras:
         add_to_pool(item_creator.create_item(extra_name))
     num_to_fill -= len(pool_required_extras)
     assert num_to_fill >= 0
-    for extra_name in start_required_extras:
-        self.push_precollected(item_creator.create_item(extra_name))
+    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Create required minikits.
     for _ in range(self.minikit_bundle_count):
         add_to_pool(item_creator.create_item(self.minikit_bundle_name))
     num_to_fill -= self.minikit_bundle_count
     assert num_to_fill >= 0
+    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Create as many non-required characters as there are reserved character locations.
+    required_excludable_count = item_location_counts.required_excludable
     self.random.shuffle(non_required_characters)
     # Sort preferred characters first so that they are picked in preference.
     preferred_characters = self.options.preferred_characters.value
     if preferred_characters:
         non_required_characters.sort(key=lambda char: -1 if char.name in preferred_characters else 0)
-    picked_chars = non_required_characters[:item_location_counts.reserved_character]
-    leftover_chars = non_required_characters[item_location_counts.reserved_character:]
+    picked_chars = non_required_characters[:item_location_counts.reserved_non_required_character]
+    leftover_chars = non_required_characters[item_location_counts.reserved_non_required_character:]
     for char in picked_chars:
         item = item_creator.create_item(char.name)
         add_to_pool(item)
@@ -1101,14 +1073,15 @@ def _create_items(
             required_excludable_count -= 1
     num_to_fill -= len(picked_chars)
     assert num_to_fill >= 0
+    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Create as many non-required extras as there are reserved power brick locations.
     self.random.shuffle(non_required_extras)
     # Sort preferred Extras first so that they are picked in preference.
     non_required_extras = _sort_for_preferred_extras(non_required_extras, self)
 
-    picked_extras = non_required_extras[:item_location_counts.reserved_extra]
-    leftover_extras = non_required_extras[item_location_counts.reserved_extra:]
+    picked_extras = non_required_extras[:item_location_counts.reserved_non_required_extra]
+    leftover_extras = non_required_extras[item_location_counts.reserved_non_required_extra:]
     for extra in picked_extras:
         item = item_creator.create_item(extra)
         add_to_pool(item)
@@ -1116,6 +1089,7 @@ def _create_items(
             required_excludable_count -= 1
     num_to_fill -= len(picked_extras)
     assert num_to_fill >= 0
+    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Determine items to fill out the rest of the item pool according to the weights in the options.
     leftover_choices: list[list[LegoStarWarsTCSItem]] = []
@@ -1186,6 +1160,9 @@ def _create_items(
 
         all_leftover_items = weighted_leftover_items
 
+    assert num_to_fill >= 0
+    assert num_to_fill + len(item_pool) == len(unfilled_locations)
+
     # Split the all_leftover_items into separate lists for required excludable items and other leftover items.
     excludable_leftover_items = []
     leftover_items = []
@@ -1208,7 +1185,7 @@ def _create_items(
     for item in leftover_items:
         add_to_pool(item)
 
-    assert len(item_pool) == len(unfilled_locations)
+    assert len(item_pool) == len(unfilled_locations), f"Created {len(item_pool)} items, but there were {len(unfilled_locations)} unfilled locations"
 
     # todo: In the future, individual characters may be relevant to logic, e.g. Droideka, which should never be
     #  given deprioritized + skip_balancing.
