@@ -1013,16 +1013,16 @@ def _create_items(
         len(other_required_items),
     )
 
-    remaining_locations = len(unfilled_locations)
+    remaining_to_create = len(unfilled_locations)
 
     item_pool: list[LegoStarWarsTCSItem] = []
 
     created_item_names: set[str] = set()
 
     def add_to_pool(item: LegoStarWarsTCSItem):
-        nonlocal remaining_locations
-        remaining_locations -= 1
-        if remaining_locations < 0:
+        nonlocal remaining_to_create
+        remaining_to_create -= 1
+        if remaining_to_create < 0:
             raise RuntimeError("Ran out of unfilled locations...")
         item_pool.append(item)
         created_item_names.add(item.name)
@@ -1030,32 +1030,20 @@ def _create_items(
     # Create required generic items that don't fall into any particular category.
     for name in other_required_items:
         add_to_pool(item_creator.create_item(name))
-    num_to_fill -= len(other_required_items)
-    assert num_to_fill >= 0
-    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Create required characters.
     assert len(pool_required_characters) == item_location_counts.required_character
     for character in pool_required_characters:
         add_to_pool(item_creator.create_item(character.name))
-    num_to_fill -= len(pool_required_characters)
-    assert num_to_fill >= 0
-    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Create required extras.
     assert len(pool_required_extras) == item_location_counts.required_extra
     for extra_name in pool_required_extras:
         add_to_pool(item_creator.create_item(extra_name))
-    num_to_fill -= len(pool_required_extras)
-    assert num_to_fill >= 0
-    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Create required minikits.
     for _ in range(self.minikit_bundle_count):
         add_to_pool(item_creator.create_item(self.minikit_bundle_name))
-    num_to_fill -= self.minikit_bundle_count
-    assert num_to_fill >= 0
-    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Create as many non-required characters as there are reserved character locations.
     required_excludable_count = item_location_counts.required_excludable
@@ -1071,9 +1059,6 @@ def _create_items(
         add_to_pool(item)
         if required_excludable_count > 0 and item.excludable:
             required_excludable_count -= 1
-    num_to_fill -= len(picked_chars)
-    assert num_to_fill >= 0
-    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Create as many non-required extras as there are reserved power brick locations.
     self.random.shuffle(non_required_extras)
@@ -1087,9 +1072,6 @@ def _create_items(
         add_to_pool(item)
         if required_excludable_count > 0 and item.excludable:
             required_excludable_count -= 1
-    num_to_fill -= len(picked_extras)
-    assert num_to_fill >= 0
-    assert num_to_fill + len(item_pool) == len(unfilled_locations)
 
     # Determine items to fill out the rest of the item pool according to the weights in the options.
     leftover_choices: list[list[LegoStarWarsTCSItem]] = []
@@ -1117,7 +1099,7 @@ def _create_items(
 
     junk_weight = self.options.filler_weight_junk.value
     if junk_weight:
-        leftover_junk = create_excludable_junk_items(max(num_to_fill, required_excludable_count))
+        leftover_junk = create_excludable_junk_items(max(remaining_to_create, required_excludable_count))
         leftover_choices.append(leftover_junk)
         leftover_weights.append(junk_weight)
 
@@ -1133,7 +1115,7 @@ def _create_items(
         # Items will be popped from the ends rather than taken from the start, so reverse the lists.
         for item_list in leftover_choices:
             item_list.reverse()
-        while (len(weighted_leftover_items) < num_to_fill or needed_excludable > 0) and leftover_choices:
+        while (len(weighted_leftover_items) < remaining_to_create or needed_excludable > 0) and leftover_choices:
             picked_list = self.random.choices(leftover_choices, leftover_weights, k=1)[0]
             item = picked_list.pop()
             if needed_excludable > 0 and item.excludable:
@@ -1160,9 +1142,6 @@ def _create_items(
 
         all_leftover_items = weighted_leftover_items
 
-    assert num_to_fill >= 0
-    assert num_to_fill + len(item_pool) == len(unfilled_locations)
-
     # Split the all_leftover_items into separate lists for required excludable items and other leftover items.
     excludable_leftover_items = []
     leftover_items = []
@@ -1176,11 +1155,11 @@ def _create_items(
         excludable_leftover_items.extend(create_excludable_junk_items(required_excludable_count))
     # Required excludable items must be picked first.
     leftover_items = excludable_leftover_items + leftover_items
-    if len(leftover_items) < num_to_fill:
-        leftover_items.extend(create_excludable_junk_items(num_to_fill - len(leftover_items)))
+    if len(leftover_items) < remaining_to_create:
+        leftover_items.extend(create_excludable_junk_items(remaining_to_create - len(leftover_items)))
     else:
-        leftover_items = leftover_items[:num_to_fill]
-    assert len(leftover_items) == num_to_fill
+        leftover_items = leftover_items[:remaining_to_create]
+    assert len(leftover_items) == remaining_to_create
 
     for item in leftover_items:
         add_to_pool(item)
