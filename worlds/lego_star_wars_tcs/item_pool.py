@@ -931,90 +931,17 @@ def _balance_item_location_counts(
     return item_location_counts
 
 
-# todo: This function is still too large, and should be broken up into smaller parts.
-def _create_items(
+def _create_pool(
         self: LegoStarWarsTCSWorld,
-        level_access_character_counts: Counter[str],
-        possible_pool_character_items: dict[str, GenericCharacterData],
-        non_excluded_chapter_count: int,
-        goal_chapter_locations_excluded: bool,
-        pool_required_chapter_unlock_items: list[str],
-        chapters_unlock_with_characters: bool,
-        item_pool_ability_requirements: ItemPoolAbilityRequirements,
+        remaining_to_create: int,
+        item_creator: ItemCreator,
+        item_location_counts: ItemLocationCounts,
+        other_required_items: list[str],
+        pool_required_characters: list[GenericCharacterData],
+        pool_required_extras: list[str],
+        non_required_characters: list[GenericCharacterData],
+        non_required_extras: list[str],
 ) -> list[LegoStarWarsTCSItem]:
-    """
-    Main item pool creation function.
-    :param self:
-    :param level_access_character_counts: The names of characters that lock access to levels, and the count of levels
-    that character locks access to for the current player.
-    :param possible_pool_character_items: Character item names and their data that are possible to include in the item
-    pool.
-    :param non_excluded_chapter_count: The number of enabled chapters that do not have their locations automatically
-    excluded.
-    :param goal_chapter_locations_excluded: Whether the goal chapter's locations are automatically excluded.
-    :param pool_required_chapter_unlock_items: Chapter Unlock item names that must be provided by the item pool.
-    :param chapters_unlock_with_characters: Whether chapters are locked by characters, rather than by unlock items.
-    :param item_pool_ability_requirements: CharacterAbility requirements for the item pool.
-    :return:
-    """
-    item_creator = ItemCreator(self, item_pool_ability_requirements)
-
-    # These abilities are provided by the starting characters, so these abilities can be stripped from other
-    # characters, improving logic performance.
-    self.starting_character_abilities = item_pool_ability_requirements.starting
-
-    # The abilities that need to be fulfilled by the item pool, retrieved, before modification, to double-check that all
-    # required abilities are accounted for.
-    required_abilities_to_fulfil = item_pool_ability_requirements.required
-
-    pool_required_characters: list[GenericCharacterData] = []
-    # Append characters that are required to access levels, updating `item_pool_ability_requirements` as characters are
-    # appended.
-    _append_level_access_required_characters(pool_required_characters,
-                                             level_access_character_counts,
-                                             possible_pool_character_items,
-                                             item_pool_ability_requirements)
-    # Append additional characters to satisfy the remaining required abilities in `item_pool_ability_requirements`.
-    _append_remaining_required_characters(pool_required_characters,
-                                          self,
-                                          possible_pool_character_items,
-                                          item_pool_ability_requirements)
-
-    non_required_characters = list(possible_pool_character_items.values())
-
-    assert item_pool_ability_requirements.required is CharacterAbility.NONE, \
-           "There are required abilities remaining that have not been fulfilled."
-    assert required_abilities_to_fulfil in reduce(
-        or_, (data.abilities for data in pool_required_characters), CharacterAbility.NONE), \
-        "The abilities of the required characters are not a subset of the required abilities."
-
-    # Get the required, and non-required extras.
-    pool_required_extras, non_required_extras = prepare_extras(self)
-
-    # Get other required items that don't belong to any particular category, and don't have associated vanilla
-    # locations.
-    other_required_items, starting_required_other_items = _get_additional_required_items(
-        self, pool_required_chapter_unlock_items)
-
-    # Pre-collect the items (Episode Completion Tokens) that won't be in the pool, but the player will start with.
-    for item_name in starting_required_other_items:
-        self.push_precollected(item_creator.create_item(item_name))
-
-    unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
-    num_to_fill = len(unfilled_locations)
-
-    item_location_counts = _balance_item_location_counts(
-        self,
-        num_to_fill,
-        non_excluded_chapter_count,
-        goal_chapter_locations_excluded,
-        len(pool_required_characters),
-        len(pool_required_extras),
-        len(other_required_items),
-    )
-
-    remaining_to_create = len(unfilled_locations)
-
     item_pool: list[LegoStarWarsTCSItem] = []
 
     created_item_names: set[str] = set()
@@ -1163,6 +1090,102 @@ def _create_items(
 
     for item in leftover_items:
         add_to_pool(item)
+
+    return item_pool
+
+
+def _create_items(
+        self: LegoStarWarsTCSWorld,
+        level_access_character_counts: Counter[str],
+        possible_pool_character_items: dict[str, GenericCharacterData],
+        non_excluded_chapter_count: int,
+        goal_chapter_locations_excluded: bool,
+        pool_required_chapter_unlock_items: list[str],
+        chapters_unlock_with_characters: bool,
+        item_pool_ability_requirements: ItemPoolAbilityRequirements,
+) -> list[LegoStarWarsTCSItem]:
+    """
+    Main item pool creation function.
+    :param self:
+    :param level_access_character_counts: The names of characters that lock access to levels, and the count of levels
+    that character locks access to for the current player.
+    :param possible_pool_character_items: Character item names and their data that are possible to include in the item
+    pool.
+    :param non_excluded_chapter_count: The number of enabled chapters that do not have their locations automatically
+    excluded.
+    :param goal_chapter_locations_excluded: Whether the goal chapter's locations are automatically excluded.
+    :param pool_required_chapter_unlock_items: Chapter Unlock item names that must be provided by the item pool.
+    :param chapters_unlock_with_characters: Whether chapters are locked by characters, rather than by unlock items.
+    :param item_pool_ability_requirements: CharacterAbility requirements for the item pool.
+    :return:
+    """
+    item_creator = ItemCreator(self, item_pool_ability_requirements)
+
+    # These abilities are provided by the starting characters, so these abilities can be stripped from other
+    # characters, improving logic performance.
+    self.starting_character_abilities = item_pool_ability_requirements.starting
+
+    # The abilities that need to be fulfilled by the item pool, retrieved, before modification, to double-check that all
+    # required abilities are accounted for.
+    required_abilities_to_fulfil = item_pool_ability_requirements.required
+
+    pool_required_characters: list[GenericCharacterData] = []
+    # Append characters that are required to access levels, updating `item_pool_ability_requirements` as characters are
+    # appended.
+    _append_level_access_required_characters(pool_required_characters,
+                                             level_access_character_counts,
+                                             possible_pool_character_items,
+                                             item_pool_ability_requirements)
+    # Append additional characters to satisfy the remaining required abilities in `item_pool_ability_requirements`.
+    _append_remaining_required_characters(pool_required_characters,
+                                          self,
+                                          possible_pool_character_items,
+                                          item_pool_ability_requirements)
+
+    non_required_characters = list(possible_pool_character_items.values())
+
+    assert item_pool_ability_requirements.required is CharacterAbility.NONE, \
+           "There are required abilities remaining that have not been fulfilled."
+    assert required_abilities_to_fulfil in reduce(
+        or_, (data.abilities for data in pool_required_characters), CharacterAbility.NONE), \
+        "The abilities of the required characters are not a subset of the required abilities."
+
+    # Get the required, and non-required extras.
+    pool_required_extras, non_required_extras = prepare_extras(self)
+
+    # Get other required items that don't belong to any particular category, and don't have associated vanilla
+    # locations.
+    other_required_items, starting_required_other_items = _get_additional_required_items(
+        self, pool_required_chapter_unlock_items)
+
+    # Pre-collect the items (Episode Completion Tokens) that won't be in the pool, but the player will start with.
+    for item_name in starting_required_other_items:
+        self.push_precollected(item_creator.create_item(item_name))
+
+    unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
+    num_to_fill = len(unfilled_locations)
+
+    item_location_counts = _balance_item_location_counts(
+        self,
+        num_to_fill,
+        non_excluded_chapter_count,
+        goal_chapter_locations_excluded,
+        len(pool_required_characters),
+        len(pool_required_extras),
+        len(other_required_items),
+    )
+
+    item_pool = _create_pool(
+        self,
+        num_to_fill,
+        item_creator,
+        item_location_counts,
+        other_required_items,
+        pool_required_characters,
+        pool_required_extras,
+        non_required_characters,
+        non_required_extras,
+    )
 
     assert len(item_pool) == len(unfilled_locations), f"Created {len(item_pool)} items, but there were {len(unfilled_locations)} unfilled locations"
 
