@@ -423,53 +423,53 @@ class ItemLocationCounts:
         return self.expected_locations_to_fill - self.explicit_items_to_create
 
 
-def _determine_chapters(self: LegoStarWarsTCSWorld) -> tuple[set[str], set[str]]:
+def _determine_chapters(world: LegoStarWarsTCSWorld) -> tuple[set[str], set[str]]:
     """
     Return the set of chapter short names that have locations, and the set of chapter short names that have non-excluded
     locations.
     """
-    if self.goal_chapter:
-        if self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
-            chapters_with_locations = self.enabled_chapters - {self.goal_chapter}
-            chapters_with_non_excluded_locations = self.enabled_non_goal_chapters
-        elif self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded:
-            chapters_with_locations = self.enabled_chapters
-            chapters_with_non_excluded_locations = self.enabled_non_goal_chapters
+    if world.goal_chapter:
+        if world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
+            chapters_with_locations = world.enabled_chapters - {world.goal_chapter}
+            chapters_with_non_excluded_locations = world.enabled_non_goal_chapters
+        elif world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded:
+            chapters_with_locations = world.enabled_chapters
+            chapters_with_non_excluded_locations = world.enabled_non_goal_chapters
         else:
-            assert self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal
-            chapters_with_locations = self.enabled_chapters
-            chapters_with_non_excluded_locations = self.enabled_chapters
+            assert world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal
+            chapters_with_locations = world.enabled_chapters
+            chapters_with_non_excluded_locations = world.enabled_chapters
     else:
-        chapters_with_locations = self.enabled_chapters
-        chapters_with_non_excluded_locations = self.enabled_chapters
+        chapters_with_locations = world.enabled_chapters
+        chapters_with_non_excluded_locations = world.enabled_chapters
 
     return chapters_with_locations, chapters_with_non_excluded_locations
 
 
-def _create_possible_pool(self: LegoStarWarsTCSWorld) -> dict[str, GenericCharacterData]:
+def _create_possible_pool(world: LegoStarWarsTCSWorld) -> dict[str, GenericCharacterData]:
     # If Gunship Cavalry (Original), Pod Race (Original) and Anakin's Flight get updated to require Vehicles again,
     # then Republic Gunship, Anakin's Pod and Naboo Starfighter would be required items to included in the pool.
     # if not vehicle_chapters_enabled:
-    #     if "Anakin's Flight" in self.enabled_bonuses:
+    #     if "Anakin's Flight" in world.enabled_bonuses:
     #         vehicle = CHARACTERS_AND_VEHICLES_BY_NAME["Naboo Starfighter"]
     #         possible_pool_character_items[vehicle.name] = vehicle
-    #     if "Gunship Cavalry (Original)" in self.enabled_bonuses:
+    #     if "Gunship Cavalry (Original)" in world.enabled_bonuses:
     #         vehicle = CHARACTERS_AND_VEHICLES_BY_NAME["Republic Gunship"]
     #         possible_pool_character_items[vehicle.name] = vehicle
-    #     if "Mos Espa Pod Race (Original)" in self.enabled_bonuses:
+    #     if "Mos Espa Pod Race (Original)" in world.enabled_bonuses:
     #         vehicle = CHARACTERS_AND_VEHICLES_BY_NAME["Anakin's Pod"]
     #         possible_pool_character_items[vehicle.name] = vehicle
     # todo: Reserve spaces in the item pool for vehicles and non-vehicles separately, based on how many locations
     #  unlock characters of the each type.
-    vehicle_chapters_enabled = not VEHICLE_CHAPTER_SHORTNAMES.isdisjoint(self.enabled_chapters)
+    vehicle_chapters_enabled = not VEHICLE_CHAPTER_SHORTNAMES.isdisjoint(world.enabled_chapters)
 
     possible_pool_character_items = {name: char for name, char in CHARACTERS_AND_VEHICLES_BY_NAME.items()
                                      if char.is_sendable and (vehicle_chapters_enabled
                                                               or char.item_type != "Vehicle")}
-    if self.goal_chapter and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
+    if world.goal_chapter and world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
         # Vehicle chapters could be disabled for normal chapters, but the goal chapter could be a vehicle chapter,
         # so the vehicles required for the goal chapter need to be forced into the item pool.
-        for name in CHAPTER_AREA_STORY_CHARACTERS[self.goal_chapter]:
+        for name in CHAPTER_AREA_STORY_CHARACTERS[world.goal_chapter]:
             if name not in possible_pool_character_items:
                 possible_pool_character_items[name] = CHARACTERS_AND_VEHICLES_BY_NAME[name]
 
@@ -477,41 +477,41 @@ def _create_possible_pool(self: LegoStarWarsTCSWorld) -> dict[str, GenericCharac
 
 
 def create_starting_characters_for_character_locked_chapters(
-        self: LegoStarWarsTCSWorld,
+        world: LegoStarWarsTCSWorld,
         possible_pool_character_items: dict[str, GenericCharacterData],
 ) -> None:
     """
 
-    :param self:
+    :param world:
     :param possible_pool_character_items:
     :return:
     """
     # Add characters necessary to unlock the starting chapter into starting inventory.
     # The story character names are a `set`, so sort before iterating to get a deterministic iteration order.
-    for name in sorted(CHAPTER_AREA_STORY_CHARACTERS[self.starting_chapter.short_name]):
-        self.push_precollected(self.create_item(name))
+    for name in sorted(CHAPTER_AREA_STORY_CHARACTERS[world.starting_chapter.short_name]):
+        world.push_precollected(world.create_item(name))
         del possible_pool_character_items[name]
 
 
 def create_starting_characters_for_unlock_item_locked_chapters(
-        self: LegoStarWarsTCSWorld,
+        world: LegoStarWarsTCSWorld,
         possible_pool_character_items: dict[str, GenericCharacterData],
 ) -> None:
     """
 
-    :param self:
+    :param world:
     :param possible_pool_character_items:
     :return:
     """
     # Only give enough characters to fulfil the main requirements of the starting chapter.
     # The alt requirements, if they exist, often replace a common requirement with a rarer requirement.
-    starting_chapter_entrance_abilities = self.starting_chapter.completion_main_ability_requirements
+    starting_chapter_entrance_abilities = world.starting_chapter.completion_main_ability_requirements
 
     starting_chapter_entrance_abilities_list = sorted(starting_chapter_entrance_abilities)
 
     # Shuffle the order the abilities will be fulfilled in.
     fulfilled_abilities: set[CharacterAbility] = set()
-    self.random.shuffle(starting_chapter_entrance_abilities_list)
+    world.random.shuffle(starting_chapter_entrance_abilities_list)
 
     # Always pick CAN_ abilities last to avoid picking very boring characters at the start with basically no
     # actual abilities.
@@ -570,13 +570,13 @@ def create_starting_characters_for_unlock_item_locked_chapters(
             continue
         candidates = characters_by_ability[individual_ability]
         # Shuffle first, so that ties on the sort have deterministically random order.
-        self.random.shuffle(candidates)
+        world.random.shuffle(candidates)
         candidates.sort(key=sort_func)
         # Randomly pick from the first quarter to avoid always picking the character in the list with the lowest
         # ability score.
         picks = candidates[0:max(1, round(len(candidates) * 0.25))]
-        picked = self.random.choice(picks)
-        self.push_precollected(self.create_item(picked.name))
+        picked = world.random.choice(picks)
+        world.push_precollected(world.create_item(picked.name))
         del possible_pool_character_items[picked.name]
         fulfilled_abilities.update(picked.abilities)
         for ability in picked.abilities:
@@ -586,14 +586,14 @@ def create_starting_characters_for_unlock_item_locked_chapters(
 
 
 def determine_item_pool_abilities(
-        self: LegoStarWarsTCSWorld,
+        world: LegoStarWarsTCSWorld,
         chapters_with_locations: set[str]
 ) -> ItemPoolAbilityRequirements:
     # Determine what abilities must be supplied by the item pool for all locations to be reachable with all items in
     # the item pool.
     required_character_abilities_in_pool = CharacterAbility.NONE
     optional_character_abilities = CharacterAbility.NONE
-    # `chapters_with_locations` is a `set`, so sort for deterministic results from the `self.random` usage.
+    # `chapters_with_locations` is a `set`, so sort for deterministic results from the `world.random` usage.
     for shortname in sorted(chapters_with_locations):
         power_brick_abilities = POWER_BRICK_REQUIREMENTS[shortname][1]
         if power_brick_abilities is not None:
@@ -608,17 +608,17 @@ def determine_item_pool_abilities(
 
                 if not at_least_one_already_required:
                     # Pick any one of the abilities to be required to be provided by the item pool.
-                    picked = self.random.choice(power_brick_abilities)
+                    picked = world.random.choice(power_brick_abilities)
                     required_character_abilities_in_pool |= picked
             else:
                 required_character_abilities_in_pool |= power_brick_abilities
-        if self.options.enable_minikit_locations.value:
+        if world.options.enable_minikit_locations.value:
             for requirements in SHORT_NAME_TO_CHAPTER_AREA[shortname].all_minikits_ability_requirements:
                 required_character_abilities_in_pool |= requirements
-    for bonus_name in self.enabled_bonuses:
+    for bonus_name in world.enabled_bonuses:
         area = BONUS_NAME_TO_BONUS_AREA[bonus_name]
         required_character_abilities_in_pool |= area.completion_ability_requirements
-    for _area_name, ridable_spots in self.ridesanity_spots.items():
+    for _area_name, ridable_spots in world.ridesanity_spots.items():
         for _spot, any_ridable_ability_requirements in ridable_spots:
             if any_ridable_ability_requirements:
                 if len(any_ridable_ability_requirements) == 1:
@@ -634,52 +634,52 @@ def determine_item_pool_abilities(
 
                     if not at_least_one_already_required:
                         # Pick any one of the abilities to be required to be provided by the item pool.
-                        picked = self.random.choice(any_ridable_ability_requirements)
+                        picked = world.random.choice(any_ridable_ability_requirements)
                         required_character_abilities_in_pool |= picked
     return ItemPoolAbilityRequirements(required_character_abilities_in_pool, optional_character_abilities)
 
 
-def create_item_pool(self: LegoStarWarsTCSWorld):
+def create_item_pool(world: LegoStarWarsTCSWorld):
     # Determine how many chapter worth's of locations are enabled.
     goal_chapter_locations_excluded = (
-            self.goal_chapter
-            and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded
+            world.goal_chapter
+            and world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded
     )
 
-    chapters_with_locations, chapters_with_non_excluded_locations = _determine_chapters(self)
+    chapters_with_locations, chapters_with_non_excluded_locations = _determine_chapters(world)
 
-    possible_pool_character_items = _create_possible_pool(self)
+    possible_pool_character_items = _create_possible_pool(world)
 
     pool_required_chapter_unlock_items: list[str]
-    if self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_story_characters:
+    if world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_story_characters:
         chapters_unlock_with_characters = True
         pool_required_chapter_unlock_items = []
 
-        create_starting_characters_for_character_locked_chapters(self, possible_pool_character_items)
-    elif self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item:
+        create_starting_characters_for_character_locked_chapters(world, possible_pool_character_items)
+    elif world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item:
         chapters_unlock_with_characters = False
-        starting_chapter_short_name = self.starting_chapter.short_name
-        self.push_precollected(self.create_item(f"{starting_chapter_short_name} Unlock"))
-        pool_required_chapter_unlock_items = [f"{short_name} Unlock" for short_name in self.enabled_chapters
+        starting_chapter_short_name = world.starting_chapter.short_name
+        world.push_precollected(world.create_item(f"{starting_chapter_short_name} Unlock"))
+        pool_required_chapter_unlock_items = [f"{short_name} Unlock" for short_name in world.enabled_chapters
                                               if short_name != starting_chapter_short_name]
         del starting_chapter_short_name
 
-        create_starting_characters_for_unlock_item_locked_chapters(self, possible_pool_character_items)
+        create_starting_characters_for_unlock_item_locked_chapters(world, possible_pool_character_items)
     else:
-        raise Exception(f"Unexpected Chapter Unlock Requirement {self.options.chapter_unlock_requirement}")
+        raise Exception(f"Unexpected Chapter Unlock Requirement {world.options.chapter_unlock_requirement}")
 
     # Create the starting Episode Unlock item if Episode Unlock items are required to access chapters within an Episode.
-    if self.options.episode_unlock_requirement == "episode_item":
-        self.push_precollected(self.create_item(f"Episode {self.starting_episode} Unlock"))
+    if world.options.episode_unlock_requirement == "episode_item":
+        world.push_precollected(world.create_item(f"Episode {world.starting_episode} Unlock"))
 
-    item_pool_ability_requirements = determine_item_pool_abilities(self, chapters_with_locations)
+    item_pool_ability_requirements = determine_item_pool_abilities(world, chapters_with_locations)
 
     level_access_character_counts = item_pool_ability_requirements.update_for_chapter_lock_requirements(
-        self, chapters_unlock_with_characters)
+        world, chapters_unlock_with_characters)
 
     # Gather the abilities of all items in starting inventory, so that they can be removed from other created items,
     # improving generation performance.
-    initial_starting_items = cast(list[LegoStarWarsTCSItem], self.multiworld.precollected_items[self.player])
+    initial_starting_items = cast(list[LegoStarWarsTCSItem], world.multiworld.precollected_items[world.player])
     starting_abilities = CharacterAbility.NONE
     for item in initial_starting_items:
         starting_abilities |= item.abilities
@@ -687,7 +687,7 @@ def create_item_pool(self: LegoStarWarsTCSWorld):
     item_pool_ability_requirements.update_for_starting_abilities(starting_abilities)
 
     return _create_items(
-        self,
+        world,
         level_access_character_counts,
         possible_pool_character_items,
         len(chapters_with_non_excluded_locations),
@@ -716,14 +716,14 @@ def _append_level_access_required_characters(
 
 def _append_remaining_required_characters(
         pool_required_characters: list[GenericCharacterData],
-        self: LegoStarWarsTCSWorld,
+        world: LegoStarWarsTCSWorld,
         possible_pool_character_items: dict[str, GenericCharacterData],
         item_pool_ability_requirements: ItemPoolAbilityRequirements,
 ) -> None:
     possible_pool_character_names = list(possible_pool_character_items.values())
-    self.random.shuffle(possible_pool_character_names)
+    world.random.shuffle(possible_pool_character_names)
     # Sort preferred characters first so that they are picked in preference.
-    preferred_characters = self.options.preferred_characters.value
+    preferred_characters = world.options.preferred_characters.value
     if preferred_characters:
         possible_pool_character_names.sort(key=lambda char: -1 if char.name in preferred_characters else 0)
 
@@ -779,14 +779,17 @@ def prepare_extras(world: LegoStarWarsTCSWorld) -> tuple[list[str], list[str]]:
     return pool_required_extras, non_required_extras
 
 
-def _sort_for_preferred_extras(non_required_extras: list[str], self: LegoStarWarsTCSWorld) -> list[str]:
+def _sort_for_preferred_extras(non_required_extras: list[str], world: LegoStarWarsTCSWorld) -> list[str]:
     """
-    Sort preferred Extras to the front of `non_required_extras`.
-    :param non_required_extras:
-    :param self:
-    :return:
+    Sort preferred Extras to the front of `non_required_extras`. May run in-place on non_required_extras.
+
+    This is more complicated than it sounds because score multipliers are currently always progressive, and the player
+    can specify how many score multipliers they prefer by using the non-progressive names of the score multipliers.
+    :param non_required_extras: The names of all Extras items that are not required to be included in the item pool.
+    :param world: The world that is creating its item pool.
+    :return: A list of Extras item names, with preferred Extras sorted to the front.
     """
-    preferred_extras = self.options.preferred_extras.value
+    preferred_extras = world.options.preferred_extras.value
     if not preferred_extras:
         return non_required_extras
     # The score multipliers are in descending order because Score x10 means the player prefers all score multipliers
@@ -824,8 +827,8 @@ def _sort_for_preferred_extras(non_required_extras: list[str], self: LegoStarWar
         return non_required_extras
     else:
         # Pick the Progressive Score Multipliers randomly for fairness.
-        picked_preferred_score_multiplier_indices = self.random.sample(non_required_score_multiplier_indices,
-                                                                       num_preferred_non_required_score_multipliers)
+        picked_preferred_score_multiplier_indices = world.random.sample(non_required_score_multiplier_indices,
+                                                                        num_preferred_non_required_score_multipliers)
         # Sort preferred extras to the front by splitting the extras into two lists of preferred and non-preferred.
         preferred_extras_list = []
         non_preferred_extras_list = []
@@ -843,6 +846,13 @@ def _get_additional_required_items(
         world: LegoStarWarsTCSWorld,
         pool_required_chapter_unlock_items: list[str],
 ) -> tuple[list[str], list[str]]:
+    """
+    Get the names of additional required items that don't fall into any specific category.
+    :param world: The world that is creating its item pool.
+    :param pool_required_chapter_unlock_items: The Chapter Unlock items that this world requires to be in the item pool.
+    :return: A tuple containing a list of items required to be in the pool, and a list of items required to be added to
+    the player's starting inventory.
+    """
     other_required_items: list[str] = []
     starting_other_required_items: list[str] = []
     # A few free locations may need to be used for episode unlock items and/or episode tokens.
@@ -869,7 +879,7 @@ def _get_additional_required_items(
 
 
 def _balance_item_location_counts(
-        self: LegoStarWarsTCSWorld,
+        world: LegoStarWarsTCSWorld,
         num_to_fill: int,
         non_excluded_chapter_count: int,
         goal_chapter_locations_excluded: bool,
@@ -877,7 +887,21 @@ def _balance_item_location_counts(
         pool_required_extras_count: int,
         pool_required_additional_items_count: int,
 ) -> ItemLocationCounts:
-    item_location_counts = ItemLocationCounts(self, non_excluded_chapter_count, goal_chapter_locations_excluded)
+    """
+    Balance out the item counts to add to the item pool, ensuring that, if there is not enough space in the pool for all
+    required items, that an OptionError is raised, and that no more items are added to the item pool than the number of
+    unfilled locations to fill.
+    :param world: The world that is creating its item pool.
+    :param num_to_fill: The number of unfilled locations to fill, and therefore items to create.
+    :param non_excluded_chapter_count: The number of non-excluded chapters present for this world.
+    :param goal_chapter_locations_excluded: Whether the goal chapter's locations are excluded for this world.
+    :param pool_required_characters_count: The number of characters required to be present in the item pool.
+    :param pool_required_extras_count: The number of Extras required to be present in the item pool.
+    :param pool_required_additional_items_count: The number of additional items required to be present in the item pool.
+    :return: An ItemLocationCounts instance with counts of items to create, balanced against the number of locations to
+    fill with items.
+    """
+    item_location_counts = ItemLocationCounts(world, non_excluded_chapter_count, goal_chapter_locations_excluded)
     item_location_counts.set_true_jedi_counts()
     item_location_counts.set_completion_counts()
     item_location_counts.set_ridesanity_counts()
@@ -932,7 +956,7 @@ def _balance_item_location_counts(
 
 
 def _create_pool(
-        self: LegoStarWarsTCSWorld,
+        world: LegoStarWarsTCSWorld,
         remaining_to_create: int,
         item_creator: ItemCreator,
         item_location_counts: ItemLocationCounts,
@@ -942,6 +966,23 @@ def _create_pool(
         non_required_characters: list[GenericCharacterData],
         non_required_extras: list[str],
 ) -> list[LegoStarWarsTCSItem]:
+    """
+    Create each of the items to add into the multiworld item pool.
+    :param world: The world that is creating its item pool.
+    :param remaining_to_create: The remaining count of items to create
+    :param item_creator: An ItemCreator instance, already set up to handling stripping starting abilities from created
+    items.
+    :param item_location_counts: Predetermined, item counts to add into the item pool.
+    :param other_required_items: A list of required item names that don't belong to any particular item type.
+    :param pool_required_characters: A list of character data of all characters that are required to be present in the
+    item pool.
+    :param pool_required_extras: A list of Extra names, of Extra items that are required to be present in the item pool.
+    :param non_required_characters: A list of character data of all characters that are available to include in the item
+    pool, but are not required.
+    :param non_required_extras: A list of Extra names, of Extra items that are available to include in the item pool, but
+    are not required.
+    :return: The full item pool for the given world.
+    """
     item_pool: list[LegoStarWarsTCSItem] = []
 
     created_item_names: set[str] = set()
@@ -969,14 +1010,14 @@ def _create_pool(
         add_to_pool(item_creator.create_item(extra_name))
 
     # Create required minikits.
-    for _ in range(self.minikit_bundle_count):
-        add_to_pool(item_creator.create_item(self.minikit_bundle_name))
+    for _ in range(world.minikit_bundle_count):
+        add_to_pool(item_creator.create_item(world.minikit_bundle_name))
 
     # Create as many non-required characters as there are reserved character locations.
     required_excludable_count = item_location_counts.required_excludable
-    self.random.shuffle(non_required_characters)
+    world.random.shuffle(non_required_characters)
     # Sort preferred characters first so that they are picked in preference.
-    preferred_characters = self.options.preferred_characters.value
+    preferred_characters = world.options.preferred_characters.value
     if preferred_characters:
         non_required_characters.sort(key=lambda char: -1 if char.name in preferred_characters else 0)
     picked_chars = non_required_characters[:item_location_counts.reserved_non_required_character]
@@ -988,9 +1029,9 @@ def _create_pool(
             required_excludable_count -= 1
 
     # Create as many non-required extras as there are reserved power brick locations.
-    self.random.shuffle(non_required_extras)
+    world.random.shuffle(non_required_extras)
     # Sort preferred Extras first so that they are picked in preference.
-    non_required_extras = _sort_for_preferred_extras(non_required_extras, self)
+    non_required_extras = _sort_for_preferred_extras(non_required_extras, world)
 
     picked_extras = non_required_extras[:item_location_counts.reserved_non_required_extra]
     leftover_extras = non_required_extras[item_location_counts.reserved_non_required_extra:]
@@ -1005,26 +1046,26 @@ def _create_pool(
     leftover_weights: list[int] = []
 
     leftover_character_items = list(map(item_creator.create_item, (char.name for char in leftover_chars)))
-    character_weight = self.options.filler_weight_characters.value
+    character_weight = world.options.filler_weight_characters.value
     if character_weight and leftover_character_items:
         leftover_choices.append(leftover_character_items)
         leftover_weights.append(character_weight)
 
     leftover_extra_items = list(map(item_creator.create_item, leftover_extras))
-    extras_weight = self.options.filler_weight_extras.value
+    extras_weight = world.options.filler_weight_extras.value
     if extras_weight and leftover_extra_items:
         leftover_choices.append(leftover_extra_items)
         leftover_weights.append(extras_weight)
 
-    junk_names_and_weights = self.options.junk_weights.value
+    junk_names_and_weights = world.options.junk_weights.value
     junk_names = tuple(junk_names_and_weights.keys())
     junk_weights = tuple(junk_names_and_weights.values())
 
     def create_excludable_junk_items(count: int) -> list[LegoStarWarsTCSItem]:
-        names = self.random.choices(junk_names, junk_weights, k=count)
+        names = world.random.choices(junk_names, junk_weights, k=count)
         return list(map(item_creator.create_item, names))
 
-    junk_weight = self.options.filler_weight_junk.value
+    junk_weight = world.options.filler_weight_junk.value
     if junk_weight:
         leftover_junk = create_excludable_junk_items(max(remaining_to_create, required_excludable_count))
         leftover_choices.append(leftover_junk)
@@ -1043,7 +1084,7 @@ def _create_pool(
         for item_list in leftover_choices:
             item_list.reverse()
         while (len(weighted_leftover_items) < remaining_to_create or needed_excludable > 0) and leftover_choices:
-            picked_list = self.random.choices(leftover_choices, leftover_weights, k=1)[0]
+            picked_list = world.random.choices(leftover_choices, leftover_weights, k=1)[0]
             item = picked_list.pop()
             if needed_excludable > 0 and item.excludable:
                 needed_excludable -= 1
@@ -1094,12 +1135,20 @@ def _create_pool(
     return item_pool
 
 
-def _apply_deprioritized_and_skip_balancing(
-        self: LegoStarWarsTCSWorld,
+def _apply_deprioritized_and_skip_balancing_to_characters(
+        world: LegoStarWarsTCSWorld,
         item_pool: list[LegoStarWarsTCSItem],
         chapters_unlock_with_characters: bool,
         level_access_character_counts: Counter[str],
-):
+) -> None:
+    """
+    Apply deprioritized and skip_balancing classifications to characters whose only abilities are commonly found within
+    the item pool.
+    :param world: The world that is creating its item pool.
+    :param item_pool: The full created item pool.
+    :param chapters_unlock_with_characters: Whether chapters are set to unlock with characters.
+    :param level_access_character_counts: The counts of how many levels each character locks access to.
+    """
     # todo: In the future, individual characters may be relevant to logic, e.g. Droideka, which should never be
     #  given deprioritized + skip_balancing.
     # Give deprioritized + skip_balancing to characters with only common abilities, and that do not give access to
@@ -1121,7 +1170,7 @@ def _apply_deprioritized_and_skip_balancing(
                     non_level_access_character_items.append(item)
             else:
                 non_level_access_character_items.append(item)
-    self.random.shuffle(non_level_access_character_items)
+    world.random.shuffle(non_level_access_character_items)
     for item in non_level_access_character_items:
         abilities = item.abilities
         for ability in abilities:
@@ -1139,7 +1188,7 @@ def _apply_deprioritized_and_skip_balancing(
 
 
 def _create_items(
-        self: LegoStarWarsTCSWorld,
+        world: LegoStarWarsTCSWorld,
         level_access_character_counts: Counter[str],
         possible_pool_character_items: dict[str, GenericCharacterData],
         non_excluded_chapter_count: int,
@@ -1150,7 +1199,7 @@ def _create_items(
 ) -> list[LegoStarWarsTCSItem]:
     """
     Main item pool creation function.
-    :param self:
+    :param world: The world that is creating its item pool.
     :param level_access_character_counts: The names of characters that lock access to levels, and the count of levels
     that character locks access to for the current player.
     :param possible_pool_character_items: Character item names and their data that are possible to include in the item
@@ -1161,13 +1210,13 @@ def _create_items(
     :param pool_required_chapter_unlock_items: Chapter Unlock item names that must be provided by the item pool.
     :param chapters_unlock_with_characters: Whether chapters are locked by characters, rather than by unlock items.
     :param item_pool_ability_requirements: CharacterAbility requirements for the item pool.
-    :return:
+    :return: The created item pool.
     """
-    item_creator = ItemCreator(self, item_pool_ability_requirements)
+    item_creator = ItemCreator(world, item_pool_ability_requirements)
 
     # These abilities are provided by the starting characters, so these abilities can be stripped from other
     # characters, improving logic performance.
-    self.starting_character_abilities = item_pool_ability_requirements.starting
+    world.starting_character_abilities = item_pool_ability_requirements.starting
 
     # The abilities that need to be fulfilled by the item pool, retrieved, before modification, to double-check that all
     # required abilities are accounted for.
@@ -1182,7 +1231,7 @@ def _create_items(
                                              item_pool_ability_requirements)
     # Append additional characters to satisfy the remaining required abilities in `item_pool_ability_requirements`.
     _append_remaining_required_characters(pool_required_characters,
-                                          self,
+                                          world,
                                           possible_pool_character_items,
                                           item_pool_ability_requirements)
 
@@ -1195,22 +1244,23 @@ def _create_items(
         "The abilities of the required characters are not a subset of the required abilities."
 
     # Get the required, and non-required extras.
-    pool_required_extras, non_required_extras = prepare_extras(self)
+    pool_required_extras, non_required_extras = prepare_extras(world)
 
     # Get other required items that don't belong to any particular category, and don't have associated vanilla
     # locations.
     other_required_items, starting_required_other_items = _get_additional_required_items(
-        self, pool_required_chapter_unlock_items)
+        world, pool_required_chapter_unlock_items)
 
     # Pre-collect the items (Episode Completion Tokens) that won't be in the pool, but the player will start with.
     for item_name in starting_required_other_items:
-        self.push_precollected(item_creator.create_item(item_name))
+        world.push_precollected(item_creator.create_item(item_name))
 
-    unfilled_locations = self.multiworld.get_unfilled_locations(self.player)
+    unfilled_locations = world.multiworld.get_unfilled_locations(world.player)
     num_to_fill = len(unfilled_locations)
 
+    # Balance out the number of items to create, against the number of locations to fill.
     item_location_counts = _balance_item_location_counts(
-        self,
+        world,
         num_to_fill,
         non_excluded_chapter_count,
         goal_chapter_locations_excluded,
@@ -1219,8 +1269,9 @@ def _create_items(
         len(other_required_items),
     )
 
+    # Create the full item pool.
     item_pool = _create_pool(
-        self,
+        world,
         num_to_fill,
         item_creator,
         item_location_counts,
@@ -1231,10 +1282,13 @@ def _create_items(
         non_required_extras,
     )
 
-    assert len(item_pool) == len(unfilled_locations), f"Created {len(item_pool)} items, but there were {len(unfilled_locations)} unfilled locations"
+    assert len(item_pool) == len(unfilled_locations), \
+        f"Created {len(item_pool)} items, but there were {len(unfilled_locations)} unfilled locations"
 
-    _apply_deprioritized_and_skip_balancing(
-        self,
+    # Apply deprioritized and skip_balancing classifications to characters with abilities that are commonly found in the
+    # item pool.
+    _apply_deprioritized_and_skip_balancing_to_characters(
+        world,
         item_pool,
         chapters_unlock_with_characters,
         level_access_character_counts,
