@@ -235,7 +235,7 @@ class LegoStarWarsTCSWorld(World):
             else:
                 abilities = item_data.abilities & ~self.starting_character_abilities
 
-            if name in self.character_chapter_access_counts:
+            if self.character_chapter_access_counts[name] > 0:
                 if self.character_chapter_access_counts[name] >= self.prog_useful_level_access_threshold_count:
                     # Characters that block access to a large number of chapters get progression + useful
                     # classification. This is functionally identical to progression classification, but some
