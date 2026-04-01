@@ -1,5 +1,7 @@
+import itertools
 import logging
 from collections import Counter
+from functools import partial
 from typing import Mapping, Any, NoReturn, Callable, ClassVar, TextIO
 
 from BaseClasses import (
@@ -15,7 +17,7 @@ from BaseClasses import (
 from Options import OptionError
 from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import components, Component, launch_subprocess, Type
-from worlds.generic.Rules import set_rule, add_rule
+from worlds.generic.Rules import set_rule, add_rule, CollectionRule
 
 from . import constants, regions, item_pool
 from .constants import (
@@ -74,6 +76,10 @@ from .option_resolution.common import resolve_options
 from .ridables import RIDABLES_REQUIREMENTS
 from .item_groups import ITEM_GROUPS
 from .location_groups import LOCATION_GROUPS
+
+
+add_or_rule = partial(add_rule, combine="or")
+SpotRuleApplier = Callable[[Location | Entrance, CollectionRule], None]
 
 
 def launch_client(*args: str):
@@ -352,30 +358,36 @@ class LegoStarWarsTCSWorld(World):
         self.gold_brick_event_count += 1
         return self.add_event_pair(location_name, region, GOLD_BRICK_EVENT_NAME)
 
-    def set_abilities_rule(self, spot: Location | Entrance, abilities: CharacterAbility):
+    def set_abilities_rule(self,
+                           spot: Location | Entrance,
+                           abilities: CharacterAbility,
+                           apply_rule_fun: SpotRuleApplier = set_rule):
         player = self.player
         abilities_as_int: int = abilities.value
         if abilities_as_int == 0:
-            set_rule(spot, Location.access_rule if isinstance(spot, Location) else Entrance.access_rule)
+            apply_rule_fun(spot, Location.access_rule if isinstance(spot, Location) else Entrance.access_rule)
         elif abilities_as_int.bit_count == 1:
             # There is only 1 bit, so a match is all that is needed.
-            set_rule(spot, lambda state: state.count("COMBINED_ABILITIES", player) & abilities_as_int)
+            apply_rule_fun(spot, lambda state: state.count("COMBINED_ABILITIES", player) & abilities_as_int)
         else:
             # There are multiple bits, so all bits need to be present.
-            set_rule(spot, lambda state: state.count("COMBINED_ABILITIES", player) & abilities_as_int == abilities_as_int)
+            apply_rule_fun(spot, lambda state: state.count("COMBINED_ABILITIES", player) & abilities_as_int == abilities_as_int)
 
-    def set_any_abilities_rule(self, spot: Location | Entrance, *any_abilities: CharacterAbility):
+    def set_any_abilities_rule(self,
+                               spot: Location | Entrance,
+                               *any_abilities: CharacterAbility,
+                               apply_rule_fun: SpotRuleApplier = set_rule) -> None:
         for any_ability in any_abilities:
             if not any_ability:
                 # No requirements overrides any other ability requirements
-                self.set_abilities_rule(spot, any_ability)
+                self.set_abilities_rule(spot, any_ability, apply_rule_fun)
                 return
         if not any_abilities:
-            self.set_abilities_rule(spot, CharacterAbility.NONE)
+            self.set_abilities_rule(spot, CharacterAbility.NONE, apply_rule_fun)
             return
         any_abilities_set = set(any_abilities)
         if len(any_abilities_set) == 1:
-            self.set_abilities_rule(spot, next(iter(any_abilities_set)))
+            self.set_abilities_rule(spot, next(iter(any_abilities_set)), apply_rule_fun)
         else:
             sorted_abilities = sorted(any_abilities_set, key=lambda a: (a.bit_count(), a.value))
             abilities_as_ints: list[int] = [any_ability.value for any_ability in sorted_abilities]
@@ -385,7 +397,8 @@ class LegoStarWarsTCSWorld(World):
                 for ability_as_int in abilities_as_ints:
                     single_bit_abilities |= ability_as_int
                 # Any bit matching is all that is needed.
-                set_rule(spot, lambda state, p=self.player: state.count("COMBINED_ABILITIES", p) & single_bit_abilities)
+                apply_rule_fun(spot,
+                               lambda state, p=self.player: state.count("COMBINED_ABILITIES", p) & single_bit_abilities)
             elif all(ability_as_int.bit_count() > 1 for ability_as_int in abilities_as_ints):
                 # Optimize for all abilities being multiple bits each.
                 def rule(state: CollectionState):
@@ -396,7 +409,7 @@ class LegoStarWarsTCSWorld(World):
                             return True
                     return False
 
-                set_rule(spot, rule)
+                apply_rule_fun(spot, rule)
             else:
                 # I am unsure if this is faster than pretending all abilities have multiple bits.
                 single_bit_abilities = 0
@@ -418,7 +431,7 @@ class LegoStarWarsTCSWorld(World):
                             return True
                     return False
 
-                set_rule(spot, rule)
+                apply_rule_fun(spot, rule)
 
     def get_score_multiplier_requirement(self, studs_cost: int):
         max_no_multiplier_cost = self.options.most_expensive_purchase_with_no_multiplier.value * 1000
@@ -441,6 +454,17 @@ class LegoStarWarsTCSWorld(World):
 
         return count
 
+    def get_starting_inventory_abilities(self) -> CharacterAbility:
+        """Get the abilities currently provided by the player's starting inventory."""
+        starting_abilities = CharacterAbility.NONE
+        for item in self.multiworld.precollected_items[self.player]:
+            if not item.advancement:
+                continue
+            assert isinstance(item, LegoStarWarsTCSItem)
+            if item.abilities:
+                starting_abilities |= item.abilities
+        return starting_abilities
+
     def _add_score_multiplier_rule(self, spot: Location, studs_cost: int):
         count = self.get_score_multiplier_requirement(studs_cost)
         if count > 0:
@@ -450,6 +474,10 @@ class LegoStarWarsTCSWorld(World):
         player = self.player
 
         created_chapters = self.enabled_chapters
+
+        excluded_chapter_unlock_characters = self.options.chapter_unlock_characters_not_required.value
+        chapters_using_alt_character_unlocks = self.options.chapter_unlock_characters_use_purchase_characters.value
+        chapter_unlock_characters_count = self.options.chapter_unlock_characters_count.value
 
         # Episodes.
         for episode_number in range(1, 7):
@@ -467,9 +495,9 @@ class LegoStarWarsTCSWorld(World):
 
             # Set chapter requirements.
             if self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_story_characters:
-                story_characters_for_chapters = True
+                chapters_unlock_with_characters = True
             elif self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item:
-                story_characters_for_chapters = False
+                chapters_unlock_with_characters = False
             else:
                 raise Exception(f"Unexpected ChapterUnlockRequirement: {self.options.chapter_unlock_requirement}")
             episode_chapters = EPISODE_TO_CHAPTER_AREAS[episode_number]
@@ -485,48 +513,87 @@ class LegoStarWarsTCSWorld(World):
                         and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
                 )
 
-                if story_characters_for_chapters:
-                    required_character_names = CHAPTER_AREA_STORY_CHARACTERS[chapter.short_name]
-                    entrance_abilities = CharacterAbility.NONE
-                    for character_name in required_character_names:
-                        generic_character = CHARACTERS_AND_VEHICLES_BY_NAME[character_name]
-                        entrance_abilities |= generic_character.abilities
+                access_character_names = []
+                character_provided_entrance_access_abilities: CharacterAbility
+                if chapters_unlock_with_characters:
+                    # Access to the chapter requires characters.
+                    if chapter.short_name in chapters_using_alt_character_unlocks:
+                        required_character_names = chapter.alt_character_requirements
+                    else:
+                        required_character_names = chapter.character_requirements
+                    required_character_names = required_character_names.difference(excluded_chapter_unlock_characters)
+                    access_character_names.extend(sorted(required_character_names))
+                    # If there are fewer characters for this chapter than the required count, all are needed.
+                    characters_count = min(len(required_character_names), chapter_unlock_characters_count)
+                    required_characters = [CHARACTERS_AND_VEHICLES_BY_NAME[name] for name in required_character_names]
+                    assert len(required_characters) > 0, "At least one character should always be required."
+
+                    # Find abilities that are always provided given *any* combination of characters.
+                    required_character_abilities = [character.abilities for character in required_characters]
+                    character_provided_entrance_access_abilities = ~CharacterAbility.NONE
+                    characters_combination: tuple[CharacterData, ...]
+                    for abilities_combination in itertools.combinations(required_character_abilities, characters_count):
+                        # Combine the abilities in this combination.
+                        combination_abilities = CharacterAbility.NONE
+                        for abilities in abilities_combination:
+                            combination_abilities |= abilities
+                        # The intersection of all abilities combinations gives the abilities that are always provided by
+                        # any potential combination that is used to gain access to the chapter.
+                        character_provided_entrance_access_abilities &= combination_abilities
 
                     if len(required_character_names) == 1:
+                        # There is only one character, so use .has() for that single character.
                         character_name = next(iter(required_character_names))
                         set_rule(entrance, lambda state, item_=character_name: state.has(item_, player))
-                    elif len(required_character_names) > 1:
+                    elif len(required_character_names) == characters_count:
+                        # All characters are required, so use .has_all().
                         character_names = tuple(sorted(required_character_names))
                         set_rule(entrance, lambda state, items_=character_names: state.has_all(items_, player))
-                    # Even if some of the abilities are chapter-specific, it doesn't matter, the player needs all of
-                    # these characters to access the chapter at all, and will therefore have access to all their
-                    # combined abilities, chapter-specific abilities included.
-                    strictly_required_entrance_abilities = entrance_abilities
-                    assert (set(chapter.completion_main_ability_requirements)
-                            <= set(strictly_required_entrance_abilities)), \
-                        ("The main abilities were not a subset of the character abilities. The main abilities should be"
-                         " calculated from the character abilities, with chapter-specific abilities removed besides the"
-                         " chapter-specific abilities of this chapter, so something is wrong.")
-                else:
-                    # The entrance requires a 'Chapter Unlock' item.
-                    # The logic is not fully prepared for this currently, so the entrance rule is also set to require
-                    # all the logical abilities of the Story characters of the Chapter, which will be overly
-                    # restrictive for many locations, but overly restrictive logic cannot result in impossible seeds.
-                    # A few chapters have chapter-specific logical requirements that get stripped from the requirements
-                    # of other chapters.
-                    main_ability_requirements = chapter.completion_main_ability_requirements
-                    alt_ability_requirements = chapter.completion_alt_ability_requirements
-                    if alt_ability_requirements:
-                        self.set_any_abilities_rule(entrance, main_ability_requirements, alt_ability_requirements)
-                        strictly_required_entrance_abilities = main_ability_requirements & alt_ability_requirements
                     else:
-                        self.set_abilities_rule(entrance, main_ability_requirements)
-                        strictly_required_entrance_abilities = main_ability_requirements
-
-                    add_rule(entrance,
+                        # A subset of the characters are required, so use .has_from_list_unique().
+                        character_names = tuple(sorted(required_character_names))
+                        set_rule(entrance,
+                                 lambda state, items_=character_names, count_=characters_count:
+                                 state.has_from_list_unique(items_, player, count_))
+                else:
+                    # Access to the Chapter requires a Chapter Unlock item.
+                    character_provided_entrance_access_abilities = CharacterAbility.NONE
+                    set_rule(entrance,
                              lambda state, item_=f"{episode_number}-{chapter_number} Unlock": state.has(item_, player))
-                    # TODO: .levels.HAT_MACHINE_CHAPTERS provides alternative logic to Hat Machine logic abilities.
-                    #  Levels should be accessible with either the hat machine logic, or the ability logic.
+
+                # The logic is not fully prepared for this currently, so the entrance rule is also set to require
+                # all the logical abilities of the Story characters of the Chapter, which will be overly
+                # restrictive for many locations, but overly restrictive logic cannot result in impossible seeds.
+                # A few chapters have chapter-specific logical requirements that get stripped from the requirements
+                # of other chapters.
+                main_ability_requirements = chapter.completion_main_ability_requirements
+                alt_ability_requirements = chapter.completion_alt_ability_requirements
+
+                # Remove abilities that are always provided by the characters required to unlock the chapter.
+                main_ability_requirements &= ~character_provided_entrance_access_abilities
+                if alt_ability_requirements is not None:
+                    alt_ability_requirements &= ~character_provided_entrance_access_abilities
+
+                # All abilities satisfied by the entrance to the chapter can be skipped from locations within the
+                # chapter.
+                satisfied_by_entrance_abilities = character_provided_entrance_access_abilities
+
+                if main_ability_requirements:
+                    if alt_ability_requirements:
+                        self.set_any_abilities_rule(entrance, main_ability_requirements, alt_ability_requirements,
+                                                    apply_rule_fun=add_rule)
+                        # The abilities common in both the main and alt requirements are also required.
+                        satisfied_by_entrance_abilities |= main_ability_requirements & alt_ability_requirements
+                    else:
+                        self.set_any_abilities_rule(entrance, main_ability_requirements,
+                                                    apply_rule_fun=add_rule)
+                        # The remaining logical ability requirements for the entrance must be satisfied to even enter
+                        # the chapter.
+                        satisfied_by_entrance_abilities |= main_ability_requirements
+                else:
+                    # If all main ability requirements are already satisfied, the alt ability requirements can be
+                    # ignored because the entrance is accessible only once the required characters have been acquired.
+                    pass
 
                 if is_goal_chapter_without_locations:
                     # There are no locations, so there is no additional logic to add.
@@ -535,7 +602,7 @@ class LegoStarWarsTCSWorld(World):
                 def set_chapter_spot_abilities_rule(spot: Location | Entrance, *abilities: CharacterAbility):
                     # Remove any requirements already satisfied by the chapter entrance before setting the rule.
                     self.set_any_abilities_rule(
-                        spot, *[ability & ~strictly_required_entrance_abilities for ability in abilities])
+                        spot, *[ability & ~satisfied_by_entrance_abilities for ability in abilities])
 
                 # Set Power Brick logic. Score multiplier requirements are added later.
                 power_brick = self.get_location(chapter.power_brick_location_name)
@@ -720,6 +787,18 @@ class LegoStarWarsTCSWorld(World):
         return False
 
     def fill_slot_data(self) -> Mapping[str, Any]:
+        options = self.options
+        optional_options: dict[str, Any] = {}
+        if options.chapter_unlock_requirement == ChapterUnlockRequirement.option_story_characters:
+            chapters_requiring_alt_characters = [
+                chapter for chapter in sorted(self.options.chapter_unlock_characters_use_purchase_characters)
+                if chapter in self.enabled_chapters
+            ]
+            if chapters_requiring_alt_characters:
+                optional_options["chapters_requiring_alt_characters"] = chapters_requiring_alt_characters
+        if options.chapter_unlock_characters_not_required:
+            optional_options["chapter_unlock_characters_not_required"] = sorted(
+                options.chapter_unlock_characters_not_required)
         return {
             # todo: A number of the slot data keys here could be inferred from what locations exist in the multiworld.
             "apworld_version": constants.AP_WORLD_VERSION,
@@ -732,8 +811,9 @@ class LegoStarWarsTCSWorld(World):
             "enabled_bosses": self.enabled_bosses,
             "goal_area_completion_count": self.goal_area_completion_count,
             "goal_chapter": self.goal_chapter,
-            "item_colors": self.options.item_colors_to_slot_data(),
-            **self.options.as_dict(
+            "item_colors": options.item_colors_to_slot_data(),
+            **optional_options,
+            **options.as_dict(
                 "received_item_messages",
                 "checked_location_messages",
                 "minikit_bundle_size",
@@ -763,6 +843,7 @@ class LegoStarWarsTCSWorld(World):
                 "ridesanity",
                 "enable_starting_extras_locations",
                 "chapter_unlock_requirement",
+                "chapter_unlock_characters_count",
             )
         }
 

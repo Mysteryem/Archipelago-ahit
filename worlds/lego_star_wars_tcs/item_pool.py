@@ -2,11 +2,16 @@ from collections import Counter
 from dataclasses import dataclass
 from functools import reduce
 from operator import or_
-from typing import TYPE_CHECKING, cast, Iterable
+from typing import TYPE_CHECKING, Iterable
 
 from BaseClasses import LocationProgressType, ItemClassification
 
-from .constants import progression_deprioritized_skip_balancing, CharacterAbility, CHAPTER_SPECIFIC_FLAGS
+from .constants import (
+    progression_deprioritized_skip_balancing,
+    CharacterAbility,
+    CHAPTER_SPECIFIC_FLAGS,
+    RARE_AND_USEFUL_ABILITIES,
+)
 from .items import (
     CHARACTERS_AND_VEHICLES_BY_NAME,
     GenericCharacterData,
@@ -40,6 +45,42 @@ __all__ = [
     "create_item_pool"
 ]
 
+# Always pick CAN_ abilities last to avoid picking very boring characters at the start with basically no
+# actual abilities.
+# Always pick VEHICLE_BLASTER last to avoid picking a VEHICLE_BLASTER, and then picking a VEHICLE_TOW that
+# also has VEHICLE_BLASTER.
+ABILITY_PICK_ORDER = {
+    **dict.fromkeys(~CharacterAbility.NONE, 0),
+    CharacterAbility.CAN_ATTACK_UP_CLOSE: 1,
+    CharacterAbility.CAN_RIDE_VEHICLES: 1,
+    CharacterAbility.CAN_JUMP_NORMALLY: 1,
+    CharacterAbility.CAN_PULL_LEVERS: 1,
+    CharacterAbility.CAN_PUSH_OBJECTS: 1,
+    CharacterAbility.CAN_BUILD_BRICKS: 1,
+    CharacterAbility.VEHICLE_BLASTER: 1,
+    **dict.fromkeys(CHAPTER_SPECIFIC_FLAGS, 2),
+}
+BASE_ABILITY_COSTS = {
+    CharacterAbility.SITH: 10,
+    CharacterAbility.BOUNTY_HUNTER: 10,
+    CharacterAbility.ASTROMECH: 8,
+    CharacterAbility.SHORTIE: 8,
+    CharacterAbility.HIGH_JUMP: 8,
+    CharacterAbility.HOVER: 7,
+    CharacterAbility.IMPERIAL: 6,
+    CharacterAbility.CAN_WEAR_HAT: 0,
+    CharacterAbility.JEDI: 2,
+    CharacterAbility.BLASTER: 2,
+    CharacterAbility.CAN_ATTACK_UP_CLOSE: 1,
+    CharacterAbility.CAN_RIDE_VEHICLES: 1,
+    CharacterAbility.CAN_JUMP_NORMALLY: 1,
+    CharacterAbility.CAN_PULL_LEVERS: 1,
+    CharacterAbility.VEHICLE_TOW: 10,
+    CharacterAbility.VEHICLE_TIE: 8,
+    CharacterAbility.VEHICLE_BLASTER: 2,
+    CharacterAbility.IS_A_VEHICLE: 0,
+}
+
 
 @dataclass
 class ItemPoolAbilityRequirements:
@@ -52,12 +93,17 @@ class ItemPoolAbilityRequirements:
     starting: CharacterAbility = CharacterAbility.NONE
     """Abilities that the player will be starting with."""
 
+    _updated_for_chapter_requirements: bool = False
+
     def get_logically_irrelevant(self) -> CharacterAbility:
         """
         Get abilities that are logically irrelevant for items in the item pool. In slots with few chapters enabled, some
         abilities may not have any logical relevance.
         :return:
         """
+        # todo?: Maybe this should return ~(self.required | self.optional | self.starting) instead? With self.required
+        #  no longer being mutated once abilities are provided, so that it is easier to see what abilities had to be
+        #  provided by the item pool?
         return ~(self.required | self.optional)
 
     def update_for_starting_abilities(self, starting_abilities: CharacterAbility) -> None:
@@ -67,46 +113,32 @@ class ItemPoolAbilityRequirements:
         :param starting_abilities:
         :return:
         """
+        assert self._updated_for_chapter_requirements, \
+            "Chapter ability requirements should have been processed before starting abilities."
         self.required &= ~starting_abilities
         self.optional &= ~starting_abilities
         self.starting = starting_abilities
 
-    def update_for_chapter_lock_requirements(self,
-                                             world: LegoStarWarsTCSWorld,
-                                             chapters_unlock_with_characters: bool) -> Counter[str]:
+    def update_for_chapter_ability_requirements(self, world: LegoStarWarsTCSWorld) -> None:
         """
-        Update the ability requirements for what locks the chapter
+        Update the ability requirements for the enabled chapters.
         :param world:
-        :param chapters_unlock_with_characters: Whether chapters unlock
-        :return:
         """
-        if chapters_unlock_with_characters:
-            return self._update_for_character_locked_chapters(world)
-        else:
-            self._update_for_unlock_item_locked_chapters(world)
-            return Counter()
-
-    def _update_for_character_locked_chapters(self, world: LegoStarWarsTCSWorld) -> Counter[str]:
-        # Unary `+` (__pos__) removes counts <= 0, if any are present.
-        level_access_character_counts = +world.character_chapter_access_counts
-        for name in level_access_character_counts.keys():
-            abilities_provided_by_level_access = CHARACTERS_AND_VEHICLES_BY_NAME[name].abilities
-            # Characters with these abilities do not need to be explicitly added to the item pool because these
-            # abilities are provided by a character that is required to unlock a chapter.
-            self.required &= ~abilities_provided_by_level_access
-            self.optional |= abilities_provided_by_level_access
-        return level_access_character_counts
-
-    def _update_for_unlock_item_locked_chapters(self, world: LegoStarWarsTCSWorld):
+        assert not self._updated_for_chapter_requirements, \
+            "Already updated for chapter ability requirements, this is a bug."
         for chapter in sorted(world.enabled_chapters):
             chapter_obj = SHORT_NAME_TO_CHAPTER_AREA[chapter]
-            # The item pool must provide the abilities require to complete the chapter.
+            # The item pool must provide the abilities required to complete the chapter.
+            # While it is possible for characters that satisfy the alt requirements to be picked when picking characters
+            # to create that are necessary to unlock a chapter, for simplicity, it is assumed that the main ability
+            # requirements for every chapter must be supplied by the item pool.
             self.required |= chapter_obj.completion_main_ability_requirements
             # Alternative requirements that swap out a common ability for a rarer ability are relevant to logic, but
             # are not required to be included in the item pool.
             alt_requirements = chapter_obj.completion_alt_ability_requirements
             if alt_requirements:
                 self.optional |= alt_requirements
+        self._updated_for_chapter_requirements = True
 
 
 class ItemCreator:
@@ -116,19 +148,14 @@ class ItemCreator:
 
     def __init__(self,
                  world: LegoStarWarsTCSWorld,
-                 item_pool_ability_requirements: ItemPoolAbilityRequirements):
+                 logically_irrelevant_abilities: CharacterAbility):
         """
         Create a class to help in create items in a performant manner, while stripping starting abilities from the
         created items.
         :param world: The world the created items will belong to.
-        :param item_pool_ability_requirements: The required and optional abilities that must be provided by the item
-         pool.
+        :param logically_irrelevant_abilities: Abilities that are not required at all, to be stripped from created
+        items for improved generation performance.
         """
-        # If an ability is not relevant to logic at all, then it is undesirable for that ability to be in collects, and
-        # any characters with only irrelevant abilities should lose their progression classification.
-        # In larger worlds, it is unlikely for there to be any logically irrelevant abilities.
-        logically_irrelevant_abilities = item_pool_ability_requirements.get_logically_irrelevant()
-
         self._world = world
         self._initialize_effective_data_lookups(logically_irrelevant_abilities)
 
@@ -481,75 +508,93 @@ def create_starting_characters_for_character_locked_chapters(
         possible_pool_character_items: dict[str, GenericCharacterData],
 ) -> None:
     """
+    Create and precollect the characters the player should start with when chapters are locked by needing characters.
 
+    This tries to pick as few characters as possible, but enough such that the starting chapter can be completed.
     :param world:
     :param possible_pool_character_items:
     :return:
     """
-    # Add characters necessary to unlock the starting chapter into starting inventory.
+    required_count = world.options.chapter_unlock_characters_count.value
+    not_required = world.options.chapter_unlock_characters_not_required.value
+    chapters_using_alt_character_unlocks = world.options.chapter_unlock_characters_use_purchase_characters.value
+
+    starting_chapter = world.starting_chapter
+
+    # Add characters necessary to unlock, *and complete* the starting chapter into starting inventory.
+    if starting_chapter.short_name in chapters_using_alt_character_unlocks:
+        characters_set = starting_chapter.alt_character_requirements
+    else:
+        characters_set = starting_chapter.character_requirements
     # The story character names are a `set`, so sort before iterating to get a deterministic iteration order.
-    for name in sorted(CHAPTER_AREA_STORY_CHARACTERS[world.starting_chapter.short_name]):
+    # Also filter out characters that have been excluded from requirements.
+    characters = sorted(char for char in characters_set if char not in not_required)
+    if required_count >= len(characters):
+        # All characters are needed.
+        picked = characters
+        skipped = []
+    else:
+        # First reduce the characters to those that provide unique, relevant abilities.
+        world.random.shuffle(characters)
+        seen_abilities = CharacterAbility.NONE
+        picked = []
+        skipped = []
+        # Ignore any alternate, or irrelevant, ability requirements by only considering the main requirements.
+        main_ability_requirements = starting_chapter.completion_main_ability_requirements
+        for char in characters:
+            character_data = CHARACTERS_AND_VEHICLES_BY_NAME[char]
+            relevant_character_abilities = character_data.abilities & main_ability_requirements
+            if relevant_character_abilities not in seen_abilities:
+                seen_abilities |= relevant_character_abilities
+                picked.append(char)
+            else:
+                skipped.append(char)
+        if required_count > len(picked):
+            # More characters are needed than those with relevant, unique abilities, so pick additional characters from
+            # those that were skipped due to having only duplicated abilities.
+            extra_needed = required_count - len(picked)
+            picked.extend(skipped[extra_needed:])
+            skipped = skipped[:extra_needed]
+
+    # TODO: Do the picked characters need to be set somewhere? Check where else world.starting_chapter is used.
+    for name in picked:
         world.push_precollected(world.create_item(name))
         del possible_pool_character_items[name]
 
+    for name in skipped:
+        # The skipped characters can be considered to no longer give access to the starting chapter, which could change
+        # their classifications if they get created.
+        world.character_chapter_access_counts[name] -= 1
+        # print(f"Reducing count of chapters locked by {name} because the starting chapter will be unlocked by {picked}"
+        #       f" instead")
+        assert world.character_chapter_access_counts[name] >= 0
 
-def create_starting_characters_for_unlock_item_locked_chapters(
+
+def pick_characters_to_fulfil_abilities(
         world: LegoStarWarsTCSWorld,
+        abilities_to_fulfil: CharacterAbility,
         possible_pool_character_items: dict[str, GenericCharacterData],
-) -> None:
-    """
+        abilities_to_ignore: CharacterAbility = CharacterAbility.NONE,
+) -> list[GenericCharacterData]:
 
-    :param world:
-    :param possible_pool_character_items:
-    :return:
-    """
-    # Only give enough characters to fulfil the main requirements of the starting chapter.
-    # The alt requirements, if they exist, often replace a common requirement with a rarer requirement.
-    starting_chapter_entrance_abilities = world.starting_chapter.completion_main_ability_requirements
-
-    starting_chapter_entrance_abilities_list = sorted(starting_chapter_entrance_abilities)
-
+    abilities_to_fulfil_list = sorted(abilities_to_fulfil & ~abilities_to_ignore)
+    if not abilities_to_fulfil_list:
+        return []
     # Shuffle the order the abilities will be fulfilled in.
     fulfilled_abilities: set[CharacterAbility] = set()
-    world.random.shuffle(starting_chapter_entrance_abilities_list)
+    world.random.shuffle(abilities_to_fulfil_list)
 
     # Always pick CAN_ abilities last to avoid picking very boring characters at the start with basically no
     # actual abilities.
     # Always pick VEHICLE_BLASTER last to avoid picking a VEHICLE_BLASTER, and then picking a VEHICLE_TOW that
     # also has VEHICLE_BLASTER.
-    pick_order = {
-        CharacterAbility.CAN_ATTACK_UP_CLOSE: 1,
-        CharacterAbility.CAN_RIDE_VEHICLES: 1,
-        CharacterAbility.CAN_JUMP_NORMALLY: 1,
-        CharacterAbility.CAN_PULL_LEVERS: 1,
-        CharacterAbility.CAN_PUSH_OBJECTS: 1,
-        CharacterAbility.CAN_BUILD_BRICKS: 1,
-        CharacterAbility.VEHICLE_BLASTER: 1,
-        **dict.fromkeys(CHAPTER_SPECIFIC_FLAGS, 2),
-    }
-    starting_chapter_entrance_abilities_list.sort(key=lambda ability: pick_order.get(ability, 0))
+    abilities_to_fulfil_list.sort(key=ABILITY_PICK_ORDER.__getitem__)
 
     # Finally pick characters to fulfil the abilities.
-    ability_costs = {
-        CharacterAbility.SITH: 10,
-        CharacterAbility.BOUNTY_HUNTER: 10,
-        CharacterAbility.ASTROMECH: 8,
-        CharacterAbility.SHORTIE: 8,
-        CharacterAbility.HIGH_JUMP: 8,
-        CharacterAbility.HOVER: 7,
-        CharacterAbility.IMPERIAL: 6,
-        CharacterAbility.CAN_WEAR_HAT: 0,
-        CharacterAbility.JEDI: 2,
-        CharacterAbility.BLASTER: 2,
-        CharacterAbility.CAN_ATTACK_UP_CLOSE: 1,
-        CharacterAbility.CAN_RIDE_VEHICLES: 1,
-        CharacterAbility.CAN_JUMP_NORMALLY: 1,
-        CharacterAbility.CAN_PULL_LEVERS: 1,
-        CharacterAbility.VEHICLE_TOW: 10,
-        CharacterAbility.VEHICLE_TIE: 8,
-        CharacterAbility.VEHICLE_BLASTER: 2,
-        CharacterAbility.IS_A_VEHICLE: 0,
-    }
+    ability_costs = BASE_ABILITY_COSTS.copy()
+    # Clear the cost for abilities that are ignored.
+    for ability in abilities_to_ignore:
+        ability_costs[ability] = 0
 
     def sort_func(data: GenericCharacterData):
         value = 0
@@ -558,12 +603,13 @@ def create_starting_characters_for_unlock_item_locked_chapters(
         return value
 
     # Pre-calculate the list of characters that provide each individual ability.
+    picked_characters: list[GenericCharacterData] = []
     characters_by_ability: dict[CharacterAbility, list[GenericCharacterData]] = {}
     for character_data in possible_pool_character_items.values():
         for ability in character_data.abilities:
             characters_by_ability.setdefault(ability, []).append(character_data)
 
-    for individual_ability in starting_chapter_entrance_abilities_list:
+    for individual_ability in abilities_to_fulfil_list:
         if individual_ability in fulfilled_abilities:
             # A character picked earlier also had this ability, so there does not need to be another character
             # picked.
@@ -576,13 +622,60 @@ def create_starting_characters_for_unlock_item_locked_chapters(
         # ability score.
         picks = candidates[0:max(1, round(len(candidates) * 0.25))]
         picked = world.random.choice(picks)
-        world.push_precollected(world.create_item(picked.name))
+        picked_characters.append(picked)
         del possible_pool_character_items[picked.name]
         fulfilled_abilities.update(picked.abilities)
         for ability in picked.abilities:
             # The ability is provided by the picked character, so it is no longer relevant for sorting future
             # picks.
             ability_costs[ability] = 0
+    return picked_characters
+
+
+def create_starting_characters_for_needed_starting_chapter_abilities(
+        world: LegoStarWarsTCSWorld,
+        possible_pool_character_items: dict[str, GenericCharacterData],
+) -> None:
+    """
+
+    :param world:
+    :param possible_pool_character_items:
+    :return:
+    """
+    # Get the abilities the player is currently starting with.
+    starting_abilities = world.get_starting_inventory_abilities()
+
+    # Only give enough characters to fulfil the main requirements of the starting chapter, unless all rarer, required
+    # alt requirements have already been fulfilled and fewer characters get picked to fulfil the alt requirements.
+    starting_chapter_entrance_abilities = world.starting_chapter.completion_main_ability_requirements
+
+    picked_characters = pick_characters_to_fulfil_abilities(
+        world,
+        starting_chapter_entrance_abilities,
+        possible_pool_character_items.copy(),
+        starting_abilities,
+    )
+
+    # Also try the alt abilities, if they exist, and they don't contain any rare or useful abilities that are not
+    # required by the main abilities.
+    alt_abilities = world.starting_chapter.completion_alt_ability_requirements
+    if alt_abilities:
+        alt_abilities &= ~starting_abilities
+        unique_alt_abilities = alt_abilities & ~starting_chapter_entrance_abilities
+        if not any(ability in RARE_AND_USEFUL_ABILITIES for ability in unique_alt_abilities):
+            alt_picked_characters = pick_characters_to_fulfil_abilities(
+                world,
+                alt_abilities,
+                possible_pool_character_items.copy(),
+                starting_abilities,
+            )
+            # Use the alt characters if fewer were picked.
+            if len(alt_picked_characters) < len(picked_characters):
+                picked_characters = alt_picked_characters
+
+    for character in picked_characters:
+        world.push_precollected(world.create_item(character.name))
+        del possible_pool_character_items[character.name]
 
 
 def determine_item_pool_abilities(
@@ -656,6 +749,9 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
         pool_required_chapter_unlock_items = []
 
         create_starting_characters_for_character_locked_chapters(world, possible_pool_character_items)
+        # If the alt characters area created, or not all Story characters are created, there may be abilities that still
+        # need to be fulfilled by additional starting characters.
+        create_starting_characters_for_needed_starting_chapter_abilities(world, possible_pool_character_items)
     elif world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item:
         chapters_unlock_with_characters = False
         starting_chapter_short_name = world.starting_chapter.short_name
@@ -664,7 +760,7 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
                                               if short_name != starting_chapter_short_name]
         del starting_chapter_short_name
 
-        create_starting_characters_for_unlock_item_locked_chapters(world, possible_pool_character_items)
+        create_starting_characters_for_needed_starting_chapter_abilities(world, possible_pool_character_items)
     else:
         raise Exception(f"Unexpected Chapter Unlock Requirement {world.options.chapter_unlock_requirement}")
 
@@ -674,15 +770,17 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
 
     item_pool_ability_requirements = determine_item_pool_abilities(world, chapters_with_locations)
 
-    level_access_character_counts = item_pool_ability_requirements.update_for_chapter_lock_requirements(
-        world, chapters_unlock_with_characters)
+    item_pool_ability_requirements.update_for_chapter_ability_requirements(world)
+
+    if chapters_unlock_with_characters:
+        # Unary `+` (__pos__) creates a new Counter with counts <= 0 removed.
+        level_access_character_counts = +world.character_chapter_access_counts
+    else:
+        level_access_character_counts = Counter()
 
     # Gather the abilities of all items in starting inventory, so that they can be removed from other created items,
     # improving generation performance.
-    initial_starting_items = cast(list[LegoStarWarsTCSItem], world.multiworld.precollected_items[world.player])
-    starting_abilities = CharacterAbility.NONE
-    for item in initial_starting_items:
-        starting_abilities |= item.abilities
+    starting_abilities = world.get_starting_inventory_abilities()
 
     item_pool_ability_requirements.update_for_starting_abilities(starting_abilities)
 
@@ -699,19 +797,67 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
 
 
 def _append_level_access_required_characters(
+        world: LegoStarWarsTCSWorld,
         pool_required_characters: list[GenericCharacterData],
         level_access_character_counts: Counter[str],
         possible_pool_character_items: dict[str, GenericCharacterData],
         item_pool_ability_requirements: ItemPoolAbilityRequirements,
 ) -> None:
-    for name in level_access_character_counts.keys():
-        if name not in possible_pool_character_items:
+    if world.options.chapter_unlock_requirement != ChapterUnlockRequirement.option_story_characters:
+        # Specific characters are not required to access Chapters.
+        return
+
+    enabled_chapters = sorted(world.enabled_chapters)
+    world.random.shuffle(enabled_chapters)
+    required_characters_per_chapter = max(
+        world.options.chapter_unlock_characters_count.value,
+        world.options.chapter_unlock_characters_pool_count.value,
+    )
+    chapters_using_alt_characters = world.options.chapter_unlock_characters_use_purchase_characters.value
+    excluded_characters = world.options.chapter_unlock_characters_not_required.value
+
+    abilities_provided = CharacterAbility.NONE
+
+    for shortname in enabled_chapters:
+        chapter = SHORT_NAME_TO_CHAPTER_AREA[shortname]
+        if chapter == world.starting_chapter:
+            # Characters for the starting chapter are created separately.
             continue
-        assert level_access_character_counts[name] > 0
-        char = CHARACTERS_AND_VEHICLES_BY_NAME[name]
-        item_pool_ability_requirements.required &= ~char.abilities
-        pool_required_characters.append(char)
-        del possible_pool_character_items[name]
+        if shortname in chapters_using_alt_characters:
+            characters = chapter.alt_character_requirements
+        else:
+            characters = chapter.character_requirements
+
+        # Filter out already created characters and excluded characters.
+        already_created_characters_count = 0
+        filtered_characters: list[str] = []
+        for character in characters:
+            if character in excluded_characters:
+                continue
+            assert level_access_character_counts[character] > 0
+            if character not in possible_pool_character_items:
+                # This character has already created.
+                already_created_characters_count += 1
+                continue
+            filtered_characters.append(character)
+
+        characters_needed = required_characters_per_chapter - already_created_characters_count
+
+        if len(filtered_characters) <= characters_needed:
+            # There are not enough characters to meet the required number, so add all the characters to the pool.
+            picked_characters = filtered_characters
+        else:
+            picked_characters = sorted(filtered_characters)
+            world.random.shuffle(picked_characters)
+            picked_characters = picked_characters[:characters_needed]
+
+        for character in picked_characters:
+            char = CHARACTERS_AND_VEHICLES_BY_NAME[character]
+            abilities_provided |= char.abilities
+            pool_required_characters.append(char)
+            del possible_pool_character_items[character]
+
+        item_pool_ability_requirements.required &= ~abilities_provided
 
 
 def _append_remaining_required_characters(
@@ -729,6 +875,7 @@ def _append_remaining_required_characters(
 
     for character in possible_pool_character_names:
         if item_pool_ability_requirements.required & character.abilities:
+            # This character satisfied at least one of the remaining required abilities.
             pool_required_characters.append(character)
             item_pool_ability_requirements.required &= ~character.abilities
             del possible_pool_character_items[character.name]
@@ -1165,8 +1312,9 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
                 non_deprioritize_ability_counts.update(abilities)
             if chapters_unlock_with_characters:
                 if level_access_character_counts[item.name] == 0:
-                    assert abilities, ("No abilities should mean the character item is not progression currently if"
-                                       " the character does not unlock levels")
+                    assert abilities, (f"No abilities should mean the character item is not progression currently if"
+                                       f" the character does not unlock levels, but {item.name} has no abilities and"
+                                       f" does not unlock levels.")
                     non_level_access_character_items.append(item)
             else:
                 non_level_access_character_items.append(item)
@@ -1212,23 +1360,22 @@ def _create_items(
     :param item_pool_ability_requirements: CharacterAbility requirements for the item pool.
     :return: The created item pool.
     """
-    item_creator = ItemCreator(world, item_pool_ability_requirements)
+    item_creator = ItemCreator(world, item_pool_ability_requirements.get_logically_irrelevant())
 
     # These abilities are provided by the starting characters, so these abilities can be stripped from other
     # characters, improving logic performance.
     world.starting_character_abilities = item_pool_ability_requirements.starting
 
-    # The abilities that need to be fulfilled by the item pool, retrieved, before modification, to double-check that all
-    # required abilities are accounted for.
-    required_abilities_to_fulfil = item_pool_ability_requirements.required
-
     pool_required_characters: list[GenericCharacterData] = []
     # Append characters that are required to access levels, updating `item_pool_ability_requirements` as characters are
     # appended.
-    _append_level_access_required_characters(pool_required_characters,
-                                             level_access_character_counts,
-                                             possible_pool_character_items,
-                                             item_pool_ability_requirements)
+    _append_level_access_required_characters(
+        world,
+        pool_required_characters,
+        level_access_character_counts,
+        possible_pool_character_items,
+        item_pool_ability_requirements,
+    )
     # Append additional characters to satisfy the remaining required abilities in `item_pool_ability_requirements`.
     _append_remaining_required_characters(pool_required_characters,
                                           world,
@@ -1237,6 +1384,9 @@ def _create_items(
 
     non_required_characters = list(possible_pool_character_items.values())
 
+    # The abilities that need to be fulfilled by the item pool, retrieved, before modification, to double-check that all
+    # required abilities are accounted for.
+    required_abilities_to_fulfil = item_pool_ability_requirements.required
     assert item_pool_ability_requirements.required is CharacterAbility.NONE, \
            "There are required abilities remaining that have not been fulfilled."
     assert required_abilities_to_fulfil in reduce(
