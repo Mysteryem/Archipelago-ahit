@@ -72,9 +72,10 @@ limiting death spam.
 """
 
 
-class CharacterState(IntEnum):
+class CharacterActionState(IntEnum):
+    """The current action a character is undergoing. The real name of the type itself is unknown."""
     # # Original name "NoContext" is converted to NO_CONTEXT for enum names. Other names follow the same pattern.
-    NO_CONTEXT = 0x0
+    # JUMP = 0x0
     # LAND_JUMP = 0x1  # Landing from a normal jump
     # LAND_JUMP_2 = 0x2
     # LAND_FLIP = 0x3
@@ -88,8 +89,8 @@ class CharacterState(IntEnum):
     # INTERFACE = 0xb  # Interacting with a Bounty Hunter/Astromech/Protocol/Imperial panel
     # BLOCK = 0xc  # Unknown use
     # LAND_LUNGE = 0xd  # Landing from Jedi single-jump attack
-    # # "LandSlam" appears to be next, but does not match the observed order
-    CRAWLING_THROUGH_VENT_ = 0xf  # Real name unknown
+    # LAND_SLAM = 0xe  # Jedi slam attack
+    TELEPORT = 0xf  # Crawling through a vent
     # SWIPE = 0x10  # Lightsaber 'backwards attack' when an enemy is directly behind the character
     # TUBE = 0x11  # Floating in an updraft (internally, updrafts are called tubes)
     # FORCE_THROW = 0x12  # Unknown use, perhaps not implemented
@@ -99,17 +100,13 @@ class CharacterState(IntEnum):
     # ZAP = 0x16  # Astromech/jawa zap
     # DEACTIVATED = 0x17  # Zapped or force confused, also seen sometimes when exiting vehicles
     # HOLD = 0x18  # Blocking with a melee weapon
-    # # "LandSpecial" appears to be next, but does not match the observed order
+    # LAND_SPECIAL = 0x19
     # COMMUNICATE = 0x1a  # Using a Walkie Talkie (Battle Droid (Commander)/Imperial Spy)
-    # # The next names do not match observed order and some do not seem to exist as force abilities in the game:
-    # # "ForcePushed"
-    # # "ForceDeflect"
-    # # "ForceFrozen"
-    # USING_FORCE_LIGHTNING_CHOKE_OR_CONFUSION_ = 0x1b  # Real name unknown
-    # BEING_FORCED_ = 0x1c  # Real name unknown. Held by force lightning/choke or pushed by force as a droid
-    # UNKNOWN_1D = 0x1d  # No idea
-    # LAND_SLAM_ = 0x1e  # Real name unknown
-    # FORCE_GRAPPLE_LEAP_ = 0x1f  # Real name unknown
+    # FORCE_PUSH = 0x1b  # Using force lightning/choke/confusion
+    # FORCE_PUSHED = 0x1c  # Held by force lightning/choke or pushed by force as a droid
+    # FORCE_DEFLECT = 0x1d  # Unknown use
+    # FORCE_FROZEN = 0x1e  # Unknown use
+    # BIG_JUMP = 0x1f  # Force Grapple Leap jump
     # BACK_FLIP = 0x20  # General Grievous' backflip
     # RECOIL = 0x21  # Unknown use, looks like being pushed backwards by something, maybe an air vent
     # FORCED_BACK = 0x22  # Unknown use, looks the same as RECOIL
@@ -126,13 +123,11 @@ class CharacterState(IntEnum):
 
     DOOMED = 0x2b  # Falling death, body parts fall through the floor, seems to work on vehicles too
 
-    # # "BuildIt" appears to be next, but does not match the observed order
-    # GRABBED = 0x2c  # Suspected to be grabbed by a crane's claw, makes the character appear to be falling
-    # BUILD_IT = 0x2d  # Building bricks
-    # # "SpecialMoveVictim" appears to be next, but does not match the observed order
-    # THERMAL_DETONATOR_ = 0x2e  # Real name unknown. Throwing a thermal detonator
-    # UNKNOWN_2f = 0x2f  # Unknown use, it is not clear if this is actually "SpecialMoveVictim" or something else.
-    # UNKNOWN_30 = 0x30  # Unknown use, see 0x2f
+    # LAUNCH = 0x2c  # Suspected to be grabbed by a crane's claw, makes the character appear to be falling
+    # BUILD_IT = 0x2d  # Building bricks. Crashes if used incorrectly.
+    # THROW_DETONATOR = 0x2c  # Throwing a thermal detonator
+    # GRABBED = 0x2f  # Unknown use
+    # SPECIAL_MOVE_VICTIM = 0x30  # Unknown use
     # ROLL = 0x31  # Droideka roll movement
     # UN_ROLL = 0x32  # Droideka unrolling into standing pose
     # SLIDE = 0x33  # Sliding down a slippery surface, e.g. ice in 5-2
@@ -143,63 +138,57 @@ class CharacterState(IntEnum):
     # GRAB = 0x38  # Unknown use
     # EATEN = 0x39  # Unknown use, maybe Rancor related, makes the character disappear
     # BARREL_ROLL = 0x3a  # Vehicle aileron roll that is commonly mistakenly called a barrel roll
-    # GET_IN = 0x3b  # Getting into a vehicle
-    # # "Flatten" appears to be next, but does not match the observed order
-    # IN_VEHICLE_ = 0x3c  # Real name unknown
+    # BEEN_TAKEN_OVER = 0x3b  # Getting into a vehicle/turret (I'm guessing this is the state the vehicle enters?)
+    # GET_IN = 0x3c  # Getting into a vehicle/turret (I'm guessing this is the state the non-vehicle enters?)
     # FLATTEN = 0x3d  # Flattened by a vehicle
     # # Used by the vehicle in 5-2 that C-3PO is supposed to stand on the back of and then get launched by the vehicle,
     # # like a bucking horse.
     # BUCK = 0x3e
-    # # "Eat"
-    # # "Disorientate"
-    # # "ZappedByFloor"  # Maybe this is used in 6-5?
-    #
-    # # These all look like they could be Lego Batman 1-specific states:
-    # # "Climb"
-    # # "Tightrope"
-    # # "WallShuffle"
-    # # "Grapple"
-    # # "PlaceDetonator"
-    # # "PickUpDetonator"
-    # # "Float"
-    # # "Signal"
-    # # "Batarang"
-    # # "Hang"
-    # # "Glide"
-    # # "Catch"
-    # # "AttractoTarget"
-    # # "AttractoDeposit"
-    # # "Sonar"
-    # # "LedgeTerrain"
-    # # "Transform"
-    # # "WallJumpWait"
-    # # "SuperCarry"
-    # # "PushObstacle"
-    # # "Stunned"
-    # # "Security"
-    # # "Ballooning"
-    # # "ThrowQuick"
-    #
-    # # ???
-    # # "DieAir"
-    # # "DieGround"
-    #
-    # # Seems like these could be Lego Indiana Jones-specific states
-    # # "Whip"
-    # # Is there a net in LIJ1?
-    # # "NetWait"
-    #
-    # # Known names stop here besides "Walk" and "Idle", and there are a bunch of gaps, but the observed states
-    # # continue:
-    # VEHICLE_RELATED_41 = 0x41  # Seen very briefly sometimes when getting into vehicles
-    # USING_ZIP_UP_ = 0x47  # Real name unknown. Using a grapple point with a grapple character
-    # PULLING_LEVER_ = 0x4a  # Real name unknown
+    # EAT = 0x3f
+    # DISORIENTATE = 0x40
+    # ACTIVE = 0x41  # Seen very briefly sometimes when getting into vehicles
+    # ZAPPED_BY_FLOOR = 0x42
+    # CLIMB = 0x43  # Probably specific to the incomplete Lego Batman 1 demo
+    # TIGHTROPE = 0x44  # Probably specific to the incomplete Lego Batman 1 demo
+    # WALL_SHUFFLE = 0x45  # Probably specific to the incomplete Lego Batman 1 demo
+    # GRAPPLE = 0x46  # Maybe specific to the incomplete Lego Batman 1 demo
+    # ZIP_UP = 0x47  # Using a grapple point with a grapple character
+    # PLACE_DETONATOR = 0x48  # Probably specific to the incomplete Lego Batman 1 demo
+    # PICK_UP_DETONATOR = 0x49  # Probably specific to the incomplete Lego Batman 1 demo
+    # PULL_LEVER = 0x4a  # Pulling a lever
 
-    THROWN_BY_FORCE_LIGHTNING_OR_CHOKE_ = 0x5f  # Real name unknown. Throw death, body parts have physics.
+    # These are probably all specific to the incomplete Lego Batman 1 demo:
+    # FLOAT = 0x4b
+    # SIGNAL = 0x4c  # Crashes if used incorrectly.
+    # BATARANG = 0x4d
+    # HANG = 0x4e
+    # GLIDE = 0x4f
+    # CATCH = 0x50
+    # TECHNO = 0x51
+    # ATTRACTO_TARGET = 0x52
+    # ATTRACTO_DEPOSIT = 0x53
+    # SONAR = 0x54
+    # Moves the character very fast towards an unknown part of the current level, colliding and possibly getting stuck
+    # on objects (maybe towards (0, 0, 0)?).
+    # LEDGE_TERRAIN = 0x55
+    # TRANSFORM = 0x56
+    # WALL_JUMP_WAIT = 0x57
+    # SUPER_CARRY = 0x58
+    # PUSH_OBSTACLE = 0x59
+    # STUNNED = 0x5a
+    # LEDGE = 0x5b
+    # SECURITY = 0x5c  # Crashes if used incorrectly.
+    # BALLOONING = 0x5d
+    # THROW_QUICK = 0x5e
 
-    # USING_HAT_MACHINE_ = 0x61  # Real name unknown. Used by both characters with and without hats.
-    # # "Idle"
-    # IDLE = 0xFF
+    DIE_AIR = 0x5f  # Throw death from Force Lightning/Choke. Notably, the spawned body parts have physics.
+    # DIE_GROUND = 0x60  # Unknown use
+    # HAT_MACHINE = 0x61  # Using a Hat Machine. This is used by both characters that can and cannot wear hats.
+
+    # These are probably specific to the incomplete Lego Indiana Jones 1 demo:
+    # WHIP = 0x62
+    # NET_WAIT = 0x63
+    # NO_CONTEXT = 0xFF  # Idle
 
     @classmethod
     def get(cls, ctx: TCSContext, character_address: int):
@@ -305,7 +294,7 @@ class DeathLinkManager(ClientComponent):
         self._update_death_link(ctx, not self.death_link_enabled)
 
     @staticmethod
-    def _get_kill_state_to_set(ctx: TCSContext) -> CharacterState:
+    def _get_kill_state_to_set(ctx: TCSContext) -> CharacterActionState:
         area_id = CURRENT_AREA_ADDRESS.get(ctx)
         area = AREA_ID_TO_CHAPTER_AREA.get(area_id)
         is_vehicle_or_unknown: bool
@@ -318,10 +307,10 @@ class DeathLinkManager(ClientComponent):
             is_vehicle_or_unknown = area.short_name in VEHICLE_CHAPTER_SHORTNAMES
         if is_vehicle_or_unknown:
             # Many of the vehicle levels ignore THROWN_BY_FORCE_LIGHTNING_OR_CHOKE_.
-            return CharacterState.DOOMED
+            return CharacterActionState.DOOMED
         else:
             # It is more pleasing for the character's parts to have physics instead of disappearing through the floor.
-            return CharacterState.THROWN_BY_FORCE_LIGHTNING_OR_CHOKE_
+            return CharacterActionState.DIE_AIR
 
     async def _kill_player_controlled_characters(self, ctx: TCSContext) -> bool:
         kill_state = DeathLinkManager._get_kill_state_to_set(ctx)
@@ -334,14 +323,14 @@ class DeathLinkManager(ClientComponent):
                     continue
                 # Do not kill players in the middle of crawling through a vent, they tend to get stuck and break the
                 # vent's interaction.
-                if CharacterState.CRAWLING_THROUGH_VENT_.is_set(ctx, character_address):
+                if CharacterActionState.TELEPORT.is_set(ctx, character_address):
                     continue
                 expecting_death.append((player_number, character_address))
                 kill_state.set(ctx, character_address)
 
         killed_at_least_one = len(expecting_death) > 0
 
-        if kill_state != CharacterState.DOOMED:
+        if kill_state != CharacterActionState.DOOMED:
             # The THROWN_BY_FORCE_LIGHTNING_OR_CHOKE_ state can take some time before it actually kills, especially for
             # Player 2 who sometimes ignores the state entirely for some reason.
             await asyncio.sleep(0.05)
@@ -349,7 +338,7 @@ class DeathLinkManager(ClientComponent):
                 if CharacterDeathState.get(ctx, character_address) == CharacterDeathState.ALIVE:
                     # Use the more forceful DOOMED death state because it is better at interrupting current actions,
                     # especially for Player 2.
-                    CharacterState.DOOMED.set(ctx, character_address)
+                    CharacterActionState.DOOMED.set(ctx, character_address)
                     debug_logger.info("Retrying killing player %i with DOOMED", player_number)
 
             # Force kill implementation if needed.
