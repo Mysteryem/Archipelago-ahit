@@ -89,7 +89,7 @@ class CharacterState(IntEnum):
     # BLOCK = 0xc  # Unknown use
     # LAND_LUNGE = 0xd  # Landing from Jedi single-jump attack
     # # "LandSlam" appears to be next, but does not match the observed order
-    # CRAWLING_THROUGH_VENT_ = 0xf  # Real name unknown
+    CRAWLING_THROUGH_VENT_ = 0xf  # Real name unknown
     # SWIPE = 0x10  # Lightsaber 'backwards attack' when an enemy is directly behind the character
     # TUBE = 0x11  # Floating in an updraft (internally, updrafts are called tubes)
     # FORCE_THROW = 0x12  # Unknown use, perhaps not implemented
@@ -207,6 +207,9 @@ class CharacterState(IntEnum):
 
     def set(self, ctx: TCSContext, character_address: int):
         ctx.write_byte(character_address + 0x7b5, self.value, raw=True)
+
+    def is_set(self, ctx: TCSContext, character_address: int) -> bool:
+        return self.get(ctx, character_address) == self.value
 
 
 class CharacterDeathState(IntEnum):
@@ -328,6 +331,10 @@ class DeathLinkManager(ClientComponent):
                 if player_number == 1 and not self.p1_is_allowed_to_be_killed:
                     continue
                 if player_number == 2 and not self.p2_is_allowed_to_be_killed:
+                    continue
+                # Do not kill players in the middle of crawling through a vent, they tend to get stuck and break the
+                # vent's interaction.
+                if CharacterState.CRAWLING_THROUGH_VENT_.is_set(ctx, character_address):
                     continue
                 expecting_death.append((player_number, character_address))
                 kill_state.set(ctx, character_address)
