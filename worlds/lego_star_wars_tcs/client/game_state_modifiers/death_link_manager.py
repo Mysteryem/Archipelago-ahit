@@ -7,7 +7,7 @@ from Utils import async_start
 
 from . import ClientComponent
 from .studs import give_studs
-from ..common import StaticUint
+from ..common import StaticUint, FloatField
 from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing, player_character_entity_iter, CustomSaveFlags1
 from ..events import (
     subscribe_event,
@@ -214,6 +214,13 @@ class CharacterDeathState(IntEnum):
         ctx.write_byte(character_address + 0x28b, self.value, raw=True)
 
 
+CHARACTER_RESPAWN_TIMER = FloatField(0x1010)
+"""
+Usually set by the game when a player dies, but can be set manually before killing a player, to make them wait a
+different amount of time before they respawn, so long as it is set greater than 0.0
+"""
+
+
 class DeathLinkManager(ClientComponent):
     pending_received_death = False
     last_received_death_message: str = ""
@@ -326,16 +333,29 @@ class DeathLinkManager(ClientComponent):
                 if CharacterActionState.TELEPORT.is_set(ctx, character_address):
                     continue
                 expecting_death.append((player_number, character_address))
+                # WORKAROUND: Some characters, notably set-pieces such as Cranes, do not respawn when killed.
+                # I am not currently sure what determines that they do not respawn. There is a flag that can be set that
+                # will allow these non-respawning characters to respawn after 1.0s when killed, but normally respawning
+                # characters do not use this flag. By setting the respawn time manually, this appears to allow for
+                # non-respawning characters to respawn.
+                # For turrets that break into bricks when destroyed, this does not cause issues. The 5-5 turret actually
+                # respawns by default because it can be observed to be setting the respawn timer, which updates for a
+                # frame before the turret breaks into bricks.
+                CHARACTER_RESPAWN_TIMER.set(ctx, character_address, 2.0)
                 kill_state.set(ctx, character_address)
 
         killed_at_least_one = len(expecting_death) > 0
 
         if kill_state != CharacterActionState.DOOMED:
-            # The THROWN_BY_FORCE_LIGHTNING_OR_CHOKE_ state can take some time before it actually kills, especially for
-            # Player 2 who sometimes ignores the state entirely for some reason.
+            # The DIE_AIR state can take some time before it actually kills, especially for Player 2 who sometimes
+            # ignores the state entirely for some reason. Some characters, notably turrets and other set-pieces, also
+            # ignore DIE_AIR.
             await asyncio.sleep(0.05)
             for player_number, character_address in expecting_death:
                 if CharacterDeathState.get(ctx, character_address) == CharacterDeathState.ALIVE:
+                    # Set the respawn timer to ensure this character does actually respawn, even if it would not
+                    # normally do so.
+                    CHARACTER_RESPAWN_TIMER.set(ctx, character_address, 2.0)
                     # Use the more forceful DOOMED death state because it is better at interrupting current actions,
                     # especially for Player 2.
                     CharacterActionState.DOOMED.set(ctx, character_address)
