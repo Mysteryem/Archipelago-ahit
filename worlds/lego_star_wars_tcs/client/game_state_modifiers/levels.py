@@ -141,6 +141,7 @@ class UnlockedChapterManager(ClientComponent):
     goal_chapter_area_id: int = -1
 
     last_area_door: ChapterArea | None = None
+    current_area_id: int = -1
 
     def __init__(self) -> None:
         self.ap_item_id_to_dependent_game_chapters = {}
@@ -401,6 +402,12 @@ class UnlockedChapterManager(ClientComponent):
                                 ChapterDoorGameMode.FREE_PLAY.set(ctx)
                                 self.last_area_door = area
 
+            # If the player is in a chapter, grant temporary Story mode completion so that they can Save and Exit to the
+            # Cantina.
+            current_area_id = self.current_area_id
+            if current_area_id in AREA_ID_TO_CHAPTER_AREA:
+                temporary_story_completion |= {current_area_id}
+
         completed_free_play = ctx.free_play_completion_checker.completed_free_play
 
         # 36 writes on each game state update is undesirable, but necessary to easily allow for temporarily completing
@@ -470,6 +477,7 @@ class UnlockedChapterManager(ClientComponent):
         ctx = event.context
 
         current_area_id = event.new_area_data_id
+        self.current_area_id = current_area_id
         if current_area_id == -1:
             # debug_logger.info("Current AreaData pointer is NULL. Nothing to do.")
             return
