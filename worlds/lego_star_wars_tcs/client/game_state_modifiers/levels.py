@@ -43,8 +43,9 @@ _SUB_GOAL_SPECIAL_ID = 999_999_999
 assert _SUB_GOAL_SPECIAL_ID not in _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL, (
     f"The special item ID, {_SUB_GOAL_SPECIAL_ID} for all sub-goal completion already exists as a real item:"
     f" {_ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[_SUB_GOAL_SPECIAL_ID]}")
+# Note that the fake item name is user-facing.
 _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[_SUB_GOAL_SPECIAL_ID] = GenericItemData(_SUB_GOAL_SPECIAL_ID,
-                                                                           "_INTERNAL_ALL_SUB_GOALS_COMPLETE")
+                                                                           "all other goals completed")
 
 
 @dataclass
@@ -87,6 +88,32 @@ class RemainingChapterItemRequirements:
             self.item_ids_count_remaining.remove(ap_item_id)
             self.count_remaining -= 1
 
+    @staticmethod
+    def _format_items_names(names: list[str]):
+        assert len(names) > 0
+        if len(names) > 1:
+            # A and B
+            # A, B and C
+            return f"{', '.join(names[:-1])} and {names[-1]}"
+        else:
+            # A
+            return names[0]
+
+    def format_remaining_chapter_requirements(self, chapter_name: str) -> str:
+        count_items = self.ids_to_names(self.item_ids_count_remaining)
+        hard_items = self.ids_to_names(self.item_ids_hard_remaining)
+        if count_items:
+            if hard_items:
+                return (f"{chapter_name} needs {self._format_items_names(hard_items)} and {self.count_remaining} of"
+                        f" {self._format_items_names(count_items)}")
+            else:
+                return f"{chapter_name} needs {self.count_remaining} of {self._format_items_names(count_items)}"
+        else:
+            if hard_items:
+                return f"{chapter_name} needs {self._format_items_names(hard_items)}"
+            else:
+                return ""
+
     def __str__(self) -> str:
         if self.count_remaining > 0:
             return (f"Requires all of {self.ids_to_names(self.item_ids_hard_remaining)},"
@@ -103,6 +130,7 @@ class UnlockedChapterManager(ClientComponent):
     should_unlock_all_episodes_shop_slots: Callable[[TCSContext], bool] = staticmethod(lambda _ctx: False)
 
     enabled_chapter_area_ids: set[int]
+    enabled_episodes: set[int]
     chapters_using_alt_characters: set[str]
     characters_excluded_from_unlocking_chapters: set[str]
     character_count_required_to_unlock_chapters: int = 999_999_999
@@ -289,6 +317,7 @@ class UnlockedChapterManager(ClientComponent):
 
         self.ap_item_id_to_dependent_game_chapters = item_id_to_chapter_area_short_name
         self.remaining_chapter_item_requirements = remaining_chapter_item_requirements
+        self.enabled_episodes = {AREA_ID_TO_CHAPTER_AREA[area_id].episode for area_id in self.enabled_chapter_area_ids}
 
     def on_sub_goal_completion(self, ctx: TCSContext):
         self.on_character_or_chapter_or_episode_unlocked(ctx, _SUB_GOAL_SPECIAL_ID)
@@ -465,3 +494,23 @@ class UnlockedChapterManager(ClientComponent):
                     # The player is in Challenge mode.
                     ctx.text_display.priority_messages("Chapters should only be played in Free Play",
                                                        "Challenge mode is not currently part of the randomizer")
+
+    def is_chapter_enabled(self, chapter: ChapterArea):
+        return chapter.area_id in self.enabled_chapter_area_ids
+
+    def is_chapter_unlocked(self, chapter: ChapterArea):
+        return chapter.area_id in self.unlocked_chapters_per_episode[chapter.episode]
+
+    def format_locked_chapter_requirements(self, chapter: ChapterArea) -> str:
+        remaining = self.remaining_chapter_item_requirements.get(chapter.short_name)
+        if remaining:
+            return remaining.format_remaining_chapter_requirements(chapter.name)
+        else:
+            return ""
+
+    def is_episode_enabled(self, episode: int):
+        return episode in self.enabled_episodes
+
+    def is_episode_unlocked(self, episode: int):
+        # Unlocking any chapter in the episode unlocks the Episode door.
+        return bool(self.unlocked_chapters_per_episode.get(episode))

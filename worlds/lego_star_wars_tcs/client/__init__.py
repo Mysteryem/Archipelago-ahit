@@ -47,6 +47,7 @@ from .game_state_modifiers.death_link_manager import DeathLinkManager
 from .game_state_modifiers.generic import AcquiredGeneric
 from .game_state_modifiers.goal_manager import GoalManager
 from .game_state_modifiers.levels import UnlockedChapterManager
+from .game_state_modifiers.locked_cantina_door_display import LockedCantinaDoorDisplay
 from .game_state_modifiers.minikits import AcquiredMinikits
 from .game_state_modifiers.power_ups import PowerUpReceiver
 from .game_state_modifiers.shop_names_replacer import ShopNamesReplacer
@@ -368,6 +369,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     acquired_minikits: AcquiredMinikits
     unlocked_chapter_manager: UnlockedChapterManager
     text_display: InGameTextDisplay
+    locked_cantina_door_info: LockedCantinaDoorDisplay
     goal_manager: GoalManager
     power_up_receiver: PowerUpReceiver
     client_expected_idx: int
@@ -417,9 +419,15 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         self.client_text = ClientText()
         self.text_display = InGameTextDisplay()
+        self.locked_cantina_door_info = LockedCantinaDoorDisplay()
         self.uncap_high_jump = UncapHighJump()
         self.cantina_reloader = CantinaReloader()
-        self.permanent_components = (self.text_display, self.uncap_high_jump, self.cantina_reloader)
+        self.permanent_components = (
+            self.text_display,
+            self.uncap_high_jump,
+            self.cantina_reloader,
+            self.locked_cantina_door_info,
+        )
 
         self.death_link_manager = DeathLinkManager()
         self.shop_names_replacer = ShopNamesReplacer()
@@ -984,6 +992,9 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         else:
             return address + self._overall_memory_offset
 
+    def read_int(self, address: int, raw=False) -> int:
+        return self._game_process.read_int(address if raw else self._adjust_address(address))
+
     def read_uint(self, address: int, raw=False) -> int:
         return self._game_process.read_uint(address if raw else self._adjust_address(address))
 
@@ -1003,8 +1014,14 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         return self._game_process.read_uchar(address if raw else self._adjust_address(address))
         #return self._game_process.read_bytes(address if raw else self._adjust_address(address), 1)[0]
 
+    def write_int(self, address: int, value: int, raw=False) -> None:
+        self._game_process.write_int(address if raw else self._adjust_address(address), value)
+
     def write_uint(self, address: int, value: int, raw=False) -> None:
         self._game_process.write_uint(address if raw else self._adjust_address(address), value)
+
+    def write_ushort(self, address: int, value: int, raw=False) -> None:
+        self._game_process.write_ushort(address if raw else self._adjust_address(address), value)
 
     def write_byte(self, address: int, value: int, raw=False) -> None:
         self._game_process.write_uchar(address if raw else self._adjust_address(address), value)
