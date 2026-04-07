@@ -236,10 +236,14 @@ class LockedCantinaDoorDisplay(ClientComponent):
             return False
 
     def _draw_info(self, ctx: TCSContext, room_id: CantinaRoom, door_name: str) -> None:
-        episode = room_id.value
-        if episode == 0:
-            has_drawn = self._draw_episode_info(ctx, episode)
+        room = room_id.value
+        if room == 0:
+            if len(door_name) == 1 and ("1" <= door_name <= "6"):
+                has_drawn = self._draw_episode_info(ctx, int(door_name))
+            else:
+                has_drawn = False
         else:
+            episode = room
             if len(door_name) == 1 and ("1" <= door_name <= "6"):
                 short_name = f"{episode}-{door_name}"
                 has_drawn = self._draw_chapter_info(ctx, short_name)
