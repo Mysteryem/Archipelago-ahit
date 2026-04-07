@@ -25,12 +25,13 @@ from ...levels import (
     SHORT_NAME_TO_CHAPTER_AREA,
     BONUS_NAME_TO_BONUS_AREA,
 )
-from ...ridables import RIDABLES_BY_NAME
 
 logger = logging.getLogger("Client")
 debug_logger = logging.getLogger("TCS Debug")
 
-AT_AT_CHARACTER_ID = RIDABLES_BY_NAME["AT-AT"].character_id
+# Currently, all characters are allowed to be killed because the client sets the respawn timer before killing the
+# character.
+DISALLOWED_DEATH_CHARACTER_IDS = frozenset()
 
 
 # Player death count in the current area. Resets to zero upon area change.
@@ -552,7 +553,5 @@ class DeathLinkManager(ClientComponent):
 
     @subscribe_event
     def on_character_id_change(self, event: OnPlayerCharacterIdChangeEvent):
-        # If the player is the AT-AT in 6-3, it does not respawn when killed, breaking the level, so refuse to kill the
-        # player when they are the AT-AT.
-        self.p1_is_allowed_to_be_killed = event.new_p1_character_id != AT_AT_CHARACTER_ID
-        self.p2_is_allowed_to_be_killed = event.new_p2_character_id != AT_AT_CHARACTER_ID
+        self.p1_is_allowed_to_be_killed = event.new_p1_character_id not in DISALLOWED_DEATH_CHARACTER_IDS
+        self.p2_is_allowed_to_be_killed = event.new_p2_character_id not in DISALLOWED_DEATH_CHARACTER_IDS
