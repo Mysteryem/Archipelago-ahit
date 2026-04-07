@@ -309,6 +309,7 @@ class UnlockedChapterManager(ClientComponent):
                 remaining_requirements = remaining_chapter_item_requirements[short_name]
             else:
                 remaining_requirements = RemainingChapterItemRequirements()
+                remaining_chapter_item_requirements[short_name] = remaining_requirements
             assert remaining_requirements.count_remaining == 0, "Count should not be set"
             assert len(remaining_requirements.item_ids_count_remaining) == 0, "Count item IDs set should be empty"
             remaining_requirements.count_remaining += unique_count_required
