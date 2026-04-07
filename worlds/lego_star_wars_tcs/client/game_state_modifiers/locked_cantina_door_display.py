@@ -257,8 +257,8 @@ class LockedCantinaDoorDisplay(ClientComponent):
             self.is_drawing = True
 
     async def _draw_locked_door_info(self, event: OnGameWatcherTickEvent):
-        # When not drawing, check roughly once per second, offset by 2 ticks.
-        if not self.is_drawing and ((event.tick_count + 2) % 10 != 0):
+        # When not drawing, check roughly twice per second, offset by 2 ticks.
+        if not self.is_drawing and ((event.tick_count + 2) % 5 != 0):
             return
         # Assume we are no longer needing to draw anything.
         was_drawing = self.is_drawing
