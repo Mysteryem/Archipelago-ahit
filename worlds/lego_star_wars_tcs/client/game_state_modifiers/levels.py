@@ -332,6 +332,10 @@ class UnlockedChapterManager(ClientComponent):
             return
 
         for dependent_area_short_name in dependent_chapters:
+            if dependent_area_short_name not in self.remaining_chapter_item_requirements:
+                debug_logger.info("Would have removed %s from %s requirements, but it has already been unlocked.",
+                                  _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area_short_name)
+                continue
             remaining_requirements = self.remaining_chapter_item_requirements[dependent_area_short_name]
             assert remaining_requirements
             assert ap_item_id in remaining_requirements, \
