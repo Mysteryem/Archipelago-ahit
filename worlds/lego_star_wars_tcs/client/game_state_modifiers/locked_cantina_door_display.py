@@ -252,11 +252,7 @@ class LockedCantinaDoorDisplay(ClientComponent):
             HUB_AREA_TIME.set(ctx, 1.1)
             self.is_drawing = True
 
-    @subscribe_event
-    async def on_tick(self, event: OnGameWatcherTickEvent):
-        if not self.active:
-            return
-
+    async def _draw_locked_door_info(self, event: OnGameWatcherTickEvent):
         # When not drawing, check roughly once per second, offset by 2 ticks.
         if not self.is_drawing and ((event.tick_count + 2) % 10 != 0):
             return
@@ -289,5 +285,48 @@ class LockedCantinaDoorDisplay(ClientComponent):
                 if player_pos.distance(door_pos) < ACTIVATION_DISTANCE:
                     self._draw_info(ctx, current_room, door_name)
                     return
+
+    @staticmethod
+    async def _force_open_episode_doors(event: OnGameWatcherTickEvent):
+        # Check roughly once per second, offset by 3 ticks.
+        if ((event.tick_count + 3) % 10) != 0:
+            return
+        # The player is not in the main room with the shop and the doors to each Episode area, so don't bother doing
+        # anything.
+        if event.context.current_cantina_room != CantinaRoom.SHOP_ROOM:
+            return
+
+        # I haven't yet figured out the proper pointer path to the array of transformation matrices of the 'special
+        # objects' in the current level (most objects within a level that can move). Fortunately, there are some static
+        # Cantina splines which seem to have a fixed offset from the array, so use one of those static splines to get to
+        # the array.
+        # I'm guessing this works because each level defines maximum numbers of each level object type, and the game
+        # probably allocates the maximum space required for each type, so, within an individual level, the offset, from
+        # the splines array to the 'special objects''s matrices array, is a constant value.
+        hub_minikitviewer_camspl_p_addr = 0x879b3c
+        ctx = event.context
+        hub_minikitviewer_camspl_addr = ctx.read_uint(hub_minikitviewer_camspl_p_addr)
+        # +0x4ec to get to the start of the array.
+        # Each transformation matrix is 64 bytes (4x4 of float32).
+        # The Episode 1 door is the 164th element in this array, so +64 bytes * 164 = +10496 bytes
+        # The matrix is an affine transformation matrix with memory arranged in columns first. The third element of the
+        # fourth column gives the Y position. Each column is 4x float32, so skip 3 columns +4*4*3, then, skip the first
+        # float32 in that column, +4.
+        episode_1_door_y_addr = hub_minikitviewer_camspl_addr + 11808
+        # The transformation matrices of each Episode door are conveniently in sequence in memory (the order appears to,
+        # be determined by the order they are in the level file, as seen in BrickBench), so an offset of 64 bytes gets
+        # to the matrix for the next door object.
+        for i in range(6):
+            # Forcefully open the door by writing a y position that moves the door out of the way.
+            ctx.write_float(episode_1_door_y_addr + i * 64, 0.63, raw=True)
+
+    @subscribe_event
+    async def on_tick(self, event: OnGameWatcherTickEvent):
+        if not self.active:
+            return
+        await self._draw_locked_door_info(event)
+        await self._force_open_episode_doors(event)
+
+
 
 
