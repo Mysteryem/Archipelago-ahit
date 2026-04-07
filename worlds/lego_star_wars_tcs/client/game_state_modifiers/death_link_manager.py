@@ -250,6 +250,8 @@ class DeathLinkManager(ClientComponent):
     p1_is_allowed_to_be_killed: bool = True
     p2_is_allowed_to_be_killed: bool = True
 
+    current_area_uses_vehicle_amnesty: bool = False
+
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         slot_data = event.slot_data
@@ -409,7 +411,7 @@ class DeathLinkManager(ClientComponent):
             return
 
         amnesty_remaining = 0
-        if CURRENT_AREA_ADDRESS.get(ctx) in VEHICLE_AMNESTY_AREA_IDS:
+        if self.current_area_uses_vehicle_amnesty:
             if self.vehicle_death_amnesty_remaining <= 0:
                 send_death = True
                 # Reset amnesty.
@@ -543,13 +545,14 @@ class DeathLinkManager(ClientComponent):
         self.pending_received_death = True
 
     @subscribe_event
-    def on_area_change(self, _event: OnAreaChangeEvent) -> None:
+    def on_area_change(self, event: OnAreaChangeEvent) -> None:
         # The area has changed, so the expected death count should reset. The area changes before the game resets the
         # death count, so the DeathLinkManager relies on the OnGameWatcherTickEvent to reduce _expected_area_death_count
         # from this very large dummy value to the proper value.
         self._last_area_death_count = 999_999_999
         self.waiting_for_respawn = False
         debug_logger.info("Reset expected death count to 0 upon area change.")
+        self.current_area_uses_vehicle_amnesty = event.new_area_data_id in VEHICLE_AMNESTY_AREA_IDS
 
     @subscribe_event
     def on_character_id_change(self, event: OnPlayerCharacterIdChangeEvent):
