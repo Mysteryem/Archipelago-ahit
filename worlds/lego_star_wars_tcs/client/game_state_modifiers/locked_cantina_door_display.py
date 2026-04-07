@@ -321,8 +321,10 @@ class LockedCantinaDoorDisplay(ClientComponent):
         # be determined by the order they are in the level file, as seen in BrickBench), so an offset of 64 bytes gets
         # to the matrix for the next door object.
         for i in range(6):
-            # Forcefully open the door by writing a y position that moves the door out of the way.
-            ctx.write_float(episode_1_door_y_addr + i * 64, 0.63, raw=True)
+            # Force open the door if the episode is enabled.
+            if ctx.unlocked_chapter_manager.is_episode_enabled(i + 1):
+                # Forcefully open the door by writing a y position that moves the door out of the way.
+                ctx.write_float(episode_1_door_y_addr + i * 64, 0.63, raw=True)
 
     @subscribe_event
     async def on_tick(self, event: OnGameWatcherTickEvent):
