@@ -190,15 +190,19 @@ class CharacterActionState(IntEnum):
     # NET_WAIT = 0x63
     # NO_CONTEXT = 0xFF  # Idle
 
-    @classmethod
-    def get(cls, ctx: TCSContext, character_address: int):
-        return cls(ctx.read_uchar(character_address + 0x7b5, raw=True))
+    @staticmethod
+    def _get(ctx: TCSContext, character_address: int) -> int:
+        return ctx.read_uchar(character_address + 0x7b5, raw=True)
+
+    # @classmethod
+    # def get(cls, ctx: TCSContext, character_address: int):
+    #     return cls(ctx.read_uchar(character_address + 0x7b5, raw=True))
 
     def set(self, ctx: TCSContext, character_address: int):
         ctx.write_byte(character_address + 0x7b5, self.value, raw=True)
 
     def is_set(self, ctx: TCSContext, character_address: int) -> bool:
-        return self.get(ctx, character_address) == self.value
+        return self._get(ctx, character_address) == self.value
 
 
 class CharacterDeathState(IntEnum):
