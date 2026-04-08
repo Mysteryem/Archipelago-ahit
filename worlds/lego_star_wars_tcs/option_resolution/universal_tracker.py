@@ -42,7 +42,14 @@ def _direct_slot_data_options(self: LegoStarWarsTCSWorld, passthrough: dict[str,
     for option_name in DIRECT_SLOT_DATA_OPTIONS:
         # For example:
         # `options.minikit_goal_amount.value = passthrough["minikit_goal_amount"]`
-        getattr(options, option_name).value = passthrough[option_name]
+        option = getattr(options, option_name)
+        value = passthrough[option_name]
+        # Collection values from json are always list/dict
+        if isinstance(option, OptionSet):
+            value = set(value)
+        elif isinstance(option, OptionCounter):
+            value = Counter(value)
+        option.value = value
 
 
 def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: dict[str, Any]):
