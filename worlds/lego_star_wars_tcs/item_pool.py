@@ -1264,7 +1264,7 @@ def _create_pool(
             required_excludable_count -= 1
         else:
             leftover_items.append(item)
-    if len(excludable_leftover_items) < required_excludable_count:
+    if required_excludable_count > 0:
         excludable_leftover_items.extend(create_excludable_junk_items(required_excludable_count))
     # Required excludable items must be picked first.
     leftover_items = excludable_leftover_items + leftover_items
