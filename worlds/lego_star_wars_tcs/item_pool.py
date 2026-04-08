@@ -552,8 +552,8 @@ def create_starting_characters_for_character_locked_chapters(
             # More characters are needed than those with relevant, unique abilities, so pick additional characters from
             # those that were skipped due to having only duplicated abilities.
             extra_needed = required_count - len(picked)
-            picked.extend(skipped[extra_needed:])
-            skipped = skipped[:extra_needed]
+            picked.extend(skipped[:extra_needed])
+            skipped = skipped[extra_needed:]
 
     # TODO: Do the picked characters need to be set somewhere? Check where else world.starting_chapter is used.
     for name in picked:
