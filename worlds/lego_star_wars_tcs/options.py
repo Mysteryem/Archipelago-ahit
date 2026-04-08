@@ -15,6 +15,7 @@ from Options import (
     DeathLink,
     ItemDict,
     Removed,
+    OptionCounter,
 )
 
 from .constants import AP_WORLD_VERSION
@@ -807,8 +808,9 @@ class ChapterUnlockRequirement(ChoiceFromStringExtension):
 
     The requirements to access your starting Chapter will be given to you at the start.
 
-    - Story Characters: A Chapter unlocks once its Story mode characters have been unlocked, the number required to
-    unlock the Chapter can be adjusted with the Chapter Unlock Story Character Count option.
+    - Vanilla Characters: A Chapter unlocks once its Vanilla characters (those from Story mode or optionally those that
+    are unlocked for Purchase after completing the Chapter in Vanilla) have been unlocked. The count required to unlock
+    the Chapter can be adjusted with a separate option.
     - Chapter Item: A Chapter unlocks after receiving an unlock item specific to that Chapter, e.g. "Chapter 2-3
     Unlock". The logic for the Chapter Item setting is overly restrictive, so it is easy to get many checks
     out-of-logic. The logic is in the process of being overhauled to be more accurate.
@@ -818,7 +820,8 @@ class ChapterUnlockRequirement(ChoiceFromStringExtension):
     """
     display_name = "Chapter Unlock Requirements"
     rich_text_doc = True
-    option_story_characters = 0
+    alias_story_characters = 0  # Backwards compatibility.
+    option_vanilla_characters = 0
     option_chapter_item = 1  # Partially implemented with overly restrictive logic. Needs a logic rewrite.
     # option_random_characters = 2  # Needs logic rewrite + some way to display what characters are needed in-game.
     # option_open = 3  # Needs the ability to limit characters to only being usable within a specific episode/
@@ -826,17 +829,17 @@ class ChapterUnlockRequirement(ChoiceFromStringExtension):
 
 
 class ChapterUnlockCharactersRequiredCount(Range):
-    """When the unlock requirement for Chapters is set to Story Characters, choose how many of the Story Characters are
-    needed.
+    """When Chapters are set to unlock with Characters, choose how many of the Characters are needed.
 
-    If set higher than the number of Story Characters for a Chapter, all Story Characters for that chapter will be
-    required.
+    If set higher than the maximum number of Characters for a Chapter, all Characters for that chapter will be required.
 
-    The most that can be required is 7 Story Characters for 6-2 (or 9 Purchase Characters for 2-4).
+    Most chapters have a maximum of around 3 to 5 Characters.
+    The highest Story mode Characters requirement, is 7, for The Great Pit Of Carkoon (6-2).
+    The highest vanilla Purchase Characters requirement, is 9, for Jedi Battle (2-4).
 
     This option does nothing if Chapters are not set to require Story Characters to unlock.
     """
-    display_name = "Chapter Unlock Character Required Count"
+    display_name = "Required Count"
     rich_text_doc = True
     range_start = 1
     range_end = 9
@@ -844,11 +847,13 @@ class ChapterUnlockCharactersRequiredCount(Range):
 
 
 class ChapterUnlockCharactersPoolCount(Range):
-    """When the unlock requirement for Chapters is set to Story Characters, and the Required Count is less than the
-    number of Story characters for a Chapter, guarantee at least this many of the Story Characters are included in the
-    item pool (or all the Story Characters for the Chapter if there are fewer than this value).
+    """When Chapters are set to unlock with Characters, guarantee at least this many of the Characters are included in
+    the item pool.
+
+    If set higher than the maximum number of Characters for a Chapter, all Characters for that Chapter will be
+    guaranteed to exist in the item pool.
     """
-    display_name = "Chapter Unlock Character Pool Count"
+    display_name = "Guaranteed Pool Count"
     rich_text_doc = True
     range_start = 1
     range_end = 9
@@ -856,36 +861,36 @@ class ChapterUnlockCharactersPoolCount(Range):
 
 
 class ChapterUnlockCharactersNotRequired(OptionSet):
-    """When the unlock requirement for Chapters is set to Story Characters, remove needing specific commonly required
-    Story Characters from Chapter unlock requirements.
+    """When the unlock requirement for Chapters is set to Story Characters, disable specific commonly required Story
+    Characters from unlocking Chapters.
 
     ``R2-D2``, ``C-3PO`` and ``Chewbacca`` are the only characters supported by this option because of the large number
     of Chapters they can each lock access to.
 
-    Example:
+    Example that disables all three:
 
-    chapter_unlock_story_characters_not_required:
+    chapter_unlock_characters_not_required:
       - R2-D2 # can normally lock up to 15 Chapters.
       - C-3PO # can normally lock up to 11 Chapters.
       - Chewbacca # can normally lock up to 9 Chapters.
 
     This option does nothing if Chapters are not set to require Story Characters to unlock.
     """
-    display_name = "Chapter Unlock Characters Not Required"
+    display_name = "Characters Not Required"
     rich_text_doc = True
     valid_keys = frozenset({"C-3PO", "R2-D2", "Chewbacca"})
     default = frozenset()
 
 
-class ChapterUnlockCharactersUsePurchaseCharacters(OptionSet):
-    """When the unlock requirement for Chapters is set to Story Characters, instead of requiring the Story Characters to
-    unlock these Chapters, require the Characters that would, in the vanilla game, become purchasable from the Cantina
-    Shop after completing the Chapter.
+class ChaptersThatCanRequirePurchaseCharacters(OptionSet):
+    """When the unlock requirement for Chapters is set to Vanilla Characters, instead of requiring the Story Characters to
+    unlock these Chapters, chapters can instead be set to require the Characters that would, in the vanilla game, become
+    purchasable from the Cantina Shop after completing the Chapter.
 
     A common use of this is to give some chapters within the same episode more varied unlock requirements.
 
-    Chapters that, in the vanilla game, do not unlock any characters for purchase after completing the chapter are not
-    available for this option:
+    Not all Chapters, in the vanilla game, unlock characters, for purchase from the Cantina Shop, after completing the
+    Chapter, so these chapters are not available for this option:
       - 1-5
       - 2-5
       - 2-6
@@ -896,22 +901,49 @@ class ChapterUnlockCharactersUsePurchaseCharacters(OptionSet):
       - 5-5
       - 6-3
 
-    All other Chapters can be specified using their ``{episode number}-{chapter number}`` names, for example:
-    chapter_unlock_characters_use_alt_characters:
+    All other Chapters can be specified using their shorthand names, for example:
       - 1-2  # Change 1-2 to require Captain Tarpals and Boss Nass
       - 3-5  # Change 3-5 to require Mace Windu (Episode 3) and Disguised Clone
       - 5-3  # Change 5-3 to require TIE Bomber and Imperial Shuttle
 
-
-
     This option does nothing if Chapters are not set to require Story Characters to unlock.
     """
-    display_name = "Chapters That Require Alternate Characters To Unlock"
+    display_name = "Allowed Alternate Vanilla Characters"
     rich_text_doc = True
     valid_keys = frozenset({
         chapter.short_name for chapter in CHAPTER_AREAS if chapter.character_shop_unlocks
     })
-    default = frozenset()
+    default = sorted(valid_keys)
+
+
+class RequirePurchaseCharactersInsteadOfStoryCharactersChance(NamedRange):
+    """Set the chance that a chapter rolls as requiring Purchase Characters to unlock instead of Story Characters.
+
+    Only affects chapters specified in *Chapters Allowed To Require Alternate Characters To Unlock*."""
+    display_name = "Alternate Requirement Chance"
+    rich_text_doc = True
+    range_start = 0
+    range_end = 100
+    special_range_names = {
+        "use_custom_chance_per_chapter_option": -1,
+    }
+    default = 0
+
+
+class RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance(OptionCounter):
+    """Individually set the chance that a chapter rolls as requiring Purchase Characters to unlock instead of Story
+    Characters.
+
+    Will not do anything unless Alternate Requirement Chance is set to Use Custom Chance Per Chapter Option.
+
+    A chapters not being present in the mapping is the same as giving it a 0% chance.
+    """
+    display_name = "Alternate Requirement Chance: Custom"
+    rich_text_doc = True
+    min = 0
+    max = 100
+    valid_keys = ChaptersThatCanRequirePurchaseCharacters.valid_keys
+    default = dict.fromkeys(sorted(valid_keys), 50)
 
 
 class EpisodeUnlockRequirement(ChoiceFromStringExtension):
@@ -1573,10 +1605,14 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     # logic_difficulty: LogicDifficulty
     episode_unlock_requirement: EpisodeUnlockRequirement
     chapter_unlock_requirement: ChapterUnlockRequirement
+    #   Chapters locked by Characters.
     chapter_unlock_characters_count: ChapterUnlockCharactersRequiredCount
     chapter_unlock_characters_pool_count: ChapterUnlockCharactersPoolCount
+    #   Chapters locked by Vanilla Characters (Story/Purchase).
     chapter_unlock_characters_not_required: ChapterUnlockCharactersNotRequired
-    chapter_unlock_characters_use_purchase_characters: ChapterUnlockCharactersUsePurchaseCharacters
+    chapter_unlock_allow_alt_characters: ChaptersThatCanRequirePurchaseCharacters
+    chapter_unlock_alt_characters_chance: RequirePurchaseCharactersInsteadOfStoryCharactersChance
+    chapter_unlock_alt_characters_custom_chances: RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance
     most_expensive_purchase_with_no_multiplier: MostExpensivePurchaseWithNoScoreMultiplier
     all_episodes_character_purchase_requirements: AllEpisodesCharacterPurchaseRequirements
     easier_true_jedi: EasierTrueJedi
@@ -1665,11 +1701,15 @@ OPTION_GROUPS: list[OptionGroup] = [
         MostExpensivePurchaseWithNoScoreMultiplier,
         AllEpisodesCharacterPurchaseRequirements,
     ]),
-    OptionGroup("Chapters Unlock Characters", [
+    OptionGroup("Chapter Unlock Requirement: Characters", [
         ChapterUnlockCharactersRequiredCount,
         ChapterUnlockCharactersPoolCount,
+    ]),
+    OptionGroup("Chapter Unlock Requirement: Vanilla Characters", [
         ChapterUnlockCharactersNotRequired,
-        ChapterUnlockCharactersUsePurchaseCharacters,
+        ChaptersThatCanRequirePurchaseCharacters,
+        RequirePurchaseCharactersInsteadOfStoryCharactersChance,
+        RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance,
     ]),
     OptionGroup("Item Options", [
         MinikitBundleSize,
@@ -1694,12 +1734,12 @@ OPTION_GROUPS: list[OptionGroup] = [
         TrapItemColor,
         PlayerNameColor,
         LocationNameColor,
-    ]),
+    ], True),
     OptionGroup("Death Link Options", [
         LegoStarWarsTCSDeathLink,
         DeathLinkAmnesty,
         VehicleDeathLinkAmnesty,
         DeathLinkStudLoss,
         DeathLinkStudLossScaling,
-    ])
+    ], True)
 ]

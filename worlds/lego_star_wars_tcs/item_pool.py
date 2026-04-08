@@ -517,12 +517,11 @@ def create_starting_characters_for_character_locked_chapters(
     """
     required_count = world.options.chapter_unlock_characters_count.value
     not_required = world.options.chapter_unlock_characters_not_required.value
-    chapters_using_alt_character_unlocks = world.options.chapter_unlock_characters_use_purchase_characters.value
 
     starting_chapter = world.starting_chapter
 
     # Add characters necessary to unlock, *and complete* the starting chapter into starting inventory.
-    if starting_chapter.short_name in chapters_using_alt_character_unlocks:
+    if starting_chapter.short_name in world.chapters_requiring_alt_characters:
         characters_set = starting_chapter.alt_character_requirements
     else:
         characters_set = starting_chapter.character_requirements
@@ -744,7 +743,7 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
     possible_pool_character_items = _create_possible_pool(world)
 
     pool_required_chapter_unlock_items: list[str]
-    if world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_story_characters:
+    if world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
         chapters_unlock_with_characters = True
         pool_required_chapter_unlock_items = []
 
@@ -803,7 +802,7 @@ def _append_level_access_required_characters(
         possible_pool_character_items: dict[str, GenericCharacterData],
         item_pool_ability_requirements: ItemPoolAbilityRequirements,
 ) -> None:
-    if world.options.chapter_unlock_requirement != ChapterUnlockRequirement.option_story_characters:
+    if world.options.chapter_unlock_requirement != ChapterUnlockRequirement.option_vanilla_characters:
         # Specific characters are not required to access Chapters.
         return
 
@@ -813,7 +812,6 @@ def _append_level_access_required_characters(
         world.options.chapter_unlock_characters_count.value,
         world.options.chapter_unlock_characters_pool_count.value,
     )
-    chapters_using_alt_characters = world.options.chapter_unlock_characters_use_purchase_characters.value
     excluded_characters = world.options.chapter_unlock_characters_not_required.value
 
     abilities_provided = CharacterAbility.NONE
@@ -823,7 +821,7 @@ def _append_level_access_required_characters(
         if chapter == world.starting_chapter:
             # Characters for the starting chapter are created separately.
             continue
-        if shortname in chapters_using_alt_characters:
+        if shortname in world.chapters_requiring_alt_characters:
             characters = chapter.alt_character_requirements
         else:
             characters = chapter.character_requirements

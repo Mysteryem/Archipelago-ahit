@@ -1,4 +1,7 @@
+from collections import Counter
 from typing import TYPE_CHECKING, Any
+
+from Options import OptionSet, OptionCounter
 
 from ..items import MINIKITS_BY_COUNT
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
@@ -52,6 +55,9 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: di
     self.starting_chapter = SHORT_NAME_TO_CHAPTER_AREA[passthrough["starting_chapter"]]
     assert self.starting_episode == passthrough["starting_episode"], ("Starting episode from slot_data did not match "
                                                                       "the starting chapter from slot_data.")
+
+    # Derived Chapter Unlock requirements.
+    self.chapters_requiring_alt_characters = set(passthrough.get("chapters_requiring_alt_characters", ()))
 
     # Derived Goal attributes.
     self.enabled_bosses = set(passthrough["enabled_bosses"])

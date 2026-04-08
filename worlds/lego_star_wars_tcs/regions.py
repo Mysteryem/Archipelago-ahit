@@ -13,7 +13,7 @@ from .levels import (
     BONUS_AREAS,
     SHORT_NAME_TO_CHAPTER_AREA,
 )
-from .options import GoalChapterLocationsMode
+from .options import GoalChapterLocationsMode, ChapterUnlockRequirement
 from .ridables import CHAPTER_TO_RIDABLES, BONUS_TO_RIDABLES, get_ridable_requirements, Ridable, RIDABLES_BY_NAME
 
 if TYPE_CHECKING:
@@ -55,18 +55,16 @@ class _RegionBuilder:
         episode_room = world.create_region(f"Episode {episode_number} Room")
         self.cantina.connect(episode_room, f"Episode {episode_number} Door")
 
-        chapters_unlocked_by_alt_characters = world.options.chapter_unlock_characters_use_purchase_characters.value
-
         episode_chapters = EPISODE_TO_CHAPTER_AREAS[episode_number]
         for chapter_number, chapter in enumerate(episode_chapters, start=1):
             assert chapter.episode == episode_number
             assert chapter.number_in_episode == chapter_number
             if chapter.short_name not in world.enabled_chapters:
                 continue
-            if world.options.chapter_unlock_requirement == "story_characters":
+            if world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
                 # Update the count of how many chapters this character blocks access to.
                 # Sort to ensure that `world.character_chapter_access_counts` maintains a deterministic order.
-                if chapter.short_name in chapters_unlocked_by_alt_characters:
+                if chapter.short_name in world.chapters_requiring_alt_characters:
                     world.character_chapter_access_counts.update(sorted(chapter.alt_character_requirements))
                 else:
                     world.character_chapter_access_counts.update(sorted(chapter.character_requirements))
@@ -259,7 +257,7 @@ class _RegionBuilder:
                         self.story_character_unlock_regions.setdefault(character, []).append(area_region)
                 # todo: Item requirements have been removed for now because it is not currently possible to lock
                 #  access to the bonus levels.
-                if self.world.options.chapter_unlock_requirement == "story_characters":
+                if self.world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
                     for item in area.item_requirements:
                         if item in CHARACTERS_AND_VEHICLES_BY_NAME:
                             world.character_chapter_access_counts[item] += 1

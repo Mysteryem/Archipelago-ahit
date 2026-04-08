@@ -21,6 +21,7 @@ from ..options import (
     AllowedChapterTypes,
     EpisodeUnlockRequirement,
     GoalChapterLocationsMode,
+    ChapterUnlockRequirement,
 )
 
 
@@ -897,6 +898,21 @@ class _NormalOptionsResolver:
         else:
             return 0
 
+    def _resolve_vanilla_character_unlocked_chapters_requiring_alt_characters(self, enabled_chapters: set[str]):
+        if self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
+            alt_character_chapters = set()
+            allowed_alt_character_chapters = {chapter for chapter in enabled_chapters
+                                              if chapter in self.options.chapter_unlock_allow_alt_characters}
+            alt_chance = self.options.chapter_unlock_alt_characters_chance.value
+            if alt_chance == -1:
+                alt_chances = self.options.chapter_unlock_alt_characters_custom_chances.value
+            else:
+                alt_chances = dict.fromkeys(allowed_alt_character_chapters, alt_chance)
+            # Sort before iterating to get deterministic iteration order.
+            for chapter in sorted(allowed_alt_character_chapters):
+                if self.world.random.randint(0, 99) < alt_chances[chapter]:
+                    alt_character_chapters.add(chapter)
+            self.world.chapters_requiring_alt_characters = alt_character_chapters
 
     def _resolve_normal_options(self):
         self._validate_goal_choice()
@@ -943,6 +959,8 @@ class _NormalOptionsResolver:
                 enabled_chapters_with_locations_count += 1
 
         assert enabled_chapters_with_locations_count == len(enabled_chapters_with_locations)
+
+        self._resolve_vanilla_character_unlocked_chapters_requiring_alt_characters(enabled_chapters)
 
         _all_episodes_unlock_requirement = self._adjust_all_episodes_unlock_requirement(enabled_episodes)
 

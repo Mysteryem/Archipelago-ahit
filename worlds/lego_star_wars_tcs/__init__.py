@@ -151,6 +151,7 @@ class LegoStarWarsTCSWorld(World):
     enabled_bosses: set[str]
     short_name_to_boss_character: dict[str, str]
     goal_chapter: str | None
+    chapters_requiring_alt_characters: set[str]
 
     starting_chapter: ChapterArea = SHORT_NAME_TO_CHAPTER_AREA["1-1"]
     minikit_bundle_name: str = ""
@@ -179,6 +180,7 @@ class LegoStarWarsTCSWorld(World):
         self.character_chapter_access_counts = Counter()
         self.short_name_to_boss_character = {}
         self.ridesanity_spots = {}
+        self.chapters_requiring_alt_characters = set()
 
     def log_info(self, message: str, *args) -> None:
         logger.info("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
@@ -476,7 +478,6 @@ class LegoStarWarsTCSWorld(World):
         created_chapters = self.enabled_chapters
 
         excluded_chapter_unlock_characters = self.options.chapter_unlock_characters_not_required.value
-        chapters_using_alt_character_unlocks = self.options.chapter_unlock_characters_use_purchase_characters.value
         chapter_unlock_characters_count = self.options.chapter_unlock_characters_count.value
 
         # Episodes.
@@ -494,7 +495,7 @@ class LegoStarWarsTCSWorld(World):
                                  self.options.episode_unlock_requirement)
 
             # Set chapter requirements.
-            if self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_story_characters:
+            if self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
                 chapters_unlock_with_characters = True
             elif self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item:
                 chapters_unlock_with_characters = False
@@ -517,7 +518,7 @@ class LegoStarWarsTCSWorld(World):
                 character_provided_entrance_access_abilities: CharacterAbility
                 if chapters_unlock_with_characters:
                     # Access to the chapter requires characters.
-                    if chapter.short_name in chapters_using_alt_character_unlocks:
+                    if chapter.short_name in self.chapters_requiring_alt_characters:
                         required_character_names = chapter.alt_character_requirements
                     else:
                         required_character_names = chapter.character_requirements
@@ -789,16 +790,10 @@ class LegoStarWarsTCSWorld(World):
     def fill_slot_data(self) -> Mapping[str, Any]:
         options = self.options
         optional_options: dict[str, Any] = {}
-        if options.chapter_unlock_requirement == ChapterUnlockRequirement.option_story_characters:
-            chapters_requiring_alt_characters = [
-                chapter for chapter in sorted(self.options.chapter_unlock_characters_use_purchase_characters)
-                if chapter in self.enabled_chapters
-            ]
+        if options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
+            chapters_requiring_alt_characters = sorted(self.chapters_requiring_alt_characters)
             if chapters_requiring_alt_characters:
                 optional_options["chapters_requiring_alt_characters"] = chapters_requiring_alt_characters
-        if options.chapter_unlock_characters_not_required:
-            optional_options["chapter_unlock_characters_not_required"] = sorted(
-                options.chapter_unlock_characters_not_required)
         return {
             # todo: A number of the slot data keys here could be inferred from what locations exist in the multiworld.
             "apworld_version": constants.AP_WORLD_VERSION,
@@ -844,6 +839,7 @@ class LegoStarWarsTCSWorld(World):
                 "enable_starting_extras_locations",
                 "chapter_unlock_requirement",
                 "chapter_unlock_characters_count",
+                "chapter_unlock_characters_not_required",
             )
         }
 

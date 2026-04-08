@@ -180,7 +180,7 @@ class UnlockedChapterManager(ClientComponent):
 
         # In older multiworlds, chapters were always unlocked through Story Characters.
         if event.generator_version < (1, 3, 0):
-            chapter_unlock_requirement = options.ChapterUnlockRequirement.option_story_characters
+            chapter_unlock_requirement = options.ChapterUnlockRequirement.option_vanilla_characters
         else:
             chapter_unlock_requirement = slot_data["chapter_unlock_requirement"]
 
@@ -257,7 +257,7 @@ class UnlockedChapterManager(ClientComponent):
             unique_count_required_items: list[str] = []
             unique_count_required: int = 0
             always_required_items: list[str]
-            if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_story_characters:
+            if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_vanilla_characters:
                 if short_name in self.chapters_using_alt_characters:
                     character_requirements = list(chapter_area.alt_character_requirements)
                 else:
