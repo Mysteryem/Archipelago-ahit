@@ -943,9 +943,29 @@ class _NormalOptionsResolver:
             return sorted(initial_picks + partial_picks, reverse=True)
 
     def _resolve_chapter_required_character_counts(self, starting_chapter: str, enabled_chapters: set[str]):
+        min_required_count = self.options.chapter_unlock_characters_min_count.value
+        max_required_count = self.options.chapter_unlock_characters_max_count.value
+        is_characters = self.options.chapter_unlock_requirement.is_characters()
+        if not is_characters:
+            if min_required_count > max_required_count:
+                # Swap the two options, but don't warn the use because the values are not relevant to their settings.
+                self._deferred_adjust(self.options.chapter_unlock_characters_min_count, max_required_count)
+                self._deferred_adjust(self.options.chapter_unlock_characters_max_count, min_required_count)
+            return
+
+        if min_required_count > max_required_count:
+            # Swap the min and max.
+            min_required_count, max_required_count = max_required_count, min_required_count
+            # Swap the options too, so that the spoiler will match.
+            self._deferred_adjust(
+                self.options.chapter_unlock_characters_min_count, min_required_count,
+                "The minimum chapter_unlock_characters count was greater than the maximum, the minimum and the"
+                " maximum have been swapped.")
+            self._deferred_adjust(
+                self.options.chapter_unlock_characters_max_count, max_required_count,
+                "The maximum chapter_unlock_characters count was less than the minimum, the maximum and the"
+                " minimum have been swapped.")
         if self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
-            min_required_count = self.options.chapter_unlock_characters_min_count.value
-            max_required_count = self.options.chapter_unlock_characters_max_count.value
             if min_required_count == max_required_count:
                 counts_dict = dict.fromkeys(sorted(enabled_chapters), min_required_count)
             else:

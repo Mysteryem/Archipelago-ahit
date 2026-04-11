@@ -831,6 +831,9 @@ class ChapterUnlockRequirement(ChoiceFromStringExtension):
     # option_open = 3  # Needs the ability to limit characters to only being usable within a specific episode/
     default = 0
 
+    def is_characters(self):
+        return self.value in (self.option_vanilla_characters,)
+
 
 class ChapterUnlockCharactersMinRequiredCount(Range):
     """When Chapters are set to unlock with Characters, choose the minimum number of Characters that are needed.
