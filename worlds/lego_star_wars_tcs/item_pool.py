@@ -808,7 +808,6 @@ def _append_level_access_required_characters(
 
     enabled_chapters = sorted(world.enabled_chapters)
     world.random.shuffle(enabled_chapters)
-    required_characters_per_chapter = world.options.chapter_unlock_characters_max_count.value
     excluded_characters = world.options.chapter_unlock_story_characters_not_required.value
 
     abilities_provided = CharacterAbility.NONE
@@ -823,36 +822,20 @@ def _append_level_access_required_characters(
         else:
             characters = chapter.character_requirements
 
-        # Filter out already created characters and excluded characters.
-        already_created_characters_count = 0
-        filtered_characters: list[str] = []
+        # Skip already created characters and excluded characters.
         for character in characters:
             if character in excluded_characters:
                 continue
             assert level_access_character_counts[character] > 0
             if character not in possible_pool_character_items:
-                # This character has already created.
-                already_created_characters_count += 1
+                # This character has already been created.
                 continue
-            filtered_characters.append(character)
-
-        characters_needed = required_characters_per_chapter - already_created_characters_count
-
-        if len(filtered_characters) <= characters_needed:
-            # There are not enough characters to meet the required number, so add all the characters to the pool.
-            picked_characters = filtered_characters
-        else:
-            picked_characters = sorted(filtered_characters)
-            world.random.shuffle(picked_characters)
-            picked_characters = picked_characters[:characters_needed]
-
-        for character in picked_characters:
             char = CHARACTERS_AND_VEHICLES_BY_NAME[character]
             abilities_provided |= char.abilities
             pool_required_characters.append(char)
             del possible_pool_character_items[character]
 
-        item_pool_ability_requirements.required &= ~abilities_provided
+    item_pool_ability_requirements.required &= ~abilities_provided
 
 
 def _append_remaining_required_characters(
