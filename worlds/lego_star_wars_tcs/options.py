@@ -1655,7 +1655,6 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     chapter_unlock_characters_min_count: ChapterUnlockCharactersMinRequiredCount
     chapter_unlock_characters_max_count: ChapterUnlockCharactersMaxRequiredCount
     chapter_unlock_characters_count_distribution: ChapterUnlockCharactersRequiredCountDistribution
-    chapter_unlock_characters_pool_count: ChapterUnlockCharactersPoolCount
     #   Chapters locked by Vanilla Characters (Story/Purchase).
     chapter_unlock_story_characters_not_required: ChapterStoryUnlockCharactersNotRequired
     chapter_unlock_allow_alt_characters: ChaptersThatCanRequirePurchaseCharacters
@@ -1753,7 +1752,6 @@ OPTION_GROUPS: list[OptionGroup] = [
         ChapterUnlockCharactersMinRequiredCount,
         ChapterUnlockCharactersMaxRequiredCount,
         ChapterUnlockCharactersRequiredCountDistribution,
-        ChapterUnlockCharactersPoolCount,
     ]),
     OptionGroup("Chapter Unlock Requirement: Vanilla Characters", [
         ChapterStoryUnlockCharactersNotRequired,

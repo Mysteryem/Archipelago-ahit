@@ -808,10 +808,7 @@ def _append_level_access_required_characters(
 
     enabled_chapters = sorted(world.enabled_chapters)
     world.random.shuffle(enabled_chapters)
-    required_characters_per_chapter = max(
-        world.options.chapter_unlock_characters_max_count.value,
-        world.options.chapter_unlock_characters_pool_count.value,
-    )
+    required_characters_per_chapter = world.options.chapter_unlock_characters_max_count.value
     excluded_characters = world.options.chapter_unlock_story_characters_not_required.value
 
     abilities_provided = CharacterAbility.NONE
