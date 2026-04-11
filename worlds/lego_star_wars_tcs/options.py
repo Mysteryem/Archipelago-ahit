@@ -464,9 +464,13 @@ class MinikitBundleSize(ChoiceFromStringExtension):
 
 
 class EnabledChaptersCount(Range):
-    """Choose how many randomly picked chapters from Allowed Chapters should be enabled.
+    """Choose how many chapters will exist in your slot.
 
-    If there are fewer allowed chapters than the count to enable, all the allowed chapters will be enabled.
+    Chapters, other than the Starting Chapter and Goal Chapter, if enabled, will be randomly picked from the Allowed
+    Chapters list.
+
+    If there are fewer allowed chapters than the count to enable, all the allowed chapters will be enabled, and the
+    count will be reduced to the maximum possible.
     """
     display_name = "Enabled Chapter Count"
     rich_text_doc = True
