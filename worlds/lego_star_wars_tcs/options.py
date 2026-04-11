@@ -828,10 +828,12 @@ class ChapterUnlockRequirement(ChoiceFromStringExtension):
     default = 0
 
 
-class ChapterUnlockCharactersRequiredCount(Range):
-    """When Chapters are set to unlock with Characters, choose how many of the Characters are needed.
+class ChapterUnlockCharactersMinRequiredCount(Range):
+    """When Chapters are set to unlock with Characters, choose the minimum number of Characters that are needed.
 
     If set higher than the maximum number of Characters for a Chapter, all Characters for that chapter will be required.
+
+    The starting Chapter will always use the minimum required count.
 
     Most chapters have a maximum of around 3 to 5 Characters.
     The highest Story mode Characters requirement, is 7, for The Great Pit Of Carkoon (6-2).
@@ -839,11 +841,48 @@ class ChapterUnlockCharactersRequiredCount(Range):
 
     This option does nothing if Chapters are not set to require Story Characters to unlock.
     """
-    display_name = "Required Count"
+    display_name = "Min Required Count"
     rich_text_doc = True
     range_start = 1
     range_end = 9
-    default = 3
+    default = 1
+
+
+class ChapterUnlockCharactersMaxRequiredCount(Range):
+    """When Chapters are set to unlock with Characters, choose the maximum number of Characters that are needed.
+
+    If set higher than the maximum number of Characters for a Chapter, all Characters for that chapter will be required.
+
+    The Goal Chapter, if enabled, will always use this maximum required count.
+
+    Most chapters have a maximum of around 3 to 5 Characters.
+    The highest Story mode Characters requirement, is 7, for The Great Pit Of Carkoon (6-2).
+    The highest vanilla Purchase Characters requirement, is 9, for Jedi Battle (2-4).
+
+    This option does nothing if Chapters are not set to require Story Characters to unlock.
+    """
+    display_name = "Max Required Count"
+    rich_text_doc = True
+    range_start = 1
+    range_end = 9
+    default = 5
+
+
+class ChapterUnlockCharactersRequiredCountDistribution(ChoiceFromStringExtension):
+    """When the Max Required Count is greater than the Min Required Count, choose how the generator randomly picks
+    between the Min and the Max.
+
+    - Uniform: Pick between the Min and Max with equal chance.
+    - Low: More likely to pick lower values, similar to random-range-low-{min}-{max}.
+    - Middle: More likely to pick values in the middle of the range, similar to random-range-middle-{min}-{max}.
+    - High: More like to pick higher values, similar to random-range-high-{min}-{max}.
+
+    """
+    option_uniform = 0
+    option_low = 1
+    option_middle = 2
+    option_high = 3
+    default = option_uniform
 
 
 class ChapterUnlockCharactersPoolCount(Range):
@@ -860,9 +899,9 @@ class ChapterUnlockCharactersPoolCount(Range):
     default = 6
 
 
-class ChapterUnlockCharactersNotRequired(OptionSet):
+class ChapterStoryUnlockCharactersNotRequired(OptionSet):
     """When the unlock requirement for Chapters is set to Story Characters, disable specific commonly required Story
-    Characters from unlocking Chapters.
+    Characters from contributing towards unlocking Chapters.
 
     ``R2-D2``, ``C-3PO`` and ``Chewbacca`` are the only characters supported by this option because of the large number
     of Chapters they can each lock access to.
@@ -870,13 +909,13 @@ class ChapterUnlockCharactersNotRequired(OptionSet):
     Example that disables all three:
 
     chapter_unlock_characters_not_required:
-      - R2-D2 # can normally lock up to 15 Chapters.
-      - C-3PO # can normally lock up to 11 Chapters.
-      - Chewbacca # can normally lock up to 9 Chapters.
+      - R2-D2 # can lock up to 15 Chapters.
+      - C-3PO # can lock up to 11 Chapters.
+      - Chewbacca # can lock up to 9 Chapters.
 
-    This option does nothing if Chapters are not set to require Story Characters to unlock.
+    This option only affects Chapters that are set to require Story Characters to unlock.
     """
-    display_name = "Characters Not Required"
+    display_name = "Remove Story Characters From Requirements"
     rich_text_doc = True
     valid_keys = frozenset({"C-3PO", "R2-D2", "Chewbacca"})
     default = frozenset()
@@ -1606,10 +1645,12 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     episode_unlock_requirement: EpisodeUnlockRequirement
     chapter_unlock_requirement: ChapterUnlockRequirement
     #   Chapters locked by Characters.
-    chapter_unlock_characters_count: ChapterUnlockCharactersRequiredCount
+    chapter_unlock_characters_min_count: ChapterUnlockCharactersMinRequiredCount
+    chapter_unlock_characters_max_count: ChapterUnlockCharactersMaxRequiredCount
+    chapter_unlock_characters_count_distribution: ChapterUnlockCharactersRequiredCountDistribution
     chapter_unlock_characters_pool_count: ChapterUnlockCharactersPoolCount
     #   Chapters locked by Vanilla Characters (Story/Purchase).
-    chapter_unlock_characters_not_required: ChapterUnlockCharactersNotRequired
+    chapter_unlock_story_characters_not_required: ChapterStoryUnlockCharactersNotRequired
     chapter_unlock_allow_alt_characters: ChaptersThatCanRequirePurchaseCharacters
     chapter_unlock_alt_characters_chance: RequirePurchaseCharactersInsteadOfStoryCharactersChance
     chapter_unlock_alt_characters_custom_chances: RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance
@@ -1702,11 +1743,13 @@ OPTION_GROUPS: list[OptionGroup] = [
         AllEpisodesCharacterPurchaseRequirements,
     ]),
     OptionGroup("Chapter Unlock Requirement: Characters", [
-        ChapterUnlockCharactersRequiredCount,
+        ChapterUnlockCharactersMinRequiredCount,
+        ChapterUnlockCharactersMaxRequiredCount,
+        ChapterUnlockCharactersRequiredCountDistribution,
         ChapterUnlockCharactersPoolCount,
     ]),
     OptionGroup("Chapter Unlock Requirement: Vanilla Characters", [
-        ChapterUnlockCharactersNotRequired,
+        ChapterStoryUnlockCharactersNotRequired,
         ChaptersThatCanRequirePurchaseCharacters,
         RequirePurchaseCharactersInsteadOfStoryCharactersChance,
         RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance,

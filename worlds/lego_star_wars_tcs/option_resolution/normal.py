@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Generic, TypeVar, Any, Mapping
+from typing import TYPE_CHECKING, Generic, TypeVar, Any, Mapping, Iterable
 
 from Options import Option, OptionError
 
@@ -22,6 +22,7 @@ from ..options import (
     EpisodeUnlockRequirement,
     GoalChapterLocationsMode,
     ChapterUnlockRequirement,
+    ChapterUnlockCharactersRequiredCountDistribution,
 )
 
 
@@ -914,6 +915,144 @@ class _NormalOptionsResolver:
                     alt_character_chapters.add(chapter)
             self.world.chapters_requiring_alt_characters = alt_character_chapters
 
+    def _count_based_picks(self, length: int, full_range: range, base_counts: Iterable[int]) -> list[int]:
+        """
+        Pick as many full sets, of `full_range` values with `base_counts` counts each, as possible, for any remainder,
+        randomly sample `full_range` with `base_counts` counts.
+        :param length:
+        :param full_range:
+        :param base_counts:
+        :return: Picked values, in descending order.
+        """
+        total_base_counts = sum(base_counts)
+        if length <= total_base_counts:
+            return sorted(self.world.random.sample(full_range, k=length, counts=base_counts), reverse=True)
+        else:
+            # Use counts to ensure there are enough to pick from.
+            count_multiplier = length // total_base_counts
+            remainder = length % total_base_counts
+            if remainder:
+                count_multiplier += 1
+
+            initial_picks = []
+            for v, base_count in zip(full_range, base_counts):
+                initial_picks.extend([v] * base_count)
+            initial_picks = initial_picks * (count_multiplier - 1)
+
+            partial_picks = self.world.random.sample(full_range, k=length - len(initial_picks), counts=base_counts)
+            return sorted(initial_picks + partial_picks, reverse=True)
+
+    def _resolve_chapter_required_character_counts(self, starting_chapter: str, enabled_chapters: set[str]):
+        if self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
+            min_required_count = self.options.chapter_unlock_characters_min_count.value
+            max_required_count = self.options.chapter_unlock_characters_max_count.value
+            if min_required_count == max_required_count:
+                counts_dict = dict.fromkeys(sorted(enabled_chapters), min_required_count)
+            else:
+                goal_chapter = self._goal_chapter
+                max_chapter_required_counts = {
+                    chapter: len(SHORT_NAME_TO_CHAPTER_AREA[chapter].alt_character_requirements
+                                 if chapter in self.world.chapters_requiring_alt_characters
+                                 else SHORT_NAME_TO_CHAPTER_AREA[chapter].character_requirements)
+                    for chapter in enabled_chapters
+                }
+                non_special_chapters = sorted(c for c in enabled_chapters
+                                              if c != starting_chapter and c != goal_chapter)
+                full_range = range(min_required_count, max_required_count + 1)
+                distribution = self.options.chapter_unlock_characters_count_distribution.value
+                if distribution == ChapterUnlockCharactersRequiredCountDistribution.option_uniform:
+                    # 1, 1, 1, ... etc. for each value.
+                    base_counts = [1] * len(full_range)
+                elif distribution == ChapterUnlockCharactersRequiredCountDistribution.option_low:
+                    # ..., 9, 7, 5, 3, 1 etc. for each progressively smaller value.
+                    base_counts = range(len(full_range) * 2 - 1, 0, -2)
+                elif distribution == ChapterUnlockCharactersRequiredCountDistribution.option_middle:
+                    # Produce [1, 3, 5, 7, 5, 3, 1], [1, 3, 5, 5, 3, 1], or similar depending on len(full_range).
+                    half_range_len = len(full_range) // 2
+                    has_middle = len(full_range) % 2 != 0
+                    left_base_counts = range(1, half_range_len * 2, 2)
+                    base_counts = list(left_base_counts)
+                    if has_middle:
+                        base_counts.append(left_base_counts[-1] + 2 if left_base_counts else 1)
+                    right_base_counts = reversed(left_base_counts)
+                    base_counts.extend(right_base_counts)
+                elif distribution == ChapterUnlockCharactersRequiredCountDistribution.option_high:
+                    # 1, 3, 5, 7, 9, ... etc. for each progressively larger value.
+                    base_counts = range(1, len(full_range) * 2, 2)
+                else:
+                    raise ValueError(f"Unexpected distribution value {distribution}")
+                per_chapter_counts = self._count_based_picks(len(non_special_chapters), full_range, base_counts)
+                # Shuffle the order of the chapters, so they match with counts at random.
+                self.world.random.shuffle(non_special_chapters)
+                # Some chapters can only have 1 or 2 possible required characters, which could be lower than the lowest
+                # picked counts in `per_chapter_counts`.
+                # To give a better distribution, if the current lowest available count is the same as, or lower than
+                # the maximum possible counts for some chapters, those chapters will get picked in preference to other
+                # chapters.
+                # Sort lower maximum counts first, so that if a chapter can only be locked by 1 character, it uses up
+                # a suitable character count instead of using up one of the larger character counts.
+                # To allow for some randomness, this is only done most of the time.
+                chapters_by_max_possible_required_counts: dict[int, list[str]] = {}
+                for chapter in sorted(non_special_chapters, key=max_chapter_required_counts.__getitem__):
+                    max_possible = max_chapter_required_counts[chapter]
+                    chapters_by_max_possible_required_counts.setdefault(max_possible, []).append(chapter)
+                counts_dict = {}
+
+                def get_next_lowest() -> tuple[int, list[str]]:
+                    return next(iter(chapters_by_max_possible_required_counts.items()))
+
+                self.world.log_debug("Rolled chapter requirement counts:\n\t%s", list(reversed(per_chapter_counts)))
+
+                while non_special_chapters:
+                    assert chapters_by_max_possible_required_counts
+                    assert per_chapter_counts
+
+                    smallest_available_chapter_requirement = per_chapter_counts.pop()
+                    # 75% chance keeps some randomness without forcing all lower maximum requirement chapters to use up
+                    # lower requirement count picks.
+                    if (self.world.random.random() < 0.75
+                            and (lowest_max_pair := get_next_lowest())[0] <= smallest_available_chapter_requirement):
+                        lowest_max_possible, chapters = lowest_max_pair
+                        picked = chapters.pop()
+                        non_special_chapters.remove(picked)
+                        counts_dict[picked] = lowest_max_possible
+                        if not chapters:
+                            del chapters_by_max_possible_required_counts[lowest_max_possible]
+                        if lowest_max_possible < smallest_available_chapter_requirement:
+                            self.world.log_debug("Lowest Picked %s requiring %i, reduced from %i", picked,
+                                                 lowest_max_possible, smallest_available_chapter_requirement)
+                        else:
+                            self.world.log_debug("Lowest Picked %s requiring %i/%i", picked, lowest_max_possible,
+                                                 smallest_available_chapter_requirement)
+                    else:
+                        picked = non_special_chapters.pop()
+                        max_possible = max_chapter_required_counts[picked]
+                        chapters = chapters_by_max_possible_required_counts[max_possible]
+                        chapters.remove(picked)
+                        counts_dict[picked] = smallest_available_chapter_requirement
+                        if not chapters:
+                            del chapters_by_max_possible_required_counts[max_possible]
+                        self.world.log_debug("Normal Picked %s requiring %i/%i", picked,
+                                             smallest_available_chapter_requirement, max_possible)
+
+                non_special_chapters.sort(key=max_chapter_required_counts.__getitem__)
+                chapter_iter = iter(non_special_chapters)
+                for chapter in chapter_iter:
+                    max_chapter_required_count = max_chapter_required_counts[chapter]
+                    lowest_available_requirement = per_chapter_counts[0]
+                    if lowest_available_requirement <= max_chapter_required_count:
+                        counts_dict[chapter] = lowest_available_requirement
+                        per_chapter_counts.pop(0)
+                    else:
+                        break
+                # The starting chapter always uses the smallest possible required count.
+                counts_dict[starting_chapter] = min(min_required_count, max_chapter_required_counts[starting_chapter])
+                if goal_chapter:
+                    # The goal chapter always uses the largest possible required count.
+                    counts_dict[goal_chapter] = min(max_required_count, max_chapter_required_counts[goal_chapter])
+            # Set the counts per chapter into the dict.
+            self.world.chapter_required_character_counts = counts_dict
+
     def _resolve_normal_options(self):
         self._validate_goal_choice()
 
@@ -961,6 +1100,8 @@ class _NormalOptionsResolver:
         assert enabled_chapters_with_locations_count == len(enabled_chapters_with_locations)
 
         self._resolve_vanilla_character_unlocked_chapters_requiring_alt_characters(enabled_chapters)
+
+        self._resolve_chapter_required_character_counts(starting_chapter, enabled_chapters)
 
         _all_episodes_unlock_requirement = self._adjust_all_episodes_unlock_requirement(enabled_episodes)
 

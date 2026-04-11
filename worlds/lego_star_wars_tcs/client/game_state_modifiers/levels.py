@@ -135,7 +135,7 @@ class UnlockedChapterManager(ClientComponent):
     enabled_episodes: set[int]
     chapters_using_alt_characters: set[str]
     characters_excluded_from_unlocking_chapters: set[str]
-    character_count_required_to_unlock_chapters: int = 999_999_999
+    per_chapter_required_character_count: dict[str, int]
 
     easy_true_jedi: bool = False
     scale_true_jedi_with_score_multipliers: bool = False
@@ -152,6 +152,7 @@ class UnlockedChapterManager(ClientComponent):
         self.enabled_chapter_area_ids = set()
         self.chapters_using_alt_characters = set()
         self.characters_excluded_from_unlocking_chapters = set()
+        self.per_chapter_required_character_count = {}
 
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
@@ -192,11 +193,11 @@ class UnlockedChapterManager(ClientComponent):
         # In older multiworlds, all characters were required, alt characters could not be chosen, and characters could
         # not be excluded from requirements.
         if event.generator_version < (1, 4, 0):
-            self.character_count_required_to_unlock_chapters = 999_999_999
+            self.per_chapter_required_character_count = dict.fromkeys(enabled_chapters, 999_999_999)
             self.chapters_using_alt_characters = set()
             self.characters_excluded_from_unlocking_chapters = set()
         else:
-            self.character_count_required_to_unlock_chapters = slot_data["chapter_unlock_characters_count"]
+            self.per_chapter_required_character_count = slot_data.get("chapter_required_character_counts", {})
             self.chapters_using_alt_characters = set(slot_data.get("chapters_requiring_alt_characters", ()))
             self.characters_excluded_from_unlocking_chapters = set(
                 slot_data.get("chapter_unlock_characters_not_required", ())
@@ -265,10 +266,13 @@ class UnlockedChapterManager(ClientComponent):
                 # Filter out excluded characters.
                 character_requirements = [c for c in character_requirements
                                           if c not in self.characters_excluded_from_unlocking_chapters]
-                if self.character_count_required_to_unlock_chapters < len(character_requirements):
+                count_required = self.per_chapter_required_character_count[short_name]
+                assert count_required <= len(character_requirements), \
+                    "Required counts should never be larger than the maximum possible"
+                if count_required < len(character_requirements):
                     # Not all are required.
                     unique_count_required_items.extend(character_requirements)
-                    unique_count_required = self.character_count_required_to_unlock_chapters
+                    unique_count_required = count_required
                     always_required_items = []
                 else:
                     # All are required.

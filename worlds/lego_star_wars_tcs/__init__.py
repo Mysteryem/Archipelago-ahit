@@ -152,6 +152,8 @@ class LegoStarWarsTCSWorld(World):
     short_name_to_boss_character: dict[str, str]
     goal_chapter: str | None
     chapters_requiring_alt_characters: set[str]
+    chapter_required_character_counts: dict[str, int]
+    spoiler_chapter_character_requirements: dict[str, tuple[int, list[str]]]
 
     starting_chapter: ChapterArea = SHORT_NAME_TO_CHAPTER_AREA["1-1"]
     minikit_bundle_name: str = ""
@@ -181,6 +183,8 @@ class LegoStarWarsTCSWorld(World):
         self.short_name_to_boss_character = {}
         self.ridesanity_spots = {}
         self.chapters_requiring_alt_characters = set()
+        self.chapter_required_character_counts = {}
+        self.spoiler_chapter_character_requirements = {}
 
     def log_info(self, message: str, *args) -> None:
         logger.info("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
@@ -190,6 +194,9 @@ class LegoStarWarsTCSWorld(World):
 
     def log_error(self, message: str, *args) -> None:
         logger.error("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
+
+    def log_debug(self, message: str, *args) -> None:
+        logger.debug("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
 
     def raise_error(self, ex_type: Callable[[str], Exception], message: str, *args) -> NoReturn:
         raise ex_type(("Lego Star Wars TCS (%s): " + message) % (self.player_name, *args))
@@ -477,8 +484,7 @@ class LegoStarWarsTCSWorld(World):
 
         created_chapters = self.enabled_chapters
 
-        excluded_chapter_unlock_characters = self.options.chapter_unlock_characters_not_required.value
-        chapter_unlock_characters_count = self.options.chapter_unlock_characters_count.value
+        excluded_chapter_unlock_characters = self.options.chapter_unlock_story_characters_not_required.value
 
         # Episodes.
         for episode_number in range(1, 7):
@@ -524,10 +530,15 @@ class LegoStarWarsTCSWorld(World):
                         required_character_names = chapter.character_requirements
                     required_character_names = required_character_names.difference(excluded_chapter_unlock_characters)
                     access_character_names.extend(sorted(required_character_names))
+                    chapter_unlock_characters_count = self.chapter_required_character_counts[chapter.short_name]
                     # If there are fewer characters for this chapter than the required count, all are needed.
                     characters_count = min(len(required_character_names), chapter_unlock_characters_count)
+                    # Update so that accurate values get put into slot_data.
+                    self.chapter_required_character_counts[chapter.short_name] = characters_count
                     required_characters = [CHARACTERS_AND_VEHICLES_BY_NAME[name] for name in required_character_names]
                     assert len(required_characters) > 0, "At least one character should always be required."
+                    assert len(required_characters) >= characters_count, \
+                        "The number of characters should always be greater than or equal to the required count"
 
                     # Find abilities that are always provided given *any* combination of characters.
                     required_character_abilities = [character.abilities for character in required_characters]
@@ -556,6 +567,9 @@ class LegoStarWarsTCSWorld(World):
                         set_rule(entrance,
                                  lambda state, items_=character_names, count_=characters_count:
                                  state.has_from_list_unique(items_, player, count_))
+                    # Prepare the requirements for writing to the spoiler.
+                    self.spoiler_chapter_character_requirements[chapter.short_name] = (characters_count,
+                                                                                       required_character_names)
                 else:
                     # Access to the Chapter requires a Chapter Unlock item.
                     character_provided_entrance_access_abilities = CharacterAbility.NONE
@@ -794,6 +808,8 @@ class LegoStarWarsTCSWorld(World):
             chapters_requiring_alt_characters = sorted(self.chapters_requiring_alt_characters)
             if chapters_requiring_alt_characters:
                 optional_options["chapters_requiring_alt_characters"] = chapters_requiring_alt_characters
+            if self.chapter_required_character_counts:
+                optional_options["chapter_required_character_counts"] = self.chapter_required_character_counts
         return {
             # todo: A number of the slot data keys here could be inferred from what locations exist in the multiworld.
             "apworld_version": constants.AP_WORLD_VERSION,
@@ -838,8 +854,7 @@ class LegoStarWarsTCSWorld(World):
                 "ridesanity",
                 "enable_starting_extras_locations",
                 "chapter_unlock_requirement",
-                "chapter_unlock_characters_count",
-                "chapter_unlock_characters_not_required",
+                "chapter_unlock_story_characters_not_required",
             )
         }
 
@@ -863,6 +878,14 @@ class LegoStarWarsTCSWorld(World):
 
         enabled_bosses = sorted(self.enabled_bosses)
         spoiler_handle.write(f"Enabled Bosses: {enabled_bosses}\n")
+
+        if self.spoiler_chapter_character_requirements:
+            spoiler_handle.write(f"Chapter Character requirements:\n")
+            for chapter, required in sorted(self.spoiler_chapter_character_requirements.items(), key=lambda t: t[0]):
+                required_count = required[0]
+                sorted_characters = sorted(required[1])
+                spoiler_handle.write(f"    {chapter}:"
+                                     f" {required_count}/{len(sorted_characters)} of {', '.join(sorted_characters)}\n")
 
     @staticmethod
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any] | None:

@@ -515,8 +515,8 @@ def create_starting_characters_for_character_locked_chapters(
     :param possible_pool_character_items:
     :return:
     """
-    required_count = world.options.chapter_unlock_characters_count.value
-    not_required = world.options.chapter_unlock_characters_not_required.value
+    required_count = world.options.chapter_unlock_characters_max_count.value
+    not_required = world.options.chapter_unlock_story_characters_not_required.value
 
     starting_chapter = world.starting_chapter
 
@@ -809,10 +809,10 @@ def _append_level_access_required_characters(
     enabled_chapters = sorted(world.enabled_chapters)
     world.random.shuffle(enabled_chapters)
     required_characters_per_chapter = max(
-        world.options.chapter_unlock_characters_count.value,
+        world.options.chapter_unlock_characters_max_count.value,
         world.options.chapter_unlock_characters_pool_count.value,
     )
-    excluded_characters = world.options.chapter_unlock_characters_not_required.value
+    excluded_characters = world.options.chapter_unlock_story_characters_not_required.value
 
     abilities_provided = CharacterAbility.NONE
 

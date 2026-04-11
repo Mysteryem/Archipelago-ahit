@@ -6,7 +6,7 @@ from Options import Option, PerGameCommonOptions, VerifyKeys
 from ..items import CHARACTERS_AND_VEHICLES_BY_NAME, EXTRAS_BY_NAME
 from ..options import (
     LegoStarWarsTCSOptions,
-    ChapterUnlockCharactersNotRequired,
+    ChapterStoryUnlockCharactersNotRequired,
     PreferredCharacters,
     PreferredExtras,
 )
@@ -40,7 +40,7 @@ class TestOptions(TestCase):
     def test_character_valid_keys(self):
         self._test_valid_keys(
             CHARACTERS_AND_VEHICLES_BY_NAME.keys(),
-            ChapterUnlockCharactersNotRequired,
+            ChapterStoryUnlockCharactersNotRequired,
             PreferredCharacters,
         )
 
