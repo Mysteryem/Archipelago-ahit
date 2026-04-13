@@ -480,10 +480,10 @@ class EnabledChaptersCount(Range):
 
 
 class AllowedChapterTypes(ChoiceFromStringExtension):
-    """Specify additional filtering of the allowed chapters that can be enabled.
+    """Specify additional filtering of the allowed chapters that can exist in your slot.
 
     - All: No additional filtering, all chapters specified in the Allowed Chapters option are allowed.
-    - No Vehicles: No vehicle chapters (1-4, 2-1, 2-5, 3-1, 4-6, 5-1, 5-3, 6-6) will be allowed.
+    - No Vehicles: No vehicle chapters (1-4, 2-1, 2-5, 3-1, 4-6, 5-1, 5-3, 6-6) will be allowed to exist in your slot.
     """
     display_name = "Allowed Chapter Types"
     rich_text_doc = True
@@ -493,7 +493,14 @@ class AllowedChapterTypes(ChoiceFromStringExtension):
 
 
 class AllowedChapters(ChapterOptionSet):
-    """Choose the chapter levels that are allowed to be picked when randomly choosing which chapters will be enabled.
+    """Choose the chapter levels that are allowed to be picked when randomly choosing which chapters will exist in your
+    slot.
+
+    The Starting Chapter and Goal Chapter options ignore the allowed list of chapters when they are set to specific
+    chapters.
+
+    When your goal is set to require defeating bosses, all Allowed Boss Chapters will be added into the Allowed
+    Chapters option.
 
     Individual chapters can be specified, e.g. "1-1", "5-4".
 
@@ -546,7 +553,7 @@ class AllowedChapters(ChapterOptionSet):
 
 class PreferredChapters(ChapterOptionSet):
     """
-    When the generator picks which chapters should be enabled, it will pick from these preferred chapters first.
+    When the generator picks which chapters should exist in your slot, it will pick from these preferred chapters first.
 
     If a preferred chapter is not allowed to be picked because it is not included in the Allowed Chapters option, it
     will not be picked.
@@ -598,18 +605,16 @@ class PreferredChapters(ChapterOptionSet):
 
 class PreferEntireEpisodes(Toggle):
     """
-    When enabled, after the generator has picked a chapter to be enabled out of the allowed chapters, it will continue
-    picking additional chapters from the same episode until it runs out of allowed chapters in that episode.
+    When enabled, after the generator has picked a chapter to exist in your slot, out of the allowed chapters, it will
+    continue picking additional chapters from the same episode until it runs out of allowed chapters in that episode.
 
     For example, if the generator picks 3-2 as the first enabled chapter, its next picked chapters will be guaranteed to
     be picked from the allowed chapters out of 3-1, 3-3, 3-4, 3-5 and 3-6.
 
     The Starting Chapter is always the first picked enabled chapter.
 
-    With all chapters allowed to be enabled and an Enabled Chapters Count set to a multiple of 6, this option will
-    result in whole episodes being enabled.
-
-    When combined with the Preferred Chapters option, this option can be used to guarantee entire episodes.
+    With all chapters allowed to exist in your slot, and an Enabled Chapters Count set to a multiple of 6, this option
+    will result in whole episodes being enabled.
     """
     display_name = "Prefer Entire Episodes"
     rich_text_doc = True
@@ -617,20 +622,20 @@ class PreferEntireEpisodes(Toggle):
 
 class EnableMinikitLocations(DefaultOnToggle):
     """
-    Enable locations for collecting each Minikit in enabled Chapters.
+    Enable locations for collecting each Minikit in each Chapter that exists in your slot.
 
     Minikit locations are progressive within each Chapter (to be changed in the future), so collecting 4 Minikits in any
     order in a Chapter will send the location checks for Minikit 1, Minikit 2, Minikit 3 and Minikit 4, in that Chapter,
     in order.
 
-    All Minikits in a Chapter enter logic at the same time, when it is logically possible to reach all Minikits in that
-    Chapter.
+    All Minikit locations in a Chapter enter logic at the same time, when it is logically possible to reach all Minikit
+    locations in that Chapter (to be changed in the future).
 
-    If Minikit locations are not enabled, but the goal requires Minikits, the Minikit Bundle Size will be forcefully set
-    to 10.
+    If Minikit locations are not enabled, but the goal requires Minikit items, the Minikit Bundle Size will be
+    forcefully set to 10.
 
-    When Minikit locations are not enabled, Bonus levels will not consider the 10/10 Minikit Gold Bricks as part of Gold
-    Brick logic.
+    When Minikit locations are not enabled, Bonus levels will not consider the Gold Bricks, awarded for getting all 10
+    Minikit locations in a Chapter, as part of Gold Brick logic.
     """
     display_name = "Enable Minikit Locations"
     rich_text_doc = True
@@ -638,10 +643,10 @@ class EnableMinikitLocations(DefaultOnToggle):
 
 class EnableTrueJediLocations(DefaultOnToggle):
     """
-    Enable locations for completing True Jedi in each enabled Chapter.
+    Enable locations for completing True Jedi in each Chapter that exists in your slot.
 
-    Some True Jedi logically expect 1 Progressive Score Multiplier because they are otherwise too difficult or
-    impossible with only the Story characters for the Chapter:
+    Some True Jedi locations logically expect 1 Progressive Score Multiplier because they are otherwise too difficult or
+    impossible with only the minimal characters to complete the Chapter:
 
     - 1-6
     - 2-6
@@ -684,8 +689,8 @@ class EnableStoryCharacterUnlockLocations(DefaultOnToggle):
     Because Story mode is skipped in the AP randomizer, these character unlock locations are sent when the Chapters are
     completed in Free Play.
 
-    With all Chapters enabled, this adds 56 locations.
-    With all Chapters and all Bonuses enabled, this adds 57 locations.
+    With all 36 Chapters enabled, this adds 56 locations.
+    With all 36 Chapters and all Bonuses enabled, this adds 57 locations.
     """
     display_name = "Level Completion Character Unlocks"
     rich_text_doc = True
@@ -701,10 +706,11 @@ class EnableBonusLocations(Toggle):
     from the shop are added as locations to check.
 
     Gold Brick logic currently only counts Gold Bricks earned from Chapter completion, True Jedi, 10/10 Minikits in a
-    Chapter, and the singular Gold Bricks awarded for completing other Bonus levels.
+    Chapter, and the singular Gold Bricks awarded for completing other Bonus levels. The True Jedi and 10/10 Minikits
+    Gold Bricks are not included in Gold Brick logic if the corresponding locations are disabled.
 
-    Depending on other options, not all Chapters could be enabled, so if there are not enough Gold Bricks logically
-    available for a Bonus level to be accessed, that Bonus level will not be included in the multiworld.
+    Depending on other options, not all Chapters could exist in your slot, so if there are not enough Gold Bricks
+    logically available for a Bonus level to be accessible, that Bonus level will not be included in the multiworld.
 
     With all Chapters enabled, this adds 8 locations.
     """
@@ -800,8 +806,8 @@ class EnableNonPowerBrickExtraLocations(DefaultOnToggle):
     high movement speed and a few Extra Toggle characters having abilities (in the future Extra Toggle will be
     Progression).
 
-    If this option is not enabled, the locations will still exist in the multiworld, but will contain their vanilla
-    items.
+    If this option is not enabled, the locations will still exist in the multiworld, but will always contain their
+    vanilla items.
     """
     display_name = "Non Power Brick Extra Purchases"
     rich_text_doc = True
@@ -836,12 +842,12 @@ class EnableCompletionPointLocations(Toggle):
 class ChapterUnlockRequirement(ChoiceFromStringExtension):
     """Choose how Chapters within an Episode are unlocked.
 
-    The requirements to access your starting Chapter will be given to you at the start.
+    The requirements to access and complete your starting Chapter will be given to you at the start.
 
-    The items you are missing unlock a Chapter are shown in-game when standing in-front of the Chapter's door.
+    The items you are missing to unlock a Chapter are shown in-game when standing in-front of a locked Chapter's door.
 
-    - Vanilla Characters: A Chapter unlocks once its Vanilla characters (those from Story mode or optionally those that
-    are unlocked for Purchase after completing the Chapter in Vanilla) have been found/received. The count required to
+    - Vanilla Characters: A Chapter unlocks once its Vanilla characters (those from Story mode, or optionally those that
+    are available for Purchase after completing the Chapter in Vanilla) have been found/received. The count required to
     unlock the Chapter can be adjusted with a separate option.
     - Chapter Item: A Chapter unlocks after receiving an unlock item specific to that Chapter, e.g. "Chapter 2-3
     Unlock".
@@ -863,17 +869,18 @@ class ChapterUnlockRequirement(ChoiceFromStringExtension):
 
 
 class ChapterUnlockCharactersMinRequiredCount(Range):
-    """When Chapters are set to unlock with Characters, choose the minimum number of Characters that are needed.
+    """When Chapters are locked by needing specific Characters, choose the minimum number of Characters that are needed.
 
-    If set higher than the maximum number of Characters for a Chapter, all Characters for that chapter will be required.
+    If Chapters are set to require Vanilla Characters to unlock, the required count for a Chapter will never be more
+    than the number of Vanilla Characters for that Chapter.
 
-    The starting Chapter will always use the minimum required count.
+    The starting Chapter will always use this minimum required count.
 
     Most chapters have a maximum of around 3 to 5 Characters.
-    The highest Story mode Characters requirement, is 7, for The Great Pit Of Carkoon (6-2).
+    The highest vanilla Story mode Characters requirement, is 7, for The Great Pit Of Carkoon (6-2).
     The highest vanilla Purchase Characters requirement, is 9, for Jedi Battle (2-4).
 
-    This option does nothing if Chapters are not set to require Story Characters to unlock.
+    This option does nothing if Chapters are not set to require Vanilla/Random Characters to unlock.
     """
     display_name = "Min Required Count"
     rich_text_doc = True
@@ -883,17 +890,19 @@ class ChapterUnlockCharactersMinRequiredCount(Range):
 
 
 class ChapterUnlockCharactersMaxRequiredCount(Range):
-    """When Chapters are set to unlock with Characters, choose the maximum number of Characters that are needed.
+    """When Chapters are set to unlock by needing specific Characters, choose the maximum number of Characters that are
+    needed.
 
-    If set higher than the maximum number of Characters for a Chapter, all Characters for that chapter will be required.
+    If Chapters are set to require Vanilla Characters to unlock, the required count for a Chapter will never be more
+    than the number of Vanilla Characters for that Chapter.
 
     The Goal Chapter, if enabled, will always use this maximum required count.
 
     Most chapters have a maximum of around 3 to 5 Characters.
-    The highest Story mode Characters requirement, is 7, for The Great Pit Of Carkoon (6-2).
+    The highest vanilla Story mode Characters requirement, is 7, for The Great Pit Of Carkoon (6-2).
     The highest vanilla Purchase Characters requirement, is 9, for Jedi Battle (2-4).
 
-    This option does nothing if Chapters are not set to require Story Characters to unlock.
+    This option does nothing if Chapters are not set to require Vanilla/Random Characters to unlock.
     """
     display_name = "Max Required Count"
     rich_text_doc = True
@@ -920,8 +929,8 @@ class ChapterUnlockCharactersRequiredCountDistribution(ChoiceFromStringExtension
 
 
 class ChapterUnlockRandomCharactersMinExtraPoolCount(Range):
-    """When Chapters are set to unlock with Random Characters, increase the number of characters that contribute to
-    unlocking a Chapter by at least this many.
+    """When Chapters are set to unlock by needing randomly chosen Characters, increase the number of characters that
+    contribute to unlocking a Chapter by at least this many.
 
     For example, if a Chapter rolls as requiring 4/4 Characters to unlock it, and this option is set to 1, an additional
     Character will be added to the Chapter's requirements, but the number of characters required will remain at 4, so
@@ -939,8 +948,8 @@ class ChapterUnlockRandomCharactersMinExtraPoolCount(Range):
 
 
 class ChapterUnlockRandomCharactersMaxExtraPoolCount(Range):
-    """When Chapters are set to unlock with Random Characters, increase the number of characters that contribute to
-    unlocking a Chapter by up to this many.
+    """When Chapters are set to unlock by needing randomly chosen Characters, increase the number of characters that
+    contribute to unlocking a Chapter by up to this many.
 
     For example, if a Chapter rolls as requiring 4/4 Characters to unlock it, and this option is set to 1 (and the
     minimum extra is set to 0), there will be a 50% chance (0 or 1) that an additional Character will be added to the
@@ -958,29 +967,33 @@ class ChapterUnlockRandomCharactersMaxExtraPoolCount(Range):
     default = 0
 
 
-class ChapterUnlockRandomCharactersPoolPerChapter(Range):
-    """When Chapters are set to unlock with Random Characters, the generator randomly picks only a fixed number of
-    Characters to be used in Chapter unlock requirements. The number of Characters randomly picked is controlled by this
-    option. For example, if this option is set to 3, and you have 18 Chapters enabled, then the number of randomly
+class ChapterUnlockRandomCharactersUniquePerChapter(Range):
+    """When Chapters are set to unlock by needing randomly chosen Characters, set how many unique randomly picked
+    characters are used across all Chapter unlock requirements. The option value is multiplied by the number of Chapters
+    that exist in your slot.
+
+    For example, if this option is set to 3, and you have 18 Chapters enabled, then the total number of unique randomly
     picked Characters that could be used in Chapter unlock requirements will be 3 * 18 = 54 Characters.
 
-    If the total number of randomly picked Characters is greater than or equal to the total number of Characters used in
-    Chapter unlock requirements, then the Characters to unlock each Chapter will be unique for each Chapter.
-
-    But if the total number of randomly picked Characters is less than the total number of Characters used in Chapter
+    If the total number of randomly picked Characters is less than the total number of Characters used in Chapter
     unlock requirements, then some Characters will be used in the unlock requirements for more than one Chapter.
 
-    There is a hard cap of 149 Characters that can be picked, or 128 Characters when no vehicle Chapters are enabled,
-    because that is all the unlockable Characters that exist.
+    In tiny seeds where unlocking a Chapter could require more unique Characters than were picked, additional unique
+    characters will be picked automatically.
 
-    With all 36 Chapters enabled and requiring Story Characters, there are 1.555 unique Characters per Chapter on
-    average, with Chapters averaging 3.361 Characters in their unlock requirements.
+    There is a hard cap of 149 unique Characters that can be picked, or 128 unique Characters when no vehicle Chapters
+    are enabled, because that is all the unique unlockable Characters that exist.
 
-    With all 36 Chapters enabled and requiring Purchase Characters, where possible, or Story Characters otherwise, there
-    are 2.833 unique Characters per Chapter on average, with Chapters averaging 2.944 Characters in their unlock
+    Comparing against setting chapters to require Vanilla Characters to unlock:
+    - With all 36 Chapters enabled and set to require vanilla Story Characters to unlock, there would be 56 unique
+    Characters total, averaging 1.555 per Chapter, with Chapters averaging 3.361 unique Characters in their unlock
     requirements.
+    - With all 36 Chapters enabled and set to require vanilla Purchase Characters, where possible, or Story Characters
+    otherwise, there would be 102 unique Characters total, averaging 2.833 per Chapter, with Chapters averaging 2.944
+    unique Characters in their unlock requirements.
+
     """
-    display_name = "Required Characters Pool, Per Chapter"
+    display_name = "Unique Characters In Requirements, Per Chapter"
     rich_text_doc = True
     range_start = 1
     range_end = 6
@@ -996,28 +1009,29 @@ class ChapterStoryUnlockCharactersNotRequired(OptionSet):
 
     Example that disables all three:
 
-    chapter_unlock_characters_not_required:
+    chapter_story_unlock_characters_not_required:
       - R2-D2 # can lock up to 15 Chapters.
       - C-3PO # can lock up to 11 Chapters.
       - Chewbacca # can lock up to 9 Chapters.
 
     This option only affects Chapters that are set to require Story Characters to unlock.
     """
-    display_name = "Remove Story Characters From Requirements"
+    display_name = "Remove Story Characters From Unlock Requirements"
     rich_text_doc = True
     valid_keys = frozenset({"C-3PO", "R2-D2", "Chewbacca"})
     default = frozenset()
 
 
 class ChaptersThatCanRequirePurchaseCharacters(OptionSet):
-    """When the unlock requirement for Chapters is set to Vanilla Characters, instead of requiring the Story Characters to
-    unlock these Chapters, chapters can instead be set to require the Characters that would, in the vanilla game, become
-    purchasable from the Cantina Shop after completing the Chapter.
+    """When the unlock requirement for Chapters is set to Vanilla Characters, instead of requiring the Story Characters
+    to unlock these Chapters, chapters can instead be set to require the Characters that would, in the vanilla game,
+    become available for purchase from the Cantina Shop after completing the Chapter.
 
-    A common use of this is to give some chapters within the same episode more varied unlock requirements.
+    A common use of this is to give some Chapters within the same Episode more varied unlock requirements because it is
+    common for many Chapters within an Episode to require some of the same Story Characters.
 
-    Not all Chapters, in the vanilla game, unlock characters, for purchase from the Cantina Shop, after completing the
-    Chapter, so these chapters are not available for this option:
+    Not all Chapters, in the vanilla game, make Characters available for purchase from the Cantina Shop after completing
+    the Chapter, so these chapters are not available for this option:
       - 1-5
       - 2-5
       - 2-6
@@ -1035,7 +1049,7 @@ class ChaptersThatCanRequirePurchaseCharacters(OptionSet):
 
     This option does nothing if Chapters are not set to require Story Characters to unlock.
     """
-    display_name = "Allowed Alternate Vanilla Characters"
+    display_name = "Allow Requiring Purchase Characters"
     rich_text_doc = True
     valid_keys = frozenset({
         chapter.short_name for chapter in CHAPTER_AREAS if chapter.character_shop_unlocks
@@ -1044,10 +1058,12 @@ class ChaptersThatCanRequirePurchaseCharacters(OptionSet):
 
 
 class RequirePurchaseCharactersInsteadOfStoryCharactersChance(NamedRange):
-    """Set the chance that a chapter rolls as requiring Purchase Characters to unlock instead of Story Characters.
+    """Set the chance that a chapter rolls as requiring vanilla Purchase Characters to unlock instead of vanilla Story
+    Characters.
 
-    Only affects chapters specified in *Chapters Allowed To Require Alternate Characters To Unlock*."""
-    display_name = "Alternate Requirement Chance"
+    Only affects chapters that have been allowed to require vanilla Purchase Characters, instead of vanilla Story
+    characters, to unlock."""
+    display_name = "Require Purchase Characters Chance"
     rich_text_doc = True
     range_start = 0
     range_end = 100
@@ -1061,11 +1077,11 @@ class RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance(OptionCounte
     """Individually set the chance that a chapter rolls as requiring Purchase Characters to unlock instead of Story
     Characters.
 
-    Will not do anything unless Alternate Requirement Chance is set to Use Custom Chance Per Chapter Option.
+    Will not do anything unless Require Purchase Characters Chance is set to Use Custom Chance Per Chapter Option.
 
-    A chapters not being present in the mapping is the same as giving it a 0% chance.
+    A Chapter not being present in this option is the same as giving it a 0% chance.
     """
-    display_name = "Alternate Requirement Chance: Custom"
+    display_name = "Require Purchase Characters Chance: Custom"
     rich_text_doc = True
     min = 0
     max = 100
@@ -1076,15 +1092,15 @@ class RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance(OptionCounte
 class EpisodeUnlockRequirement(ChoiceFromStringExtension):
     """Choose how Episodes are unlocked.
 
-    Note: If an Episode is unlocked, but no Chapters within that Episode are unlocked, the Episode's door in the Cantina
-    will remain locked until one of the Chapters is unlocked.
-    Note: If an Episode's door unlocks while you are in the same room of the Cantina as the Episode doors, the light
-    above the Episode door that unlocked will remain red until the room is reloaded, but the door will open normally.
+    The game client forces open all Episode doors in the Cantina, but all Chapters within an Episode will remain locked
+    if an Episode unlock item is required to unlock the Episode.
 
     The Episode of your starting Chapter will always be unlocked from the start.
 
     - Open: All Episodes will be unlocked from the start.
     - Episode Item: Each Episode will unlock after receiving an unlock item for that Episode, e.g. "Episode 5 Unlock".
+    Warning: Episode unlock items typically lock access to about 1/6 of your game each, which can result in long periods
+    of not being able to do any checks, when playing in multiworlds with other players.
 
     """
     display_name = "Episode Unlock Requirements"
@@ -1127,7 +1143,7 @@ class StartingChapter(ChapterChoice):
     """
     Choose the starting chapter.
 
-    All items required to access the starting chapter will be given to you from the start.
+    All items required to access and complete the starting chapter will be given to you from the start.
     """
     display_name = "Starting Chapter"
     rich_text_doc = True
@@ -1744,7 +1760,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     #  Chapters locked by Random Characters.
     chapter_unlock_random_characters_extra_min_count: ChapterUnlockRandomCharactersMinExtraPoolCount
     chapter_unlock_random_characters_extra_max_count: ChapterUnlockRandomCharactersMaxExtraPoolCount
-    chapter_unlock_random_characters_pool_per_chapter: ChapterUnlockRandomCharactersPoolPerChapter
+    chapter_unlock_random_characters_pool_per_chapter: ChapterUnlockRandomCharactersUniquePerChapter
     #  Other.
     most_expensive_purchase_with_no_multiplier: MostExpensivePurchaseWithNoScoreMultiplier
     all_episodes_character_purchase_requirements: AllEpisodesCharacterPurchaseRequirements
@@ -1848,7 +1864,7 @@ OPTION_GROUPS: list[OptionGroup] = [
     OptionGroup("Chapter Unlock Requirement: Random Characters", [
         ChapterUnlockRandomCharactersMinExtraPoolCount,
         ChapterUnlockRandomCharactersMaxExtraPoolCount,
-        ChapterUnlockRandomCharactersPoolPerChapter,
+        ChapterUnlockRandomCharactersUniquePerChapter,
     ], True),
     OptionGroup("Item Options", [
         MinikitBundleSize,
