@@ -1805,27 +1805,27 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
 
 
 OPTION_GROUPS: list[OptionGroup] = [
-    OptionGroup("Minikit Goal Options", [
+    OptionGroup("Minikit Goal", [
         MinikitGoalAmount,
         MinikitGoalAmountPercentage,
         MinikitGoalCompletionMethod,
     ]),
-    OptionGroup("Bosses Goal Options", [
+    OptionGroup("Bosses Goal", [
         DefeatBossesGoalAmount,
         EnabledBossesCount,
         AllowedBosses,
         OnlyUniqueBossesCountTowardsGoal,
     ]),
-    OptionGroup("Goal Chapter Options", [
+    OptionGroup("Goal Chapter", [
         GoalChapter,
         GoalChapterLocationsMode,
     ]),
-    OptionGroup("Other Goal Options", [
+    OptionGroup("Other Goals", [
         CompleteLevelsGoalAmountPercentage,
         GoalRequiresKyberBricks,
         KyberBrickGoalCompletionMethod,
     ]),
-    OptionGroup("Chapter Options", [
+    OptionGroup("Chapters", [
         EnabledChaptersCount,
         AllowedChapters,
         AllowedChapterTypes,
@@ -1833,7 +1833,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         PreferredChapters,
         PreferEntireEpisodes,
     ]),
-    OptionGroup("Location Options", [
+    OptionGroup("Enabled Locations", [
         EnableMinikitLocations,
         EnableTrueJediLocations,
         EnableStoryCharacterUnlockLocations,
@@ -1842,7 +1842,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         EnableNonPowerBrickExtraLocations,
         Ridesanity,
     ]),
-    OptionGroup("Logic and Difficulty Options", [
+    OptionGroup("Logic and Difficulty", [
         EpisodeUnlockRequirement,
         ChapterUnlockRequirement,
         EasierTrueJedi,
@@ -1866,7 +1866,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         ChapterUnlockRandomCharactersMaxExtraPoolCount,
         ChapterUnlockRandomCharactersUniquePerChapter,
     ], True),
-    OptionGroup("Item Options", [
+    OptionGroup("Items", [
         MinikitBundleSize,
         StartWithDetectors,
         PreferredCharacters,
@@ -1878,7 +1878,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         FillerWeightJunk,
         JunkWeights,
     ]),
-    OptionGroup("Client Options", [
+    OptionGroup("Client", [
         ReceivedItemMessages,
         CheckedLocationMessages,
         UncapOriginalTrilogyHighJump,
@@ -1890,7 +1890,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         PlayerNameColor,
         LocationNameColor,
     ], True),
-    OptionGroup("Death Link Options", [
+    OptionGroup("Death Link", [
         LegoStarWarsTCSDeathLink,
         DeathLinkAmnesty,
         VehicleDeathLinkAmnesty,
