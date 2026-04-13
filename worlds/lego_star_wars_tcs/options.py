@@ -921,6 +921,8 @@ class ChapterUnlockCharactersRequiredCountDistribution(ChoiceFromStringExtension
     - High: More like to pick higher values, similar to random-range-high-{min}-{max}.
 
     """
+    display_name = "Required Count Distribution"
+    rich_text_doc = True
     option_uniform = 0
     option_low = 1
     option_middle = 2
