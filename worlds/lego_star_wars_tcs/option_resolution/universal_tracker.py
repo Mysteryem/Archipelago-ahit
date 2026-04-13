@@ -66,6 +66,7 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: di
     # Derived Chapter Unlock requirements.
     self.chapters_requiring_alt_characters = set(passthrough.get("chapters_requiring_alt_characters", ()))
     self.chapter_required_character_counts = passthrough.get("chapter_required_character_counts", {})
+    self.chapter_random_character_requirements = passthrough.get("chapter_random_character_requirements", {})
 
     # Derived Goal attributes.
     self.enabled_bosses = set(passthrough["enabled_bosses"])

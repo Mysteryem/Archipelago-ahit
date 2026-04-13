@@ -503,44 +503,209 @@ def _create_possible_pool(world: LegoStarWarsTCSWorld) -> dict[str, GenericChara
     return possible_pool_character_items
 
 
-def create_starting_characters_for_character_locked_chapters(
+def determine_random_character_requirements(
         world: LegoStarWarsTCSWorld,
         possible_pool_character_items: dict[str, GenericCharacterData],
 ) -> None:
     """
-    Create and precollect the characters the player should start with when chapters are locked by needing characters.
 
-    This tries to pick as few characters as possible, but enough such that the starting chapter can be completed.
     :param world:
     :param possible_pool_character_items:
     :return:
     """
-    required_count = world.options.chapter_unlock_characters_max_count.value
-    not_required = world.options.chapter_unlock_story_characters_not_required.value
-
-    starting_chapter = world.starting_chapter
-
-    # Add characters necessary to unlock, *and complete* the starting chapter into starting inventory.
-    if starting_chapter.short_name in world.chapters_requiring_alt_characters:
-        characters_set = starting_chapter.alt_character_requirements
+    if world.is_universal_tracker():
+        # Should already be loaded from Universal Tracker.
+        if not world.chapter_random_character_requirements:
+            world.raise_error(Exception, "Random Character requirements for Chapters were not loaded from"
+                                         "slot_data")
     else:
-        characters_set = starting_chapter.character_requirements
-    # The story character names are a `set`, so sort before iterating to get a deterministic iteration order.
-    # Also filter out characters that have been excluded from requirements.
-    characters = sorted(char for char in characters_set if char not in not_required)
-    if required_count >= len(characters):
+        chapters = sorted(world.enabled_chapters)
+        world.random.shuffle(chapters)
+
+        pool_size = len(chapters) * world.options.chapter_unlock_random_characters_pool_per_chapter.value
+        if pool_size > len(possible_pool_character_items):
+            world.log_warning("The size of the requested pool of random Characters to use in Chapter unlock"
+                              " requirements was %i, but there were only %i unique Characters available, so the size of"
+                              " the pool has been reduced to %i.",
+                              pool_size, len(possible_pool_character_items), len(possible_pool_character_items))
+            pool_size = len(possible_pool_character_items)
+
+        base_pool = sorted(possible_pool_character_items.keys())
+        world.random.shuffle(base_pool)
+
+        extra_counts = world.chapter_extra_random_character_counts
+        required_counts = world.chapter_required_character_counts
+        # The counts are capped at 9 because displaying the required characters in-game gets squished and difficult to
+        # read.
+        character_count_per_chapter = {chapter: min(extra_counts[chapter] + required_counts[chapter], 9)
+                                       for chapter in chapters}
+        min_pool_size = max(character_count_per_chapter.values())
+        if pool_size < min_pool_size:
+            world.log_warning("Increased the number of unique Characters used in Chapter unlock requirements to %i from"
+                              " %i because at least one Chapter needs %i Characters in its unlock requirements.",
+                              min_pool_size, pool_size, min_pool_size)
+            pool_size = min_pool_size
+        pool_size = max(min_pool_size, pool_size)
+        pool = base_pool[:pool_size]
+
+        world.log_debug("Random character pool: %s", pool)
+
+        total_characters_to_pick = sum(character_count_per_chapter.values())
+        pool_full_duplicates = total_characters_to_pick // len(pool)
+        pool_partial_count = total_characters_to_pick % len(pool)
+
+        full_pool = pool * pool_full_duplicates + pool[:pool_partial_count]
+        world.random.shuffle(full_pool)
+
+        chapter_to_characters = {chapter: set() for chapter in chapters}
+        finished_chapter_to_characters: dict[str, set[str]] = {}
+        failed_to_assign_characters = []
+
+        assignments = 0
+
+        def assign_character(chapter: str, character_set: set[str], character: str) -> bool:
+            nonlocal assignments
+            if character in character_set:
+                return False
+            character_set.add(character)
+            old_characters_to_pick = character_count_per_chapter[chapter]
+            if old_characters_to_pick == 1:
+                # All characters needed have been assigned.
+                del character_count_per_chapter[chapter]
+                finished_chapter_to_characters[chapter] = character_set
+                del chapter_to_characters[chapter]
+            else:
+                character_count_per_chapter[chapter] = old_characters_to_pick - 1
+            assignments += 1
+            return True
+
+        while full_pool:
+            character = full_pool.pop()
+            for chapter, character_set in chapter_to_characters.items():
+                if assign_character(chapter, character_set, character):
+                    world.log_debug("Assigned #%s as %s for %s", assignments, character, chapter)
+                    break
+            else:
+                # No break, so the character could not be assigned to any chapter.
+                failed_to_assign_characters.append(character)
+
+        full_failure_characters = []
+        if failed_to_assign_characters:
+            # This is in its own function because it is really messy trying to propagate a `break` from the innermost
+            # loop to outermost loop.
+            def swap_character(character_to_swap_in: str) -> bool:
+                finished_chapters = list(finished_chapter_to_characters.items())
+                world.random.shuffle(finished_chapters)
+                for finished_chapter, full_characters_set in finished_chapters:
+                    if character_to_swap_in not in full_characters_set:
+                        # The character to assign could be swapped into this set.
+                        full_characters_list = sorted(full_characters_set)
+                        world.random.shuffle(full_characters_list)
+                        # Iterate the remaining non-finished chapters.
+                        for incomplete_chapter, incomplete_character_set in chapter_to_characters.items():
+                            # Try to find a character from the full set that can be assigned into the incomplete
+                            # set.
+                            for character in full_characters_list:
+                                if assign_character(incomplete_chapter, incomplete_character_set, character):
+                                    world.log_debug("Swap assigned #%s as %s for %s",
+                                                    assignments, character, incomplete_chapter)
+                                    # The character from the full set was assigned into the incomplete set
+                                    full_characters_set.remove(character)
+                                    full_characters_set.add(character_to_swap_in)
+                                    world.log_debug("Moved %s from %s unlock requirements to %s unlock"
+                                                    " requirements, replacing it with %s",
+                                                    character, finished_chapter, incomplete_chapter,
+                                                    character_to_swap_in)
+                                    return True
+                return False
+
+            while failed_to_assign_characters:
+                character_to_assign = failed_to_assign_characters.pop()
+                for chapter, incomplete_character_set in chapter_to_characters.items():
+                    if assign_character(chapter, incomplete_character_set, character_to_assign):
+                        world.log_debug("Assigned #%s as %s for %s",
+                                        assignments, character_to_assign, chapter)
+                        break
+                else:
+                    # No break, so every chapter remaining in chapter_to_characters already has `character` as an unlock
+                    # requirement.
+                    # Try swapping.
+                    if not swap_character(character_to_assign):
+                        # Swapping failed...
+                        full_failure_characters.append(character_to_assign)
+        if full_failure_characters:
+            # Did not fail once in 8000 fuzzer generations meta-d to use Random Characters chapter unlock requirements.
+            world.raise_error(Exception,
+                              "Failed to assign random characters to chapter unlock requirements. This should not"
+                              " happen."
+                              "\nFailed to assign:\n\t%s"
+                              "\nRemaining to fulfill:\n\t%s",
+                              sorted(full_failure_characters), character_count_per_chapter)
+            # The below recovery works 100% of the time if it is ever needed.
+            # world.log_debug("Initial assignment of random character chapter unlock requirements failed."
+            #                 "\nFailed to assign:\n\t%s"
+            #                 "\nFailed to fulfill:\n\t%s",
+            #                 sorted(full_failure_characters), character_count_per_chapter)
+            # # The backup pool contains all characters not included in the initially picked pool.
+            # backup_pool = base_pool[pool_size:]
+            # while chapter_to_characters:
+            #     for incomplete_chapter, incomplete_character_set in chapter_to_characters.items():
+            #         # First try characters from the other side of the partial pool in-case we just got unlucky with the
+            #         # characters we picked.
+            #         if pool_partial_count > 0:
+            #             partial_pool_other_half = pool[:pool_partial_count]
+            #             world.random.shuffle(partial_pool_other_half)
+            #             for character in partial_pool_other_half:
+            #                 if assign_character(incomplete_chapter, incomplete_character_set, character):
+            #                     world.log_debug("Unlucky assigned #%s as %s for %s",
+            #                                     assignments, character, incomplete_chapter)
+            #                     break
+            #             else:
+            #                 # No break, so none of the characters could be assigned.
+            #                 # Pick a character from outside the initial pool instead. This should never fail.
+            #                 world.random.shuffle(backup_pool)
+            #                 for character in backup_pool:
+            #                     if assign_character(incomplete_chapter, incomplete_character_set, character):
+            #                         world.log_debug("Backup assigned #%s as %s for %s",
+            #                                         assignments, character, incomplete_chapter)
+            #                         break
+            #                 else:
+            #                     world.raise_error(Exception,
+            #                                       f"Could not assign any available character to {incomplete_chapter}"
+            #                                       f" This should never happen.")
+            #             break
+
+        # It should always be possible to assign at least one character to each chapter.
+        assert len(finished_chapter_to_characters) == len(chapters)
+
+        world.chapter_random_character_requirements = {k: sorted(v) for k, v in finished_chapter_to_characters.items()}
+
+    for characters_list in world.chapter_random_character_requirements.values():
+        for character in characters_list:
+            world.character_chapter_access_counts[character] += 1
+
+
+def _create_starting_characters_for_character_locked_chapters(
+        world: LegoStarWarsTCSWorld,
+        possible_pool_character_items: dict[str, GenericCharacterData],
+        starting_chapter_characters: list[str],
+        starting_chapter_required_count: int,
+) -> None:
+    starting_chapter = world.starting_chapter
+    assert starting_chapter_required_count <= len(starting_chapter_characters)
+    if starting_chapter_required_count == len(starting_chapter_characters):
         # All characters are needed.
-        picked = characters
+        picked = starting_chapter_characters
         skipped = []
     else:
         # First reduce the characters to those that provide unique, relevant abilities.
-        world.random.shuffle(characters)
+        world.random.shuffle(starting_chapter_characters)
         seen_abilities = CharacterAbility.NONE
         picked = []
         skipped = []
         # Ignore any alternate, or irrelevant, ability requirements by only considering the main requirements.
         main_ability_requirements = starting_chapter.completion_main_ability_requirements
-        for char in characters:
+        for char in starting_chapter_characters:
             character_data = CHARACTERS_AND_VEHICLES_BY_NAME[char]
             relevant_character_abilities = character_data.abilities & main_ability_requirements
             if relevant_character_abilities not in seen_abilities:
@@ -548,12 +713,14 @@ def create_starting_characters_for_character_locked_chapters(
                 picked.append(char)
             else:
                 skipped.append(char)
-        if required_count > len(picked):
+        if starting_chapter_required_count > len(picked):
             # More characters are needed than those with relevant, unique abilities, so pick additional characters from
             # those that were skipped due to having only duplicated abilities.
-            extra_needed = required_count - len(picked)
+            extra_needed = starting_chapter_required_count - len(picked)
             picked.extend(skipped[:extra_needed])
             skipped = skipped[extra_needed:]
+
+        # TODO?: Try the alt ability requirements too?
 
     # TODO: Do the picked characters need to be set somewhere? Check where else world.starting_chapter is used.
     for name in picked:
@@ -567,6 +734,58 @@ def create_starting_characters_for_character_locked_chapters(
         # print(f"Reducing count of chapters locked by {name} because the starting chapter will be unlocked by {picked}"
         #       f" instead")
         assert world.character_chapter_access_counts[name] >= 0
+
+
+def create_starting_characters_for_random_character_locked_chapters(
+        world: LegoStarWarsTCSWorld,
+        possible_pool_character_items: dict[str, GenericCharacterData],
+) -> None:
+    """
+    Create and precollect the characters the player should start with when chapters are locked by needing Random
+    Characters.
+
+    This tries to pick as few characters as possible, but enough such that the starting chapter can be completed.
+    :param world:
+    :param possible_pool_character_items:
+    :return:
+    """
+    starting_chapter = world.starting_chapter
+    required_count = world.chapter_required_character_counts[starting_chapter.short_name]
+    characters = world.chapter_random_character_requirements[starting_chapter.short_name].copy()
+
+    _create_starting_characters_for_character_locked_chapters(
+        world, possible_pool_character_items, characters, required_count)
+
+
+def create_starting_characters_for_vanilla_character_locked_chapters(
+        world: LegoStarWarsTCSWorld,
+        possible_pool_character_items: dict[str, GenericCharacterData],
+) -> None:
+    """
+    Create and precollect the characters the player should start with when chapters are locked by needing Vanilla
+    Characters.
+
+    This tries to pick as few characters as possible, but enough such that the starting chapter can be completed.
+    :param world:
+    :param possible_pool_character_items:
+    :return:
+    """
+    not_required = world.options.chapter_unlock_story_characters_not_required.value
+
+    starting_chapter = world.starting_chapter
+    required_count = world.chapter_required_character_counts[starting_chapter.short_name]
+
+    # Add characters necessary to unlock, *and complete* the starting chapter into starting inventory.
+    if starting_chapter.short_name in world.chapters_requiring_alt_characters:
+        characters_set = starting_chapter.alt_character_requirements
+    else:
+        characters_set = starting_chapter.character_requirements
+    # The story character names are a `set`, so sort before iterating to get a deterministic iteration order.
+    # Also filter out characters that have been excluded from requirements.
+    characters = sorted(char for char in characters_set if char not in not_required)
+
+    _create_starting_characters_for_character_locked_chapters(
+        world, possible_pool_character_items, characters, required_count)
 
 
 def pick_characters_to_fulfil_abilities(
@@ -747,10 +966,16 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
         chapters_unlock_with_characters = True
         pool_required_chapter_unlock_items = []
 
-        create_starting_characters_for_character_locked_chapters(world, possible_pool_character_items)
-        # If the alt characters area created, or not all Story characters are created, there may be abilities that still
-        # need to be fulfilled by additional starting characters.
-        create_starting_characters_for_needed_starting_chapter_abilities(world, possible_pool_character_items)
+        create_starting_characters_for_vanilla_character_locked_chapters(world, possible_pool_character_items)
+        # If the alt characters are created, or not all Story characters are created, there may be abilities that still
+        # need to be fulfilled by additional starting characters, so
+        # `create_starting_characters_for_needed_starting_chapter_abilities()` will be called even in this case.
+    elif world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_random_characters:
+        chapters_unlock_with_characters = True
+        pool_required_chapter_unlock_items = []
+
+        determine_random_character_requirements(world, possible_pool_character_items)
+        create_starting_characters_for_random_character_locked_chapters(world, possible_pool_character_items)
     elif world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item:
         chapters_unlock_with_characters = False
         starting_chapter_short_name = world.starting_chapter.short_name
@@ -758,10 +983,10 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
         pool_required_chapter_unlock_items = [f"{short_name} Unlock" for short_name in world.enabled_chapters
                                               if short_name != starting_chapter_short_name]
         del starting_chapter_short_name
-
-        create_starting_characters_for_needed_starting_chapter_abilities(world, possible_pool_character_items)
     else:
         raise Exception(f"Unexpected Chapter Unlock Requirement {world.options.chapter_unlock_requirement}")
+
+    create_starting_characters_for_needed_starting_chapter_abilities(world, possible_pool_character_items)
 
     # Create the starting Episode Unlock item if Episode Unlock items are required to access chapters within an Episode.
     if world.options.episode_unlock_requirement == "episode_item":
@@ -802,13 +1027,19 @@ def _append_level_access_required_characters(
         possible_pool_character_items: dict[str, GenericCharacterData],
         item_pool_ability_requirements: ItemPoolAbilityRequirements,
 ) -> None:
-    if world.options.chapter_unlock_requirement != ChapterUnlockRequirement.option_vanilla_characters:
+    if not world.options.chapter_unlock_requirement.is_characters():
         # Specific characters are not required to access Chapters.
         return
 
+    is_random_characters = world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_random_characters
+
     enabled_chapters = sorted(world.enabled_chapters)
     world.random.shuffle(enabled_chapters)
-    excluded_characters = world.options.chapter_unlock_story_characters_not_required.value
+
+    if world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
+        excluded_story_characters = world.options.chapter_unlock_story_characters_not_required.value
+    else:
+        excluded_story_characters = ()
 
     abilities_provided = CharacterAbility.NONE
 
@@ -817,15 +1048,17 @@ def _append_level_access_required_characters(
         if chapter == world.starting_chapter:
             # Characters for the starting chapter are created separately.
             continue
-        if shortname in world.chapters_requiring_alt_characters:
-            characters = chapter.alt_character_requirements
+        if is_random_characters:
+            characters = world.chapter_random_character_requirements[shortname]
         else:
-            characters = chapter.character_requirements
+            # Must be vanilla characters.
+            if shortname in world.chapters_requiring_alt_characters:
+                characters = chapter.alt_character_requirements
+            else:
+                characters = [c for c in chapter.character_requirements if c not in excluded_story_characters]
 
         # Skip already created characters and excluded characters.
         for character in characters:
-            if character in excluded_characters:
-                continue
             assert level_access_character_counts[character] > 0
             if character not in possible_pool_character_items:
                 # This character has already been created.

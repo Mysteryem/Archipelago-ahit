@@ -153,6 +153,8 @@ class LegoStarWarsTCSWorld(World):
     goal_chapter: str | None
     chapters_requiring_alt_characters: set[str]
     chapter_required_character_counts: dict[str, int]
+    chapter_extra_random_character_counts: dict[str, int]
+    chapter_random_character_requirements: dict[str, list[str]]
     spoiler_chapter_character_requirements: dict[str, tuple[int, list[str]]]
 
     starting_chapter: ChapterArea = SHORT_NAME_TO_CHAPTER_AREA["1-1"]
@@ -185,6 +187,8 @@ class LegoStarWarsTCSWorld(World):
         self.chapters_requiring_alt_characters = set()
         self.chapter_required_character_counts = {}
         self.spoiler_chapter_character_requirements = {}
+        self.chapter_extra_random_character_counts = {}
+        self.chapter_random_character_requirements = {}
 
     def log_info(self, message: str, *args) -> None:
         logger.info("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
@@ -501,12 +505,11 @@ class LegoStarWarsTCSWorld(World):
                                  self.options.episode_unlock_requirement)
 
             # Set chapter requirements.
-            if self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
-                chapters_unlock_with_characters = True
-            elif self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item:
-                chapters_unlock_with_characters = False
-            else:
-                raise Exception(f"Unexpected ChapterUnlockRequirement: {self.options.chapter_unlock_requirement}")
+            chapter_unlock_requirement = self.options.chapter_unlock_requirement
+            chapters_unlock_with_characters = chapter_unlock_requirement.is_characters()
+            assert (chapters_unlock_with_characters
+                    or chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item)
+
             episode_chapters = EPISODE_TO_CHAPTER_AREAS[episode_number]
             for chapter_number, chapter in enumerate(episode_chapters, start=1):
                 assert chapter.episode == episode_number
@@ -524,27 +527,29 @@ class LegoStarWarsTCSWorld(World):
                 character_provided_entrance_access_abilities: CharacterAbility
                 if chapters_unlock_with_characters:
                     # Access to the chapter requires characters.
-                    if chapter.short_name in self.chapters_requiring_alt_characters:
-                        required_character_names = chapter.alt_character_requirements
+                    required_count = self.chapter_required_character_counts[chapter.short_name]
+                    if chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
+                        if chapter.short_name in self.chapters_requiring_alt_characters:
+                            required_character_names = chapter.alt_character_requirements
+                        else:
+                            required_character_names = chapter.character_requirements
+                        required_character_names = required_character_names.difference(
+                            excluded_chapter_unlock_characters)
+                    elif chapter_unlock_requirement == ChapterUnlockRequirement.option_random_characters:
+                        required_character_names = self.chapter_random_character_requirements[chapter.short_name]
                     else:
-                        required_character_names = chapter.character_requirements
-                    required_character_names = required_character_names.difference(excluded_chapter_unlock_characters)
+                        raise Exception(f"Unexpected chapter unlock requirement {chapter_unlock_requirement}")
                     access_character_names.extend(sorted(required_character_names))
-                    chapter_unlock_characters_count = self.chapter_required_character_counts[chapter.short_name]
-                    # If there are fewer characters for this chapter than the required count, all are needed.
-                    characters_count = min(len(required_character_names), chapter_unlock_characters_count)
-                    # Update so that accurate values get put into slot_data.
-                    self.chapter_required_character_counts[chapter.short_name] = characters_count
-                    required_characters = [CHARACTERS_AND_VEHICLES_BY_NAME[name] for name in required_character_names]
-                    assert len(required_characters) > 0, "At least one character should always be required."
-                    assert len(required_characters) >= characters_count, \
+                    unlock_characters = [CHARACTERS_AND_VEHICLES_BY_NAME[name] for name in required_character_names]
+                    assert len(unlock_characters) > 0, "At least one character should always be required."
+                    assert len(unlock_characters) >= required_count, \
                         "The number of characters should always be greater than or equal to the required count"
 
                     # Find abilities that are always provided given *any* combination of characters.
-                    required_character_abilities = [character.abilities for character in required_characters]
+                    unlock_character_abilities = [character.abilities for character in unlock_characters]
                     character_provided_entrance_access_abilities = ~CharacterAbility.NONE
                     characters_combination: tuple[CharacterData, ...]
-                    for abilities_combination in itertools.combinations(required_character_abilities, characters_count):
+                    for abilities_combination in itertools.combinations(unlock_character_abilities, required_count):
                         # Combine the abilities in this combination.
                         combination_abilities = CharacterAbility.NONE
                         for abilities in abilities_combination:
@@ -557,7 +562,7 @@ class LegoStarWarsTCSWorld(World):
                         # There is only one character, so use .has() for that single character.
                         character_name = next(iter(required_character_names))
                         set_rule(entrance, lambda state, item_=character_name: state.has(item_, player))
-                    elif len(required_character_names) == characters_count:
+                    elif len(required_character_names) == required_count:
                         # All characters are required, so use .has_all().
                         character_names = tuple(sorted(required_character_names))
                         set_rule(entrance, lambda state, items_=character_names: state.has_all(items_, player))
@@ -565,10 +570,10 @@ class LegoStarWarsTCSWorld(World):
                         # A subset of the characters are required, so use .has_from_list_unique().
                         character_names = tuple(sorted(required_character_names))
                         set_rule(entrance,
-                                 lambda state, items_=character_names, count_=characters_count:
+                                 lambda state, items_=character_names, count_=required_count:
                                  state.has_from_list_unique(items_, player, count_))
                     # Prepare the requirements for writing to the spoiler.
-                    self.spoiler_chapter_character_requirements[chapter.short_name] = (characters_count,
+                    self.spoiler_chapter_character_requirements[chapter.short_name] = (required_count,
                                                                                        required_character_names)
                 else:
                     # Access to the Chapter requires a Chapter Unlock item.
@@ -810,6 +815,9 @@ class LegoStarWarsTCSWorld(World):
                 optional_options["chapters_requiring_alt_characters"] = chapters_requiring_alt_characters
             if self.chapter_required_character_counts:
                 optional_options["chapter_required_character_counts"] = self.chapter_required_character_counts
+        elif options.chapter_unlock_requirement == ChapterUnlockRequirement.option_random_characters:
+            optional_options["chapter_random_character_requirements"] = self.chapter_random_character_requirements
+            optional_options["chapter_required_character_counts"] = self.chapter_required_character_counts
         return {
             # todo: A number of the slot data keys here could be inferred from what locations exist in the multiworld.
             "apworld_version": constants.AP_WORLD_VERSION,
