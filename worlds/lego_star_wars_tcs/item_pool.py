@@ -641,39 +641,6 @@ def determine_random_character_requirements(
                               "\nFailed to assign:\n\t%s"
                               "\nRemaining to fulfill:\n\t%s",
                               sorted(full_failure_characters), character_count_per_chapter)
-            # The below recovery works 100% of the time if it is ever needed.
-            # world.log_debug("Initial assignment of random character chapter unlock requirements failed."
-            #                 "\nFailed to assign:\n\t%s"
-            #                 "\nFailed to fulfill:\n\t%s",
-            #                 sorted(full_failure_characters), character_count_per_chapter)
-            # # The backup pool contains all characters not included in the initially picked pool.
-            # backup_pool = base_pool[pool_size:]
-            # while chapter_to_characters:
-            #     for incomplete_chapter, incomplete_character_set in chapter_to_characters.items():
-            #         # First try characters from the other side of the partial pool in-case we just got unlucky with the
-            #         # characters we picked.
-            #         if pool_partial_count > 0:
-            #             partial_pool_other_half = pool[:pool_partial_count]
-            #             world.random.shuffle(partial_pool_other_half)
-            #             for character in partial_pool_other_half:
-            #                 if assign_character(incomplete_chapter, incomplete_character_set, character):
-            #                     world.log_debug("Unlucky assigned #%s as %s for %s",
-            #                                     assignments, character, incomplete_chapter)
-            #                     break
-            #             else:
-            #                 # No break, so none of the characters could be assigned.
-            #                 # Pick a character from outside the initial pool instead. This should never fail.
-            #                 world.random.shuffle(backup_pool)
-            #                 for character in backup_pool:
-            #                     if assign_character(incomplete_chapter, incomplete_character_set, character):
-            #                         world.log_debug("Backup assigned #%s as %s for %s",
-            #                                         assignments, character, incomplete_chapter)
-            #                         break
-            #                 else:
-            #                     world.raise_error(Exception,
-            #                                       f"Could not assign any available character to {incomplete_chapter}"
-            #                                       f" This should never happen.")
-            #             break
 
         # It should always be possible to assign at least one character to each chapter.
         assert len(finished_chapter_to_characters) == len(chapters)
