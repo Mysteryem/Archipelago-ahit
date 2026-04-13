@@ -136,6 +136,7 @@ class UnlockedChapterManager(ClientComponent):
     chapters_using_alt_characters: set[str]
     characters_excluded_from_unlocking_chapters: set[str]
     per_chapter_required_character_count: dict[str, int]
+    random_character_chapter_requirements: dict[str, list[str]]
 
     easy_true_jedi: bool = False
     scale_true_jedi_with_score_multipliers: bool = False
@@ -184,6 +185,16 @@ class UnlockedChapterManager(ClientComponent):
             chapter_unlock_requirement = options.ChapterUnlockRequirement.option_vanilla_characters
         else:
             chapter_unlock_requirement = slot_data["chapter_unlock_requirement"]
+
+        chapter_unlock_requirement_is_characters = chapter_unlock_requirement in (
+            options.ChapterUnlockRequirement.option_vanilla_characters,
+            options.ChapterUnlockRequirement.option_random_characters,
+        )
+
+        if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_random_characters:
+            self.random_character_chapter_requirements = slot_data["chapter_random_character_requirements"]
+        else:
+            self.random_character_chapter_requirements = {}
 
         num_enabled_episodes = len(enabled_episodes)
 
@@ -258,15 +269,20 @@ class UnlockedChapterManager(ClientComponent):
             unique_count_required_items: list[str] = []
             unique_count_required: int = 0
             always_required_items: list[str]
-            if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_vanilla_characters:
-                if short_name in self.chapters_using_alt_characters:
-                    character_requirements = list(chapter_area.alt_character_requirements)
+            if chapter_unlock_requirement_is_characters:
+                if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_vanilla_characters:
+                    if short_name in self.chapters_using_alt_characters:
+                        character_requirements = list(chapter_area.alt_character_requirements)
+                    else:
+                        character_requirements = list(chapter_area.character_requirements)
+                    # Filter out excluded characters.
+                    character_requirements = [c for c in character_requirements
+                                              if c not in self.characters_excluded_from_unlocking_chapters]
+                    count_required = self.per_chapter_required_character_count[short_name]
                 else:
-                    character_requirements = list(chapter_area.character_requirements)
-                # Filter out excluded characters.
-                character_requirements = [c for c in character_requirements
-                                          if c not in self.characters_excluded_from_unlocking_chapters]
-                count_required = self.per_chapter_required_character_count[short_name]
+                    assert chapter_unlock_requirement == options.ChapterUnlockRequirement.option_random_characters
+                    count_required = self.per_chapter_required_character_count[short_name]
+                    character_requirements = self.random_character_chapter_requirements[short_name]
                 assert count_required <= len(character_requirements), \
                     "Required counts should never be larger than the maximum possible"
                 if count_required < len(character_requirements):
