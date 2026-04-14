@@ -1757,13 +1757,13 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     chapter_unlock_characters_count_distribution: ChapterUnlockCharactersRequiredCountDistribution
     #   Chapters locked by Vanilla Characters (Story/Purchase).
     chapter_unlock_story_characters_not_required: ChapterStoryUnlockCharactersNotRequired
-    chapter_unlock_allow_alt_characters: ChaptersThatCanRequirePurchaseCharacters
-    chapter_unlock_alt_characters_chance: RequirePurchaseCharactersInsteadOfStoryCharactersChance
-    chapter_unlock_alt_characters_custom_chances: RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance
+    chapters_that_can_require_purchase_characters: ChaptersThatCanRequirePurchaseCharacters
+    require_purchase_characters_chance: RequirePurchaseCharactersInsteadOfStoryCharactersChance
+    require_purchase_characters_custom_chances: RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance
     #  Chapters locked by Random Characters.
     chapter_unlock_random_characters_extra_min_count: ChapterUnlockRandomCharactersMinExtraPoolCount
     chapter_unlock_random_characters_extra_max_count: ChapterUnlockRandomCharactersMaxExtraPoolCount
-    chapter_unlock_random_characters_pool_per_chapter: ChapterUnlockRandomCharactersUniquePerChapter
+    chapter_unlock_random_characters_unique_per_chapter: ChapterUnlockRandomCharactersUniquePerChapter
     #  Other.
     most_expensive_purchase_with_no_multiplier: MostExpensivePurchaseWithNoScoreMultiplier
     all_episodes_character_purchase_requirements: AllEpisodesCharacterPurchaseRequirements

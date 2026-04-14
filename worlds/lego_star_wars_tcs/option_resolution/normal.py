@@ -903,10 +903,10 @@ class _NormalOptionsResolver:
         if self.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
             alt_character_chapters = set()
             allowed_alt_character_chapters = {chapter for chapter in enabled_chapters
-                                              if chapter in self.options.chapter_unlock_allow_alt_characters}
-            alt_chance = self.options.chapter_unlock_alt_characters_chance.value
+                                              if chapter in self.options.chapters_that_can_require_purchase_characters}
+            alt_chance = self.options.require_purchase_characters_chance.value
             if alt_chance == -1:
-                alt_chances = self.options.chapter_unlock_alt_characters_custom_chances.value
+                alt_chances = self.options.require_purchase_characters_custom_chances.value
             else:
                 alt_chances = dict.fromkeys(allowed_alt_character_chapters, alt_chance)
             # Sort before iterating to get deterministic iteration order.

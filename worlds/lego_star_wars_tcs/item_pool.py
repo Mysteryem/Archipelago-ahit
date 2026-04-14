@@ -522,7 +522,7 @@ def determine_random_character_requirements(
         chapters = sorted(world.enabled_chapters)
         world.random.shuffle(chapters)
 
-        pool_size = len(chapters) * world.options.chapter_unlock_random_characters_pool_per_chapter.value
+        pool_size = len(chapters) * world.options.chapter_unlock_random_characters_unique_per_chapter.value
         if pool_size > len(possible_pool_character_items):
             world.log_warning("The size of the requested pool of random Characters to use in Chapter unlock"
                               " requirements was %i, but there were only %i unique Characters available, so the size of"
