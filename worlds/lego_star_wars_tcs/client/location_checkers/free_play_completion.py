@@ -9,6 +9,8 @@ from ..type_aliases import ApLocationId, LevelId, TCSContext, AreaId
 from ..common import ClientComponent
 from ..common_addresses import ChallengeMode
 
+from ...options import GoalChapterLocationsMode
+
 
 debug_logger = logging.getLogger("TCS Debug")
 
@@ -117,12 +119,20 @@ class FreePlayChapterCompletionChecker(ClientComponent):
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         ctx = event.context
+
+        goal_chapter_locations_mode = event.slot_data.get("goal_chapter_locations_mode",
+                                                          GoalChapterLocationsMode.option_normal)
+        goal_locations_removed = goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
+        goal_chapter = event.slot_data.get("goal_chapter")
         enabled_chapter_areas: set[AreaId] = set()
         for area in CHAPTER_AREAS:
             chapter_locations = [STATUS_LEVEL_ID_TO_AP_ID[area.status_level_id]]
-            for story_character in area.character_requirements:
-                loc_name = f"Level Completion - Unlock {story_character}"
-                chapter_locations.append(LOCATION_NAME_TO_ID[loc_name])
+            # If the Goal Chapter had its locations removed, it should not send Level Completion Character Unlock
+            # checks when completing the chapter.
+            if not (area.short_name == goal_chapter and goal_locations_removed):
+                for story_character in area.character_requirements:
+                    loc_name = f"Level Completion - Unlock {story_character}"
+                    chapter_locations.append(LOCATION_NAME_TO_ID[loc_name])
             enabled_chapter_locations = [loc_id for loc_id in chapter_locations if loc_id in ctx.server_locations]
             # Determine if a chapter is enabled by whether any of the chapter locations exist.
             # This is more robust against world bugs than relying on slot data.
