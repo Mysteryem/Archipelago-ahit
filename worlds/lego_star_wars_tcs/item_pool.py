@@ -1540,6 +1540,14 @@ def _create_items(
     :param item_pool_ability_requirements: CharacterAbility requirements for the item pool.
     :return: The created item pool.
     """
+    if world.is_universal_tracker():
+        # Universal Tracker discards the item pool, so don't bother creating it in the first place.
+        # In rare cases, due to Universal Tracker integration assuming there are no starting abilities, some characters
+        # who would normally have all their abilities removed, and become non-progression, could become progression when
+        # generating with Universal Tracker, and it might not be possible to fit all the progression items into the pool
+        # if there are more than expected.
+        return []
+
     item_creator = ItemCreator(world, item_pool_ability_requirements.get_logically_irrelevant())
 
     # These abilities are provided by the starting characters, so these abilities can be stripped from other
