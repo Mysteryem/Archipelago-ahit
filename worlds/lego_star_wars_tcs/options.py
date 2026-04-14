@@ -307,7 +307,8 @@ class GoalChapterLocationsMode(ChoiceFromStringExtension):
     - Removed: Locations within the Goal Chapter are removed from the multiworld. Gold Bricks from the Goal Chapter will
     not be included in Gold Brick logic.
     - Excluded: Locations within the Goal Chapter are marked as Excluded, disallowing Progression and Useful items being
-    placed there. Gold Bricks from the Goal Chapter will not be included in Gold Brick logic.
+    placed there. Gold Bricks from the Goal Chapter will not be included in Gold Brick logic. Locations accessible from
+    both the Goal Chapter and from some other enabled Chapter, will also be marked as Excluded.
     - Normal: No changes will be made to the locations in the Goal Chapter, or to Gold Brick logic. Not recommended
     unless playing without ``!release`` after goaling.
 
