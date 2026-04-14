@@ -967,7 +967,7 @@ class ChapterUnlockRandomCharactersMaxExtraPoolCount(Range):
     rich_text_doc = True
     range_start = 0
     range_end = 3
-    default = 0
+    default = 2
 
 
 class ChapterUnlockRandomCharactersUniquePerChapter(Range):
