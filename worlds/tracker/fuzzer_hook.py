@@ -40,7 +40,7 @@ class Hook(BaseHook):
         temp = Context.decompress(data)
 
         slot_data = temp["slot_data"][1] #slot 0 is reserved
-        # slot_data is sent to clients as json, so pass the slot_data through json conversion to ensure slot_data is uses the correct types.
+        # slot_data is sent to clients as json, so pass the slot_data through json conversion to ensure slot_data uses the correct types.
         slot_data = json.loads(json.dumps(slot_data))
 
         self.ut_core.set_slot_params(mw.worlds[1].game,1,mw.player_name[1],1)
