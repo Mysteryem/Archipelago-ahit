@@ -1012,7 +1012,7 @@ class ChapterStoryUnlockCharactersNotRequired(OptionSet):
 
     Example that disables all three:
 
-    chapter_story_unlock_characters_not_required:
+    chapter_unlock_story_characters_not_required:
       - R2-D2 # can lock up to 15 Chapters.
       - C-3PO # can lock up to 11 Chapters.
       - Chewbacca # can lock up to 9 Chapters.
