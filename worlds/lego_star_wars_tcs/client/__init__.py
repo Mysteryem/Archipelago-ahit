@@ -55,7 +55,7 @@ from .game_state_modifiers.studs import STUDS_AP_ID_TO_VALUE, give_studs_item
 from .game_state_modifiers.text_display import InGameTextDisplay
 from .game_state_modifiers.text_replacer import TextReplacer
 from .game_state_modifiers.uncap_high_jump import UncapHighJump
-from .game_state_modifiers.luke_dagobah_fix import LukeDagobahFix
+from .game_state_modifiers.level_specific_fixes import LevelSpecificFixes
 
 
 # Universal Tracker client integration.
@@ -423,13 +423,13 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.locked_cantina_door_info = LockedCantinaDoorDisplay()
         self.uncap_high_jump = UncapHighJump()
         self.cantina_reloader = CantinaReloader()
-        self.luke_dagobah_fix = LukeDagobahFix()
+        self.level_specific_fixes = LevelSpecificFixes()
         self.permanent_components = (
             self.text_display,
             self.uncap_high_jump,
             self.cantina_reloader,
             self.locked_cantina_door_info,
-            self.luke_dagobah_fix,
+            self.level_specific_fixes,
         )
 
         self.death_link_manager = DeathLinkManager()
