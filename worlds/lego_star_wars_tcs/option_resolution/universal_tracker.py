@@ -32,6 +32,7 @@ DIRECT_SLOT_DATA_OPTIONS = (
     "ridesanity",
     "enable_starting_extras_locations",
     "chapter_unlock_requirement",
+    "chapter_unlock_story_characters_not_required",
 )
 assert all(option_name in LegoStarWarsTCSOptions.type_hints for option_name in DIRECT_SLOT_DATA_OPTIONS)
 
