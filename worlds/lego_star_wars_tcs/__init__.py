@@ -816,7 +816,12 @@ class LegoStarWarsTCSWorld(World):
             if self.chapter_required_character_counts:
                 optional_options["chapter_required_character_counts"] = self.chapter_required_character_counts
         elif options.chapter_unlock_requirement == ChapterUnlockRequirement.option_random_characters:
-            optional_options["chapter_random_character_requirements"] = self.chapter_random_character_requirements
+            # Convert character names to IDs. This reduces slot_data storage/memory usage size, and is easier to
+            # interpret from the PopTracker pack.
+            optional_options["chapter_random_character_requirements"] = {
+                chapter: [self.item_name_to_id[c] for c in characters]
+                for chapter, characters in self.chapter_random_character_requirements.items()
+            }
             optional_options["chapter_required_character_counts"] = self.chapter_required_character_counts
         return {
             # todo: A number of the slot data keys here could be inferred from what locations exist in the multiworld.

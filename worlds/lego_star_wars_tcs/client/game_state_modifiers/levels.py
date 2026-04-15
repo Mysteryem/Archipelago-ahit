@@ -192,7 +192,10 @@ class UnlockedChapterManager(ClientComponent):
         )
 
         if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_random_characters:
-            self.random_character_chapter_requirements = slot_data["chapter_random_character_requirements"]
+            self.random_character_chapter_requirements = {
+                chapter: [ITEM_DATA_BY_ID[c].name for c in characters]
+                for chapter, characters in slot_data["chapter_random_character_requirements"].items()
+            }
         else:
             self.random_character_chapter_requirements = {}
 
