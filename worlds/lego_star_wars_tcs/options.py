@@ -977,21 +977,19 @@ class ChapterUnlockRandomCharactersMaxExtraPoolCount(Range):
 
 
 class ChapterUnlockRandomCharactersUniquePerChapter(Range):
-    """When Chapters are set to unlock by needing randomly chosen Characters, set how many unique randomly picked
-    characters are used across all Chapter unlock requirements. The option value is multiplied by the number of Chapters
-    that exist in your slot.
+    """When Chapters are set to unlock by needing randomly chosen Characters, choose how many unique characters can be
+    randomly picked from to be used in Chapter unlock requirements. The option value is multiplied by the number of
+    Chapters that exist in your slot.
 
-    For example, if this option is set to 3, and you have 18 Chapters enabled, then the total number of unique randomly
-    picked Characters that could be used in Chapter unlock requirements will be 3 * 18 = 54 Characters.
+    For example, if this option is set to 3, and you have 18 Chapters enabled, then the total number of unique
+    Characters that Chapter unlock requirements will pick from will be 3 * 18 = 54 Characters.
 
-    If the total number of randomly picked Characters is less than the total number of Characters used in Chapter
-    unlock requirements, then some Characters will be used in the unlock requirements for more than one Chapter.
+    Lower values will result in characters more often being used in unlock requirements for many Chapters.
 
-    In tiny seeds where unlocking a Chapter could require more unique Characters than were picked, additional unique
-    characters will be picked automatically.
+    Higher values will result in characters more often being used in unlock requirements for only 1 or 2 Chapters.
 
-    There is a hard cap of 149 unique Characters that can be picked, or 128 unique Characters when no vehicle Chapters
-    are enabled, because that is all the unique unlockable Characters that exist.
+    The characters are picked at random, so it is possible that some unique characters won't get picked for a single
+    Chapter.
 
     Comparing against setting chapters to require Vanilla Characters to unlock:
 
