@@ -550,100 +550,20 @@ def determine_random_character_requirements(
 
         world.log_debug("Random character pool: %s", pool)
 
-        total_characters_to_pick = sum(character_count_per_chapter.values())
-        pool_full_duplicates = total_characters_to_pick // len(pool)
-        pool_partial_count = total_characters_to_pick % len(pool)
-
-        full_pool = pool * pool_full_duplicates + pool[:pool_partial_count]
-        world.random.shuffle(full_pool)
-
-        chapter_to_characters = {chapter: set() for chapter in chapters}
         finished_chapter_to_characters: dict[str, set[str]] = {}
-        failed_to_assign_characters = []
 
-        assignments = 0
+        for chapter in chapters:
+            count_to_pick = character_count_per_chapter[chapter]
+            finished_chapter_to_characters[chapter] = set(world.random.sample(pool, k=count_to_pick))
 
-        def assign_character(chapter: str, character_set: set[str], character: str) -> bool:
-            nonlocal assignments
-            if character in character_set:
-                return False
-            character_set.add(character)
-            old_characters_to_pick = character_count_per_chapter[chapter]
-            if old_characters_to_pick == 1:
-                # All characters needed have been assigned.
-                del character_count_per_chapter[chapter]
-                finished_chapter_to_characters[chapter] = character_set
-                del chapter_to_characters[chapter]
-            else:
-                character_count_per_chapter[chapter] = old_characters_to_pick - 1
-            assignments += 1
-            return True
-
-        while full_pool:
-            character = full_pool.pop()
-            for chapter, character_set in chapter_to_characters.items():
-                if assign_character(chapter, character_set, character):
-                    world.log_debug("Assigned #%s as %s for %s", assignments, character, chapter)
-                    break
-            else:
-                # No break, so the character could not be assigned to any chapter.
-                failed_to_assign_characters.append(character)
-
-        full_failure_characters = []
-        if failed_to_assign_characters:
-            # This is in its own function because it is really messy trying to propagate a `break` from the innermost
-            # loop to outermost loop.
-            def swap_character(character_to_swap_in: str) -> bool:
-                finished_chapters = list(finished_chapter_to_characters.items())
-                world.random.shuffle(finished_chapters)
-                for finished_chapter, full_characters_set in finished_chapters:
-                    if character_to_swap_in not in full_characters_set:
-                        # The character to assign could be swapped into this set.
-                        full_characters_list = sorted(full_characters_set)
-                        world.random.shuffle(full_characters_list)
-                        # Iterate the remaining non-finished chapters.
-                        for incomplete_chapter, incomplete_character_set in chapter_to_characters.items():
-                            # Try to find a character from the full set that can be assigned into the incomplete
-                            # set.
-                            for character in full_characters_list:
-                                if assign_character(incomplete_chapter, incomplete_character_set, character):
-                                    world.log_debug("Swap assigned #%s as %s for %s",
-                                                    assignments, character, incomplete_chapter)
-                                    # The character from the full set was assigned into the incomplete set
-                                    full_characters_set.remove(character)
-                                    full_characters_set.add(character_to_swap_in)
-                                    world.log_debug("Moved %s from %s unlock requirements to %s unlock"
-                                                    " requirements, replacing it with %s",
-                                                    character, finished_chapter, incomplete_chapter,
-                                                    character_to_swap_in)
-                                    return True
-                return False
-
-            while failed_to_assign_characters:
-                character_to_assign = failed_to_assign_characters.pop()
-                for chapter, incomplete_character_set in chapter_to_characters.items():
-                    if assign_character(chapter, incomplete_character_set, character_to_assign):
-                        world.log_debug("Assigned #%s as %s for %s",
-                                        assignments, character_to_assign, chapter)
-                        break
-                else:
-                    # No break, so every chapter remaining in chapter_to_characters already has `character` as an unlock
-                    # requirement.
-                    # Try swapping.
-                    if not swap_character(character_to_assign):
-                        # Swapping failed...
-                        full_failure_characters.append(character_to_assign)
-        if full_failure_characters:
-            # Did not fail once in 8000 fuzzer generations meta-d to use Random Characters chapter unlock requirements.
-            world.raise_error(Exception,
-                              "Failed to assign random characters to chapter unlock requirements. This should not"
-                              " happen."
-                              "\nFailed to assign:\n\t%s"
-                              "\nRemaining to fulfill:\n\t%s",
-                              sorted(full_failure_characters), character_count_per_chapter)
-
-        # It should always be possible to assign at least one character to each chapter.
-        assert len(finished_chapter_to_characters) == len(chapters)
+        if __debug__:
+            individual_character_counts = Counter(c for characters in finished_chapter_to_characters.values()
+                                                  for c in characters)
+            for character in pool:
+                if character not in individual_character_counts:
+                    individual_character_counts[character] = 0
+            count_counts = Counter(individual_character_counts.values())
+            world.log_debug("Character count counts: %s", sorted(count_counts.items()))
 
         world.chapter_random_character_requirements = {k: sorted(v) for k, v in finished_chapter_to_characters.items()}
 
