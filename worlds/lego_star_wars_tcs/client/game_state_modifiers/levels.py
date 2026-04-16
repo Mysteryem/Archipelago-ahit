@@ -361,8 +361,14 @@ class UnlockedChapterManager(ClientComponent):
                 continue
             remaining_requirements = self.remaining_chapter_item_requirements[dependent_area_short_name]
             assert remaining_requirements
-            assert ap_item_id in remaining_requirements, \
-                f"{_ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name} not found in {remaining_requirements}"
+            if ap_item_id not in remaining_requirements:
+                # Consider a Chapter that requires an Episode Unlock and any 1 of 4 different Characters, once the first
+                # Character of that 4 has been received, that part of the unlock requirements is completed, but the
+                # Episode Unlock is still missing, so the chapter is not unlocked yet.
+                debug_logger.info("Would have removed %s from %s requirements, but the relevant part of the"
+                                  " requirements has already been completed.",
+                                  _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area_short_name)
+                continue
             remaining_requirements.remove(ap_item_id)
             debug_logger.info("Removed %s from %s requirements",
                               _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area_short_name)
