@@ -1015,6 +1015,9 @@ class ChapterStoryUnlockCharactersNotRequired(OptionSet):
     ``R2-D2``, ``C-3PO`` and ``Chewbacca`` are the only characters supported by this option because of the large number
     of Chapters they can each lock access to.
 
+    Note that the ``{episode}-{chapter} Story Unlock Characters`` item groups will still include these characters, even
+    if the characters are set to not be required.
+
     Example that disables all three:
 
     - R2-D2 # can lock up to 15 Chapters.
