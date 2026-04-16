@@ -133,6 +133,7 @@ class LegoStarWarsTCSWorld(World):
 
     # Requires Universal Tracker 0.2.12 or newer because the game name contains a colon.
     ut_can_gen_without_yaml = True  # Used by Universal Tracker to allow generation without player yaml.
+    glitches_item_name: str = "UT_GLITCHED"
 
     PROG_USEFUL_LEVEL_ACCESS_THRESHOLD_PERCENT: ClassVar[float] = 1/6
     prog_useful_level_access_threshold_count: int = 6
@@ -312,6 +313,9 @@ class LegoStarWarsTCSWorld(World):
         return self.random.choices(tuple(junk_weights), tuple(junk_weights.values()))[0]
 
     def create_item(self, name: str) -> LegoStarWarsTCSItem:
+        if name == self.glitches_item_name and self.is_universal_tracker():
+            return LegoStarWarsTCSItem(name, ItemClassification.progression, None, self.player)
+
         code = self.item_name_to_id[name]
         classification, collect_abilities = self.evaluate_effective_item(name)
 
@@ -478,10 +482,14 @@ class LegoStarWarsTCSWorld(World):
                 starting_abilities |= item.abilities
         return starting_abilities
 
-    def _add_score_multiplier_rule(self, spot: Location, studs_cost: int):
+    def _add_score_multiplier_rule(self, spot: Location, studs_cost: int, allow_ut_glitched: bool = False):
         count = self.get_score_multiplier_requirement(studs_cost)
         if count > 0:
-            add_rule(spot, lambda state, p=self.player, c=count: state.has("Progressive Score Multiplier", p, c))
+            if allow_ut_glitched:
+                add_rule(spot, lambda state, p=self.player, c=count: (state.has("Progressive Score Multiplier", p, c)
+                                                                      or state.has(self.glitches_item_name, p)))
+            else:
+                add_rule(spot, lambda state, p=self.player, c=count: state.has("Progressive Score Multiplier", p, c))
 
     def set_rules(self) -> None:
         player = self.player
@@ -687,7 +695,7 @@ class LegoStarWarsTCSWorld(World):
         # Add Score Multiplier requirements to shop purchase locations.
         for loc in self.get_locations():
             if isinstance(loc, LegoStarWarsTCSShopLocation):
-                self._add_score_multiplier_rule(loc, loc.studs_cost)
+                self._add_score_multiplier_rule(loc, loc.studs_cost, self.is_universal_tracker())
 
         # Victory.
         victory: Location | Entrance
