@@ -867,7 +867,7 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
         chapters_unlock_with_characters = False
         starting_chapter_short_name = world.starting_chapter.short_name
         world.push_precollected(world.create_item(f"{starting_chapter_short_name} Unlock"))
-        pool_required_chapter_unlock_items = [f"{short_name} Unlock" for short_name in world.enabled_chapters
+        pool_required_chapter_unlock_items = [f"{short_name} Unlock" for short_name in sorted(world.enabled_chapters)
                                               if short_name != starting_chapter_short_name]
         del starting_chapter_short_name
     else:
