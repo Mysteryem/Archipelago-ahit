@@ -940,9 +940,9 @@ def _append_level_access_required_characters(
         else:
             # Must be vanilla characters.
             if shortname in world.chapters_requiring_alt_characters:
-                characters = chapter.alt_character_requirements
+                characters = sorted(chapter.alt_character_requirements)
             else:
-                characters = [c for c in chapter.character_requirements if c not in excluded_story_characters]
+                characters = sorted(c for c in chapter.character_requirements if c not in excluded_story_characters)
 
         # Skip already created characters and excluded characters.
         for character in characters:
