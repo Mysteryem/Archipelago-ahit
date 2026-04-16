@@ -826,6 +826,7 @@ class LegoStarWarsTCSWorld(World):
         return {
             # todo: A number of the slot data keys here could be inferred from what locations exist in the multiworld.
             "apworld_version": constants.AP_WORLD_VERSION,
+            "logic_version": constants.UT_LOGIC_VERSION,
             "enabled_chapters": sorted(self.enabled_chapters),
             "enabled_episodes": sorted(self.enabled_episodes),
             "enabled_bonuses": sorted(self.enabled_bonuses),
@@ -903,9 +904,12 @@ class LegoStarWarsTCSWorld(World):
     @staticmethod
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any] | None:
         slot_data_version = tuple(slot_data["apworld_version"])
-        if slot_data_version != constants.AP_WORLD_VERSION:
+        # Allow connecting only if the APWorld major and minor version matches, and if there are no logic changes in the
+        # case that the APWorld versions are not the same.
+        if (slot_data_version[:2] != constants.AP_WORLD_VERSION[:2]
+                or slot_data["logic_version"] != constants.UT_LOGIC_VERSION):
             raise TCSUniversalTrackerAPWorldVersionMismatchError(
                 f"LSW TCS version error: The version of the apworld used to generate this world ({slot_data_version})"
-                f" does not match the version of your installed apworld ({constants.AP_WORLD_VERSION})."
+                f" does not have matching logic with the version of your installed apworld ({constants.AP_WORLD_VERSION})."
             )
         return slot_data

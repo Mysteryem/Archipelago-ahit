@@ -11,6 +11,8 @@ GAME_NAME = _MANIFEST["game"]
 _MAJOR, _MINOR, _PATCH = map(int, _MANIFEST["world_version"].split("."))
 AP_WORLD_VERSION: tuple[int, int, int] = (_MAJOR, _MINOR, _PATCH)
 del _MANIFEST
+# Logic version, used for Universal Tracker compatibility across patch versions.
+UT_LOGIC_VERSION = 1
 
 
 # todo: These are the abilities from the manual logic, not the real abilities.
