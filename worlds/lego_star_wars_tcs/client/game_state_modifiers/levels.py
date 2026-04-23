@@ -432,6 +432,8 @@ class UnlockedChapterManager(ClientComponent):
                                 # or "Challenge" if they really want to (not currently useful).
                                 ChapterDoorGameMode.FREE_PLAY.set(ctx)
                                 self.last_area_door = area
+                        else:
+                            self.last_area_door = None
 
             # If the player is in a chapter, grant temporary Story mode completion so that they can Save and Exit to the
             # Cantina.
