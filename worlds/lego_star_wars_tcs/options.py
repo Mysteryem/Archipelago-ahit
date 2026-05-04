@@ -1587,6 +1587,17 @@ class LocationNameColor(TextColorChoice):
     default = TextColorChoice.option_white_ffffff
 
 
+class ShopTrapAsFakeProgressionChance(Range):
+    """The chance that a Trap classification item in the shop instead shows as a fake Progression item.
+
+    Items that are a mix of the Trap classification and another classification are unaffected."""
+    display_name = "Shop Fake Trap Item Chance"
+    rich_text_doc = True
+    range_start = 0
+    range_end = 100
+    default = 50
+
+
 class LogicDifficulty(ChoiceFromStringExtension):
     # todo: Maybe just remove Extras (other than score multipliers) logic from None difficulty?
     """
@@ -1797,6 +1808,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     received_item_messages: ReceivedItemMessages
     checked_location_messages: CheckedLocationMessages
     uncap_original_trilogy_high_jump: UncapOriginalTrilogyHighJump
+    shop_fake_trap_chance: ShopTrapAsFakeProgressionChance
     progression_useful_item_color: ProgressionUsefulItemColor
     progression_item_color: ProgressionItemColor
     useful_item_color: UsefulItemColor
@@ -1899,6 +1911,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         ReceivedItemMessages,
         CheckedLocationMessages,
         UncapOriginalTrilogyHighJump,
+        ShopTrapAsFakeProgressionChance,
         ProgressionUsefulItemColor,
         ProgressionItemColor,
         UsefulItemColor,
