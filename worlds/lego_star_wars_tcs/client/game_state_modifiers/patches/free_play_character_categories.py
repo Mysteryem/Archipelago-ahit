@@ -1,0 +1,98 @@
+import ctypes
+
+from ..common import TCSContext
+from ..common_addresses import StaticUint
+from ..common_types import CharacterDataFlag3, CharacterEntryFlag2
+from ...items import CHARACTERS_AND_VEHICLES_BY_NAME
+
+
+p_CharCategoryAddr = StaticUint(0x93b280)
+p_CHARCATEGORYCOUNT = StaticUint(0x93b26c)
+
+
+class CharCategory(ctypes.Structure):
+    _fields_ = [
+        ("name", ctypes.c_uint),  # This is a pointer to the game's memory (char*).
+        ("data_flag_3", ctypes.c_uint),
+        ("character_entry_flag_2", ctypes.c_uint),
+    ]
+
+
+# Vanilla categories are reproduced with pointers to their original names because there are game functions for looking
+# up categories by name.
+_CUSTOM_CHAR_CATEGORIES = [
+    CharCategory(
+        0x00751edc,  # "JediBaddie" (Sith)
+        # This is how Sith are coded...
+        CharacterDataFlag3.BADDIE | CharacterDataFlag3.JEDI,
+        0,
+    ),
+    # Custom category to pick a ghost if available.
+    CharCategory(
+        0x762e0c,  # "ghost"
+        0,
+        CharacterEntryFlag2.IS_GHOST,
+    ),
+    # Custom category to pick a jetpack character (Boba/Jango Fett).
+    CharCategory(
+        0x7628cc,  # "jetpack"
+        CharacterDataFlag3.JETPACK,
+        0
+    ),
+    CharCategory(
+        0x00751ee8,  # "Jedi"
+        CharacterDataFlag3.JEDI,
+        0,
+    ),
+    CharCategory(
+        0x00751ecc,  # "BountyHunter"
+        # Vanilla specifies all 3 despite all Bounty Hunters all being able to use Blasters/Zipup.
+        CharacterDataFlag3.BLASTER | CharacterDataFlag3.ZIPUP | CharacterDataFlag3.BOUNTY_HUNTER,
+        0,
+    ),
+    CharCategory(
+        0x00751ec0,  # "Teleport" (shortie)
+        CharacterDataFlag3.TELEPORT,
+        0,
+    ),
+    CharCategory(
+        0x00751eb4,  # "HighJump"
+        0,
+        CharacterEntryFlag2.CAN_HIGH_JUMP,
+    ),
+    CharCategory(
+        0x00751ea8,  # "Astromech"
+        CharacterDataFlag3.ASTROMECH,
+        0,
+    ),
+    CharCategory(
+        0x00751e9c,  # "Protocol"
+        CharacterDataFlag3.PROTOCOL,
+        0,
+    ),
+    CharCategory(
+        0x00751e94,  # "ZipUp"
+        # Vanilla specifies both.
+        CharacterDataFlag3.BLASTER | CharacterDataFlag3.ZIPUP,
+        0,
+    ),
+    CharCategory(
+        0x00751ec0,  # "Blaster"
+        CharacterDataFlag3.BLASTER,
+        0,
+    ),
+    # A category with NULL name at the end signifies the end of the array.
+    CharCategory(0, 0, 0)
+]
+CUSTOM_CHAR_CATEGORIES = bytes((CharCategory * len(_CUSTOM_CHAR_CATEGORIES))(*_CUSTOM_CHAR_CATEGORIES))
+
+
+def set_custom_character_categories(ctx: TCSContext):
+    allocated_addr = ctx.allocate(len(CUSTOM_CHAR_CATEGORIES))
+    ctx.write_bytes(allocated_addr, CUSTOM_CHAR_CATEGORIES, len(CUSTOM_CHAR_CATEGORIES), raw=True)
+
+    ctx.write_uint(p_CharCategoryAddr, allocated_addr)
+    # The last element in the array is empty, signifying the end of the array.
+    ctx.write_uint(p_CHARCATEGORYCOUNT, len(_CUSTOM_CHAR_CATEGORIES) - 1)
+
+

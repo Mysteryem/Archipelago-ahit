@@ -21,7 +21,6 @@ from CommonClient import server_loop, gui_enabled, get_base_parser
 
 from .. import options, TCSUniversalTrackerAPWorldVersionMismatchError
 from ..constants import GAME_NAME, AP_WORLD_VERSION
-from ..items import CHARACTERS_AND_VEHICLES_BY_NAME
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, CHAPTER_AREAS, ChapterArea
 from ..locations import LOCATION_NAME_TO_ID
 from .client_text import ClientText, clean_string
@@ -56,6 +55,7 @@ from .game_state_modifiers.text_display import InGameTextDisplay
 from .game_state_modifiers.text_replacer import TextReplacer
 from .game_state_modifiers.uncap_high_jump import UncapHighJump
 from .game_state_modifiers.level_specific_fixes import LevelSpecificFixes
+from .game_state_modifiers.patches import apply_game_patches
 
 
 # Universal Tracker client integration.
@@ -709,31 +709,6 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                     }
                 ]
             ))
-
-            # todo: Move this somewhere else.
-            # Give 4-LOM and IG-88 the Protocol flag so that if the player has no Protocol Droid, but does have 4-LOM or
-            # IG-88, the game will pick 4-LOM or IG-88 for the Free Play character selection.
-            # While 4-LOM and IG-88 can also use Astromech panels, the Astromech flag (0x40) also tells the game that
-            # the characters can hover, and can traverse Dagobah's swamps, which neither 4-LOM nor IG-88 can do, so they
-            # should not be given the Astromech flag.
-            # Character data is loaded once when the game starts, so the changes made here are permanent until the game
-            # is restarted.
-            # UnknownLoadedCharacterData* _CDataList
-            addr_p_c_data_list = 0x0093b274
-            addr_c_data_list = self.read_uint(addr_p_c_data_list)
-            # sizeof(UnknownLoadedCharacterData)
-            unknown_loaded_character_data_size = 0x4c
-            # UnknownLoadedCharacterData.data_flag3
-            character_data_flag_3_field_offset = 0x4
-            # CharacterDataFlag3.Protocol
-            protocol_droid_flag = 0x20
-            for character in ("IG-88", "4-LOM"):
-                character_index = CHARACTERS_AND_VEHICLES_BY_NAME[character].character_index
-                addr_character_data = addr_c_data_list + unknown_loaded_character_data_size * character_index
-                addr_character_data_flag_3 = addr_character_data + character_data_flag_3_field_offset
-                character_data_flag_3 = self.read_uint(addr_character_data_flag_3, raw=True)
-                new_flag = character_data_flag_3 | protocol_droid_flag
-                self.write_uint(addr_character_data_flag_3, new_flag, raw=True)
         elif cmd == "SetReply":
             key: str = args["key"]
             if self._is_datastorage_key(key, COMPLETED_FREE_PLAY_KEY_PREFIX):
@@ -963,6 +938,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             self._overall_memory_offset = memory_offset
 
         self.game_process = process
+        apply_game_patches(self)
         self.text_replacer = TextReplacer(self)
         return True
 

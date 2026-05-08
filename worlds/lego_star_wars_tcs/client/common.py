@@ -40,9 +40,12 @@ class StaticInt(int):
 
 
 class StaticBOOL(StaticUint):
-    """Microsoft 4-byte BOOL"""
+    """4-byte BOOL"""
     def get(self, ctx: TCSContext) -> bool:
         return super().get(ctx) != 0
+
+    def set(self, ctx: TCSContext, value: int):
+        return super().set(ctx, 1 if value else 0)
 
 
 class FloatField(int):
