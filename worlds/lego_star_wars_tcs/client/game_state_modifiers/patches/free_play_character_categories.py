@@ -1,9 +1,8 @@
 import ctypes
 
-from ..common import TCSContext
-from ..common_addresses import StaticUint
-from ..common_types import CharacterDataFlag3, CharacterEntryFlag2
-from ...items import CHARACTERS_AND_VEHICLES_BY_NAME
+from ...common import TCSContext
+from ...common_addresses import StaticUint
+from ...common_types import CharacterDataFlag3, CharacterEntryFlag2
 
 p_CharCategoryAddr = StaticUint(0x93b2a0)
 p_CHARCATEGORYCOUNT = StaticUint(0x93b28c)
@@ -19,7 +18,7 @@ class CharCategory(ctypes.Structure):
 
 # Vanilla categories are reproduced with pointers to their original names because there are game functions for looking
 # up categories by name.
-_CUSTOM_CHAR_CATEGORIES = [
+_CUSTOM_CHAR_CATEGORIES_GOG = [
     CharCategory(
         0x00751edc,  # "JediBaddie" (Sith)
         # This is how Sith are coded...
@@ -28,13 +27,13 @@ _CUSTOM_CHAR_CATEGORIES = [
     ),
     # Custom category to pick a ghost if available.
     CharCategory(
-        0x762e0c,  # "ghost"
+        0x00762e0c,  # "ghost"
         0,
         CharacterEntryFlag2.IS_GHOST,
     ),
     # Custom category to pick a jetpack character (Boba/Jango Fett).
     CharCategory(
-        0x7628cc,  # "jetpack"
+        0x007628cc,  # "jetpack"
         CharacterDataFlag3.JETPACK,
         0
     ),
@@ -76,22 +75,28 @@ _CUSTOM_CHAR_CATEGORIES = [
         0,
     ),
     CharCategory(
-        0x00751ec0,  # "Blaster"
+        0x007518cc,  # "Blaster"
         CharacterDataFlag3.BLASTER,
         0,
     ),
     # A category with NULL name at the end signifies the end of the array.
     CharCategory(0, 0, 0)
 ]
-CUSTOM_CHAR_CATEGORIES = bytes((CharCategory * len(_CUSTOM_CHAR_CATEGORIES))(*_CUSTOM_CHAR_CATEGORIES))
 
 
 def set_custom_character_categories(ctx: TCSContext):
-    allocated_addr = ctx.allocate(len(CUSTOM_CHAR_CATEGORIES))
-    ctx.write_bytes(allocated_addr, CUSTOM_CHAR_CATEGORIES, len(CUSTOM_CHAR_CATEGORIES), raw=True)
+    custom_categories = [
+        # The name is a pointer to a string in the game's memory, so it needs to be adjusted.
+        CharCategory(ctx.adjust_gog_address(c.name), c.data_flag_3, c.character_entry_flag_2)
+        for c in _CUSTOM_CHAR_CATEGORIES_GOG
+    ]
+    array_class = CharCategory * len(_CUSTOM_CHAR_CATEGORIES_GOG)
+    array_instance = array_class(*custom_categories)
+    bytes_to_write = bytes(array_instance)
+
+    allocated_addr = ctx.allocate(len(bytes_to_write))
+    ctx.write_bytes(allocated_addr, bytes_to_write, len(bytes_to_write), raw=True)
 
     ctx.write_uint(p_CharCategoryAddr, allocated_addr)
     # The last element in the array is empty, signifying the end of the array.
-    ctx.write_uint(p_CHARCATEGORYCOUNT, len(_CUSTOM_CHAR_CATEGORIES) - 1)
-
-
+    ctx.write_uint(p_CHARCATEGORYCOUNT, len(custom_categories) - 1)
