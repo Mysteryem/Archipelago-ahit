@@ -37,6 +37,13 @@ _CUSTOM_CHAR_CATEGORIES_GOG = [
         CharacterDataFlag3.JETPACK,
         0
     ),
+    # Custom category to pick a 'tightrope_walk' character (unused in vanilla, but characters that can use astromech
+    # panels are being set to this)
+    CharCategory(
+        0x00762d10,  # "tightrope_walk"
+        0,
+        CharacterEntryFlag2.TIGHTROPE_WALK,
+    ),
     CharCategory(
         0x00751ee8,  # "Jedi"
         CharacterDataFlag3.JEDI,
