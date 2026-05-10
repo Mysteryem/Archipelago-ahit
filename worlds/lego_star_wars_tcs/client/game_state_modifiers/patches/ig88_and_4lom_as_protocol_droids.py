@@ -17,7 +17,7 @@ def set_ig88_and_4lom_as_protocol_droids(ctx: TCSContext):
     # Character data is loaded once when the game starts, so the changes made here are permanent until the game
     # is restarted.
     # UnknownLoadedCharacterData* _CDataList
-    addr_p_c_data_list = 0x0093b274
+    addr_p_c_data_list = 0x93b294
     addr_c_data_list = ctx.read_uint(addr_p_c_data_list)
     # sizeof(UnknownLoadedCharacterData)
     unknown_loaded_character_data_size = 0x4c

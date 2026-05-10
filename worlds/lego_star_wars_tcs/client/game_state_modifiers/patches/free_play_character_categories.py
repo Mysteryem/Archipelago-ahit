@@ -5,9 +5,8 @@ from ..common_addresses import StaticUint
 from ..common_types import CharacterDataFlag3, CharacterEntryFlag2
 from ...items import CHARACTERS_AND_VEHICLES_BY_NAME
 
-
-p_CharCategoryAddr = StaticUint(0x93b280)
-p_CHARCATEGORYCOUNT = StaticUint(0x93b26c)
+p_CharCategoryAddr = StaticUint(0x93b2a0)
+p_CHARCATEGORYCOUNT = StaticUint(0x93b28c)
 
 
 class CharCategory(ctypes.Structure):

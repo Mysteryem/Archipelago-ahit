@@ -40,8 +40,8 @@ except ImportError:
 SHOP_SLOT_NAME_MAX_BYTES = 64
 """64 bytes, including the null-terminator."""
 
-P_CHARACTER_SHOP_SLOTS = StaticUint(0x880478)
-P_EXTRAS_SHOP_SLOTS = StaticUint(0x880480)
+P_CHARACTER_SHOP_SLOTS = StaticUint(0x880498)
+P_EXTRAS_SHOP_SLOTS = StaticUint(0x8804a0)
 SHOP_SLOT_SIZE_BYTES = 0x74
 
 

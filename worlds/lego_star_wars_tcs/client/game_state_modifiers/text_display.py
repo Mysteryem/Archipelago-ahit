@@ -13,7 +13,7 @@ debug_logger = logging.getLogger("TCS Debug")
 
 # Float value in seconds. The text will begin to fade out towards the end.
 # Note that values higher than 1.0 will flash more rapidly the higher the value.
-DOUBLE_SCORE_ZONE_TIMER_ADDRESS = 0x925040
+DOUBLE_SCORE_ZONE_TIMER_ADDRESS = 0x925060
 
 WAIT_BETWEEN_MESSAGES_SECONDS = 2
 WAIT_BETWEEN_MESSAGES_NS = WAIT_BETWEEN_MESSAGES_SECONDS * 1_000_000_000

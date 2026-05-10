@@ -31,7 +31,7 @@ ALL_CHAPTER_AREA_IDS_SET = frozenset({area.area_id for area in CHAPTER_AREAS})
 
 # Changes according to what Area door the player is stand in front of. It is 0xFF while in the rest of the Cantina, away
 # from an Area door.
-CURRENT_AREA_DOOR_ADDRESS = 0x8795A0
+CURRENT_AREA_DOOR_ADDRESS = 0x8795c0  # _last_hub_area
 
 AREA_DATA_STORY_TRUE_JEDI_REQUIREMENT = UintField(0x8c)
 AREA_DATA_FREE_PLAY_TRUE_JEDI_REQUIREMENT = UintField(0x90)
