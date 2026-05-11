@@ -305,9 +305,9 @@ class CustomSaveFlags1(IntFlag):
     """
     MINIKIT_GOAL_COMPLETE = 0x1
     DEATH_LINK_ENABLED = 0x2
-    FIELD_3 = 0x4  # Could be DEFEAT_BOSSES_GOAL_COMPLETE to reduce memory reading once the goal is complete.
-    FIELD_4 = 0x8
-    FIELD_5 = 0x10
+    AUTO_COLLECT_PICKUPS_ENABLED = 0x4
+    AUTO_COLLECT_PICKUPS_VEHICLES_ONLY = 0x8
+    FIELD_5 = 0x10  # Could be DEFEAT_BOSSES_GOAL_COMPLETE to reduce memory reading once the goal is complete.
     FIELD_6 = 0x20
     FIELD_7 = 0x40
     FIELD_8 = 0x80
@@ -356,6 +356,12 @@ class CustomSaveFlags1(IntFlag):
         b = ctx.read_uchar(addr)
         if b & v:
             ctx.write_byte(_CUSTOM_SAVE_FLAGS_1_ADDRESS, b & ~v)
+
+    def set_bool(self, ctx: TCSContext, b: bool):
+        if b:
+            return self.set(ctx)
+        else:
+            return self.unset(ctx)
 
 # Other potential unused sava-data bytes
 # Some (most?) (all?) bonus levels have enough space reserved for all the Minikits/True Jedi/Power Brick bytes, which

@@ -1598,6 +1598,34 @@ class ShopTrapAsFakeProgressionChance(Range):
     default = 50
 
 
+class AutoCollectSpawnedPickups(ChoiceFromStringExtension):
+    """Automatically collect pickups (studs and hearts) spawned by destroying objects/enemies, using the force on
+    objects, or spawned by other means, such as from dying or from the Character Studs Extra.
+
+    Minikits, and other pickups that internally start off hidden, and get unhidden, rather than spawned in, are not
+    affected.
+
+    When enabled, Power Up pickups no longer spawn from destroyed/forced objects, an active Power Up will not double the
+    value of spawned studs (though score multiplier Extras still work).
+
+    Levels that already automatically collect spawned pickups, in the vanilla game, such as *Mos Espa Pod Race* and
+    *LEGO City*, are unaffected by this option.
+
+    **Disabled:** Spawned pickups must be collected as normal.
+
+    **Enabled:** Spawned pickups will be automatically collected as soon as they spawn.
+
+    **Vehicle Levels Only:** Spawned pickups will be automatically collected in vehicle levels, and must be collected as
+    normal in other levels.
+    """
+    display_name = "Auto-collect Spawned Pickups"
+    rich_text_doc = True
+    option_disabled = 0
+    option_enabled = 1
+    option_vehicle_levels_only = 2
+    default = option_disabled
+
+
 class LogicDifficulty(ChoiceFromStringExtension):
     # todo: Maybe just remove Extras (other than score multipliers) logic from None difficulty?
     """
@@ -1808,6 +1836,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     received_item_messages: ReceivedItemMessages
     checked_location_messages: CheckedLocationMessages
     uncap_original_trilogy_high_jump: UncapOriginalTrilogyHighJump
+    auto_collect_spawned_pickups: AutoCollectSpawnedPickups
     shop_fake_trap_chance: ShopTrapAsFakeProgressionChance
     progression_useful_item_color: ProgressionUsefulItemColor
     progression_item_color: ProgressionItemColor
@@ -1911,6 +1940,7 @@ OPTION_GROUPS: list[OptionGroup] = [
         ReceivedItemMessages,
         CheckedLocationMessages,
         UncapOriginalTrilogyHighJump,
+        AutoCollectSpawnedPickups,
         ShopTrapAsFakeProgressionChance,
         ProgressionUsefulItemColor,
         ProgressionItemColor,

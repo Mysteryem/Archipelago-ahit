@@ -6,6 +6,7 @@ import hashlib
 import ModuleUpdate
 import Utils
 from BaseClasses import ItemClassification
+from MultiServer import mark_raw
 from NetUtils import ClientStatus
 from worlds._bizhawk.context import AuthStatus
 
@@ -56,6 +57,7 @@ from .game_state_modifiers.text_replacer import TextReplacer
 from .game_state_modifiers.uncap_high_jump import UncapHighJump
 from .game_state_modifiers.level_specific_fixes import LevelSpecificFixes
 from .game_state_modifiers.patches import apply_game_patches
+from .game_state_modifiers.auto_collect_pickups import AutoCollectPickups
 from .game_version_check import get_game_version, GameVersion, gog_to_steam
 
 
@@ -252,6 +254,16 @@ MINIKIT_GOAL_SUBMITTED_PREFIX = "tcs_minikit_goal_submitted_"
 
 
 class LegoStarWarsTheCompleteSagaCommandProcessor(ClientCommandProcessor):
+    AUTO_COLLECT_PICKUPS_ENABLED = ("enabled", "on", "yes")
+    AUTO_COLLECT_PICKUPS_DISABLED = ("disabled", "off", "no")
+    AUTO_COLLECT_PICKUPS_VEHICLES_ONLY = ("vehicles", "vehicles_only", "vehicles only",
+                                          "vehicle", "vehicle_only", "vehicle only",
+                                          "vehicle_levels_only", "vehicle levels only",
+                                          "vehicle_levels", "vehicle levels")
+    AUTO_COLLECT_PICKUPS_ALL = (AUTO_COLLECT_PICKUPS_ENABLED
+                                + AUTO_COLLECT_PICKUPS_DISABLED
+                                + AUTO_COLLECT_PICKUPS_VEHICLES_ONLY)
+
     def __init__(self, ctx: CommonContext):
         super().__init__(ctx)
 
@@ -273,6 +285,45 @@ class LegoStarWarsTheCompleteSagaCommandProcessor(ClientCommandProcessor):
                 msg = ctx.client_text.from_text_color_choice(TextColorChoice(value), name)
                 ctx.text_display.queue_message(msg)
             logger.info("Demonstrating text color choices.")
+
+    @mark_raw
+    def _cmd_auto_collect_pickups(self, mode: str = ""):
+        """
+        Toggle automatic collection of spawned pickups. Either on, off, or on for vehicle levels only.
+
+        :param mode: on/off/vehicles, or leave blank to toggle between on/off while maintaining whether only vehicle
+        levels are affected.
+        """
+        ctx = self.ctx
+        if isinstance(ctx, LegoStarWarsTheCompleteSagaContext):
+            if ctx.last_connected_slot is None or not ctx.is_in_game():
+                logger.info("Load into the game and connect to a server first.")
+                return
+            component = ctx.auto_collect_pickups
+            if mode == "":
+                # Act like a toggle, while maintaining vehicles_only status.
+                component.update(ctx, not component.enabled, component.vehicles_only)
+            else:
+                best_pick, ok, message = Utils.get_intended_text(mode, self.AUTO_COLLECT_PICKUPS_ALL)
+                if not ok:
+                    logger.info(message)
+                    return
+                if ok:
+                    if best_pick in self.AUTO_COLLECT_PICKUPS_ENABLED:
+                        component.update(ctx, True, False)
+                    elif best_pick in self.AUTO_COLLECT_PICKUPS_DISABLED:
+                        component.update(ctx, False, False)
+                    elif best_pick in self.AUTO_COLLECT_PICKUPS_VEHICLES_ONLY:
+                        component.update(ctx, True, True)
+                    else:
+                        logger.error("Unrecognised value '%s' from fuzzy matching", best_pick)
+            if component.enabled:
+                if component.vehicles_only:
+                    logger.info("Enabled automatic pickup collection (vehicle levels only)")
+                else:
+                    logger.info("Enabled automatic pickup collection")
+            else:
+                logger.info("Disabled automatic pickup collection")
 
     def _cmd_toggle_death_link(self):
         """Toggle Death Link on/off. Whether Death Link is enabled is stored in your save data, so the client will
@@ -349,6 +400,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         options.ReceivedItemMessages.option_all)
     checked_location_messages: bool = True
     client_text: ClientText
+    auto_collect_pickups: AutoCollectPickups
 
     # A few components are permanent and will need to be manually re-subscribed to receive events because the components
     # won't be re-created.
@@ -388,6 +440,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         self.death_link_manager = DeathLinkManager()
         self.shop_names_replacer = ShopNamesReplacer()
+        self.auto_collect_pickups = AutoCollectPickups()
 
         # It is not ideal to leak `self` in __init__. The TextReplacer methods could be updated to include a TCSContext
         # parameter if needed, instead of leaking `self`. Alternatively, the TextReplacer could be created only when
@@ -1364,6 +1417,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         self.shop_names_replacer.reset_persisted_client_data(self)
         self.shop_names_replacer = ShopNamesReplacer()
+        self.auto_collect_pickups = AutoCollectPickups()
 
         if clear_text_display_queue:
             self.text_display.message_queue.clear()
