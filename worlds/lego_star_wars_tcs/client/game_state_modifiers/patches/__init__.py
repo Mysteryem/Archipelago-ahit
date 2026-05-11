@@ -1,3 +1,4 @@
+import logging
 from typing import Callable
 
 from ...common_addresses import StaticBOOL
@@ -8,6 +9,9 @@ from .add_flags_to_characters import (
     set_astromech_panel_users_as_tightrope_walk,
     set_droideka_as_tightrope_tilt,
 )
+
+
+logger = logging.getLogger("Client")
 
 
 # This is the last flag in the last CHARCATEGORY in _LSW_CharCategory. The last element is intentionally empty to
@@ -30,3 +34,6 @@ def apply_game_patches(ctx: TCSContext):
         for patch in PATCHES:
             patch(ctx)
         PATCHES_APPLIED_ADDR.set(ctx, True)
+        logger.info("Applied AP patches")
+    else:
+        logger.info("AP patches have already been applied this session")
