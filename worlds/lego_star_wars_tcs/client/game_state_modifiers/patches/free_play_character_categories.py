@@ -81,6 +81,12 @@ _CUSTOM_CHAR_CATEGORIES_GOG = [
         CharacterDataFlag3.BLASTER | CharacterDataFlag3.ZIPUP,
         0,
     ),
+    # Custom category to pick Droideka (unused in vanilla, but Droideka is being set to this)
+    CharCategory(
+        0x00762d10,  # "tightrope_tilt"
+        0,
+        CharacterEntryFlag2.TIGHTROPE_TILT,
+    ),
     CharCategory(
         0x007518cc,  # "Blaster"
         CharacterDataFlag3.BLASTER,

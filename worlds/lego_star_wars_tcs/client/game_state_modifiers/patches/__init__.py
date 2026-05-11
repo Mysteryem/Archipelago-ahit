@@ -3,7 +3,11 @@ from typing import Callable
 from ...common_addresses import StaticBOOL
 from ...type_aliases import TCSContext
 from .free_play_character_categories import set_custom_character_categories
-from .add_flags_to_characters import set_ig88_and_4lom_as_protocol_droids, set_astromech_panel_users_as_tightrope_walk
+from .add_flags_to_characters import (
+    set_ig88_and_4lom_as_protocol_droids,
+    set_astromech_panel_users_as_tightrope_walk,
+    set_droideka_as_tightrope_tilt,
+)
 
 
 # This is the last flag in the last CHARCATEGORY in _LSW_CharCategory. The last element is intentionally empty to
@@ -17,6 +21,7 @@ PATCHES: list[MemoryPatch] = [
     set_custom_character_categories,
     set_ig88_and_4lom_as_protocol_droids,
     set_astromech_panel_users_as_tightrope_walk,
+    set_droideka_as_tightrope_tilt,
 ]
 
 

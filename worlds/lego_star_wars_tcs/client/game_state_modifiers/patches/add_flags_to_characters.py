@@ -46,3 +46,18 @@ def set_astromech_panel_users_as_tightrope_walk(ctx: TCSContext):
             character_entry_flag = CHARACTER_ENTRY_FLAG_2.get(ctx, addr_character_entry)
             new_flag = character_entry_flag | CharacterEntryFlag2.TIGHTROPE_WALK.value
             CHARACTER_ENTRY_FLAG_2.set(ctx, addr_character_entry, new_flag)
+
+
+def set_droideka_as_tightrope_tilt(ctx: TCSContext):
+    # Give droideka the TIGHTROPE_TILT flag, which a custom category is added for, so that Droideka is always picked if
+    # unlocked.
+    addr_p_gc_data_list = 0x93b2a4
+    addr_gc_data_list = ctx.read_uint(addr_p_gc_data_list)
+    # sizeof(CharacterEntry)
+    character_entry_size = 0x120
+    character = CHARACTERS_AND_VEHICLES_BY_NAME["Droideka"]
+    addr_character_entry = addr_gc_data_list + character_entry_size * character.character_index
+    character_entry_flag = CHARACTER_ENTRY_FLAG_2.get(ctx, addr_character_entry)
+    new_flag = character_entry_flag | CharacterEntryFlag2.TIGHTROPE_TILT.value
+    CHARACTER_ENTRY_FLAG_2.set(ctx, addr_character_entry, new_flag)
+
