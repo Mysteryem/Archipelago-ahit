@@ -1,4 +1,5 @@
 import abc
+from dataclasses import dataclass
 from struct import Struct
 
 from .type_aliases import TCSContext
@@ -31,6 +32,11 @@ class StaticUint(int):
         ctx.write_uint(self, value)
 
 
+class StaticPointer(StaticUint):
+    def to_array(self, ctx: TCSContext, item_size: int):
+        return RawArray(self.get(ctx), item_size)
+
+
 class StaticInt(int):
     def get(self, ctx: TCSContext) -> int:
         return ctx.read_int(self)
@@ -46,6 +52,15 @@ class StaticBOOL(StaticUint):
 
     def set(self, ctx: TCSContext, value: int):
         return super().set(ctx, 1 if value else 0)
+
+
+@dataclass(frozen=True)
+class RawArray:
+    address: int
+    item_size: int
+
+    def __getitem__(self, item):
+        return self.address + self.item_size * item
 
 
 class FloatField(int):

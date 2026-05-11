@@ -60,6 +60,13 @@ _CUSTOM_CHAR_CATEGORIES_GOG = [
         CharacterDataFlag3.TELEPORT,
         0,
     ),
+    # Custom category to pick Grievous' Bodyguard or General Grievous first when picking a High Jumper (unused in
+    # vanilla, but implemented for the incomplete Lego Batman 1 Demo).
+    CharCategory(
+        0x00751f24,  # "SuperStrength"
+        0,
+        CharacterEntryFlag2.HAS_SUPER_STRENGTH,
+    ),
     CharCategory(
         0x00751eb4,  # "HighJump"
         0,
