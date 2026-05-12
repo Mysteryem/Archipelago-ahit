@@ -91,7 +91,7 @@ _CUSTOM_CHAR_CATEGORIES_GOG = [
     ),
     # Custom category to pick Droideka (unused in vanilla, but Droideka is being set to this)
     CharCategory(
-        0x00762d10,  # "tightrope_tilt"
+        0x007627f8,  # "tightrope_tilt"
         0,
         CharacterEntryFlag2.TIGHTROPE_TILT,
     ),
