@@ -66,3 +66,15 @@ def set_high_jump_slam_as_has_super_strength(ctx: TCSContext):
         character_entry_flag = CHARACTER_ENTRY_FLAG_2.get(ctx, addr_character_entry)
         new_flag = character_entry_flag | CharacterEntryFlag2.HAS_SUPER_STRENGTH.value
         CHARACTER_ENTRY_FLAG_2.set(ctx, addr_character_entry, new_flag)
+
+
+def set_fetts_to_can_bypass_security(ctx: TCSContext):
+    # Give Boba Fett and Jango Fett the CAN_BYPASS_SECURITY flag, which a custom category is added for,
+    # so that a character that can Jetpack Hover is always picked, if one is unlocked.
+    array = P_GC_DATA_LIST.to_array(ctx, CHARACTER_ENTRY_SIZE)
+    for character in ("Boba Fett", "Jango Fett"):
+        character_index = CHARACTERS_AND_VEHICLES_BY_NAME[character].character_index
+        addr_character_entry = array[character_index]
+        character_entry_flag = CHARACTER_ENTRY_FLAG_2.get(ctx, addr_character_entry)
+        new_flag = character_entry_flag | CharacterEntryFlag2.CAN_BYPASS_SECURITY.value
+        CHARACTER_ENTRY_FLAG_2.set(ctx, addr_character_entry, new_flag)

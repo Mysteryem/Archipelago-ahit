@@ -32,10 +32,11 @@ _CUSTOM_CHAR_CATEGORIES_GOG = [
         CharacterEntryFlag2.IS_GHOST,
     ),
     # Custom category to pick a jetpack character (Boba/Jango Fett).
+    # CharacterDataFlag3.JETPACK cannot be used because Geonosion and Watto also have this flag, but cannot hover.
     CharCategory(
         0x007628cc,  # "jetpack"
-        CharacterDataFlag3.JETPACK,
-        0
+        0,
+        CharacterEntryFlag2.CAN_BYPASS_SECURITY
     ),
     # Custom category to pick a 'tightrope_walk' character (unused in vanilla, but characters that can use astromech
     # panels are being set to this)
