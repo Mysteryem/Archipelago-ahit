@@ -90,3 +90,15 @@ def set_can_zap_characters_as_got_batarang(ctx: TCSContext):
         character_entry_flag = CHARACTER_ENTRY_FLAG_2.get(ctx, addr_character_entry)
         new_flag = character_entry_flag | CharacterEntryFlag2.GOT_BATARANG.value
         CHARACTER_ENTRY_FLAG_2.set(ctx, addr_character_entry, new_flag)
+
+
+def set_yodas_as_wall_jump(ctx: TCSContext):
+    # Give Yoda characters the WALL_JUMP flag, which a custom category is added for,
+    # so that a Yoda character is always picked, if one is unlocked.
+    array = P_GC_DATA_LIST.to_array(ctx, CHARACTER_ENTRY_SIZE)
+    for character in ("Yoda", "Yoda (Ghost)"):
+        character_index = CHARACTERS_AND_VEHICLES_BY_NAME[character].character_index
+        addr_character_entry = array[character_index]
+        character_entry_flag = CHARACTER_ENTRY_FLAG_2.get(ctx, addr_character_entry)
+        new_flag = character_entry_flag | CharacterEntryFlag2.GOT_BATARANG.value
+        CHARACTER_ENTRY_FLAG_2.set(ctx, addr_character_entry, new_flag)

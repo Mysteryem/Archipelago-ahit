@@ -11,6 +11,7 @@ from .add_flags_to_characters import (
     set_high_jump_slam_as_has_super_strength,
     set_fetts_to_can_bypass_security,
     set_can_zap_characters_as_got_batarang,
+    set_yodas_as_wall_jump,
 )
 
 
@@ -32,6 +33,7 @@ PATCHES: list[MemoryPatch] = [
     set_high_jump_slam_as_has_super_strength,
     set_fetts_to_can_bypass_security,
     set_can_zap_characters_as_got_batarang,
+    set_yodas_as_wall_jump,
 ]
 
 

@@ -107,6 +107,14 @@ _CUSTOM_CHAR_CATEGORIES_GOG = [
         0,
         CharacterEntryFlag2.GOT_BATARANG,
     ),
+    # Custom category to pick a Yoda character. This flag is for some reason used by a number of Extra Toggle characters
+    # in vanilla, but these are not selectable for Free Play. Yoda and Yoda (Ghost) are being given this flag.
+    # This is picked last because it is preferable to have a 'normal' Jedi in addition to Yoda.
+    CharCategory(
+        0x00762818,  # "wall_jump"
+        0,
+        CharacterEntryFlag2.WALL_JUMP,
+    ),
     # A category with NULL name at the end signifies the end of the array.
     CharCategory(0, 0, 0)
 ]
