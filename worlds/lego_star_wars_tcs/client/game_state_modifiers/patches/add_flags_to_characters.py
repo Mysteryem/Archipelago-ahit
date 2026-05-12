@@ -76,5 +76,5 @@ def set_yodas_as_wall_jump(ctx: TCSContext):
         character_index = CHARACTERS_AND_VEHICLES_BY_NAME[character].character_index
         addr_character_entry = array[character_index]
         character_entry_flag = CHARACTER_ENTRY_FLAG_2.get(ctx, addr_character_entry)
-        new_flag = character_entry_flag | CharacterEntryFlag2.GOT_BATARANG.value
+        new_flag = character_entry_flag | CharacterEntryFlag2.WALL_JUMP.value
         CHARACTER_ENTRY_FLAG_2.set(ctx, addr_character_entry, new_flag)
