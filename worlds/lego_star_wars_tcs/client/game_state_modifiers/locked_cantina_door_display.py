@@ -328,6 +328,8 @@ class LockedCantinaDoorDisplay(ClientComponent):
     async def on_tick(self, event: OnGameWatcherTickEvent):
         if not self.active:
             return
+        if not event.is_actively_playing:
+            return
         await self._draw_locked_door_info(event)
         await self._force_open_episode_doors(event)
 

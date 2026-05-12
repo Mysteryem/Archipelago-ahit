@@ -3,7 +3,6 @@ from collections import deque
 from time import perf_counter_ns
 
 from . import ClientComponent
-from ..common_addresses import is_actively_playing
 from ..events import subscribe_event, OnGameWatcherTickEvent
 from ..type_aliases import TCSContext
 from .text_replacer import TextId
@@ -81,5 +80,5 @@ class InGameTextDisplay(ClientComponent):
                 self.memory_dirty = False
         else:
             # Don't display a new message if the game is paused, in a cutscene, in a status screen, or tabbed out.
-            if is_actively_playing(ctx):
+            if event.is_actively_playing:
                 self._display_message(ctx, self.message_queue.popleft())

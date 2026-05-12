@@ -8,7 +8,7 @@ from Utils import async_start
 from . import ClientComponent
 from .studs import give_studs
 from ..common import StaticUint, FloatField
-from ..common_addresses import CURRENT_AREA_ADDRESS, is_actively_playing, player_character_entity_iter, CustomSaveFlags1
+from ..common_addresses import CURRENT_AREA_ADDRESS, player_character_entity_iter, CustomSaveFlags1
 from ..events import (
     subscribe_event,
     OnReceiveSlotDataEvent,
@@ -448,7 +448,7 @@ class DeathLinkManager(ClientComponent):
     @subscribe_event
     async def update_game_state(self, event: OnGameWatcherTickEvent) -> None:
         ctx = event.context
-        if not self.death_link_enabled or not ctx.is_in_game() or not is_actively_playing(ctx):
+        if not self.death_link_enabled or not ctx.is_in_game() or not event.is_actively_playing:
             return
 
         now = time.time()
