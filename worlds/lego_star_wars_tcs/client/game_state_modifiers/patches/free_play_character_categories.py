@@ -100,6 +100,13 @@ _CUSTOM_CHAR_CATEGORIES_GOG = [
         CharacterDataFlag3.BLASTER,
         0,
     ),
+    # Custom category to pick a character that can zap. This flag is unused in vanilla, but characters that can zap are
+    # being set to have this flag.
+    CharCategory(
+        0x00762b70,  # "can_zap"
+        0,
+        CharacterEntryFlag2.GOT_BATARANG,
+    ),
     # A category with NULL name at the end signifies the end of the array.
     CharCategory(0, 0, 0)
 ]
