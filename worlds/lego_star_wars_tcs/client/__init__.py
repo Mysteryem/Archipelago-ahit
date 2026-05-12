@@ -908,7 +908,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         await self.unhook_game_process()
         return await super().shutdown()
 
-    def open_game_process(self):
+    async def open_game_process(self):
         try:
             process = pymem.Pymem(PROCESS_NAME)
             game_version, memory_offset = get_game_version(process)
@@ -920,7 +920,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             self.overall_memory_offset = memory_offset
 
             self.game_process = process
-            apply_game_patches(self)
+            await apply_game_patches(self)
             self.text_replacer = TextReplacer(self)
 
             if memory_offset != 0:
@@ -1604,7 +1604,7 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
             game_process = ctx.game_process
             if game_process is None:
                 previously_not_in_game = True
-                if not ctx.open_game_process():
+                if not await ctx.open_game_process():
                     log_message("Connection to game failed, attempting again in 5 seconds...", True)
                     sleep_time = 5
                 else:

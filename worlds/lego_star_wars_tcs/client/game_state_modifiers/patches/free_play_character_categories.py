@@ -96,7 +96,7 @@ _CUSTOM_CHAR_CATEGORIES = [
 ]
 
 
-def set_custom_character_categories(ctx: TCSContext):
+async def set_custom_character_categories(ctx: TCSContext):
     actual_vanilla_category_count = p_CHARCATEGORYCOUNT.get(ctx)
     if actual_vanilla_category_count != EXPECTED_BASE_CATEGORY_COUNT:
         raise Exception(f"Error: Expected {EXPECTED_BASE_CATEGORY_COUNT} vanilla character categories, but found"
