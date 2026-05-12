@@ -8,7 +8,8 @@ from ...levels import CHAPTER_AREAS, BONUS_AREAS, VEHICLE_CHAPTER_SHORTNAMES, VE
 from ...options import AutoCollectSpawnedPickups
 
 
-# Levels within these areas already auto-collect spawned pickups.
+# Levels within these areas already auto-collect spawned pickups, though through a different means than setting the flag
+# that this component sets on level data.
 _EXCLUDED_CHAPTER_AREAS = {
     "Mos Espa Pod Race",
     "Battle Over Coruscant",
@@ -22,14 +23,14 @@ _EXCLUDED_BONUS_AREAS = {
 
 CANTINA_LEVEL_ID = 325
 MAIN_LEVEL_IDS = {CANTINA_LEVEL_ID}.union(
-    (area.area_id for area in CHAPTER_AREAS if area.name not in _EXCLUDED_CHAPTER_AREAS),
-    (area.area_id for area in BONUS_AREAS if area.name not in _EXCLUDED_BONUS_AREAS),
+    *(area.playable_level_ids for area in CHAPTER_AREAS if area.name not in _EXCLUDED_CHAPTER_AREAS),
+    *(area.playable_level_ids for area in BONUS_AREAS if area.name not in _EXCLUDED_BONUS_AREAS),
 )
 VEHICLE_LEVEL_IDS = set().union(
-    (area.area_id for area in CHAPTER_AREAS
-     if area.name not in _EXCLUDED_CHAPTER_AREAS and area.short_name in VEHICLE_CHAPTER_SHORTNAMES),
-    (area.area_id for area in BONUS_AREAS
-     if area.name not in _EXCLUDED_BONUS_AREAS and area.name in VEHICLE_BONUS_AREA_NAMES),
+    *(area.playable_level_ids for area in CHAPTER_AREAS
+      if area.name not in _EXCLUDED_CHAPTER_AREAS and area.short_name in VEHICLE_CHAPTER_SHORTNAMES),
+    *(area.playable_level_ids for area in BONUS_AREAS
+      if area.name not in _EXCLUDED_BONUS_AREAS and area.name in VEHICLE_BONUS_AREA_NAMES),
 )
 
 
