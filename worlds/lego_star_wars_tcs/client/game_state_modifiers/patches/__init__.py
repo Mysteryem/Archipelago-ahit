@@ -8,6 +8,7 @@ from .add_flags_to_characters import (
     set_ig88_and_4lom_as_protocol_droids,
     set_astromech_panel_users_as_tightrope_walk,
     set_droideka_as_tightrope_tilt,
+    set_high_jump_slam_as_has_super_strength,
     set_fetts_to_can_bypass_security,
     set_can_zap_characters_as_got_batarang,
 )
@@ -28,6 +29,7 @@ PATCHES: list[MemoryPatch] = [
     set_ig88_and_4lom_as_protocol_droids,
     set_astromech_panel_users_as_tightrope_walk,
     set_droideka_as_tightrope_tilt,
+    set_high_jump_slam_as_has_super_strength,
     set_fetts_to_can_bypass_security,
     set_can_zap_characters_as_got_batarang,
 ]
