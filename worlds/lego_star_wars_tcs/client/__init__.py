@@ -1737,8 +1737,8 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
             await ctx.unhook_game_process()
             ctx.reset_persisted_client_data()
             if isinstance(e, (PymemError, WinAPIError)):
-                msg = "Lost connection to game, attempting re-connection in 5 seconds..."
-                debug_logger.error(traceback.format_exc())
+                msg = f"Lost connection to game, attempting re-connection in 5 seconds..."
+                logger.error(traceback.format_exc())
             else:
                 msg = "Unexpected error occurred, attempting re-connection to game in 5 seconds..."
                 logger.error(traceback.format_exc())
