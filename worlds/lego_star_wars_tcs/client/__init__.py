@@ -425,19 +425,18 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.event_manager = EventManager()
 
         self.client_text = ClientText()
-        self.text_display = InGameTextDisplay()
         self.locked_cantina_door_info = LockedCantinaDoorDisplay()
         self.uncap_high_jump = UncapHighJump()
         self.cantina_reloader = CantinaReloader()
         self.level_specific_fixes = LevelSpecificFixes()
         self.permanent_components = (
-            self.text_display,
             self.uncap_high_jump,
             self.cantina_reloader,
             self.locked_cantina_door_info,
             self.level_specific_fixes,
         )
 
+        self.text_display = InGameTextDisplay()
         self.death_link_manager = DeathLinkManager()
         self.shop_names_replacer = ShopNamesReplacer()
         self.auto_collect_pickups = AutoCollectPickups()
@@ -1393,6 +1392,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         # Some of the components are permanent, so need to be manually subscribed to the new EventManager.
         for client_component in self.permanent_components:
             self.event_manager.subscribe_events(client_component)
+
+        self.text_display = InGameTextDisplay()
 
         self.acquired_extras = AcquiredExtras()
         self.acquired_characters = AcquiredCharacters()
