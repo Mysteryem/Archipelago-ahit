@@ -919,7 +919,19 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             self.overall_memory_offset = memory_offset
 
             self.game_process = process
-            await apply_game_patches(self)
+            # Try for 5 seconds to patch the game before giving up.
+            if not await apply_game_patches(self):
+                for _ in range(5):
+                    await asyncio.sleep(1.0)
+                    if not await apply_game_patches(self):
+                        logger.info("Waiting for the game to load more before patching...")
+                    else:
+                        break
+                else:
+                    logger.info("A connection to the game was made, but the game has not loaded enough to apply"
+                                " patches, so the connection has been aborted.")
+                    self.game_process = None
+                    return False
             self.text_replacer = TextReplacer(self)
 
             if memory_offset != 0:
