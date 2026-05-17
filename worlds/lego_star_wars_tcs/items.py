@@ -4,34 +4,8 @@ from dataclasses import dataclass, field
 from typing import Optional, ClassVar, Literal, Mapping, AbstractSet
 
 from BaseClasses import Item, ItemClassification
-from .constants import (
-    CharacterAbility,
-    GAME_NAME,
-    ASTROMECH,
-    BLASTER,
-    BOUNTY_HUNTER,
-    HOVER,
-    HIGH_JUMP,
-    IMPERIAL,
-    JEDI,
-    PROTOCOL_DROID,
-    SHORTIE,
-    SITH,
-    VEHICLE_TIE,
-    VEHICLE_TOW,
-    VEHICLE_BLASTER,
-    CAN_WEAR_HAT,
-    CAN_WEAR_HAT_AND_GRAPPLE,
-    CAN_WEAR_HAT_AND_DOUBLE_JUMP,
-    CAN_RIDE_VEHICLES,
-    CAN_PULL_LEVERS,
-    CAN_PUSH_OBJECTS,
-    CAN_BUILD_BRICKS,
-    CAN_JUMP_NORMALLY,
-    CAN_ATTACK_UP_CLOSE,
-    CAN_DAGOBAH_SWAMP,
-    IS_A_VEHICLE,
-)
+from .constants import GAME_NAME
+from .character_ability import *
 
 
 ItemType = Literal["Character", "Vehicle", "Extra", "Generic", "Minikit"]
@@ -88,13 +62,21 @@ class GenericCharacterData(GenericItemData):
 
         # Automatically set some implied abilities as a safeguard.
         abilities = self.abilities
+
         if SITH in self.abilities:
             abilities |= JEDI
 
+        if HIGH_JUMP in self.abilities:
+            abilities |= CAN_JUMP_SLIGHTLY_HIGHER
+        if CAN_JUMP_SLIGHTLY_HIGHER in self.abilities:
+            abilities |= CAN_JUMP_NORMALLY
+        if CAN_JUMP_NORMALLY in self.abilities:
+            abilities |= CAN_BARELY_JUMP
+
         # Automatically set some implied abilities.
         if JEDI in self.abilities or HIGH_JUMP in self.abilities:
-            abilities |= CAN_JUMP_NORMALLY
-        if JEDI in self.abilities or BLASTER in self.abilities or BOUNTY_HUNTER in self.abilities:
+            abilities |= CAN_JUMP_SLIGHTLY_HIGHER
+        if (JEDI | BLASTER | BOUNTY_HUNTER | WEAPON_EWOK) & self.abilities != 0:
             abilities |= CAN_ATTACK_UP_CLOSE
 
         # Automatically set special Hat Machine abilities that are not set explicitly.

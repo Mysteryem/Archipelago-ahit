@@ -1,0 +1,175 @@
+import dataclasses
+from typing import ClassVar, Iterable, TYPE_CHECKING
+from typing_extensions import override
+
+from BaseClasses import CollectionState
+from rule_builder.rules import Rule, TWorld, True_, OptionFilter, Filtered, HasAny
+from rule_builder.field_resolvers import FieldResolver, resolve_field
+
+from ...constants import CharacterAbility, GAME_NAME
+from ...items import CHARACTERS_AND_VEHICLES_BY_NAME
+
+
+if TYPE_CHECKING:
+    from ... import LegoStarWarsTCSWorld
+else:
+    LegoStarWarsTCSWorld = TWorld
+
+
+def _caching_enabled(world: LegoStarWarsTCSWorld):
+    # Caching support is not implemented currently.
+    return False
+    # return getattr(world, "rule_caching_enabled", False)
+
+
+def _common_rule_args(world: LegoStarWarsTCSWorld):
+    return dict(player=world.player, caching_enabled=_caching_enabled(world))
+
+
+@dataclasses.dataclass
+class HasAbility(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+    """A rule that checks if the player has a given character ability."""
+
+    ability: CharacterAbility | FieldResolver
+    """The ability to check for."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        if isinstance(self.ability, CharacterAbility):
+            assert self.ability.bit_count() == 1, f"Expected a single bit, but got {self.ability!r}"
+
+    def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
+        resolved: int = resolve_field(self.ability, world, CharacterAbility).value
+
+        if resolved.bit_count() == 0:
+            return True_().resolve(world)
+
+        assert resolved.bit_count() == 1
+        return self.Resolved(
+            resolved,
+            **_common_rule_args(world)
+        )
+
+    class Resolved(Rule.Resolved):
+        ability_as_int: int
+        skip_cache: ClassVar[bool] = True
+
+        @override
+        def _evaluate(self, state: CollectionState) -> bool:
+            # != 0 is faster than calling bool().
+            return state.prog_items[self.player]["COMBINED_ABILITIES"] & self.ability_as_int != 0
+
+
+@dataclasses.dataclass
+class HasAllAbilities(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+    """A rule that checks if the player has all the given character abilities."""
+
+    abilities: CharacterAbility | FieldResolver
+    """The abilities to check for."""
+
+    def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
+        resolved: int = resolve_field(self.abilities, world, CharacterAbility).value
+
+        if resolved.bit_count() == 0:
+            return True_().resolve(world)
+        if resolved.bit_count() == 1:
+            return HasAbility(CharacterAbility(resolved)).resolve(world)
+        return self.Resolved(
+            resolved,
+            **_common_rule_args(world)
+        )
+
+    class Resolved(Rule.Resolved):
+        abilities_as_int: int
+        skip_cache: ClassVar[bool] = True
+
+        @override
+        def _evaluate(self, state: CollectionState) -> bool:
+            return state.prog_items[self.player]["COMBINED_ABILITIES"] & self.abilities_as_int == self.abilities_as_int
+
+    def __and__(self, other: "Rule[Any] | Iterable[OptionFilter] | OptionFilter") -> "Rule[TWorld]":
+        if isinstance(other, OptionFilter):
+            other = (other,)
+        if isinstance(other, Iterable):
+            if not other:
+                return self
+            return Filtered(self, options=other)
+        if self.options == other.options:
+            if isinstance(other, HasAllAbilities):
+                if other.abilities in self.abilities:
+                    return self
+                elif self.abilities in other.abilities:
+                    return other
+                else:
+                    return HasAllAbilities(other.abilities | self.abilities)
+            if isinstance(other, HasAbility):
+                if other.ability in self.abilities:
+                    return self
+                else:
+                    return HasAllAbilities(other.ability | self.abilities)
+        return super().__and__(other)
+
+
+@dataclasses.dataclass
+class HasAnyAbilities(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+    """A rule that checks if the player has any of the given character abilities."""
+
+    abilities: CharacterAbility | FieldResolver
+    """The abilities to check for."""
+
+    def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
+        resolved: int = resolve_field(self.abilities, world, CharacterAbility).value
+
+        if resolved.bit_count() == 0:
+            return True_().resolve(world)
+        if resolved.bit_count() == 1:
+            return HasAbility(CharacterAbility(resolved)).resolve(world)
+        return self.Resolved(
+            resolved,
+            **_common_rule_args(world)
+        )
+
+    class Resolved(Rule.Resolved):
+        abilities_as_int: int
+        skip_cache: ClassVar[bool] = True
+
+        @override
+        def _evaluate(self, state: CollectionState) -> bool:
+            return state.prog_items[self.player]["COMBINED_ABILITIES"] & self.abilities_as_int != 0
+
+
+@dataclasses.dataclass
+class HasAbilitiesExceptCharacters(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+    """A rule that checks if the player has any character with the given ability, except the given characters.
+
+    This is an expensive, but rarely used rule for cases where specific characters cannot use their abilities in
+    specific cases, where adding a new CharacterAbility to represent this difference in ability is not worth it.
+    """
+    abilities: CharacterAbility | FieldResolver
+    """The abilities to check for."""
+
+    except_characters: Iterable[str] | FieldResolver
+    """The characters excluded from this rule."""
+
+    def __init__(
+            self,
+            abilities: CharacterAbility | FieldResolver,
+            *except_characters: str,
+            options: Iterable[OptionFilter] = (),
+            filtered_resolution: bool = False,
+    ):
+        super().__init__(options=options, filtered_resolution=filtered_resolution)
+        self.abilities = abilities
+        for character_name in except_characters:
+            if character_name not in CHARACTERS_AND_VEHICLES_BY_NAME:
+                raise Exception(f"Character '{character_name}' does not exist.")
+        self.except_characters = set(except_characters)
+
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        abilities = resolve_field(self.abilities, world, CharacterAbility)
+        except_characters = set(resolve_field(self.except_characters, world, Iterable))
+        characters = [c.name for c in CHARACTERS_AND_VEHICLES_BY_NAME.values()
+                      if abilities in c.abilities and c.name not in except_characters]
+        # todo: Subclass HasAny.Resolved for a custom __str__, explain_str and explain_json
+        return HasAny(*characters, options=self.options, filtered_resolution=self.filtered_resolution).resolve(world)
