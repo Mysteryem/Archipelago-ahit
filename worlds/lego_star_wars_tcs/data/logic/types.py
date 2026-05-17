@@ -80,6 +80,7 @@ class Chapter:
     # story_characters: tuple[str, ...] = ()
     # purchase_characters: tuple[str, ...] = ()
     ridables: dict[str, LocationData] = field(default_factory=dict)
+    vehicle_level: bool = False
     level_minikits: dict[str, dict[str, MinikitData]] = field(init=False, default_factory=dict)
     level_names: frozenset[str] = field(init=False)
 
