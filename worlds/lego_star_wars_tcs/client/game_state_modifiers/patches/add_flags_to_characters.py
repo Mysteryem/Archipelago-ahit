@@ -77,13 +77,13 @@ async def set_can_remove_droideka_shields_characters_as_got_batarang(ctx: TCSCon
         CHARACTER_ENTRY_FLAG_2.set(ctx, addr_character_entry, new_flag)
 
 
-async def set_yodas_as_wall_jump(ctx: TCSContext):
-    # Give Yoda characters the WALL_JUMP flag, which a custom category is added for,
+async def set_yodas_as_super_strength(ctx: TCSContext):
+    # Give Yoda characters the HAS_SUPER_STRENGTH flag, which a custom category is added for,
     # so that a Yoda character is always picked, if one is unlocked.
     array = P_GC_DATA_LIST.to_array(ctx, CHARACTER_ENTRY_SIZE)
     for character in ("Yoda", "Yoda (Ghost)"):
         character_index = CHARACTERS_AND_VEHICLES_BY_NAME[character].character_index
         addr_character_entry = array[character_index]
         character_entry_flag = CHARACTER_ENTRY_FLAG_2.get(ctx, addr_character_entry)
-        new_flag = character_entry_flag | CharacterEntryFlag2.WALL_JUMP.value
+        new_flag = character_entry_flag | CharacterEntryFlag2.HAS_SUPER_STRENGTH.value
         CHARACTER_ENTRY_FLAG_2.set(ctx, addr_character_entry, new_flag)
