@@ -26,6 +26,7 @@ __all__ = [
     "CAN_BUILD_BRICKS",
     "CAN_BARELY_JUMP",
     "CAN_JUMP_NORMAL_HEIGHT",
+    "CAN_JUMP_NORMAL_DISTANCE",
     "CAN_JUMP_SLIGHTLY_HIGHER",
     "CAN_DOUBLE_JUMP",
     "CAN_HIGH_JUMP_SLAM",
@@ -75,6 +76,9 @@ class CharacterAbility(IntFlag):
 
     CAN_BARELY_JUMP = auto()
     CAN_JUMP_NORMAL_HEIGHT = auto()  # Has at least a basic jump height.
+    # Has at least a basic jump height and basic movement speed.
+    # Most characters except Ewoks and Ugnaught.
+    CAN_JUMP_NORMAL_DISTANCE = auto()
     CAN_JUMP_SLIGHTLY_HIGHER = auto()
     CAN_DOUBLE_JUMP = auto()  # Jedi or High Jump
 
@@ -153,6 +157,7 @@ CAN_BUILD_BRICKS = CharacterAbility.CAN_BUILD_BRICKS
 CAN_DOUBLE_JUMP = CharacterAbility.CAN_DOUBLE_JUMP
 CAN_JUMP_SLIGHTLY_HIGHER = CharacterAbility.CAN_JUMP_SLIGHTLY_HIGHER
 CAN_JUMP_NORMAL_HEIGHT = CharacterAbility.CAN_JUMP_NORMAL_HEIGHT
+CAN_JUMP_NORMAL_DISTANCE = CharacterAbility.CAN_JUMP_NORMAL_DISTANCE
 CAN_BARELY_JUMP = CharacterAbility.CAN_BARELY_JUMP
 
 CAN_HIGH_JUMP_SLAM = CharacterAbility.CAN_HIGH_JUMP_SLAM
@@ -189,13 +194,19 @@ def update_for_implied_abilities(abilities: CharacterAbility):
     if (JEDI | BLASTER | BOUNTY_HUNTER | WEAPON_EWOK) & abilities != 0:
         abilities |= CAN_ATTACK_UP_CLOSE
 
+    if CAN_BUILD_BRICKS in abilities:
+        abilities |= CAN_JUMP_NORMAL_HEIGHT
     if (HIGH_JUMP | JEDI) & abilities != 0:
         abilities |= CAN_DOUBLE_JUMP
+        abilities |= CAN_JUMP_NORMAL_DISTANCE
     if CAN_DOUBLE_JUMP in abilities:
         abilities |= CAN_JUMP_SLIGHTLY_HIGHER
+        abilities |= CAN_JUMP_NORMAL_DISTANCE
     if CAN_JUMP_SLIGHTLY_HIGHER in abilities:
         abilities |= CAN_JUMP_NORMAL_HEIGHT
+        abilities |= CAN_JUMP_NORMAL_DISTANCE
     if CAN_JUMP_NORMAL_HEIGHT:
+        # Normal jump distance is not guaranteed.
         abilities |= CAN_BARELY_JUMP
 
     # TODO: Can 4-LOM + IG-88 survive gas and use Self-Destruct?
@@ -205,5 +216,9 @@ def update_for_implied_abilities(abilities: CharacterAbility):
     # Jetpacks are a superior version of Astromech hovering.
     if JETPACK in abilities:
         abilities |= HOVER
+
+    # Hovering is the superior version of jump distance.
+    if HOVER in abilities:
+        abilities |= CAN_JUMP_NORMAL_DISTANCE
 
     return abilities
