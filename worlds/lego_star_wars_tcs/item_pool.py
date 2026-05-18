@@ -64,7 +64,7 @@ ABILITY_PICK_ORDER = {
 BASE_ABILITY_COSTS = {
     CharacterAbility.SITH: 10,
     CharacterAbility.BOUNTY_HUNTER: 10,
-    CharacterAbility.ASTROMECH: 8,
+    CharacterAbility.ASTROMECH_PANEL: 8,
     CharacterAbility.SHORTIE: 8,
     CharacterAbility.HIGH_JUMP: 8,
     CharacterAbility.HOVER: 7,

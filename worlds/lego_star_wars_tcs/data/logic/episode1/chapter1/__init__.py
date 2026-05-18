@@ -20,20 +20,20 @@ NEGOTIATIONS = Chapter(
         "Main Corridor": (
             ExitData(
                 "Single Force Field Room",
-                HasAbility(PROTOCOL_DROID),
+                HasAbility(PROTOCOL_PANEL),
             ),
             ExitData(
                 "High Force Fields Room",
-                HasAbility(PROTOCOL_DROID),
+                HasAbility(PROTOCOL_PANEL),
             ),
             ExitData(
                 "Vulture Droid Room",
-                HasAbility(ASTROMECH),
+                HasAbility(ASTROMECH_PANEL),
                 new_level="negotiations_b",
             ),
             ExitData(
                 "Small Room Between Main Corridor and Room Before Hangar",
-                HasAbility(PROTOCOL_DROID),
+                HasAbility(PROTOCOL_PANEL),
             ),
         ),
         "Single Force Field Room": (),
@@ -42,7 +42,7 @@ NEGOTIATIONS = Chapter(
         "Small Room Between Main Corridor and Room Before Hangar": (
             ExitData(
                 "Room Before Hangar",
-                HasAllAbilities(JEDI | CAN_BUILD_BRICKS | PROTOCOL_DROID)
+                HasAllAbilities(JEDI | CAN_BUILD_BRICKS | PROTOCOL_PANEL)
             ),
         ),
         "Room Before Hangar": (
@@ -56,7 +56,7 @@ NEGOTIATIONS = Chapter(
             ExitData(
                 "Power Brick Room",
                 And(
-                    HasAbility(ASTROMECH),
+                    HasAbility(ASTROMECH_PANEL),
                     logic_options(
                         base=HasAbility(JEDI),
                         # ER Note: With ER, entering the Main Hangar from the MTT Hangar would require Moderate logic to
@@ -81,7 +81,7 @@ NEGOTIATIONS = Chapter(
         "MTT Hangar": (
             ExitData(
                 "Chapter Completion",
-                HasAbility(PROTOCOL_DROID),
+                HasAbility(PROTOCOL_PANEL),
                 new_level="negotiations_status",
             ),
         ),

@@ -27,7 +27,7 @@ RETAKE_THEED_PALACE = Chapter(
                     #
                     base=And(
                         # Use the panel.
-                        HasAbility(ASTROMECH),
+                        HasAbility(ASTROMECH_PANEL),
                         # Ascend to the higher area with the panel.
                         HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
                         # Base logic expects being able to defeat the Droideka.
@@ -35,10 +35,10 @@ RETAKE_THEED_PALACE = Chapter(
                     ),
                     # Jump up the bricks to the side of the bricks that make the ramp.
                     # And just ignore Droideka if they cannot be defeated.
-                    normal=HasAllAbilities(ASTROMECH | CAN_JUMP_NORMAL_HEIGHT),
+                    normal=HasAllAbilities(ASTROMECH_PANEL | CAN_JUMP_NORMAL_HEIGHT),
                     # Expert can push R2-D2 onto some objects to get him up to the panel, though I don't know if this is
                     # possible with other characters that cannot jump normally.
-                    # expert=HasAbility(ASTROMECH),
+                    # expert=HasAbility(ASTROMECH_PANEL),
                 ),
                 new_level="retake_b",
             ),
@@ -61,13 +61,13 @@ RETAKE_THEED_PALACE = Chapter(
                 logic_options(
                     # All characters that can build bricks can jump, and being able to damage shielded droideka implies
                     # being able to destroy the statue to spawn the astromech panel bricks.
-                    base=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH) & base_can_damage_shielded_droideka,
+                    base=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & base_can_damage_shielded_droideka,
                     # There's no expectation to be able to kill droideka so dealing damage at close range is enough,
                     # though Astromech can remove shields anyway.
-                    normal=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH) & can_damage_at_close_range,
+                    normal=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & can_damage_at_close_range,
                     # Alternatively expect Deflect Bolts to deflect enemy blaster bolts into the statue.
                     moderate=And(
-                        HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH),
+                        HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL),
                         can_damage_at_close_range | Has("Deflect Bolts"),
                     ),
                 ),
@@ -179,14 +179,14 @@ RETAKE_THEED_PALACE = Chapter(
                 #    (high_jump AND can_damage_at_close_range)
                 #  Actually completing the chapter also requires astromech_panel.
                 logic_options(
-                    base=HasAllAbilities(JEDI | GRAPPLE | ASTROMECH),
-                    normal=HasAnyAbilities(JEDI | BLASTER | ASTROMECH),
+                    base=HasAllAbilities(JEDI | GRAPPLE | ASTROMECH_PANEL),
+                    normal=HasAnyAbilities(JEDI | BLASTER | ASTROMECH_PANEL),
                     moderate=And(
                         Or(
                             HasAnyAbilities(JEDI | BLASTER),
                             HasAbility(HIGH_JUMP) & can_damage_at_close_range,
                         ),
-                        HasAbility(ASTROMECH),
+                        HasAbility(ASTROMECH_PANEL),
                     )
                 ),
                 new_level="retake_status",

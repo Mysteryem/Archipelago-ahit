@@ -3,7 +3,7 @@ from enum import auto, IntFlag
 
 __all__ = [
     "CharacterAbility",
-    "ASTROMECH",
+    "ASTROMECH_PANEL",
     "BLASTER",
     "GRAPPLE",
     "BOUNTY_HUNTER",
@@ -11,7 +11,7 @@ __all__ = [
     "HIGH_JUMP",
     "IMPERIAL",
     "JEDI",
-    "PROTOCOL_DROID",
+    "PROTOCOL_PANEL",
     "SHORTIE",
     "SITH",
 
@@ -48,7 +48,7 @@ __all__ = [
 # todo: These are the abilities from the manual logic, not the real abilities.
 class CharacterAbility(IntFlag):
     NONE = 0
-    ASTROMECH = auto()
+    ASTROMECH_PANEL = auto()
     # todo: This will eventually need to be split into separate Grapple and Blaster.
     BLASTER = auto()
     GRAPPLE = auto()
@@ -57,7 +57,7 @@ class CharacterAbility(IntFlag):
     HIGH_JUMP = auto()
     IMPERIAL = auto()
     JEDI = auto()
-    PROTOCOL_DROID = auto()
+    PROTOCOL_PANEL = auto()
     SHORTIE = auto()
     SITH = auto()
 
@@ -123,7 +123,7 @@ if getattr(CharacterAbility.NONE, "__iter__", None) is None:
 
 
 # Humanoid Special Abilities. These are rather more obvious to players.
-ASTROMECH = CharacterAbility.ASTROMECH
+ASTROMECH_PANEL = CharacterAbility.ASTROMECH_PANEL
 BLASTER = CharacterAbility.BLASTER
 GRAPPLE = CharacterAbility.GRAPPLE
 BOUNTY_HUNTER = CharacterAbility.BOUNTY_HUNTER
@@ -131,7 +131,7 @@ HOVER = CharacterAbility.HOVER
 HIGH_JUMP = CharacterAbility.HIGH_JUMP
 IMPERIAL = CharacterAbility.IMPERIAL
 JEDI = CharacterAbility.JEDI
-PROTOCOL_DROID = CharacterAbility.PROTOCOL_DROID
+PROTOCOL_PANEL = CharacterAbility.PROTOCOL_PANEL
 SHORTIE = CharacterAbility.SHORTIE
 SITH = CharacterAbility.SITH
 JETPACK = CharacterAbility.JETPACK
@@ -178,47 +178,4 @@ CAN_SELF_DESTRUCT = CharacterAbility.CAN_SELF_DESTRUCT
 #CHARACTER_JEDI = JEDI | CAN_ATTACK_UP_CLOSE
 #CHARACTER_SITH = SITH | CHARACTER_JEDI
 
-CHARACTER_ASTROMECH_DROID = ASTROMECH | CAN_BARELY_JUMP | WEAPON_ZAPPER | CAN_DAGOBAH_SWAMP | HOVER
-
-
-def update_for_implied_abilities(abilities: CharacterAbility):
-    # All Sith are Jedi.
-    if SITH in abilities:
-        abilities |= JEDI
-
-    # All characters that can Grapple happen to have Blasters.
-    if GRAPPLE in abilities:
-        abilities |= BLASTER
-
-    # These are all suitable sources of dealing damage up close.
-    if (JEDI | BLASTER | BOUNTY_HUNTER | WEAPON_EWOK) & abilities != 0:
-        abilities |= CAN_ATTACK_UP_CLOSE
-
-    if CAN_BUILD_BRICKS in abilities:
-        abilities |= CAN_JUMP_NORMAL_HEIGHT
-    if (HIGH_JUMP | JEDI) & abilities != 0:
-        abilities |= CAN_DOUBLE_JUMP
-        abilities |= CAN_JUMP_NORMAL_DISTANCE
-    if CAN_DOUBLE_JUMP in abilities:
-        abilities |= CAN_JUMP_SLIGHTLY_HIGHER
-        abilities |= CAN_JUMP_NORMAL_DISTANCE
-    if CAN_JUMP_SLIGHTLY_HIGHER in abilities:
-        abilities |= CAN_JUMP_NORMAL_HEIGHT
-        abilities |= CAN_JUMP_NORMAL_DISTANCE
-    if CAN_JUMP_NORMAL_HEIGHT:
-        # Normal jump distance is not guaranteed.
-        abilities |= CAN_BARELY_JUMP
-
-    # TODO: Can 4-LOM + IG-88 survive gas and use Self-Destruct?
-    if (ASTROMECH | PROTOCOL_DROID) & abilities != 0:
-        abilities |= CAN_SELF_DESTRUCT
-
-    # Jetpacks are a superior version of Astromech hovering.
-    if JETPACK in abilities:
-        abilities |= HOVER
-
-    # Hovering is the superior version of jump distance.
-    if HOVER in abilities:
-        abilities |= CAN_JUMP_NORMAL_DISTANCE
-
-    return abilities
+# CHARACTER_ASTROMECH_DROID = ASTROMECH_PANEL | CAN_BARELY_JUMP | WEAPON_ZAPPER | CAN_DAGOBAH_SWAMP | HOVER

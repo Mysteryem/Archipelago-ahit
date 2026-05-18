@@ -10,9 +10,9 @@ from .constants import (
     SITH,
     HOVER,
     BOUNTY_HUNTER,
-    ASTROMECH,
+    ASTROMECH_PANEL,
     BLASTER,
-    PROTOCOL_DROID,
+    PROTOCOL_PANEL,
     JEDI,
     VEHICLE_TIE,
     VEHICLE_TOW,
@@ -449,7 +449,7 @@ class _PowerBrickData(NamedTuple):
 POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
     # Currently, these requirements assume access to the chapter requires all the abilities of the Story characters of
     # that chapter.
-    "1-1": _PowerBrickData("Super Gonk", ASTROMECH, 100_000),
+    "1-1": _PowerBrickData("Super Gonk", ASTROMECH_PANEL, 100_000),
     "1-2": _PowerBrickData("Poo Money", BOUNTY_HUNTER, 100_000),
     "1-3": _PowerBrickData("Walkie Talkie Disable", BOUNTY_HUNTER | SITH, 5_000),
     "1-4": _PowerBrickData("Power Brick Detector", None, 125_000),
@@ -465,8 +465,8 @@ POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
     "3-2": _PowerBrickData("Super Astromech", BOUNTY_HUNTER, 10_000),
     "3-3": _PowerBrickData("Super Jedi Slam", (HOVER, HIGH_JUMP), 11_000),
     "3-4": _PowerBrickData("Super Thermal Detonator", BOUNTY_HUNTER | SITH, 25_000),
-    "3-5": _PowerBrickData("Deflect Bolts", SITH | HIGH_JUMP | PROTOCOL_DROID, 150_000),
-    "3-6": _PowerBrickData("Dark Side", ASTROMECH, 25_000),
+    "3-5": _PowerBrickData("Deflect Bolts", SITH | HIGH_JUMP | PROTOCOL_PANEL, 150_000),
+    "3-6": _PowerBrickData("Dark Side", ASTROMECH_PANEL, 25_000),
     "4-1": _PowerBrickData("Super Blasters", (JEDI | BOUNTY_HUNTER, JEDI | IMPERIAL), 15_000),
     "4-2": _PowerBrickData("Fast Force", BOUNTY_HUNTER, 40_000),
     "4-3": _PowerBrickData("Super Lightsabers", None, 40_000),
@@ -474,7 +474,7 @@ POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
     "4-5": _PowerBrickData("Invincibility", JEDI, 1_000_000),
     "4-6": _PowerBrickData("Score x2", None, 1_250_000),
     "5-1": _PowerBrickData("Self Destruct", VEHICLE_TIE, 25_000),
-    "5-2": _PowerBrickData("Fast Build", SITH | ASTROMECH, 30_000),
+    "5-2": _PowerBrickData("Fast Build", SITH | ASTROMECH_PANEL, 30_000),
     "5-3": _PowerBrickData("Score x4", None, 2_500_000),
     "5-4": _PowerBrickData("Regenerate Hearts", SITH, 150_000),
     "5-5": _PowerBrickData("Score x6", BOUNTY_HUNTER | HOVER, 5_000_000),  # Note: In memory after Minikit Detector
@@ -490,25 +490,25 @@ POWER_BRICK_REQUIREMENTS: dict[str, _PowerBrickData] = {
 ALL_MINIKITS_REQUIREMENTS: dict[str, tuple[CharacterAbility, ...]] = {
     # Currently, these requirements assume access to the chapter requires all the abilities of the Story characters of
     # that chapter.
-    "1-1": (HIGH_JUMP | ASTROMECH | HOVER | SHORTIE,),
+    "1-1": (HIGH_JUMP | ASTROMECH_PANEL | HOVER | SHORTIE,),
     "1-2": (SHORTIE | BLASTER,),
     "1-3": (SITH | HIGH_JUMP | HOVER | BOUNTY_HUNTER | SHORTIE,),
     "1-4": (VEHICLE_TIE,),
     "1-5": (SITH | BOUNTY_HUNTER | HIGH_JUMP,),
     "1-6": (SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER | IMPERIAL,),
     "2-1": (VEHICLE_TIE,),
-    "2-2": (SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER | SHORTIE | PROTOCOL_DROID,),
+    "2-2": (SITH | HIGH_JUMP | BLASTER | BOUNTY_HUNTER | SHORTIE | PROTOCOL_PANEL,),
     "2-3": (HIGH_JUMP | IMPERIAL | SHORTIE,),
     "2-4": (HIGH_JUMP | SHORTIE,),
     "2-5": (VEHICLE_TIE,),
-    "2-6": (HIGH_JUMP | BLASTER | ASTROMECH,),
+    "2-6": (HIGH_JUMP | BLASTER | ASTROMECH_PANEL,),
     "3-1": (CharacterAbility.NONE,),
-    "3-2": (HIGH_JUMP | BLASTER | SHORTIE | PROTOCOL_DROID,),
+    "3-2": (HIGH_JUMP | BLASTER | SHORTIE | PROTOCOL_PANEL,),
     "3-3": (HOVER | BOUNTY_HUNTER | HIGH_JUMP,),
     "3-4": (SITH | HIGH_JUMP | HOVER,),
-    # Technically PROTOCOL_DROID is not required, but you must save and exit after getting the kit if you don't have
-    # PROTOCOL_DROID, so PROTOCOL_DROID can be expected for the most basic logic difficulty only.
-    "3-5": (SITH | HIGH_JUMP | BLASTER | HOVER | BOUNTY_HUNTER | IMPERIAL | PROTOCOL_DROID,),
+    # Technically PROTOCOL_PANEL is not required, but you must save and exit after getting the kit if you don't have
+    # PROTOCOL_PANEL, so PROTOCOL_PANEL can be expected for the most basic logic difficulty only.
+    "3-5": (SITH | HIGH_JUMP | BLASTER | HOVER | BOUNTY_HUNTER | IMPERIAL | PROTOCOL_PANEL,),
     "3-6": (HOVER,),
     # At least one kit requires JEDI, but there is a kit that requires SITH, so JEDI does not need to be specified.
     "4-1": (SITH | BOUNTY_HUNTER | IMPERIAL,),
@@ -520,7 +520,7 @@ ALL_MINIKITS_REQUIREMENTS: dict[str, tuple[CharacterAbility, ...]] = {
     "4-6": (VEHICLE_TOW | VEHICLE_TIE,),
     "5-1": (VEHICLE_TIE,),
     # At least one kit requires JEDI, but there is a kit that requires SITH, so JEDI does not need to be specified.
-    "5-2": (SITH | HOVER | ASTROMECH | BOUNTY_HUNTER | SHORTIE,),
+    "5-2": (SITH | HOVER | ASTROMECH_PANEL | BOUNTY_HUNTER | SHORTIE,),
     "5-3": (VEHICLE_TOW | VEHICLE_TIE,),
     "5-4": (SITH | BOUNTY_HUNTER | SHORTIE,),
     "5-5": (SITH | BOUNTY_HUNTER | IMPERIAL | SHORTIE,),
@@ -532,7 +532,7 @@ ALL_MINIKITS_REQUIREMENTS: dict[str, tuple[CharacterAbility, ...]] = {
     "6-4": (JEDI | BOUNTY_HUNTER,),
     # IMPERIAL has been considered a chapter-specific ability, so Darth Maul/Count Dooku are considered valid to
     # complete the chapter, and IMPERIAL must be specified for the Minikits.
-    "6-5": (BLASTER | BOUNTY_HUNTER | SHORTIE | ASTROMECH | PROTOCOL_DROID | IMPERIAL,),
+    "6-5": (BLASTER | BOUNTY_HUNTER | SHORTIE | ASTROMECH_PANEL | PROTOCOL_PANEL | IMPERIAL,),
     "6-6": (VEHICLE_TIE,),
 }
 

@@ -38,7 +38,7 @@ async def set_astromech_panel_users_as_tightrope_walk(ctx: TCSContext):
     # can use astromech panels is always picked, if one is unlocked.
     array = P_GC_DATA_LIST.to_array(ctx, CHARACTER_ENTRY_SIZE)
     for character in CHARACTERS_AND_VEHICLES_BY_NAME.values():
-        if CharacterAbility.ASTROMECH in character.abilities:
+        if CharacterAbility.ASTROMECH_PANEL in character.abilities:
             addr_character_entry = array[character.character_index]
             character_entry_flag = CHARACTER_ENTRY_FLAG_2.get(ctx, addr_character_entry)
             new_flag = character_entry_flag | CharacterEntryFlag2.TIGHTROPE_WALK.value
