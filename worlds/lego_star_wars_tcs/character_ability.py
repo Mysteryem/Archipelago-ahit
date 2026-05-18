@@ -25,7 +25,7 @@ __all__ = [
     "CAN_PUSH_OBJECTS",
     "CAN_BUILD_BRICKS",
     "CAN_BARELY_JUMP",
-    "CAN_JUMP_NORMALLY",
+    "CAN_JUMP_NORMAL_HEIGHT",
     "CAN_JUMP_SLIGHTLY_HIGHER",
     "CAN_DOUBLE_JUMP",
     "CAN_HIGH_JUMP_SLAM",
@@ -74,7 +74,7 @@ class CharacterAbility(IntFlag):
     CAN_BUILD_BRICKS = auto()
 
     CAN_BARELY_JUMP = auto()
-    CAN_JUMP_NORMALLY = auto()  # Has at least a basic jump
+    CAN_JUMP_NORMAL_HEIGHT = auto()  # Has at least a basic jump height.
     CAN_JUMP_SLIGHTLY_HIGHER = auto()
     CAN_DOUBLE_JUMP = auto()  # Jedi or High Jump
 
@@ -152,7 +152,7 @@ CAN_BUILD_BRICKS = CharacterAbility.CAN_BUILD_BRICKS
 
 CAN_DOUBLE_JUMP = CharacterAbility.CAN_DOUBLE_JUMP
 CAN_JUMP_SLIGHTLY_HIGHER = CharacterAbility.CAN_JUMP_SLIGHTLY_HIGHER
-CAN_JUMP_NORMALLY = CharacterAbility.CAN_JUMP_NORMALLY
+CAN_JUMP_NORMAL_HEIGHT = CharacterAbility.CAN_JUMP_NORMAL_HEIGHT
 CAN_BARELY_JUMP = CharacterAbility.CAN_BARELY_JUMP
 
 CAN_HIGH_JUMP_SLAM = CharacterAbility.CAN_HIGH_JUMP_SLAM
@@ -168,7 +168,7 @@ CAN_SELF_DESTRUCT = CharacterAbility.CAN_SELF_DESTRUCT
 
 
 # Combination flags
-#CHARACTER_CAN_JUMP_NORMALLY = CAN_JUMP_NORMALLY | CAN_BARELY_JUMP
+#CHARACTER_CAN_JUMP_NORMALLY = CAN_JUMP_NORMAL_HEIGHT | CAN_BARELY_JUMP
 #CHARACTER_CAN_JUMP_SLIGHTLY_HIGHER = CAN_JUMP_SLIGHTLY_HIGHER | CHARACTER_CAN_JUMP_NORMALLY
 #CHARACTER_JEDI = JEDI | CAN_ATTACK_UP_CLOSE
 #CHARACTER_SITH = SITH | CHARACTER_JEDI
@@ -194,8 +194,8 @@ def update_for_implied_abilities(abilities: CharacterAbility):
     if CAN_DOUBLE_JUMP in abilities:
         abilities |= CAN_JUMP_SLIGHTLY_HIGHER
     if CAN_JUMP_SLIGHTLY_HIGHER in abilities:
-        abilities |= CAN_JUMP_NORMALLY
-    if CAN_JUMP_NORMALLY:
+        abilities |= CAN_JUMP_NORMAL_HEIGHT
+    if CAN_JUMP_NORMAL_HEIGHT:
         abilities |= CAN_BARELY_JUMP
 
     # TODO: Can 4-LOM + IG-88 survive gas and use Self-Destruct?

@@ -69,8 +69,8 @@ class GenericCharacterData(GenericItemData):
         if HIGH_JUMP in self.abilities:
             abilities |= CAN_JUMP_SLIGHTLY_HIGHER
         if CAN_JUMP_SLIGHTLY_HIGHER in self.abilities:
-            abilities |= CAN_JUMP_NORMALLY
-        if CAN_JUMP_NORMALLY in self.abilities:
+            abilities |= CAN_JUMP_NORMAL_HEIGHT
+        if CAN_JUMP_NORMAL_HEIGHT in self.abilities:
             abilities |= CAN_BARELY_JUMP
 
         # Automatically set some implied abilities.
@@ -328,7 +328,7 @@ COMMON_PACIFIST_NON_DROID = (
         CAN_BUILD_BRICKS
         | CAN_PULL_LEVERS
         | CAN_PUSH_OBJECTS
-        | CAN_JUMP_NORMALLY
+        | CAN_JUMP_NORMAL_HEIGHT
         | CAN_RIDE_VEHICLES
 )
 COMMON_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_ATTACK_UP_CLOSE
@@ -475,7 +475,7 @@ ITEM_DATA: list[GenericItemData] = [
           | ASTROMECH
           | PROTOCOL_DROID
           | CAN_PUSH_OBJECTS
-          | CAN_JUMP_NORMALLY
+          | CAN_JUMP_NORMAL_HEIGHT
           | CAN_RIDE_VEHICLES),
     _char(115, "Dengar", 213, abilities=BOUNTY_HUNTER | BLASTER | COMMON_NON_DROID),
     _char(116, "4-LOM", 225,
@@ -485,7 +485,7 @@ ITEM_DATA: list[GenericItemData] = [
           | ASTROMECH
           | PROTOCOL_DROID
           | CAN_PUSH_OBJECTS
-          | CAN_JUMP_NORMALLY
+          | CAN_JUMP_NORMAL_HEIGHT
           | CAN_RIDE_VEHICLES),
     _char(117, "Ben Kenobi (Ghost)", 195, abilities=HATLESS_COMMON_JEDI),
     _char(118, "Yoda (Ghost)", 227, abilities=COMMON_JEDI),

@@ -35,7 +35,7 @@ RETAKE_THEED_PALACE = Chapter(
                     ),
                     # Jump up the bricks to the side of the bricks that make the ramp.
                     # And just ignore Droideka if they cannot be defeated.
-                    normal=HasAllAbilities(ASTROMECH | CAN_JUMP_NORMALLY),
+                    normal=HasAllAbilities(ASTROMECH | CAN_JUMP_NORMAL_HEIGHT),
                     # Expert can push R2-D2 onto some objects to get him up to the panel, though I don't know if this is
                     # possible with other characters that cannot jump normally.
                     # expert=HasAbility(ASTROMECH),

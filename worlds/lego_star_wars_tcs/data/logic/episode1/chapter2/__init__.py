@@ -154,7 +154,7 @@ INVASION_OF_NABOO = Chapter(
                     moderate=HasAnyAbilities(JEDI | HIGH_JUMP | JETPACK),
                     # The collision on the boards is busted, and can be used to clip inside the wall, or jump on top of
                     # the wall.
-                    hard=HasAnyAbilities(JEDI | HIGH_JUMP | JETPACK | CAN_JUMP_NORMALLY),
+                    hard=HasAnyAbilities(JEDI | HIGH_JUMP | JETPACK | CAN_JUMP_NORMAL_HEIGHT),
                 ),
                 new_level="gungan_e",
             ),

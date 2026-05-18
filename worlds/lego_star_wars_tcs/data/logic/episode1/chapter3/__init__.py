@@ -62,7 +62,7 @@ ESCAPE_FROM_NABOO = Chapter(
                     # these targets, a Droid that can jump is required.
                     moderate=Or(
                         HasAnyAbilities(BLASTER | WEAPON_EWOK),
-                        can_self_destruct & HasAbility(CAN_JUMP_NORMALLY),
+                        can_self_destruct & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                     ),
                 ),
                 # rescue_d does not exist.
@@ -75,9 +75,9 @@ ESCAPE_FROM_NABOO = Chapter(
                 logic_options(
                     # The button to press is in a raised area, and there is a destroyable cover over the chapter
                     # completion.
-                    base=HasAllAbilities(CAN_JUMP_NORMALLY | CAN_ATTACK_UP_CLOSE),
+                    base=HasAllAbilities(CAN_JUMP_NORMAL_HEIGHT | CAN_ATTACK_UP_CLOSE),
                     # Consider Self Destruct for dealing damage.
-                    normal=can_damage_at_close_range & HasAbility(CAN_JUMP_NORMALLY),
+                    normal=can_damage_at_close_range & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                     # Astromech droids can just barely get up to the raised area.
                     moderate=can_damage_at_close_range & HasAbility(CAN_BARELY_JUMP),
                 ),
@@ -198,7 +198,7 @@ ESCAPE_FROM_NABOO = Chapter(
             logic_options(
                 base=HasAbility(BOUNTY_HUNTER),
                 # The button to press is in a raised area.
-                normal=can_destroy_close_silver_bricks & HasAbility(CAN_JUMP_NORMALLY),
+                normal=can_destroy_close_silver_bricks & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                 # The button to press is in a raised area. Astromech droids can just barely get up.
                 moderate=can_destroy_close_silver_bricks & HasAbility(CAN_BARELY_JUMP),
             ),
