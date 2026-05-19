@@ -85,6 +85,9 @@ class Chapter:
     level_names: frozenset[str] = field(init=False)
 
     def __post_init__(self):
+        # Automatically add in the Chapter Completion region because it is the same in every Chapter.
+        self.regions["Chapter Completion"] = ()
+
         # FIFO queue Depth-First-Search. DFS vs BFS doesn't matter here, only that every region is visited, and every
         # exit is tried.
         region_queue: list[tuple[str, str]] = [(self.start_region, self.start_level)]

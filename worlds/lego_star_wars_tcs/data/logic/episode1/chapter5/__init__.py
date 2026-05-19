@@ -192,7 +192,6 @@ RETAKE_THEED_PALACE = Chapter(
                 new_level="retake_status",
             ),
         ),
-        "Chapter Completion": (),
     },
     minikits={
         "Circular Window Minikit": minikit_data(

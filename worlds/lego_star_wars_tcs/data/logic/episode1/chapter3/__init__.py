@@ -84,7 +84,6 @@ ESCAPE_FROM_NABOO = Chapter(
                 new_level="rescue_status",
             ),
         ),
-        "Chapter Completion": (),
     },
     minikits={
         "Stack Boxes Minikit": minikit_data(

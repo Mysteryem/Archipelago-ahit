@@ -85,7 +85,6 @@ NEGOTIATIONS = Chapter(
                 new_level="negotiations_status",
             ),
         ),
-        "Chapter Completion": (),
     },
     minikits={
         "Blue Levers Minikit": minikit_data(

@@ -14,7 +14,6 @@ MOS_ESPA_POD_RACE = Chapter(
         "Racetrack": (
             ExitData("Chapter Completion", new_level="podsprint_status"),
         ),
-        "Chapter Completion": (),
     },
     minikits={
         "TIE Service Ramp Minikit": minikit_data(

@@ -167,7 +167,6 @@ INVASION_OF_NABOO = Chapter(
                 new_level="gungan_status",
             ),
         ),
-        "Chapter Completion": (),
     },
     minikits={
         "Shoot Target Minikit": minikit_data(

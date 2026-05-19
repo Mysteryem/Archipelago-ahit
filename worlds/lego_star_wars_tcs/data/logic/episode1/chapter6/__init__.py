@@ -99,7 +99,6 @@ DARTH_MAUL = Chapter(
                 new_level="maul_status",
             ),
         ),
-        "Chapter Completion": (),
     },
     minikits={
         "Left Starfighter Minikit": minikit_data(

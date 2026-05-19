@@ -16,11 +16,6 @@ def chapters_test(test_func: Callable[[TestCase, Chapter], None]):
 
 class TestEpisodes(TestCase):
     @chapters_test
-    def test_chapter_completion_present(self, chapter: Chapter):
-        """Test that each chapter has a Chapter Completion region."""
-        self.assertIn("Chapter Completion", chapter.regions)
-
-    @chapters_test
     def test_minikit_count(self, chapter: Chapter):
         """Test that each chapter has exactly 10 minikits defined."""
         self.assertEqual(len(chapter.minikits), 10)
