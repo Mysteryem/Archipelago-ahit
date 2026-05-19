@@ -28,10 +28,12 @@ __all__ = [
     "CAN_JUMP_NORMAL_HEIGHT",
     "CAN_JUMP_NORMAL_DISTANCE",
     "CAN_JUMP_SLIGHTLY_HIGHER",
+    "CAN_FLOP_JUMP",
     "CAN_DOUBLE_JUMP",
     "CAN_HIGH_JUMP_SLAM",
+    "CAN_TRIPLE_JUMP_GREAT_DISTANCE",
     "CAN_ATTACK_UP_CLOSE",
-    "CAN_DAGOBAH_SWAMP",
+    "ASTROMECH_DROID",
 
     "WEAPON_EWOK",
     "WEAPON_ZAPPER",
@@ -80,13 +82,15 @@ class CharacterAbility(IntFlag):
     # Most characters except Ewoks and Ugnaught.
     CAN_JUMP_NORMAL_DISTANCE = auto()
     CAN_JUMP_SLIGHTLY_HIGHER = auto()
+    CAN_FLOP_JUMP = auto()  # Stormtroopers can flop instead dive-rolling, which gets ever so slightly more height.
     CAN_DOUBLE_JUMP = auto()  # Jedi or High Jump
 
     CAN_HIGH_JUMP_SLAM = auto()  # General Grievous or Grievous' Bodyguard. Only used in Moderate+ Logic.
+    CAN_TRIPLE_JUMP_GREAT_DISTANCE = auto()  # General Grievous and Jedi (except Yoda/Yoda(Ghost))
 
     CAN_ATTACK_UP_CLOSE = auto()
 
-    CAN_DAGOBAH_SWAMP = auto()  # Basically just "this character is an Astromech Droid"
+    ASTROMECH_DROID = auto()  # This character is an Astromech Droid, relevant to Dagobah and sometimes P2's AI.
     CAN_SELF_DESTRUCT = auto()  # Most droids, but not 4-LOM and IG-88.
     # IMMUNE_TO_GAS = auto()  # Droids and ghosts.
     # todo: Lots more abilities to add to split up and replace the basic existing ones...
@@ -145,7 +149,7 @@ VEHICLE_BLASTER = CharacterAbility.VEHICLE_BLASTER
 CAN_WEAR_HAT = CharacterAbility.CAN_WEAR_HAT
 CAN_WEAR_HAT_AND_GRAPPLE = CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE
 CAN_WEAR_HAT_AND_DOUBLE_JUMP = CharacterAbility.CAN_WEAR_HAT_AND_DOUBLE_JUMP
-CAN_DAGOBAH_SWAMP = CharacterAbility.CAN_DAGOBAH_SWAMP
+ASTROMECH_DROID = CharacterAbility.ASTROMECH_DROID
 IS_A_VEHICLE = CharacterAbility.IS_A_VEHICLE
 
 # Extremely common ability flags.
@@ -156,11 +160,13 @@ CAN_BUILD_BRICKS = CharacterAbility.CAN_BUILD_BRICKS
 
 CAN_DOUBLE_JUMP = CharacterAbility.CAN_DOUBLE_JUMP
 CAN_JUMP_SLIGHTLY_HIGHER = CharacterAbility.CAN_JUMP_SLIGHTLY_HIGHER
+CAN_FLOP_JUMP = CharacterAbility.CAN_FLOP_JUMP
 CAN_JUMP_NORMAL_HEIGHT = CharacterAbility.CAN_JUMP_NORMAL_HEIGHT
 CAN_JUMP_NORMAL_DISTANCE = CharacterAbility.CAN_JUMP_NORMAL_DISTANCE
 CAN_BARELY_JUMP = CharacterAbility.CAN_BARELY_JUMP
 
 CAN_HIGH_JUMP_SLAM = CharacterAbility.CAN_HIGH_JUMP_SLAM
+CAN_TRIPLE_JUMP_GREAT_DISTANCE = CharacterAbility.CAN_TRIPLE_JUMP_GREAT_DISTANCE
 
 CAN_ATTACK_UP_CLOSE = CharacterAbility.CAN_ATTACK_UP_CLOSE
 
@@ -178,4 +184,4 @@ CAN_SELF_DESTRUCT = CharacterAbility.CAN_SELF_DESTRUCT
 #CHARACTER_JEDI = JEDI | CAN_ATTACK_UP_CLOSE
 #CHARACTER_SITH = SITH | CHARACTER_JEDI
 
-# CHARACTER_ASTROMECH_DROID = ASTROMECH_PANEL | CAN_BARELY_JUMP | WEAPON_ZAPPER | CAN_DAGOBAH_SWAMP | HOVER
+# CHARACTER_ASTROMECH_DROID = ASTROMECH_PANEL | CAN_BARELY_JUMP | WEAPON_ZAPPER | ASTROMECH_DROID | HOVER

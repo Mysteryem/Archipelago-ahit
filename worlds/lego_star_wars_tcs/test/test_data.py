@@ -58,3 +58,17 @@ class TestEpisodes(TestCase):
             chapter_levels = set(chapter.region_to_level.values())
             self.assertTrue(seen_levels.isdisjoint(chapter_levels))
             seen_levels.update(chapter_levels)
+
+    def test_episode_chapter_numbers(self):
+        """Test that chapter episode/chapter numbers are unique and within the expected bounds."""
+        seen_by_episode = {episode_number: set() for episode_number in range(1, 7)}
+        allowed_chapter_numbers = range(1, 7)
+        for chapter in chapters_iter():
+            self.assertIn(chapter.episode_number, seen_by_episode)
+            self.assertIn(chapter.chapter_number, allowed_chapter_numbers)
+
+            seen_chapters = seen_by_episode[chapter.episode_number]
+            self.assertNotIn(chapter.chapter_number, seen_chapters)
+
+            seen_chapters.add(chapter.chapter_number)
+

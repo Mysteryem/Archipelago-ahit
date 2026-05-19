@@ -24,7 +24,7 @@ CHAPTER_SPECIFIC_FLAGS = (
         CAN_WEAR_HAT_AND_GRAPPLE
         | CAN_WEAR_HAT_AND_DOUBLE_JUMP
         | CAN_WEAR_HAT
-        | CAN_DAGOBAH_SWAMP
+        | ASTROMECH_DROID
         | IS_A_VEHICLE
         # Commander Cody in 3-3 and Darth Vader in 6-5 have IMPERIAL, but IMPERIAL is not needed to complete either
         # chapter. In 6-5, it is at least used for the Minikits.

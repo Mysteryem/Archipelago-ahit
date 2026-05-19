@@ -344,12 +344,13 @@ _char = CharacterData
 _vehicle = VehicleData
 _extra = ExtraData
 
+COMMON_NORMAL_JUMP_HEIGHT = CAN_BARELY_JUMP | CAN_JUMP_NORMAL_HEIGHT
 
 COMMON_PACIFIST_NON_DROID = (
         CAN_BUILD_BRICKS
         | CAN_PULL_LEVERS
         | CAN_PUSH_OBJECTS
-        | CAN_JUMP_NORMAL_HEIGHT
+        | COMMON_NORMAL_JUMP_HEIGHT
         | CAN_JUMP_NORMAL_DISTANCE
         | CAN_RIDE_VEHICLES
 )
@@ -357,7 +358,7 @@ COMMON_SHORT_SLOW = (
     CAN_BUILD_BRICKS
     | CAN_PULL_LEVERS
     | CAN_PUSH_OBJECTS
-    | CAN_JUMP_NORMAL_HEIGHT
+    | COMMON_NORMAL_JUMP_HEIGHT
     | CAN_RIDE_VEHICLES
     | SHORTIE
 )
@@ -365,7 +366,7 @@ COMMON_SHORT_SLOW = (
 COMMON_WEAPON_BLASTER = BLASTER | CAN_ATTACK_UP_CLOSE
 COMMON_EWOK = CAN_ATTACK_UP_CLOSE | WEAPON_EWOK | COMMON_SHORT_SLOW
 COMMON_NORMAL_SPEED_PACIFIST_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_JUMP_NORMAL_DISTANCE
-COMMON_CAN_JUMP_SLIGHTLY_HIGHER = CAN_JUMP_NORMAL_HEIGHT | CAN_JUMP_SLIGHTLY_HIGHER | CAN_JUMP_NORMAL_DISTANCE
+COMMON_CAN_JUMP_SLIGHTLY_HIGHER = COMMON_NORMAL_JUMP_HEIGHT | CAN_JUMP_SLIGHTLY_HIGHER | CAN_JUMP_NORMAL_DISTANCE
 COMMON_DOUBLE_JUMP = CAN_JUMP_SLIGHTLY_HIGHER | CAN_DOUBLE_JUMP
 COMMON_HIGH_JUMP = COMMON_DOUBLE_JUMP | HIGH_JUMP
 COMMON_HIGH_JUMP_SLAM = COMMON_HIGH_JUMP | CAN_HIGH_JUMP_SLAM | CAN_ATTACK_UP_CLOSE
@@ -375,11 +376,11 @@ HATLESS_COMMON_NON_DROID = COMMON_NON_DROID | CAN_WEAR_HAT
 HATLESS_PACIFIST_COMMON_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_WEAR_HAT
 COMMON_ASTROMECH_DROID = (ASTROMECH_PANEL
                           | HOVER
-                          | CAN_DAGOBAH_SWAMP
+                          | ASTROMECH_DROID
                           | CAN_BARELY_JUMP
                           | CAN_SELF_DESTRUCT
                           | WEAPON_ZAPPER)
-COMMON_JEDI = JEDI | COMMON_NON_DROID | CAN_DOUBLE_JUMP
+COMMON_JEDI = JEDI | COMMON_NON_DROID | CAN_DOUBLE_JUMP | CAN_TRIPLE_JUMP_GREAT_DISTANCE
 HATLESS_COMMON_JEDI = JEDI | HATLESS_COMMON_NON_DROID
 COMMON_SITH = COMMON_JEDI | SITH
 HATLESS_COMMON_SITH = HATLESS_COMMON_JEDI | SITH
@@ -415,7 +416,12 @@ ITEM_DATA: list[GenericItemData] = [
     _char(12, "C-3PO", 12, abilities=COMMON_PROTOCOL_DROID),
     _char(13, "Mace Windu", 62, abilities=HATLESS_COMMON_JEDI),
     _char(14, "Padmé (Clawed)", 78, abilities=COMMON_GRAPPLE | HATLESS_COMMON_NON_DROID),
-    _char(15, "Yoda", 10, abilities=COMMON_JEDI),
+    _char(15, "Yoda", 10,
+          # Yoda's low base movement speed greatly reduces his triple jump horizontal distance.
+          abilities=
+          JEDI
+          | COMMON_NON_DROID
+          | CAN_DOUBLE_JUMP),
     _char(16, "Obi-Wan Kenobi (Episode 3)", 74, abilities=HATLESS_COMMON_JEDI),
     _char(17, "Anakin Skywalker (Jedi)", 96, abilities=HATLESS_COMMON_JEDI),
     _char(18, "Chancellor Palpatine", 73, abilities=HATLESS_PACIFIST_COMMON_NON_DROID),
@@ -513,23 +519,23 @@ ITEM_DATA: list[GenericItemData] = [
     _char(82, "Mace Windu (Episode 3)", 63, abilities=HATLESS_COMMON_JEDI),
     _char(83, "Disguised Clone", 92, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID),
     _char(84, "Rebel Trooper", 13, abilities=COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(85, "Stormtrooper", 20, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID),
+    _char(85, "Stormtrooper", 20, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP),
     _char(86, "Imperial Shuttle Pilot", 53, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID),
     _char(87, "Tusken Raider", 9, abilities=COMMON_GRAPPLE | HATLESS_COMMON_NON_DROID),
     _char(88, "Jawa", 22, abilities=SHORTIE | COMMON_PACIFIST_NON_DROID | WEAPON_ZAPPER),
-    _char(89, "Sandtrooper", 51, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID),
+    _char(89, "Sandtrooper", 51, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP),
     _char(90, "Greedo", 171, abilities=COMMON_BOUNTY_HUNTER | COMMON_NON_DROID),
     _char(91, "Imperial Spy", 172, abilities=COMMON_PACIFIST_NON_DROID),
-    _char(92, "Beach Trooper", 48, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(93, "Death Star Trooper", 49, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(94, "TIE Fighter Pilot", 50, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID),
+    _char(92, "Beach Trooper", 48, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP),
+    _char(93, "Death Star Trooper", 49, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP),
+    _char(94, "TIE Fighter Pilot", 50, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP),
     _char(95, "Imperial Officer", 14, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID),
     _char(96, "Grand Moff Tarkin", 131, abilities=IMPERIAL | COMMON_GRAPPLE | HATLESS_COMMON_NON_DROID),
     # Can wear hats despite the hood.
     _char(97, "Han Solo (Hood)", 142, abilities=COMMON_GRAPPLE | HATLESS_COMMON_NON_DROID),
     _char(98, "Rebel Trooper (Hoth)", 107, abilities=COMMON_GRAPPLE | COMMON_NON_DROID),
     _char(99, "Rebel Pilot", 58, abilities=COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(100, "Snowtrooper", 45, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID),
+    _char(100, "Snowtrooper", 45, abilities=IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP),
     _char(101, "Lobot", 192, abilities=HATLESS_COMMON_NON_DROID),
     _char(102, "Ugnaught", 158, abilities=COMMON_SHORT_SLOW | WEAPON_ZAPPER),
     _char(103, "Bespin Guard", 193, abilities=COMMON_GRAPPLE | COMMON_NON_DROID),
@@ -561,7 +567,12 @@ ITEM_DATA: list[GenericItemData] = [
           | CAN_JUMP_NORMAL_HEIGHT
           | CAN_RIDE_VEHICLES),
     _char(117, "Ben Kenobi (Ghost)", 195, abilities=HATLESS_COMMON_JEDI),
-    _char(118, "Yoda (Ghost)", 227, abilities=COMMON_JEDI),
+    _char(118, "Yoda (Ghost)", 227,
+          # Yoda's low base movement speed greatly reduces his triple jump horizontal distance.
+          abilities=
+          JEDI
+          | COMMON_NON_DROID
+          | CAN_DOUBLE_JUMP),
     _char(119, "R2-Q5", 314, abilities=COMMON_ASTROMECH_DROID),
     _char(120, "Padmé", 76, abilities=COMMON_GRAPPLE | HATLESS_COMMON_NON_DROID),
     _char(121, "Luke Skywalker (Hoth)", 204, abilities=COMMON_GRAPPLE | COMMON_NON_DROID),  # Ability missing from manual

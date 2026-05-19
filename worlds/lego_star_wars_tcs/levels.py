@@ -610,7 +610,7 @@ CHAPTER_SPECIFIC_REQUIREMENTS: dict[str, tuple[CharacterAbility, CharacterAbilit
     # (level B), and another later use of an Imperial Hat Machine where the panel is at the end of a Zipup, across a gap
     # (level C).
     "4-5": (CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE, CharacterAbility.IMPERIAL),
-    "5-4": (CharacterAbility.CAN_DAGOBAH_SWAMP, None),
+    "5-4": (CharacterAbility.ASTROMECH_DROID, None),
     # In 5-5, there is an Imperial Hat Machine with an Imperial panel that requires double-jumping across a gap to
     # reach, so, if the player has no Imperial character, they need a Jedi/Sith that can wear hats.
     # This gets its own flag, instead of being JEDI | CAN_WEAR_HAT, for logic performance reasons. The complexity comes
