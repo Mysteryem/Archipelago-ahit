@@ -733,3 +733,9 @@ AP_NON_VEHICLE_CHARACTER_INDICES: AbstractSet[int] = {char.character_index
 ITEM_NAME_TO_ID: dict[str, int] = {name: item.code for name, item in ITEM_DATA_BY_NAME.items() if item.is_sendable}
 
 MINIKITS_BY_COUNT: Mapping[int, GenericItemData] = {bundle.bundle_size: bundle for bundle in MINIKITS_BY_NAME.values()}
+SUPER_GONK_ITEMS: frozenset[str] = frozenset(["Gonk Droid", "Super Gonk"])
+SUPER_GONK_DROID_ABILITIES_VALUE: int = (
+    (CAN_SELF_DESTRUCT | COMMON_CAN_JUMP_SLIGHTLY_HIGHER | CAN_JUMP_NORMAL_DISTANCE)
+    # Abilities provided by non-super Gonk Droid can be skipped.
+    & ~CHARACTERS_AND_VEHICLES_BY_NAME["Gonk Droid"].abilities
+).value

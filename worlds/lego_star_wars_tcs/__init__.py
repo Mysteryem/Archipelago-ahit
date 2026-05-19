@@ -43,6 +43,8 @@ from .items import (
     EXTRAS_BY_NAME,
     SHOP_SLOT_REQUIREMENT_TO_UNLOCKS,
     PURCHASABLE_NON_POWER_BRICK_EXTRAS,
+    SUPER_GONK_ITEMS,
+    SUPER_GONK_DROID_ABILITIES_VALUE,
 )
 from .levels import (
     BonusArea,
@@ -790,31 +792,65 @@ class LegoStarWarsTCSWorld(World):
                 # state.prog_items is typed as Counter[str], but `abilities_as_int` is an `int`, so this is technically
                 # not allowed, but works for now.
                 player_prog[abilities_as_int] += 1
+
+                # Gonk Droid is a character, so has abilities and needs to be checked in this branch.
+                # Most progression items are usually characters, and most characters are not in SUPER_GONK_ITEMS.
+                # `.collect()` is performance critical, so checking "Gonk Droid" and "Super Gonk" is done separately for
+                # better performance, at the cost of readability.
+                if (item.name == "Gonk Droid"
+                        and "Super Gonk" in player_prog
+                        and "SUPER_GONK_ACTIVATED" not in player_prog):
+                    # The pair is newly complete, so grant the abilities.
+                    player_prog["COMBINED_ABILITIES"] |= SUPER_GONK_DROID_ABILITIES_VALUE
+                    player_prog[SUPER_GONK_DROID_ABILITIES_VALUE] += 1
+                    player_prog["SUPER_GONK_ACTIVATED"] = 1
+            # Super Gonk is an Extra, so does not have abilities, so has to be checked in a separate branch.
+            elif item.name == "Super Gonk":
+                player_prog = state.prog_items[self.player]
+                if "Gonk Droid" in player_prog and "SUPER_GONK_ACTIVATED" not in player_prog:
+                    # The pair is newly complete, so grant the abilities.
+                    player_prog["COMBINED_ABILITIES"] |= SUPER_GONK_DROID_ABILITIES_VALUE
+                    player_prog[SUPER_GONK_DROID_ABILITIES_VALUE] += 1
+                    player_prog["SUPER_GONK_ACTIVATED"] = 1
             return True
         return False
+
+    # .remove() is barely used by Core AP, so readable code is preferred over extremely optimised code.
+    def _remove_state_abilities(self, state: CollectionState, abilities_as_int: int):
+        player_prog = state.prog_items[self.player]
+        current_abilities_int_count = player_prog[abilities_as_int]
+        if current_abilities_int_count == 1:
+            del player_prog[abilities_as_int]
+            new_combined_abilities = 0
+            key: int | str
+            # This is not fast, but `remove()` is barely ever called by Core AP.
+            # If it is needed to make this faster, then TCS could stop abusing `state.prog_items`, and put its own
+            # `state.tcs_abilities` on the state instead as a `Counter[int, int]`.
+            for key in player_prog:
+                if type(key) is int:
+                    new_combined_abilities |= key
+            player_prog["COMBINED_ABILITIES"] = new_combined_abilities
+        else:
+            # At least one other collected item is providing the same combination of abilities, so the combined
+            # abilities won't have changed.
+            player_prog[abilities_as_int] = current_abilities_int_count - 1
 
     def remove(self, state: CollectionState, item: LegoStarWarsTCSItem) -> bool:
         if super().remove(state, item):
             abilities_as_int = item.collect_abilities_int
             if abilities_as_int is not None:
                 # The removed item has abilities, so remove them from the state too.
+                self._remove_state_abilities(state, abilities_as_int)
+            # Most items with abilities are not in SUPER_GONK_ITEMS, but the code is more readable to handle both items
+            # in a single branch, and `.remove()` is not performance critical, so it's not a concern.
+            if item.name in SUPER_GONK_ITEMS:
                 player_prog = state.prog_items[self.player]
-                current_abilities_int_count = player_prog[abilities_as_int]
-                if current_abilities_int_count == 1:
-                    del player_prog[abilities_as_int]
-                    new_combined_abilities = 0
-                    key: int | str
-                    # This is not fast, but `remove()` is barely ever called by Core AP.
-                    # If it is needed to make this faster, then TCS could stop abusing `state.prog_items`, and put its
-                    # own `state.tcs_abilities` on the state instead as a `Counter[int, int]`.
-                    for key in player_prog:
-                        if type(key) is int:
-                            new_combined_abilities |= key
-                    player_prog["COMBINED_ABILITIES"] = new_combined_abilities
-                else:
-                    # At least one other collected item is providing the same combination of abilities, so the combined
-                    # abilities won't have changed.
-                    player_prog[abilities_as_int] = current_abilities_int_count - 1
+                if ("SUPER_GONK_ACTIVATED" in player_prog
+                        and ("Gonk Droid" not in player_prog or "Super Gonk" not in player_prog)):
+                    # One of the pair is no longer provided, so remove the abilities.
+                    self._remove_state_abilities(state, SUPER_GONK_DROID_ABILITIES_VALUE)
+                    # Remove the marker that Super Gonk abilities have been provided.
+                    del player_prog["SUPER_GONK_ACTIVATED"]
             return True
         return False
 
