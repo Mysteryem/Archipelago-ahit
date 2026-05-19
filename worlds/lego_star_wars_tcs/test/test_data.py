@@ -35,3 +35,14 @@ class TestEpisodes(TestCase):
     def test_location_regions_exist(self, chapter: Chapter):
         for location_data in chapter.all_in_level_location_data:
             self.assertIn(location_data.region, chapter.regions)
+
+    @chapters_test
+    def test_chapter_completion_has_unique_status_level(self, chapter: Chapter):
+        """Test that the Chapter Completion region is in a level ending with _status, and that no other regions are in
+        this level."""
+        self.assertIn("Chapter Completion", chapter.region_to_level)
+        status_level = chapter.region_to_level["Chapter Completion"]
+        self.assertTrue(status_level.endswith("_status"))
+        for region, level in chapter.region_to_level.items():
+            if region != "Chapter Completion":
+                self.assertNotEqual(level, status_level)
