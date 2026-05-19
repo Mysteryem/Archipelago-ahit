@@ -1,8 +1,10 @@
 from rule_builder.rules import Has, HasAny, True_, Or, And
+from rule_builder.options import OptionFilter
 
 from .option_filters import normal_logic, logic_options
 from .rules import HasAbility, HasAnyAbilities, HasAllAbilities
 from ...character_ability import *
+from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
 
 # Implemented as a CharacterAbility for now.
 # can_jetpack_hover = HasAny("Boba Fett", "Jango Fett")
@@ -101,3 +103,10 @@ can_true_high_double_jump = (
 # can_true_triple_high_jump = (
 #     Has("General Grievous")
 # )
+
+# Either Infinite Torpedos [sic] is unlocked, or the player enabled gathering torpedoes within the level.
+can_destroy_objects_with_pod_racers = (
+        Has("Infinite Torpedos")
+        | OptionFilter(LogicExpectNonInfiniteTorpedoesPodRacer, True)
+)
+can_shoot_allow_torpedoes = HasAbility(VEHICLE_BLASTER) | can_destroy_objects_with_pod_racers
