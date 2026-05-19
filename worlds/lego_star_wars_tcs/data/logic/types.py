@@ -83,6 +83,7 @@ class Chapter:
     vehicle_level: bool = False
     level_minikits: dict[str, dict[str, MinikitData]] = field(init=False, default_factory=dict)
     level_names: frozenset[str] = field(init=False)
+    region_to_level: dict[str, str] = field(init=False, default_factory=dict)
 
     def __post_init__(self):
         # Automatically add in the Chapter Completion region because it is the same in every Chapter.
@@ -91,7 +92,7 @@ class Chapter:
         # FIFO queue Depth-First-Search. DFS vs BFS doesn't matter here, only that every region is visited, and every
         # exit is tried.
         region_queue: list[tuple[str, str]] = [(self.start_region, self.start_level)]
-        region_to_level: dict[str, str] = {}
+        region_to_level = self.region_to_level
         while region_queue:
             region_name, region_level = region_queue.pop()
 

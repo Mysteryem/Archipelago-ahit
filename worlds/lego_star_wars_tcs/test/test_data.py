@@ -1,16 +1,20 @@
 from unittest import TestCase
-from typing import Callable
+from typing import Callable, Iterable
 
 from ..data.logic import EPISODES
 from ..data.logic.types import Chapter
 
 
+def chapters_iter() -> Iterable[Chapter]:
+    for episode in EPISODES:
+        yield from episode
+
+
 def chapters_test(test_func: Callable[[TestCase, Chapter], None]):
     def test_chapters(self: TestCase):
-        for episode in EPISODES:
-            for chapter in episode:
-                with self.subTest(chapter=(chapter.episode_number, chapter.chapter_number), chapter_name=chapter.name):
-                    test_func(self, chapter)
+        for chapter in chapters_iter():
+            with self.subTest(chapter=(chapter.episode_number, chapter.chapter_number), chapter_name=chapter.name):
+                test_func(self, chapter)
     return test_chapters
 
 
@@ -46,3 +50,11 @@ class TestEpisodes(TestCase):
         for region, level in chapter.region_to_level.items():
             if region != "Chapter Completion":
                 self.assertNotEqual(level, status_level)
+
+    def test_levels_unique_per_chapter(self):
+        """Test that levels are unique to a single chapter."""
+        seen_levels = set()
+        for chapter in chapters_iter():
+            chapter_levels = set(chapter.region_to_level.values())
+            self.assertTrue(seen_levels.isdisjoint(chapter_levels))
+            seen_levels.update(chapter_levels)
