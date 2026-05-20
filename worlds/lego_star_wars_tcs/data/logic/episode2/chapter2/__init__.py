@@ -132,7 +132,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             ),
             pickup_name="MINI05",
         ),
-        "Five Vents Minikit": minikit_data(
+        "Five Access Hatches Minikit": minikit_data(
             "Bounty Hunter Area",
             logic_options(
                 # AI P2 will only use Double Jump and Astromech Hover, so Jetpack Hover is not allowed here because then
