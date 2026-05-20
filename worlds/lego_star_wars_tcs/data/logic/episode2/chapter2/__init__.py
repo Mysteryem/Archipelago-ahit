@@ -183,7 +183,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             ),
             pickup_name="mk3way",
         ),
-        "Outside Jango Chase Start Minikit": minikit_data(
+        "Jango Chase Hover Platform Minikit": minikit_data(
             "Outside Jango Chase",
             logic_options(
                 # Hover across to the platform.
