@@ -536,7 +536,7 @@ ITEM_DATA: list[GenericItemData] = [
     _char(64, "Battle Droid (Geonosis)", 69, COMMON_WEAPON_BLASTER | CAN_SELF_DESTRUCT, Alignment.EVIL),
     _char(65, "Super Battle Droid", 81, COMMON_WEAPON_BLASTER | CAN_SELF_DESTRUCT, Alignment.EVIL),
     _char(66, "Jango Fett", 59, COMMON_JETPACK_BOUNTY_HUNTER, Alignment.EVIL),
-    _char(67, "Boba Fett (Boy)", 94, SHORTIE | COMMON_PACIFIST_NON_DROID, Alignment.EVIL),
+    _char(67, "Boba Fett (Boy)", 94, COMMON_SHORT_SLOW, Alignment.EVIL),
     _char(68, "Luminara", 84, COMMON_JEDI),
     _char(69, "Ki-Adi Mundi", 82, COMMON_JEDI),
     _char(70, "Kit Fisto", 83, COMMON_JEDI),
