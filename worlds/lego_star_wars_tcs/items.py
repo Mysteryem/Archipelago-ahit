@@ -603,12 +603,13 @@ ITEM_DATA: list[GenericItemData] = [
           | CAN_JUMP_NORMAL_HEIGHT
           | CAN_RIDE_VEHICLES,
           Alignment.EVIL),
-    _char(117, "Ben Kenobi (Ghost)", 195, HATLESS_COMMON_JEDI, Alignment.PASSIVE),
+    _char(117, "Ben Kenobi (Ghost)", 195, HATLESS_COMMON_JEDI & MIXIN_FORCE_GHOST, Alignment.PASSIVE),
     _char(118, "Yoda (Ghost)", 227,
           # Yoda's low base movement speed greatly reduces his triple jump horizontal distance.
-          JEDI
-          | COMMON_NON_DROID
-          | CAN_DOUBLE_JUMP,
+          (JEDI
+           | COMMON_NON_DROID
+           | CAN_DOUBLE_JUMP)
+          & MIXIN_FORCE_GHOST,
           Alignment.PASSIVE),
     _char(119, "R2-Q5", 314, COMMON_ASTROMECH_DROID, Alignment.PASSIVE),
     _char(120, "Padmé", 76, COMMON_GRAPPLE | HATLESS_COMMON_NON_DROID),
@@ -657,7 +658,7 @@ ITEM_DATA: list[GenericItemData] = [
     _generic(158, "Episode 4 Unlock"),
     _generic(159, "Episode 5 Unlock"),
     _generic(160, "Episode 6 Unlock"),
-    _char(161, "Anakin Skywalker (Ghost)", 226, HATLESS_COMMON_JEDI, Alignment.PASSIVE),
+    _char(161, "Anakin Skywalker (Ghost)", 226, HATLESS_COMMON_JEDI & MIXIN_FORCE_GHOST, Alignment.PASSIVE),
     _char(162, "Indiana Jones", 317, COMMON_GRAPPLE | HATLESS_COMMON_NON_DROID),
     _char(163, "Princess Leia (Prisoner)", 205, COMMON_GRAPPLE | HATLESS_COMMON_NON_DROID),
     _vehicle(164, "Anakin's Pod", 259, IS_A_VEHICLE),
