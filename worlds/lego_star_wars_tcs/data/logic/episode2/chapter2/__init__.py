@@ -1,6 +1,6 @@
 from rule_builder.rules import And, Or, Has
 
-from ...macros import can_sith_force
+from ...macros import can_sith_force, can_deflect_bolts
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ...types import minikit_data, ExitData, Chapter, LocationData
@@ -47,10 +47,15 @@ DISCOVERY_ON_KAMINO = Chapter(
             ExitData(
                 "Living Quarters Behind Force Field",
                 logic_options(
-                    # Meet Jango, then destroy the two ceiling turrets to lower the force field.
-                    base=HasAnyAbilities(JEDI | BLASTER),
+                    # Meet Jango, then destroy the robots to leave the room and the two ceiling turrets to lower the
+                    # force field.
+                    base=HasAnyAbilities(IS_NON_GHOST_JEDI | BLASTER),
                     # Standing close to the robots and turrets can cause deflected bolts to destroy them.
-                    moderate=HasAnyAbilities(JEDI | BLASTER) | Has("Deflect Bolts"),
+                    # Super Zapper can destroy the robots, but cannot destroy the turrets.
+                    moderate=Or(
+                        HasAnyAbilities(IS_NON_GHOST_JEDI | BLASTER),
+                        can_deflect_bolts,
+                    ),
                 ),
             ),
         ),

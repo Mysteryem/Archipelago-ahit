@@ -39,6 +39,8 @@ __all__ = [
     "WEAPON_ZAPPER",
 
     "CAN_SELF_DESTRUCT",
+    "CAN_AGGRAVATE_ENEMIES",
+    "IS_NON_GHOST_JEDI",
 
     "IS_A_VEHICLE",
     "VEHICLE_TIE",
@@ -92,6 +94,14 @@ class CharacterAbility(IntFlag):
 
     ASTROMECH_DROID = auto()  # This character is an Astromech Droid, relevant to Dagobah and sometimes P2's AI.
     CAN_SELF_DESTRUCT = auto()  # Most droids, but not 4-LOM and IG-88.
+    # Can this character cause enemy AI to attack them? Passive characters, ghost characters, and neutral characters
+    # without weapons cannot cause enemy AI to attack them. This is relevant for the Deflect Bolts extra.
+    # Ugnaught and Jawa cannot aggravate enemies, unless they have Super Zapper, but this only works on Droids is only
+    # relevant in 3-4 where there are both Droids and Clones
+    CAN_AGGRAVATE_ENEMIES = auto()
+    # Ghost Jedi on their cannot be used to reflect blaster bolts, such as at the start of 1-6 because enemies will not
+    # shoot at them in the first place to allow reflecting blaster bolts.
+    IS_NON_GHOST_JEDI = auto()
     # IMMUNE_TO_GAS = auto()  # Droids and ghosts.
     # todo: Lots more abilities to add to split up and replace the basic existing ones...
     # GHOST = auto()
@@ -176,6 +186,8 @@ WEAPON_ZAPPER = CharacterAbility.WEAPON_ZAPPER
 
 # Other flags.
 CAN_SELF_DESTRUCT = CharacterAbility.CAN_SELF_DESTRUCT
+CAN_AGGRAVATE_ENEMIES = CharacterAbility.CAN_AGGRAVATE_ENEMIES
+IS_NON_GHOST_JEDI = CharacterAbility.IS_NON_GHOST_JEDI
 
 
 # Combination flags

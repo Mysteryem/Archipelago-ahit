@@ -6,6 +6,7 @@ from ...macros import (
     can_damage_at_close_range,
     can_sith_force,
     base_can_damage_shielded_droideka,
+    can_deflect_bolts,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -68,7 +69,7 @@ RETAKE_THEED_PALACE = Chapter(
                     # Alternatively expect Deflect Bolts to deflect enemy blaster bolts into the statue.
                     moderate=And(
                         HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL),
-                        can_damage_at_close_range | Has("Deflect Bolts"),
+                        can_damage_at_close_range | can_deflect_bolts,
                     ),
                 ),
                 # retake_c does not exist.
@@ -137,7 +138,7 @@ RETAKE_THEED_PALACE = Chapter(
                         Has("Droideka") & HasAbility(CAN_BARELY_JUMP),
                     ),
                     # The droideka can be ignored.
-                    normal=HasAllAbilities(CAN_ATTACK_UP_CLOSE | CAN_BARELY_JUMP),
+                    normal=HasAbility(CAN_BARELY_JUMP) & can_damage_at_close_range,
                     # Allow Deflect Bolts to destroy the statue.
                     # Droideka can also get up the small lip to get to the button, by repeatedly switching between
                     # Droideka and another character while rolling against the lip.
@@ -146,7 +147,7 @@ RETAKE_THEED_PALACE = Chapter(
                     # Droideka.
                     moderate=Or(
                         And(
-                            HasAbility(CAN_ATTACK_UP_CLOSE) | Has("Deflect Bolts"),
+                            can_damage_at_close_range | can_deflect_bolts,
                             HasAbility(CAN_BARELY_JUMP),
                         ),
                         Has("Droideka"),
@@ -239,7 +240,7 @@ RETAKE_THEED_PALACE = Chapter(
                 # Includes self-destruct.
                 normal=can_damage_at_close_range,
                 # Include Deflect Bolts.
-                moderate=can_damage_at_close_range | Has("Deflect Bolts"),
+                moderate=can_damage_at_close_range | can_deflect_bolts,
             ),
             pickup_name="mk_0",
         ),

@@ -9,6 +9,7 @@ from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
 # Implemented as a CharacterAbility for now.
 # can_jetpack_hover = HasAny("Boba Fett", "Jango Fett")
 can_self_destruct = HasAbility(CAN_SELF_DESTRUCT) & Has("Self Destruct")
+can_super_ewok_catapult = HasAbility(WEAPON_EWOK) & Has("Super Ewok Catapult")
 
 
 # All Sith are Jedi.
@@ -24,7 +25,7 @@ can_sith_force = And(
 can_destroy_close_silver_bricks = Or(
     HasAbility(BOUNTY_HUNTER),
     Or(
-        HasAbility(CAN_SELF_DESTRUCT) & Has("Self Destruct"),
+        can_self_destruct,
         Has("Exploding Blaster Bolts") & HasAnyAbilities(BLASTER | WEAPON_EWOK),
         Has("Super Ewok Catapult") & HasAbility(WEAPON_EWOK),
     )
@@ -34,6 +35,22 @@ base_can_damage_shielded_droideka = Or(
     HasAnyAbilities(JEDI | BOUNTY_HUNTER),
     Has("Droideka"),
 )
+can_deflect_bolts = HasAbility(CAN_AGGRAVATE_ENEMIES) & Has("Deflect Bolts")
+can_super_zap = HasAbility(WEAPON_ZAPPER) & Has("Super Zapper")
+can_fight_close_droids = logic_options(
+    base=HasAbility(CAN_ATTACK_UP_CLOSE),
+    normal=Or(
+        HasAbility(CAN_ATTACK_UP_CLOSE),
+        can_super_zap,
+        can_self_destruct,
+    ),
+    moderate=Or(
+        HasAbility(CAN_ATTACK_UP_CLOSE),
+        can_super_zap,
+        can_self_destruct,
+        can_deflect_bolts,
+    ),
+)
 can_damage_shielded_droideka = logic_options(
     base=base_can_damage_shielded_droideka,
     # Adds zappers and Extras.
@@ -41,8 +58,9 @@ can_damage_shielded_droideka = logic_options(
         HasAnyAbilities(JEDI | BOUNTY_HUNTER),
         Has("Droideka"),
         HasAllAbilities(WEAPON_ZAPPER | CAN_ATTACK_UP_CLOSE),
+        can_super_zap,
         Or(
-            HasAbility(CAN_SELF_DESTRUCT) & Has("Self Destruct"),
+            can_self_destruct,
             Has("Exploding Blaster Bolts") & HasAnyAbilities(BLASTER | WEAPON_EWOK),
             Has("Super Ewok Catapult") & HasAbility(WEAPON_EWOK),
         )
@@ -52,11 +70,12 @@ can_damage_shielded_droideka = logic_options(
         HasAnyAbilities(JEDI | BOUNTY_HUNTER),
         Has("Droideka"),
         HasAllAbilities(WEAPON_ZAPPER | CAN_ATTACK_UP_CLOSE),
+        can_super_zap,
         Or(
-            HasAbility(CAN_SELF_DESTRUCT) & Has("Self Destruct"),
+            can_self_destruct,
             Has("Exploding Blaster Bolts") & HasAnyAbilities(BLASTER | WEAPON_EWOK),
             Has("Super Ewok Catapult") & HasAbility(WEAPON_EWOK),
-            Has("Deflect Bolts"),
+            can_deflect_bolts,
         )
     ),
 )
