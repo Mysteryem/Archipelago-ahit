@@ -136,7 +136,7 @@ class CharacterData(GenericCharacterData):
 
         if self.alignment is Alignment.PASSIVE:
             # Note that Force Ghosts are considered passive.
-            abilities |= ~CAN_AGGRAVATE_ENEMIES
+            abilities &= ~CAN_AGGRAVATE_ENEMIES
         else:
             # Enemies are aggressive against GOOD characters and will fight back against that damage or attack near
             # them, except Force Ghosts who are untargetable.
