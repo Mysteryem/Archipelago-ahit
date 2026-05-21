@@ -717,6 +717,9 @@ ITEM_DATA: list[GenericItemData] = [
     # Miscellaneous vehicles.
     # This is the vehicle present in the outside area of the Cantina. 'map' is the internal name for the Cantina.
     _char(-1, "mapcar", 303),
+
+    _char(-1, "Super Gonk Droid", -1, CAN_SELF_DESTRUCT | COMMON_CAN_JUMP_SLIGHTLY_HIGHER | CAN_JUMP_NORMAL_DISTANCE,
+          Alignment.PASSIVE),
 ]
 
 
@@ -773,7 +776,7 @@ ITEM_NAME_TO_ID: dict[str, int] = {name: item.code for name, item in ITEM_DATA_B
 MINIKITS_BY_COUNT: Mapping[int, GenericItemData] = {bundle.bundle_size: bundle for bundle in MINIKITS_BY_NAME.values()}
 SUPER_GONK_ITEMS: frozenset[str] = frozenset(["Gonk Droid", "Super Gonk"])
 SUPER_GONK_DROID_ABILITIES_VALUE: int = (
-    (CAN_SELF_DESTRUCT | COMMON_CAN_JUMP_SLIGHTLY_HIGHER | CAN_JUMP_NORMAL_DISTANCE)
+    CHARACTERS_AND_VEHICLES_BY_NAME["Super Gonk Droid"].abilities
     # Abilities provided by non-super Gonk Droid can be skipped.
     & ~CHARACTERS_AND_VEHICLES_BY_NAME["Gonk Droid"].abilities
 ).value
