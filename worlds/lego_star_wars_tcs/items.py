@@ -546,7 +546,7 @@ ITEM_DATA: list[GenericItemData] = [
     _char(74, "Count Dooku", 103, COMMON_HATLESS_SITH, Alignment.EVIL),
     _char(75, "Grievous' Bodyguard", 64, COMMON_HIGH_JUMP_SLAM, Alignment.EVIL),
     # Can build for some reason???
-    _char(76, "General Grievous", 60, COMMON_HIGH_JUMP_SLAM | CAN_BUILD_BRICKS, Alignment.EVIL),
+    _char(76, "General Grievous", 60, COMMON_HIGH_JUMP_SLAM | CAN_BUILD_BRICKS | CAN_TRIPLE_JUMP_GREAT_DISTANCE, Alignment.EVIL),
     # An extension of Chewbacca, who is specially allowed to wear hats.
     _char(77, "Wookiee", 72, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
     _char(78, "Clone (Episode 3)", 87, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID, Alignment.EVIL),
