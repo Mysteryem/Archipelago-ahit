@@ -6,7 +6,8 @@ from BaseClasses import CollectionState
 from rule_builder.rules import Rule, TWorld, True_, OptionFilter, Filtered, HasAny
 from rule_builder.field_resolvers import FieldResolver, resolve_field
 
-from ...constants import CharacterAbility, GAME_NAME
+from ...character_ability import CharacterAbility
+from ...constants import GAME_NAME
 from ...items import CHARACTERS_AND_VEHICLES_BY_NAME
 
 
@@ -68,14 +69,17 @@ class HasAllAbilities(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
     """The abilities to check for."""
 
     def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
-        resolved: int = resolve_field(self.abilities, world, CharacterAbility).value
+        resolved_abilities = resolve_field(self.abilities, world, CharacterAbility)
 
-        if resolved.bit_count() == 0:
+        # Simplify within this rule only.
+        simplified = resolved_abilities.simplify_and()
+
+        if simplified.bit_count() == 0:
             return True_().resolve(world)
-        if resolved.bit_count() == 1:
-            return HasAbility(CharacterAbility(resolved)).resolve(world)
+        if simplified.bit_count() == 1:
+            return HasAbility(simplified).resolve(world)
         return self.Resolved(
-            resolved,
+            simplified,
             **_common_rule_args(world)
         )
 
@@ -118,14 +122,17 @@ class HasAnyAbilities(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
     """The abilities to check for."""
 
     def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
-        resolved: int = resolve_field(self.abilities, world, CharacterAbility).value
+        resolved_abilities = resolve_field(self.abilities, world, CharacterAbility)
 
-        if resolved.bit_count() == 0:
+        # Simplify within this rule only.
+        simplified = resolved_abilities.simplify_or()
+
+        if simplified.bit_count() == 0:
             return True_().resolve(world)
-        if resolved.bit_count() == 1:
-            return HasAbility(CharacterAbility(resolved)).resolve(world)
+        if simplified.bit_count() == 1:
+            return HasAbility(simplified).resolve(world)
         return self.Resolved(
-            resolved,
+            simplified,
             **_common_rule_args(world)
         )
 
