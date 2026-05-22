@@ -115,9 +115,11 @@ class CharacterData(GenericCharacterData):
             abilities |= CAN_JUMP_SLIGHTLY_HIGHER
             abilities |= CAN_DOUBLE_JUMP
         if CAN_JUMP_SLIGHTLY_HIGHER in abilities:
-            abilities |= CAN_JUMP_NORMAL_HEIGHT
+            abilities |= CAN_FLOP_JUMP
             # All characters that can jump slightly higher can jump a normal distance. # todo: Double check.
             abilities |= CAN_JUMP_NORMAL_DISTANCE
+        if CAN_FLOP_JUMP in abilities:
+            abilities |= CAN_JUMP_NORMAL_HEIGHT
         if CAN_JUMP_NORMAL_HEIGHT in abilities:
             # Normal jump distance is not guaranteed.
             abilities |= CAN_BARELY_JUMP
