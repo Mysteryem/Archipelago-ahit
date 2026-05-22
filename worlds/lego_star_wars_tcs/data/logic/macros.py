@@ -35,7 +35,10 @@ base_can_damage_shielded_droideka = Or(
     HasAnyAbilities(JEDI | BOUNTY_HUNTER),
     Has("Droideka"),
 )
-can_deflect_bolts = HasAbility(CAN_AGGRAVATE_ENEMIES) & Has("Deflect Bolts")
+can_deflect_bolts = Or(
+    HasAbility(CAN_DEFLECT_BOLTS),
+    HasAbility(CAN_AGGRAVATE_ENEMIES) & Has("Deflect Bolts"),
+)
 can_super_zap = HasAbility(WEAPON_ZAPPER) & Has("Super Zapper")
 can_fight_close_droids = logic_options(
     base=HasAbility(CAN_ATTACK_UP_CLOSE),

@@ -142,6 +142,9 @@ class CharacterData(GenericCharacterData):
             # them, except Force Ghosts who are untargetable.
             if CAN_ATTACK_UP_CLOSE in abilities or self.alignment is Alignment.GOOD:
                 abilities |= CAN_AGGRAVATE_ENEMIES
+            # All non-passive (non-ghost) Jedi can deflect (and reflect) blaster bolts.
+            if JEDI in abilities:
+                abilities |= CAN_DEFLECT_BOLTS
 
         if CAN_AGGRAVATE_ENEMIES not in abilities:
             print(f"{self.name} cannot aggravate enemies ({self.alignment.name} alignment)")
@@ -407,7 +410,7 @@ COMMON_NORMAL_SPEED_PACIFIST_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_JUMP_NO
 COMMON_CAN_JUMP_SLIGHTLY_HIGHER = COMMON_NORMAL_JUMP_HEIGHT | CAN_JUMP_SLIGHTLY_HIGHER | CAN_JUMP_NORMAL_DISTANCE
 COMMON_DOUBLE_JUMP = CAN_JUMP_SLIGHTLY_HIGHER | CAN_DOUBLE_JUMP
 COMMON_HIGH_JUMP = COMMON_DOUBLE_JUMP | HIGH_JUMP
-COMMON_HIGH_JUMP_SLAM = COMMON_HIGH_JUMP | CAN_HIGH_JUMP_SLAM | CAN_ATTACK_UP_CLOSE
+COMMON_HIGH_JUMP_SLAM = COMMON_HIGH_JUMP | CAN_HIGH_JUMP_SLAM | CAN_ATTACK_UP_CLOSE | CAN_DEFLECT_BOLTS
 
 COMMON_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_ATTACK_UP_CLOSE
 COMMON_HATLESS_NON_DROID = COMMON_NON_DROID | CAN_WEAR_HAT
@@ -504,7 +507,8 @@ ITEM_DATA: list[GenericItemData] = [
           | CAN_BUILD_BRICKS
           | CAN_PUSH_OBJECTS
           | CAN_RIDE_VEHICLES
-          | CAN_ATTACK_UP_CLOSE),
+          | CAN_ATTACK_UP_CLOSE
+          | CAN_DEFLECT_BOLTS),
     _char(53, "Boss Nass", 254, COMMON_PACIFIST_NON_DROID),
     _char(54, "Royal Guard", 101, COMMON_GRAPPLE | COMMON_NON_DROID),
     # Cannot build.
