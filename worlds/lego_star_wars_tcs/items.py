@@ -148,7 +148,7 @@ class CharacterData(GenericCharacterData):
                 abilities |= CAN_DEFLECT_BOLTS
 
         if self.run_speed >= 0.9 and IS_A_VEHICLE not in abilities:
-            abilities |= CAN_OUTRUN_DROID_FACTORY_CONVEYOR
+            abilities |= RUN_SPEED_0_9_OR_HIGHER
 
         if abilities is not self.abilities:
             # print(f"Updated abilities for {self.name}. Added:\n\t{abilities & ~self.abilities!r}")
