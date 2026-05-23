@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, Has
+from rule_builder.rules import And, Or, Has, HasAny
 
 from ...macros import can_sith_force, can_deflect_bolts
 from ...option_filters import logic_options
@@ -179,7 +179,12 @@ DISCOVERY_ON_KAMINO = Chapter(
                 # Allow characters with a slightly higher jump.
                 normal=HasAbility(CAN_JUMP_SLIGHTLY_HIGHER),
                 # Allow stormtrooper flop for a tiny bit of extra height.
-                moderate=HasAnyAbilities(CAN_JUMP_SLIGHTLY_HIGHER | CAN_FLOP_JUMP),
+                # Allow Taun We and Lama Su, who only have a basic jump height, but can make this jump anyway, sort of
+                # sliding up the wall when holding forwards on the controller.
+                moderate=Or(
+                    HasAnyAbilities(CAN_JUMP_SLIGHTLY_HIGHER | CAN_FLOP_JUMP),
+                    HasAny("Taun We", "Lama Su")
+                ),
             ),
             pickup_name="mk3way",
         ),
