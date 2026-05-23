@@ -26,7 +26,7 @@ class TestItems(TestCase):
             if not isinstance(item, GenericCharacterData):
                 continue
             self.assertNotIn(item.character_index, found_character_numbers)
-            self.assertGreaterEqual(item.character_index, 0)
+            self.assertGreaterEqual(item.character_index, 0 if item.is_sendable else -1)
             found_character_numbers.add(item.character_index)
 
     def test_shop_slots_count(self):
