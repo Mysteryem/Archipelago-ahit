@@ -20,7 +20,7 @@ CHARACTER_ENTRY_RUN_SPEED = FloatField(0x1c)
 
 def fix_luke_skywalker_dagobah(event: OnLevelChangeEvent):
     """
-    'Fixes' `Luke Skywalker (Dagobah)` being hardcoded to be unable to lift the X-Wing at the end of Dagobah, which is
+    'Fixes' `Luke Skywalker (Dagobah)` being hardcoded to be unable to lift the X-wing at the end of Dagobah, which is
     required to complete the chapter.
 
     The 'fix' is performed by overwriting the character ID that the game checks for when in the final level in Dagobah.
