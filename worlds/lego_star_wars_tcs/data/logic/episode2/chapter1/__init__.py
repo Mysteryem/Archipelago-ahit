@@ -15,7 +15,7 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
     chapter_number=1,
     start_region="Spawn",
     start_level="pursuit_a",
-    vehicle_level=True,
+    chapter_entrance_rule=HasAbility(IS_A_VEHICLE),
     regions={
         "Spawn": (
             ExitData("First Forcefield Trap", new_level="pursuit_b"),

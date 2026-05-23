@@ -12,7 +12,7 @@ GUNSHIP_CAVALRY = Chapter(
     chapter_number=5,
     start_region="Spawn",
     start_level="gunship_a",
-    vehicle_level=True,
+    chapter_entrance_rule=HasAbility(IS_A_VEHICLE),
     regions={
         "Spawn": (
             ExitData("Behind First Force Field", HasAbility(VEHICLE_TOW)),

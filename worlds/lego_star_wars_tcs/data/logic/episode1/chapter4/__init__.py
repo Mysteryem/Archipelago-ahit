@@ -1,7 +1,7 @@
 from ...rules import HasAbility
 from ...types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import VEHICLE_TIE
+from .....character_ability import VEHICLE_TIE, IS_A_VEHICLE
 
 MOS_ESPA_POD_RACE = Chapter(
     name="Mos Espa Pod Race",
@@ -9,7 +9,7 @@ MOS_ESPA_POD_RACE = Chapter(
     chapter_number=4,
     start_region="Racetrack",
     start_level="podsprint_a",
-    vehicle_level=True,
+    chapter_entrance_rule=HasAbility(IS_A_VEHICLE),
     regions={
         "Racetrack": (
             ExitData("Chapter Completion", new_level="podsprint_status"),
