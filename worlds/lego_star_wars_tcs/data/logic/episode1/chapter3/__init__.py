@@ -7,6 +7,7 @@ from ...macros import (
     can_damage_at_close_range,
     can_sith_force_and_grapple,
     can_sith_force,
+    can_activate_close_target,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilitiesExceptCharacters
@@ -37,16 +38,7 @@ ESCAPE_FROM_NABOO = Chapter(
         "Tower": (
             ExitData(
                 "Rooftops After Small Blaster Target Gate",
-                logic_options(
-                    base=HasAbility(BLASTER),
-                    # Ewoks are awkward because they don't auto-target the targets.
-                    normal=HasAnyAbilities(BLASTER | WEAPON_EWOK),
-                    # Self Destruct works too, though this is probably not well known.
-                    moderate=Or(
-                        HasAnyAbilities(BLASTER | WEAPON_EWOK),
-                        can_self_destruct,
-                    ),
-                ),
+                can_activate_close_target,
                 new_level="rescue_c",
             ),
         ),

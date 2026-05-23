@@ -103,7 +103,9 @@ can_damage_at_close_range = Or(
 
 can_activate_close_target = logic_options(
     base=HasAbility(BLASTER),
+    # Ewoks are awkward because they don't auto-target the targets.
     normal=HasAnyAbilities(BLASTER | WEAPON_EWOK),
+    # Self Destruct works too, though this is probably not well known.
     moderate=Or(
         HasAnyAbilities(BLASTER | WEAPON_EWOK),
         can_self_destruct,
