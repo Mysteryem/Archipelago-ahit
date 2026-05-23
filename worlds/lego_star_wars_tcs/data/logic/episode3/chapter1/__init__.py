@@ -1,4 +1,4 @@
-from ...rules import HasAbility
+from ...rules import HasAbility, HasAbilitiesExceptCharacters, True_
 from ...types import minikit_data, ExitData, Chapter, LocationData
 from ...option_filters import logic_options
 from .....character_ability import IS_A_VEHICLE, VEHICLE_BLASTER
@@ -20,8 +20,20 @@ BATTLE_OVER_CORUSCANT = Chapter(
             ExitData("After First Destroyable Ship", HasAbility(VEHICLE_BLASTER)),
         ),
         "After First Destroyable Ship": (
+            ExitData(
+                "After Second Destroyable Ship",
+                logic_options(
+                    # Slave 1 just barely fits through the ship later in the level. To reduce confusion with newer
+                    # players, and to potentially help with achieving True Jedi, any vehicle other than Slave 1 is
+                    # expected for the base logic.
+                    base=HasAbilitiesExceptCharacters(IS_A_VEHICLE, "Slave 1"),
+                    normal=True_(),
+                ),
+            ),
+        ),
+        "After Second Destroyable Ship": (
             ExitData("Chapter Completion", new_level="dogfight_status"),
-        )
+        ),
     },
     minikits={
         "Minikit 1": minikit_data(
@@ -53,17 +65,17 @@ BATTLE_OVER_CORUSCANT = Chapter(
             pickup_name="m_pup7"
         ),
         "Minikit 8": minikit_data(
-            "After First Destroyable Ship",
+            "After Second Destroyable Ship",
             pickup_name="m_pup8"
         ),
         "Minikit 9": minikit_data(
-            "After First Destroyable Ship",
+            "After Second Destroyable Ship",
             pickup_name="m_pup9"
         ),
         "Minikit 10": minikit_data(
-            "After First Destroyable Ship",
+            "After Second Destroyable Ship",
             pickup_name="m_pup10"
         ),
     },
-    power_brick=LocationData("After First Destroyable Ship")
+    power_brick=LocationData("After Second Destroyable Ship")
 )
