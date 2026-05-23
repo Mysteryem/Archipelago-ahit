@@ -134,15 +134,15 @@ INVASION_OF_NABOO = Chapter(
             ),
         ),
         "Swamp Ruins": (
-            ExitData(
-                "Swamp Behind MTT",
-                logic_options(
-                    base=HasAbility(BOUNTY_HUNTER),
-                    normal=can_destroy_close_silver_bricks,
-                    # The collision for the MTT is enormous, though there's probably ways to get out-of-bounds to get
-                    # behind it.
-                ),
-            ),
+            # ExitData(
+            #     "Swamp Behind MTT",
+            #     logic_options(
+            #         base=HasAbility(BOUNTY_HUNTER),
+            #         normal=can_destroy_close_silver_bricks,
+            #         # The collision for the MTT is enormous, though there's probably ways to get out-of-bounds to get
+            #         # behind it.
+            #     ),
+            # ),
             ExitData(
                 "Swamp Before Water",
                 logic_options(
@@ -159,7 +159,8 @@ INVASION_OF_NABOO = Chapter(
                 new_level="gungan_e",
             ),
         ),
-        "Swamp Behind MTT": (),
+        # There is nothing of logical relevance here yet, so this region is disabled for now.
+        # "Swamp Behind MTT": (),
         "Swamp Before Water": (
             ExitData(
                 # Just walk.

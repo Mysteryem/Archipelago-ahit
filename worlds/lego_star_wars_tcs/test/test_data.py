@@ -72,3 +72,19 @@ class TestEpisodes(TestCase):
 
             seen_chapters.add(chapter.chapter_number)
 
+    @chapters_test
+    def test_regions_have_exits_or_locations(self, chapter: Chapter):
+        """Test that each region contains at least one exit, or at least one location."""
+        unused_region_names = {name for name, exits in chapter.regions.items() if not exits}
+        unused_region_names.discard("Chapter Completion")
+        if not unused_region_names:
+            return
+        for location_data in chapter.all_in_level_location_data:
+            if location_data.region in unused_region_names:
+                unused_region_names.remove(location_data.region)
+                if not unused_region_names:
+                    return
+        self.fail(f"There are unused regions: {sorted(unused_region_names)}")
+
+
+
