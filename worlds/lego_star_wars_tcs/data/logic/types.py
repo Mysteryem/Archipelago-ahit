@@ -1,9 +1,7 @@
 from dataclasses import dataclass, field
-from itertools import chain
 from typing import Iterable
 
 from rule_builder.rules import Rule, True_
-
 
 
 @dataclass(frozen=True)
@@ -80,7 +78,9 @@ class Chapter:
     # story_characters: tuple[str, ...] = ()
     # purchase_characters: tuple[str, ...] = ()
     ridables: dict[str, LocationData] = field(default_factory=dict)
-    chapter_entrance_rule: Rule = field(default_factory=True_)
+    extra_chapter_entrance_rules: Rule = field(default_factory=True_)
+    story_characters: tuple[str, ...] = ()
+    purchase_characters: dict[str, int] = field(default_factory=dict)
     level_minikits: dict[str, dict[str, MinikitData]] = field(init=False, default_factory=dict)
     level_names: frozenset[str] = field(init=False)
     region_to_level: dict[str, str] = field(init=False, default_factory=dict)
@@ -137,3 +137,7 @@ class Chapter:
         yield from self.minikits.values()
         yield from self.ridables.values()
         yield self.power_brick
+
+    @property
+    def short_name(self) -> str:
+        return f"{self.episode_number}-{self.chapter_number}"

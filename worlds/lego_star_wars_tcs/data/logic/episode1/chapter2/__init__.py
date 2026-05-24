@@ -11,6 +11,15 @@ INVASION_OF_NABOO = Chapter(
     name="Invasion of Naboo",
     episode_number=1,
     chapter_number=2,
+    story_characters=(
+        "Obi-Wan Kenobi",
+        "Qui-Gon Jinn",
+        "Jar Jar Binks",
+    ),
+    purchase_characters={
+        "Captain Tarpals": 17_500,
+        "Boss Nass": 15_000,
+    },
     start_region="Forest Spawn",
     start_level="gungan_a",
     regions={
@@ -257,5 +266,5 @@ INVASION_OF_NABOO = Chapter(
             pickup_name="m_pup1",
         ),
     },
-    power_brick=LocationData("Cliff Face Ruins Past Collapsing Debris", HasAbility(BOUNTY_HUNTER))
+    power_brick=LocationData("Cliff Face Ruins Past Collapsing Debris", HasAbility(BOUNTY_HUNTER)),
 )

@@ -13,9 +13,16 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
     name="Bounty Hunter Pursuit",
     episode_number=2,
     chapter_number=1,
+    story_characters=(
+        "Anakin's Speeder",
+    ),
+    purchase_characters={
+        "Zam Wesell": 27_500,
+        "Dexter Jettster": 10_000,
+    },
     start_region="Spawn",
     start_level="pursuit_a",
-    chapter_entrance_rule=HasAbility(IS_A_VEHICLE),
+    extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         "Spawn": (
             ExitData("First Forcefield Trap", new_level="pursuit_b"),

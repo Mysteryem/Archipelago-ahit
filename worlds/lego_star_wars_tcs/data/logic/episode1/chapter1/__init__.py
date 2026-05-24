@@ -11,6 +11,17 @@ NEGOTIATIONS = Chapter(
     name="Negotiations",
     episode_number=1,
     chapter_number=1,
+    story_characters=(
+        "Obi-Wan Kenobi",
+        "Qui-Gon Jinn",
+        "TC-14",
+    ),
+    purchase_characters={
+        "Battle Droid": 6500,
+        "Battle Droid (Security)": 8500,
+        "Battle Droid (Commander)": 10_000,
+        "Droideka": 40_000,
+    },
     start_region="Meeting Room",
     start_level="negotiations_a",
     regions={
@@ -203,5 +214,5 @@ NEGOTIATIONS = Chapter(
             "Main Hangar",
             HasAbility(CAN_BUILD_BRICKS),
         )
-    }
+    },
 )

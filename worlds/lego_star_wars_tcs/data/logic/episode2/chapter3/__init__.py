@@ -18,6 +18,16 @@ DROID_FACTORY = Chapter(
     name="Droid Factory",
     episode_number=2,
     chapter_number=3,
+    story_characters=(
+        "Anakin Skywalker (Padawan)",
+        "C-3PO",
+        "Padmé (Geonosis)",
+        "R2-D2",
+    ),
+    purchase_characters={
+        "Geonosian": 20_000,
+        "Battle Droid (Geonosis)": 8500,
+    },
     start_region="Entrance Corridor",
     start_level="factory_a",
     regions={

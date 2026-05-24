@@ -17,6 +17,13 @@ DARTH_MAUL = Chapter(
     name="Darth Maul",
     episode_number=1,
     chapter_number=6,
+    story_characters=(
+        "Obi-Wan Kenobi",
+        "Qui-Gon Jinn",
+    ),
+    purchase_characters={
+        "Darth Maul": 60_000,
+    },
     start_region="Spawn",
     start_level="maul_a",
     regions={

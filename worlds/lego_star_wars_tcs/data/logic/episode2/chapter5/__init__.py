@@ -10,9 +10,12 @@ GUNSHIP_CAVALRY = Chapter(
     name="Gunship Cavalry",
     episode_number=2,
     chapter_number=5,
+    story_characters=(
+        "Republic Gunship",
+    ),
     start_region="Spawn",
     start_level="gunship_a",
-    chapter_entrance_rule=HasAbility(IS_A_VEHICLE),
+    extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         "Spawn": (
             ExitData("Behind First Force Field", HasAbility(VEHICLE_TOW)),

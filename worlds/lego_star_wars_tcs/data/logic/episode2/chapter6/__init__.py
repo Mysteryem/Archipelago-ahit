@@ -14,6 +14,11 @@ COUNT_DOOKU = Chapter(
     name="Count Dooku",
     episode_number=2,
     chapter_number=6,
+    story_characters=(
+        "Anakin Skywalker (Padawan)",
+        "Obi-Wan Kenobi (Jedi Master)",
+        "Yoda",
+    ),
     start_region="Landing Pad",
     start_level="dooku_b",
     regions={

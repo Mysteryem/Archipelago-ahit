@@ -18,6 +18,14 @@ RETAKE_THEED_PALACE = Chapter(
     name="Retake Theed Palace",
     episode_number=1,
     chapter_number=5,
+    story_characters=(
+        "Obi-Wan Kenobi",
+        "Qui-Gon Jinn",
+        "Anakin Skywalker (Boy)",
+        "Captain Panaka",
+        "Padmé (Battle)",
+        "R2-D2",
+    ),
     start_region="Spawn",
     start_level="retake_a",
     regions={

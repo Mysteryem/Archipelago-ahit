@@ -4,6 +4,8 @@ from typing import Callable, Iterable
 from ..data.logic import EPISODES
 from ..data.logic.types import Chapter
 
+from ..items import CHARACTERS_AND_VEHICLES_BY_NAME
+
 
 def chapters_iter() -> Iterable[Chapter]:
     for episode in EPISODES:
@@ -19,6 +21,17 @@ def chapters_test(test_func: Callable[[TestCase, Chapter], None]):
 
 
 class TestEpisodes(TestCase):
+    def assertCharacterExists(self, character: str):
+        self.assertIn(character, CHARACTERS_AND_VEHICLES_BY_NAME, f"Character '{character}' not found.")
+
+    def assertCharacterIsSendable(self, character: str):
+        self.assertTrue(CHARACTERS_AND_VEHICLES_BY_NAME[character].is_sendable,
+                        f"Character '{character}' is not sendable")
+
+    def assertCharacterUsableInChapterRequirements(self, character):
+        self.assertCharacterExists(character)
+        self.assertCharacterIsSendable(character)
+
     @chapters_test
     def test_minikit_count(self, chapter: Chapter):
         """Test that each chapter has exactly 10 minikits defined."""
@@ -85,6 +98,25 @@ class TestEpisodes(TestCase):
                 if not unused_region_names:
                     return
         self.fail(f"There are unused regions: {sorted(unused_region_names)}")
+
+    @chapters_test
+    def test_story_characters(self, chapter: Chapter):
+        for character in chapter.purchase_characters:
+            self.assertCharacterUsableInChapterRequirements(character)
+
+    @chapters_test
+    def test_purchase_characters(self, chapter: Chapter):
+        for character, purchase_cost in chapter.purchase_characters.items():
+            self.assertCharacterUsableInChapterRequirements(character)
+            self.assertGreater(purchase_cost, 0)
+
+    def test_purchase_characters_unique_per_chapter(self):
+        seen_characters = set()
+        for chapter in chapters_iter():
+            for character in chapter.purchase_characters:
+                self.assertNotIn(character, seen_characters, f"{character} from {chapter.short_name} already found.")
+            seen_characters.update(chapter.purchase_characters)
+
 
 
 

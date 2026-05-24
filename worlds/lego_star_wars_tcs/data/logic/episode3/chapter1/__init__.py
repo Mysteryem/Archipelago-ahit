@@ -7,9 +7,18 @@ BATTLE_OVER_CORUSCANT = Chapter(
     name="Battle Over Coruscant",
     episode_number=3,
     chapter_number=1,
+    story_characters=(
+        "Jedi Starfighter (Yellow)",
+        "Jedi Starfighter (Red)",
+    ),
+    purchase_characters={
+        "Droid Trifighter": 28000,
+        "Vulture Droid": 30000,
+        "Clone Arcfighter": 33000,
+    },
     start_region="Space Battle Spawn",
     start_level="dogfight_a",
-    chapter_entrance_rule=logic_options(
+    extra_chapter_entrance_rules=logic_options(
         # In base logic, expect a blaster vehicle to fight back at the start.
         base=HasAbility(VEHICLE_BLASTER),
         # The first 2 minikits can be collected by ramming into them.

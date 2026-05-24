@@ -19,6 +19,16 @@ ESCAPE_FROM_NABOO = Chapter(
     name="Escape From Naboo",
     episode_number=1,
     chapter_number=3,
+    story_characters=(
+        "Obi-Wan Kenobi",
+        "Qui-Gon Jinn",
+        "Captain Panaka",
+        "Queen Amidala",
+    ),
+    purchase_characters={
+        "Royal Guard": 10_000,
+        "Padmé": 20_000,
+    },
     start_region="Rooftops Spawn",
     start_level="rescue_a",
     regions={

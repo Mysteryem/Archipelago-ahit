@@ -7,9 +7,17 @@ MOS_ESPA_POD_RACE = Chapter(
     name="Mos Espa Pod Race",
     episode_number=1,
     chapter_number=4,
+    story_characters=(
+        "Anakin's Pod",
+    ),
+    purchase_characters={
+        "Watto": 16_000,
+        "Pit Droid": 4000,
+        "Sebulba's Pod": 20000,
+    },
     start_region="Racetrack",
     start_level="podsprint_a",
-    chapter_entrance_rule=HasAbility(IS_A_VEHICLE),
+    extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         "Racetrack": (
             ExitData("Chapter Completion", new_level="podsprint_status"),
@@ -62,5 +70,5 @@ MOS_ESPA_POD_RACE = Chapter(
     },
     power_brick=LocationData(
         "Racetrack",
-    )
+    ),
 )

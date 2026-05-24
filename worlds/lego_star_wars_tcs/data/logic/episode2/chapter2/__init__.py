@@ -11,6 +11,15 @@ DISCOVERY_ON_KAMINO = Chapter(
     name="Discovery On Kamino",
     episode_number=2,
     chapter_number=2,
+    story_characters=(
+        "Obi-Wan Kenobi (Jedi Master)",
+        "R4-P17",
+    ),
+    purchase_characters={
+        "Clone": 13_000,
+        "Lama Su": 9000,
+        "Taun We": 9000,
+    },
     start_region="Landing Pad",
     start_level="kamino_a",
     regions={
