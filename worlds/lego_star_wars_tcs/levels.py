@@ -19,7 +19,7 @@ from .constants import (
     CAN_WEAR_HAT,
     CAN_BUILD_BRICKS,
     CAN_PULL_LEVERS,
-    CAN_ATTACK_UP_CLOSE,
+    CAN_MELEE,
     CAN_PUSH_OBJECTS,
     CAN_RIDE_VEHICLES,
     IS_A_VEHICLE,
@@ -733,7 +733,7 @@ BONUS_AREAS = [
                       | BOUNTY_HUNTER
                       | CAN_BUILD_BRICKS
                       | CAN_PULL_LEVERS
-                      | CAN_ATTACK_UP_CLOSE
+                      | CAN_MELEE
                       | CAN_RIDE_VEHICLES
               )),
     BonusArea("New Town", 0x86e3c0, (308,), 0x1, 309, 57,
@@ -745,7 +745,7 @@ BONUS_AREAS = [
                       | BOUNTY_HUNTER
                       | CAN_BUILD_BRICKS
                       | CAN_PULL_LEVERS
-                      | CAN_ATTACK_UP_CLOSE
+                      | CAN_MELEE
                       | CAN_PUSH_OBJECTS
                       | CAN_RIDE_VEHICLES
               )),

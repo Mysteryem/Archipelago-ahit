@@ -3,6 +3,7 @@ from rule_builder.rules import And, Or, Has, HasAny, True_
 from ...macros import (
     can_self_destruct,
     can_destroy_close_silver_bricks,
+    base_can_damage_at_close_range,
     can_damage_at_close_range,
     can_sith_force,
     base_can_damage_shielded_droideka,
@@ -282,7 +283,7 @@ RETAKE_THEED_PALACE = Chapter(
         "Minikit In Hidden Panel Behind Statue": minikit_data(
             "After Collapsed Floor In Palace",
             logic_options(
-                # base_can_damage_shielded_droideka implies CAN_ATTACK_UP_CLOSE
+                # base_can_damage_shielded_droideka implies base_can_damage_at_close_range
                 base=True_(),
                 # Includes self-destruct.
                 normal=can_damage_at_close_range,
@@ -290,7 +291,7 @@ RETAKE_THEED_PALACE = Chapter(
                 moderate=can_damage_at_close_range | can_deflect_bolts,
             ),
             er_rule=logic_options(
-                base=HasAbility(CAN_ATTACK_UP_CLOSE),
+                base=base_can_damage_at_close_range,
                 # Includes self-destruct.
                 normal=can_damage_at_close_range,
                 # Include Deflect Bolts.

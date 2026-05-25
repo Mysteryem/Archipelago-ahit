@@ -2,6 +2,7 @@ from rule_builder.rules import And, Or, Has, HasAny
 
 from ...macros import (
     can_grapple,
+    base_can_damage_at_close_range,
     can_damage_at_close_range,
     can_deflect_bolts,
     base_can_damage_shielded_droideka,
@@ -36,7 +37,7 @@ DROID_FACTORY = Chapter(
                 "Factory Conveyor",
                 logic_options(
                     # The Geonosians must be killed to proceed.
-                    base=HasAbility(CAN_ATTACK_UP_CLOSE),
+                    base=base_can_damage_at_close_range,
                     # Allow Self Destruct.
                     normal=can_damage_at_close_range,
                     # Allow Deflect Bolts.
@@ -92,7 +93,8 @@ DROID_FACTORY = Chapter(
                     normal=And(
                         HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
                         # Despite being a target, it is just a regular destroyable object.
-                        HasAllAbilities(CAN_ATTACK_UP_CLOSE | IMPERIAL),
+                        can_damage_at_close_range,
+                        HasAbility(IMPERIAL),
                     ),
                 ),
             ),
@@ -171,7 +173,8 @@ DROID_FACTORY = Chapter(
                 logic_options(
                     base=And(
                         HasAnyAbilities(HOVER | GRAPPLE | CAN_DOUBLE_JUMP),
-                        HasAllAbilities(CAN_ATTACK_UP_CLOSE | ASTROMECH_PANEL),
+                        HasAbility(ASTROMECH_PANEL),
+                        base_can_damage_at_close_range,
                     ),
                     moderate=Or(
                         HasAnyAbilities(HOVER | GRAPPLE | CAN_DOUBLE_JUMP),
@@ -202,7 +205,10 @@ DROID_FACTORY = Chapter(
         "Geonosian Hive": (
             ExitData(
                 "Force Fields Maze Room",
-                HasAbility(CAN_ATTACK_UP_CLOSE),
+                logic_options(
+                    base=base_can_damage_at_close_range,
+                    normal=can_damage_at_close_range,
+                ),
             ),
             ExitData(
                 "Geonosian Hive Across Lava",
@@ -217,7 +223,7 @@ DROID_FACTORY = Chapter(
                             # Grapple or high jump up to the cave support thing and destroy it, then hover across.
                             Or(
                                 HasAbility(GRAPPLE),
-                                HasAllAbilities(HIGH_JUMP | CAN_ATTACK_UP_CLOSE),
+                                HasAbility(HIGH_JUMP) & can_damage_at_close_range,
                             ),
                             HasAbility(HOVER),
                         ),
@@ -232,7 +238,7 @@ DROID_FACTORY = Chapter(
                             # Grapple or high jump up to the cave support thing and destroy it, then hover across.
                             Or(
                                 HasAbility(GRAPPLE),
-                                HasAllAbilities(HIGH_JUMP | CAN_ATTACK_UP_CLOSE),
+                                HasAbility(HIGH_JUMP) & can_damage_at_close_range,
                             ),
                             HasAbility(HOVER),
                         ),

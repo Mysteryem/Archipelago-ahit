@@ -52,7 +52,7 @@ __all__ = [
 # also has VEHICLE_BLASTER.
 ABILITY_PICK_ORDER = {
     **dict.fromkeys(~CharacterAbility.NONE, 0),
-    CharacterAbility.CAN_ATTACK_UP_CLOSE: 1,
+    CharacterAbility.CAN_MELEE: 1,
     CharacterAbility.CAN_RIDE_VEHICLES: 1,
     CharacterAbility.CAN_JUMP_NORMAL_HEIGHT: 1,
     CharacterAbility.CAN_PULL_LEVERS: 1,
@@ -72,7 +72,7 @@ BASE_ABILITY_COSTS = {
     CharacterAbility.CAN_WEAR_HAT: 0,
     CharacterAbility.JEDI: 2,
     CharacterAbility.BLASTER: 2,
-    CharacterAbility.CAN_ATTACK_UP_CLOSE: 1,
+    CharacterAbility.CAN_MELEE: 1,
     CharacterAbility.CAN_RIDE_VEHICLES: 1,
     CharacterAbility.CAN_JUMP_NORMAL_HEIGHT: 1,
     CharacterAbility.CAN_PULL_LEVERS: 1,

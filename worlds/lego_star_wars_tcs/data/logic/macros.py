@@ -2,7 +2,7 @@ from rule_builder.rules import Has, HasAny, True_, Or, And
 from rule_builder.options import OptionFilter
 
 from .option_filters import normal_logic, logic_options
-from .rules import HasAbility, HasAnyAbilities, HasAllAbilities
+from .rules import HasAbility, HasAnyAbilities, HasAbilitiesExceptCharacters
 from ...character_ability import *
 from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
 
@@ -40,17 +40,20 @@ can_deflect_bolts = Or(
     HasAbility(CAN_AGGRAVATE_ENEMIES) & Has("Deflect Bolts"),
 )
 can_super_zap = HasAbility(WEAPON_ZAPPER) & Has("Super Zapper")
+base_can_damage_at_close_range = HasAnyAbilities(BLASTER | WEAPON_EWOK | CAN_MELEE)
+can_damage_at_close_range = Or(
+    HasAnyAbilities(BLASTER | WEAPON_EWOK | CAN_MELEE),
+    can_self_destruct
+)
 can_fight_close_droids = logic_options(
-    base=HasAbility(CAN_ATTACK_UP_CLOSE),
+    base=base_can_damage_at_close_range,
     normal=Or(
-        HasAbility(CAN_ATTACK_UP_CLOSE),
+        can_damage_at_close_range,
         can_super_zap,
-        can_self_destruct,
     ),
     moderate=Or(
-        HasAbility(CAN_ATTACK_UP_CLOSE),
+        can_damage_at_close_range,
         can_super_zap,
-        can_self_destruct,
         can_deflect_bolts,
     ),
 )
@@ -60,7 +63,7 @@ can_damage_shielded_droideka = logic_options(
     normal=Or(
         HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM),
         Has("Droideka"),
-        HasAllAbilities(WEAPON_ZAPPER | CAN_ATTACK_UP_CLOSE),
+        HasAbility(WEAPON_ZAPPER) & can_damage_at_close_range,
         can_super_zap,
         Or(
             can_self_destruct,
@@ -72,7 +75,7 @@ can_damage_shielded_droideka = logic_options(
     moderate=Or(
         HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM),
         Has("Droideka"),
-        HasAllAbilities(WEAPON_ZAPPER | CAN_ATTACK_UP_CLOSE),
+        HasAbility(WEAPON_ZAPPER) & can_damage_at_close_range,
         can_super_zap,
         Or(
             can_self_destruct,
@@ -95,10 +98,6 @@ can_sith_force_and_grapple = can_sith_force & (HasAbility(GRAPPLE) | Has("Force 
 can_fight_or_bypass_skippable_droideka = Or(
     can_damage_shielded_droideka,
     True_(options=normal_logic)
-)
-can_damage_at_close_range = Or(
-    HasAbility(CAN_ATTACK_UP_CLOSE),
-    can_self_destruct
 )
 
 can_activate_close_target = logic_options(

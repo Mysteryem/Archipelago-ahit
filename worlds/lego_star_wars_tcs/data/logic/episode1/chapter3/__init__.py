@@ -5,6 +5,7 @@ from ...macros import (
     can_self_destruct,
     can_destroy_close_silver_bricks,
     can_damage_at_close_range,
+    base_can_damage_at_close_range,
     can_sith_force_and_grapple,
     can_sith_force,
     can_activate_close_target,
@@ -88,7 +89,7 @@ ESCAPE_FROM_NABOO = Chapter(
                 er_rule=logic_options(
                     # The button to press is in a raised area, and there is a destroyable cover over the chapter
                     # completion.
-                    base=HasAllAbilities(CAN_JUMP_NORMAL_HEIGHT | CAN_ATTACK_UP_CLOSE),
+                    base=HasAbility(CAN_JUMP_NORMAL_HEIGHT) & base_can_damage_at_close_range,
                     # Consider Self Destruct for dealing damage.
                     normal=can_damage_at_close_range & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                     # Astromech droids can just barely get up to the raised area.

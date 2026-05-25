@@ -112,12 +112,19 @@ RIDABLES_REQUIREMENTS: dict[str, dict[str, tuple[CharacterAbility, ...]]] = {
         # bricks is needed to build the final part.
         "Wookie Flyer": (CharacterAbility.JEDI | CharacterAbility.CAN_BUILD_BRICKS | CharacterAbility.CAN_PULL_LEVERS,),
         # A house needs to be destroyed to reveal the parts and then a Jedi is needed to assemble the AT-ST.
-        "AT-ST": (CharacterAbility.JEDI | CharacterAbility.CAN_ATTACK_UP_CLOSE,),
+        "AT-ST": (
+            CharacterAbility.JEDI | CharacterAbility.CAN_MELEE,
+            CharacterAbility.JEDI | CharacterAbility.BLASTER,
+        ),
         # A house needs to be destroyed to reveal the parts and then the Tractor needs to be built.
-        "Tractor": (CharacterAbility.CAN_ATTACK_UP_CLOSE | CharacterAbility.CAN_BUILD_BRICKS,),
+        "Tractor": (
+            CharacterAbility.CAN_MELEE | CharacterAbility.CAN_BUILD_BRICKS,
+            CharacterAbility.BLASTER | CharacterAbility.CAN_BUILD_BRICKS,
+        ),
         # Either The AT-ST or a Bounty Hunter can destroy the obstacles in the way of getting to the Landspeeder.
         "Landspeeder": (
-            CharacterAbility.JEDI | CharacterAbility.CAN_ATTACK_UP_CLOSE,
+            CharacterAbility.JEDI | CharacterAbility.CAN_MELEE,
+            CharacterAbility.JEDI | CharacterAbility.BLASTER,
             CharacterAbility.BOUNTY_HUNTER,
         ),
         # There are Dewbacks and Banthas close enough to the fences that there is no requirement to destroy or jump over
@@ -130,9 +137,15 @@ RIDABLES_REQUIREMENTS: dict[str, dict[str, tuple[CharacterAbility, ...]]] = {
         # The boat needs fixing.
         "Lifeboat": (CharacterAbility.CAN_BUILD_BRICKS,),
         # The house and bins need destroying, and then the car needs to be built.
-        "Town Car": (CharacterAbility.CAN_ATTACK_UP_CLOSE | CharacterAbility.CAN_BUILD_BRICKS,),
+        "Town Car": (
+            CharacterAbility.CAN_MELEE | CharacterAbility.CAN_BUILD_BRICKS,
+            CharacterAbility.BLASTER | CharacterAbility.CAN_BUILD_BRICKS,
+        ),
         # A small building needs to be destroyed, and then the tractor needs to be built.
-        "Tractor": (CharacterAbility.CAN_ATTACK_UP_CLOSE | CharacterAbility.CAN_BUILD_BRICKS,),
+        "Tractor": (
+            CharacterAbility.CAN_MELEE | CharacterAbility.CAN_BUILD_BRICKS,
+            CharacterAbility.BLASTER | CharacterAbility.CAN_BUILD_BRICKS,
+        ),
         # There is a Tauntaun just barely close enough to the fence that there is no need for a character that can jump
         # or destroy the fences, though all characters that can ride vehicles can also jump.
     },
@@ -140,7 +153,8 @@ RIDABLES_REQUIREMENTS: dict[str, dict[str, tuple[CharacterAbility, ...]]] = {
         # There are two cars, one is accessed by destroying garbage cans and then building it, and the other is accessed
         # by pulling a lever.
         "Cantina Car": (
-            CharacterAbility.CAN_ATTACK_UP_CLOSE | CharacterAbility.CAN_BUILD_BRICKS,
+            CharacterAbility.CAN_MELEE | CharacterAbility.CAN_BUILD_BRICKS,
+            CharacterAbility.BLASTER | CharacterAbility.CAN_BUILD_BRICKS,
             CharacterAbility.CAN_PULL_LEVERS,
         )
     }

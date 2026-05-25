@@ -100,9 +100,13 @@ class CharacterData(GenericCharacterData):
         if GRAPPLE in abilities:
             abilities |= BLASTER
 
-        # These are all suitable sources of dealing damage up close.
-        if (JEDI | BLASTER | BOUNTY_HUNTER | WEAPON_EWOK) & abilities != 0:
-            abilities |= CAN_ATTACK_UP_CLOSE
+        # These can all melee.
+        if JEDI in abilities or BOUNTY_HUNTER in abilities or CAN_HIGH_JUMP_SLAM in abilities:
+            abilities |= CAN_MELEE
+
+        # All Bounty Hunters can use blasters.
+        if BOUNTY_HUNTER in abilities:
+            abilities |= BLASTER
 
         assert BOUNTY_HUNTER not in abilities or self.alignment is Alignment.EVIL, \
             f"{self.name} is a Bounty Hunter, but is not EVIL alignment."
@@ -143,7 +147,7 @@ class CharacterData(GenericCharacterData):
         else:
             # Enemies are aggressive against GOOD characters and will fight back against that damage or attack near
             # them, except Force Ghosts who are untargetable.
-            if CAN_ATTACK_UP_CLOSE in abilities or self.alignment is Alignment.GOOD:
+            if CAN_MELEE in abilities or BLASTER in abilities or self.alignment is Alignment.GOOD:
                 abilities |= CAN_AGGRAVATE_ENEMIES
             # All non-passive (non-ghost) Jedi can deflect (and reflect) blaster bolts.
             if JEDI in abilities:
@@ -407,16 +411,17 @@ COMMON_SHORT_SLOW = (
     | SHORTIE
 )
 
-COMMON_WEAPON_BLASTER = BLASTER | CAN_ATTACK_UP_CLOSE
-COMMON_EWOK = CAN_ATTACK_UP_CLOSE | WEAPON_EWOK | COMMON_SHORT_SLOW
+COMMON_EWOK = WEAPON_EWOK | COMMON_SHORT_SLOW
 COMMON_NORMAL_SPEED_PACIFIST_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_JUMP_NORMAL_DISTANCE
 COMMON_CAN_JUMP_SLIGHTLY_HIGHER = COMMON_NORMAL_JUMP_HEIGHT | CAN_JUMP_SLIGHTLY_HIGHER | CAN_JUMP_NORMAL_DISTANCE
 COMMON_DOUBLE_JUMP = CAN_JUMP_SLIGHTLY_HIGHER | CAN_DOUBLE_JUMP
 COMMON_HIGH_JUMP = COMMON_DOUBLE_JUMP | HIGH_JUMP
-COMMON_HIGH_JUMP_SLAM = COMMON_HIGH_JUMP | CAN_HIGH_JUMP_SLAM | CAN_ATTACK_UP_CLOSE | CAN_DEFLECT_BOLTS
+COMMON_HIGH_JUMP_SLAM = COMMON_HIGH_JUMP | CAN_HIGH_JUMP_SLAM | CAN_MELEE | CAN_DEFLECT_BOLTS
 
-COMMON_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_ATTACK_UP_CLOSE
-COMMON_HATLESS_NON_DROID = COMMON_NON_DROID | CAN_WEAR_HAT
+COMMON_MELEE_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_MELEE
+COMMON_BLASTER_NON_DROID = COMMON_PACIFIST_NON_DROID | BLASTER
+COMMON_HATLESS_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_WEAR_HAT
+COMMON_HATLESS_MELEE_NON_DROID = COMMON_MELEE_NON_DROID | CAN_WEAR_HAT
 COMMON_HATLES_PACIFIST_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_WEAR_HAT
 COMMON_ASTROMECH_DROID = (ASTROMECH_PANEL
                           | HOVER
@@ -424,15 +429,15 @@ COMMON_ASTROMECH_DROID = (ASTROMECH_PANEL
                           | CAN_BARELY_JUMP
                           | CAN_SELF_DESTRUCT
                           | WEAPON_ZAPPER)
-COMMON_JEDI = JEDI | COMMON_NON_DROID | CAN_DOUBLE_JUMP | CAN_TRIPLE_JUMP_GREAT_DISTANCE | IS_NON_GHOST_JEDI
+COMMON_JEDI = JEDI | COMMON_PACIFIST_NON_DROID | CAN_DOUBLE_JUMP | CAN_TRIPLE_JUMP_GREAT_DISTANCE | IS_NON_GHOST_JEDI
 COMMON_HATLESS_JEDI = COMMON_JEDI | CAN_WEAR_HAT
 COMMON_SITH = COMMON_JEDI | SITH
 COMMON_HATLESS_SITH = COMMON_HATLESS_JEDI | SITH
 
-COMMON_GRAPPLE = GRAPPLE | COMMON_WEAPON_BLASTER
-COMMON_BOUNTY_HUNTER = BOUNTY_HUNTER | COMMON_GRAPPLE
+COMMON_GRAPPLE = GRAPPLE | BLASTER
+COMMON_BOUNTY_HUNTER = BOUNTY_HUNTER | COMMON_GRAPPLE | CAN_MELEE
 COMMON_JETPACK = HOVER | JETPACK
-COMMON_NON_DROID_BOUNTY_HUNTER = COMMON_BOUNTY_HUNTER | COMMON_NON_DROID
+COMMON_NON_DROID_BOUNTY_HUNTER = COMMON_BOUNTY_HUNTER | COMMON_PACIFIST_NON_DROID
 COMMON_JETPACK_BOUNTY_HUNTER = COMMON_NON_DROID_BOUNTY_HUNTER | COMMON_JETPACK
 
 COMMON_PROTOCOL_DROID = PROTOCOL_PANEL | CAN_SELF_DESTRUCT
@@ -451,72 +456,72 @@ ITEM_DATA: list[GenericItemData] = [
           | CAN_RIDE_VEHICLES
           | CAN_AGGRAVATE_ENEMIES,
           1.32),
-    _char(3, "Queen Amidala", 80, COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(4, "Captain Panaka", 98, COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(5, "Padmé (Battle)", 77, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
+    _char(3, "Queen Amidala", 80, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(4, "Captain Panaka", 98, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(5, "Padmé (Battle)", 77, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
     _char(6, "R2-D2", 8, COMMON_ASTROMECH_DROID, 1.0, Alignment.PASSIVE),
     _char(7, "Anakin Skywalker (Boy)", 93, SHORTIE | COMMON_HATLES_PACIFIST_NON_DROID),
     _char(8, "Obi-Wan Kenobi (Jedi Master)", 75, COMMON_HATLESS_JEDI),
     _char(9, "R4-P17", 66, COMMON_ASTROMECH_DROID, 1.0, Alignment.PASSIVE),
     _char(10, "Anakin Skywalker (Padawan)", 97, COMMON_HATLESS_JEDI),
-    _char(11, "Padmé (Geonosis)", 79, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
+    _char(11, "Padmé (Geonosis)", 79, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
     _char(12, "C-3PO", 12, COMMON_PROTOCOL_DROID, 0.75, Alignment.PASSIVE),
     _char(13, "Mace Windu", 62, COMMON_HATLESS_JEDI),
-    _char(14, "Padmé (Clawed)", 78, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
+    _char(14, "Padmé (Clawed)", 78, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
     _char(15, "Yoda", 10,
           # Yoda's low base movement speed greatly reduces his triple jump horizontal distance.
           JEDI
-          | COMMON_NON_DROID
+          | COMMON_PACIFIST_NON_DROID
           | CAN_DOUBLE_JUMP,
           0.8),
     _char(16, "Obi-Wan Kenobi (Episode 3)", 74, COMMON_HATLESS_JEDI),
     _char(17, "Anakin Skywalker (Jedi)", 96, COMMON_HATLESS_JEDI),
     _char(18, "Chancellor Palpatine", 73, COMMON_HATLES_PACIFIST_NON_DROID),
-    _char(19, "Commander Cody", 89, COMMON_GRAPPLE | IMPERIAL | COMMON_NON_DROID, 1.0, Alignment.EVIL),
-    _char(20, "Chewbacca", 16, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(21, "Princess Leia", 23, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(22, "Captain Antilles", 207, COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(23, "Rebel Friend", 190, COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(24, "Luke Skywalker (Tatooine)", 28, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
+    _char(19, "Commander Cody", 89, COMMON_GRAPPLE | IMPERIAL | COMMON_PACIFIST_NON_DROID, 1.0, Alignment.EVIL),
+    _char(20, "Chewbacca", 16, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(21, "Princess Leia", 23, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(22, "Captain Antilles", 207, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(23, "Rebel Friend", 190, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(24, "Luke Skywalker (Tatooine)", 28, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
     _char(25, "Ben Kenobi", 56, COMMON_HATLESS_JEDI),
-    _char(26, "Han Solo", 33, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(27, "Luke Skywalker (Stormtrooper)", 29, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(28, "Han Solo (Stormtrooper)", 34, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(29, "Han Solo (Hoth)", 143, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(30, "Princess Leia (Hoth)", 24, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(31, "Luke Skywalker (Pilot)", 156, COMMON_GRAPPLE | COMMON_NON_DROID),
+    _char(26, "Han Solo", 33, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(27, "Luke Skywalker (Stormtrooper)", 29, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(28, "Han Solo (Stormtrooper)", 34, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(29, "Han Solo (Hoth)", 143, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(30, "Princess Leia (Hoth)", 24, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(31, "Luke Skywalker (Pilot)", 156, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
     _char(32, "Luke Skywalker (Dagobah)", 157, COMMON_HATLESS_JEDI),
     _char(33, "Luke Skywalker (Bespin)", 25, COMMON_HATLESS_JEDI),
-    _char(34, "Princess Leia (Boushh)", 129, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
+    _char(34, "Princess Leia (Boushh)", 129, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
     _char(35, "Luke Skywalker (Jedi)", 27, COMMON_HATLESS_JEDI),
-    _char(36, "Han Solo (Skiff)", 141, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(37, "Lando Calrissian (Palace Guard)", 201, COMMON_GRAPPLE | COMMON_NON_DROID, 1.18),
-    _char(38, "Princess Leia (Slave)", 161, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
+    _char(36, "Han Solo (Skiff)", 141, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(37, "Lando Calrissian (Palace Guard)", 201, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID, 1.18),
+    _char(38, "Princess Leia (Slave)", 161, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
     _char(39, "Luke Skywalker (Endor)", 26, COMMON_JEDI),
-    _char(40, "Princess Leia (Endor)", 162, COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(41, "Han Solo (Endor)", 206, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
+    _char(40, "Princess Leia (Endor)", 162, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(41, "Han Solo (Endor)", 206, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
     _char(42, "Wicket", 223, COMMON_EWOK, 0.9),
     _char(43, "Darth Vader", 40, IMPERIAL | COMMON_SITH, alignment=Alignment.EVIL),
-    _char(44, "Lando Calrissian", 35, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID, 1.18),
+    _char(44, "Lando Calrissian", 35, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID, 1.18),
     # Has special hair that apparently counts as a hat.
-    _char(45, "Princess Leia (Bespin)", 57, COMMON_GRAPPLE | COMMON_NON_DROID),
+    _char(45, "Princess Leia (Bespin)", 57, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
     _char(46, "Gonk Droid", 17, CAN_SELF_DESTRUCT, 0.12, Alignment.PASSIVE),
     _char(47, "PK Droid", 100, CAN_SELF_DESTRUCT, 0.8285375, Alignment.PASSIVE),
-    _char(48, "Battle Droid", 67, COMMON_WEAPON_BLASTER | CAN_SELF_DESTRUCT, alignment=Alignment.EVIL),
-    _char(49, "Battle Droid (Security)", 70, COMMON_WEAPON_BLASTER | CAN_SELF_DESTRUCT, alignment=Alignment.EVIL),
-    _char(50, "Battle Droid (Commander)", 68, COMMON_WEAPON_BLASTER | CAN_SELF_DESTRUCT, alignment=Alignment.EVIL),
-    _char(51, "Droideka", 65, COMMON_WEAPON_BLASTER | CAN_SELF_DESTRUCT, 1.8, Alignment.EVIL),
+    _char(48, "Battle Droid", 67, BLASTER | CAN_SELF_DESTRUCT, alignment=Alignment.EVIL),
+    _char(49, "Battle Droid (Security)", 70, BLASTER | CAN_SELF_DESTRUCT, alignment=Alignment.EVIL),
+    _char(50, "Battle Droid (Commander)", 68, BLASTER | CAN_SELF_DESTRUCT, alignment=Alignment.EVIL),
+    _char(51, "Droideka", 65, BLASTER | CAN_SELF_DESTRUCT, 1.8, Alignment.EVIL),
     # Due to being based on Jar Jar, he cannot pull levers.
     _char(52, "Captain Tarpals", 276,
           COMMON_HIGH_JUMP
           | CAN_BUILD_BRICKS
           | CAN_PUSH_OBJECTS
           | CAN_RIDE_VEHICLES
-          | CAN_ATTACK_UP_CLOSE
+          | CAN_MELEE
           | CAN_DEFLECT_BOLTS,
           1.32),
     _char(53, "Boss Nass", 254, COMMON_PACIFIST_NON_DROID, 1.0),
-    _char(54, "Royal Guard", 101, COMMON_GRAPPLE | COMMON_NON_DROID),
+    _char(54, "Royal Guard", 101, COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID),
     # Cannot build.
     # I am unsure if he should be considered able to jump normally because he flies around instead, but does not hover
     # over gaps. His jump distance generally ends up about the same as Ewok.
@@ -530,22 +535,22 @@ ITEM_DATA: list[GenericItemData] = [
     _char(56, "Pit Droid", 268, CAN_SELF_DESTRUCT, 0.8, Alignment.PASSIVE),
     _char(57, "Darth Maul", 61, COMMON_SITH, alignment=Alignment.EVIL),
     # There is a second, incorrect Zam Wesell at 305
-    _char(58, "Zam Wesell", 2, COMMON_BOUNTY_HUNTER | COMMON_NON_DROID, 1.4, Alignment.EVIL),
+    _char(58, "Zam Wesell", 2, COMMON_BOUNTY_HUNTER | COMMON_MELEE_NON_DROID, 1.4, Alignment.EVIL),
     _char(59, "Dexter Jettster", 304, COMMON_PACIFIST_NON_DROID, 1.0),
-    _char(60, "Clone", 86, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID, 1.0, Alignment.EVIL),
-    _char(61, "Lama Su", 280, COMMON_NON_DROID, alignment=Alignment.NEUTRAL),
-    _char(62, "Taun We", 281, COMMON_NON_DROID, alignment=Alignment.NEUTRAL),
+    _char(60, "Clone", 86, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.0, Alignment.EVIL),
+    _char(61, "Lama Su", 280, COMMON_PACIFIST_NON_DROID, alignment=Alignment.NEUTRAL),
+    _char(62, "Taun We", 281, COMMON_PACIFIST_NON_DROID, alignment=Alignment.NEUTRAL),
     # Cannot build.
     # Like Watto, they cannot jump normally, but fly instead, with similar jump distance to Ewok.
     _char(63, "Geonosian", 95,
           CAN_PULL_LEVERS
           | CAN_PUSH_OBJECTS
           | CAN_RIDE_VEHICLES
-          | COMMON_WEAPON_BLASTER
+          | BLASTER
           | CAN_JUMP_NORMAL_HEIGHT,
           1.5, Alignment.EVIL),
-    _char(64, "Battle Droid (Geonosis)", 69, COMMON_WEAPON_BLASTER | CAN_SELF_DESTRUCT, alignment=Alignment.EVIL),
-    _char(65, "Super Battle Droid", 81, COMMON_WEAPON_BLASTER | CAN_SELF_DESTRUCT, 1.07, Alignment.EVIL),
+    _char(64, "Battle Droid (Geonosis)", 69, BLASTER | CAN_SELF_DESTRUCT, alignment=Alignment.EVIL),
+    _char(65, "Super Battle Droid", 81, BLASTER | CAN_SELF_DESTRUCT, 1.07, Alignment.EVIL),
     _char(66, "Jango Fett", 59, COMMON_JETPACK_BOUNTY_HUNTER, alignment=Alignment.EVIL),
     _char(67, "Boba Fett (Boy)", 94, COMMON_SHORT_SLOW, 0.8, Alignment.EVIL),
     _char(68, "Luminara", 84, COMMON_JEDI),
@@ -560,77 +565,86 @@ ITEM_DATA: list[GenericItemData] = [
     _char(76, "General Grievous", 60, COMMON_HIGH_JUMP_SLAM | CAN_BUILD_BRICKS | CAN_TRIPLE_JUMP_GREAT_DISTANCE,
           alignment=Alignment.EVIL),
     # An extension of Chewbacca, who is specially allowed to wear hats.
-    _char(77, "Wookiee", 72, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(78, "Clone (Episode 3)", 87, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID, 1.0, Alignment.EVIL),
-    _char(79, "Clone (Episode 3, Pilot)", 88, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID, 1.0, Alignment.EVIL),
-    _char(80, "Clone (Episode 3, Swamp)", 90, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID, 1.0, Alignment.EVIL),
-    _char(81, "Clone (Episode 3, Walker)", 91, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID, 1.0, Alignment.EVIL),
+    _char(77, "Wookiee", 72, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(78, "Clone (Episode 3)", 87, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.0, Alignment.EVIL),
+    _char(79, "Clone (Episode 3, Pilot)", 88, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.0,
+          Alignment.EVIL),
+    _char(80, "Clone (Episode 3, Swamp)", 90, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.0,
+          Alignment.EVIL),
+    _char(81, "Clone (Episode 3, Walker)", 91, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.0,
+          Alignment.EVIL),
     _char(82, "Mace Windu (Episode 3)", 63, COMMON_HATLESS_JEDI),
-    _char(83, "Disguised Clone", 92, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID, 1.0, Alignment.EVIL),
-    _char(84, "Rebel Trooper", 13, COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(85, "Stormtrooper", 20, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP,
+    _char(83, "Disguised Clone", 92, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.0, Alignment.EVIL),
+    _char(84, "Rebel Trooper", 13, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(85, "Stormtrooper", 20, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID | CAN_FLOP_JUMP,
           alignment=Alignment.EVIL),
-    _char(86, "Imperial Shuttle Pilot", 53, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID, alignment=Alignment.EVIL),
-    _char(87, "Tusken Raider", 9, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID, alignment=Alignment.EVIL),
+    _char(86, "Imperial Shuttle Pilot", 53, IMPERIAL | COMMON_GRAPPLE | COMMON_MELEE_NON_DROID,
+          alignment=Alignment.EVIL),
+    _char(87, "Tusken Raider", 9, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID, alignment=Alignment.EVIL),
     _char(88, "Jawa", 22, SHORTIE | COMMON_PACIFIST_NON_DROID | WEAPON_ZAPPER, 0.9, Alignment.EVIL),
-    _char(89, "Sandtrooper", 51, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP, alignment=Alignment.EVIL),
-    _char(90, "Greedo", 171, COMMON_BOUNTY_HUNTER | COMMON_NON_DROID, alignment=Alignment.EVIL),
+    _char(89, "Sandtrooper", 51, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID | CAN_FLOP_JUMP,
+          alignment=Alignment.EVIL),
+    _char(90, "Greedo", 171, COMMON_BOUNTY_HUNTER | COMMON_MELEE_NON_DROID, alignment=Alignment.EVIL),
     _char(91, "Imperial Spy", 172, COMMON_PACIFIST_NON_DROID),  # GOOD alignment for some reason.
-    _char(92, "Beach Trooper", 48, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP,
+    _char(92, "Beach Trooper", 48, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID | CAN_FLOP_JUMP,
           alignment=Alignment.EVIL),
-    _char(93, "Death Star Trooper", 49, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP,
+    _char(93, "Death Star Trooper", 49, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID | CAN_FLOP_JUMP,
           alignment=Alignment.EVIL),
-    _char(94, "TIE Fighter Pilot", 50, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP,
+    _char(94, "TIE Fighter Pilot", 50, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID | CAN_FLOP_JUMP,
           alignment=Alignment.EVIL),
-    _char(95, "Imperial Officer", 14, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID, alignment=Alignment.EVIL),
-    _char(96, "Grand Moff Tarkin", 131, IMPERIAL | COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID, alignment=Alignment.EVIL),
+    _char(95, "Imperial Officer", 14, IMPERIAL | COMMON_GRAPPLE | COMMON_MELEE_NON_DROID, alignment=Alignment.EVIL),
+    _char(96, "Grand Moff Tarkin", 131, IMPERIAL | COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID,
+          alignment=Alignment.EVIL),
     # Can wear hats despite the hood.
-    _char(97, "Han Solo (Hood)", 142, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(98, "Rebel Trooper (Hoth)", 107, COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(99, "Rebel Pilot", 58, COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(100, "Snowtrooper", 45, IMPERIAL | COMMON_GRAPPLE | COMMON_NON_DROID | CAN_FLOP_JUMP, alignment=Alignment.EVIL),
-    _char(101, "Lobot", 192, COMMON_HATLESS_NON_DROID),
+    _char(97, "Han Solo (Hood)", 142, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(98, "Rebel Trooper (Hoth)", 107, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(99, "Rebel Pilot", 58, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(100, "Snowtrooper", 45, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID | CAN_FLOP_JUMP,
+          alignment=Alignment.EVIL),
+    _char(101, "Lobot", 192, COMMON_HATLESS_MELEE_NON_DROID),
     _char(102, "Ugnaught", 158, COMMON_SHORT_SLOW | WEAPON_ZAPPER, 0.9, Alignment.EVIL),
-    _char(103, "Bespin Guard", 193, COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(104, "Gamorrean Guard", 102, COMMON_NON_DROID | CAN_DEFLECT_BOLTS, 0.75, Alignment.EVIL),
-    _char(105, "Bib Fortuna", 185, COMMON_NON_DROID),  # Surprisingly not EVIL.
-    _char(106, "Palace Guard", 196, COMMON_GRAPPLE | COMMON_NON_DROID),
-    _char(107, "Bossk", 212, COMMON_BOUNTY_HUNTER | COMMON_NON_DROID, alignment=Alignment.EVIL),
+    _char(103, "Bespin Guard", 193, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(104, "Gamorrean Guard", 102, COMMON_MELEE_NON_DROID | CAN_DEFLECT_BOLTS, 0.75, Alignment.EVIL),
+    _char(105, "Bib Fortuna", 185, COMMON_MELEE_NON_DROID),  # Surprisingly not EVIL.
+    _char(106, "Palace Guard", 196, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(107, "Bossk", 212, COMMON_BOUNTY_HUNTER | COMMON_MELEE_NON_DROID, alignment=Alignment.EVIL),
     _char(108, "Skiff Guard", 186, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID, alignment=Alignment.EVIL),
     _char(109, "Boba Fett", 7, COMMON_JETPACK_BOUNTY_HUNTER, alignment=Alignment.EVIL),
     _char(110, "Ewok", 199, COMMON_EWOK, 0.9),
-    _char(111, "Imperial Guard", 194, IMPERIAL | COMMON_NON_DROID | CAN_DEFLECT_BOLTS, alignment=Alignment.EVIL),
+    _char(111, "Imperial Guard", 194, IMPERIAL | COMMON_MELEE_NON_DROID | CAN_DEFLECT_BOLTS, alignment=Alignment.EVIL),
     _char(112, "The Emperor", 6, IMPERIAL | COMMON_SITH, alignment=Alignment.EVIL),
-    _char(113, "Admiral Ackbar", 211, COMMON_GRAPPLE | COMMON_NON_DROID),
+    _char(113, "Admiral Ackbar", 211, COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID),
     _char(114, "IG-88", 197,
           COMMON_BOUNTY_HUNTER
           | ASTROMECH_PANEL
           | PROTOCOL_PANEL
           | CAN_PUSH_OBJECTS
           | CAN_JUMP_NORMAL_HEIGHT
-          | CAN_RIDE_VEHICLES,
+          | CAN_RIDE_VEHICLES
+          | CAN_MELEE,
           alignment=Alignment.EVIL),
-    _char(115, "Dengar", 213, COMMON_BOUNTY_HUNTER | COMMON_NON_DROID, alignment=Alignment.EVIL),
+    _char(115, "Dengar", 213, COMMON_BOUNTY_HUNTER | COMMON_MELEE_NON_DROID, alignment=Alignment.EVIL),
     _char(116, "4-LOM", 225,
           COMMON_BOUNTY_HUNTER
           | ASTROMECH_PANEL
           | PROTOCOL_PANEL
           | CAN_PUSH_OBJECTS
           | CAN_JUMP_NORMAL_HEIGHT
-          | CAN_RIDE_VEHICLES,
+          | CAN_RIDE_VEHICLES
+          | CAN_MELEE,
           alignment=Alignment.EVIL),
     _char(117, "Ben Kenobi (Ghost)", 195, COMMON_HATLESS_JEDI & MIXIN_FORCE_GHOST, alignment=Alignment.PASSIVE),
     _char(118, "Yoda (Ghost)", 227,
           # Yoda's low base movement speed greatly reduces his triple jump horizontal distance.
           (JEDI
-           | COMMON_NON_DROID
+           | COMMON_PACIFIST_NON_DROID
            | CAN_DOUBLE_JUMP)
           & MIXIN_FORCE_GHOST,
           0.8,
           Alignment.PASSIVE),
     _char(119, "R2-Q5", 314, COMMON_ASTROMECH_DROID, 1.0, Alignment.PASSIVE),
-    _char(120, "Padmé", 76, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(121, "Luke Skywalker (Hoth)", 204, COMMON_GRAPPLE | COMMON_NON_DROID),  # Ability missing from manual
+    _char(120, "Padmé", 76, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(121, "Luke Skywalker (Hoth)", 204, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),  # Ability missing from manual
     _extra(122, "Super Gonk", 0x8, "1-1", 699),
     _extra(123, "Poo Money", 0x9, "1-2", 296),  # "Fertilizer" in manual
     _extra(124, "Walkie Talkie Disable", 0xA, "1-3", 1665),
@@ -676,8 +690,8 @@ ITEM_DATA: list[GenericItemData] = [
     _generic(159, "Episode 5 Unlock"),
     _generic(160, "Episode 6 Unlock"),
     _char(161, "Anakin Skywalker (Ghost)", 226, COMMON_HATLESS_JEDI & MIXIN_FORCE_GHOST, alignment=Alignment.PASSIVE),
-    _char(162, "Indiana Jones", 317, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(163, "Princess Leia (Prisoner)", 205, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
+    _char(162, "Indiana Jones", 317, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(163, "Princess Leia (Prisoner)", 205, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
     _vehicle(164, "Anakin's Pod", 259, IS_A_VEHICLE, 30.0),
     _vehicle(165, "Naboo Starfighter", 272, VEHICLE_TOW | VEHICLE_BLASTER, 20.0),
     _vehicle(166, "Republic Gunship", 285, VEHICLE_TOW | VEHICLE_BLASTER, 18.0),
@@ -706,8 +720,8 @@ ITEM_DATA: list[GenericItemData] = [
     _extra(-1, "Adaptive Difficulty", 0x2C, None, 690),  # Effectively a difficulty setting, so not randomized.
     # Custom characters can only use unlocked character equipment, besides some blasters. They do not get access to
     # lightsabers/force unless Jedi are unlocked.
-    _char(188, "STRANGER 1", 168, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
-    _char(189, "STRANGER 2", 169, COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID),
+    _char(188, "STRANGER 1", 168, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
+    _char(189, "STRANGER 2", 169, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
     _vehicle(190, "Sebulba's Pod", 261, IS_A_VEHICLE, 30.0),
     _vehicle(191, "Zam's Airspeeder", 277, VEHICLE_BLASTER, 16.0),
     _vehicle(192, "Droid Trifighter", 292, VEHICLE_BLASTER, 21.0),
@@ -729,7 +743,7 @@ ITEM_DATA: list[GenericItemData] = [
 
     # "Extra Toggle" characters.
     _char(-1, "Womp Rat", 165, run_speed=1.8, alignment=Alignment.PASSIVE),
-    _char(-1, "Skeleton", 231, CAN_ATTACK_UP_CLOSE),
+    _char(-1, "Skeleton", 231, CAN_MELEE),
 
     # Miscellaneous vehicles.
     # This is the vehicle present in the outside area of the Cantina. 'map' is the internal name for the Cantina.
