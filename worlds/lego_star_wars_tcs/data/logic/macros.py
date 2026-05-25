@@ -30,9 +30,9 @@ can_destroy_close_silver_bricks = Or(
         Has("Super Ewok Catapult") & HasAbility(WEAPON_EWOK),
     )
 )
-# Only expect Jedi, Bounty Hunter or Droideka.
+# Only expect slam attacks, Bounty Hunter thermal detonators, or Droideka bolts.
 base_can_damage_shielded_droideka = Or(
-    HasAnyAbilities(JEDI | BOUNTY_HUNTER),
+    HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM),
     Has("Droideka"),
 )
 can_deflect_bolts = Or(
@@ -58,7 +58,7 @@ can_damage_shielded_droideka = logic_options(
     base=base_can_damage_shielded_droideka,
     # Adds zappers and Extras.
     normal=Or(
-        HasAnyAbilities(JEDI | BOUNTY_HUNTER),
+        HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM),
         Has("Droideka"),
         HasAllAbilities(WEAPON_ZAPPER | CAN_ATTACK_UP_CLOSE),
         can_super_zap,
@@ -70,7 +70,7 @@ can_damage_shielded_droideka = logic_options(
     ),
     # Adds Deflect Bolts Extra.
     moderate=Or(
-        HasAnyAbilities(JEDI | BOUNTY_HUNTER),
+        HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM),
         Has("Droideka"),
         HasAllAbilities(WEAPON_ZAPPER | CAN_ATTACK_UP_CLOSE),
         can_super_zap,
