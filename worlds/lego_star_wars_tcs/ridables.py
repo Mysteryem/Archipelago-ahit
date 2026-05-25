@@ -114,7 +114,7 @@ RIDABLES_REQUIREMENTS: dict[str, dict[str, tuple[CharacterAbility, ...]]] = {
         # A house needs to be destroyed to reveal the parts and then a Jedi is needed to assemble the AT-ST.
         "AT-ST": (CharacterAbility.JEDI | CharacterAbility.CAN_ATTACK_UP_CLOSE,),
         # A house needs to be destroyed to reveal the parts and then the Tractor needs to be built.
-        "Tractor": (CharacterAbility.CAN_ATTACK_UP_CLOSE, CharacterAbility.CAN_BUILD_BRICKS,),
+        "Tractor": (CharacterAbility.CAN_ATTACK_UP_CLOSE | CharacterAbility.CAN_BUILD_BRICKS,),
         # Either The AT-ST or a Bounty Hunter can destroy the obstacles in the way of getting to the Landspeeder.
         "Landspeeder": (
             CharacterAbility.JEDI | CharacterAbility.CAN_ATTACK_UP_CLOSE,
