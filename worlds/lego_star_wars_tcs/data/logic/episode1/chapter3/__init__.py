@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, Has
+from rule_builder.rules import And, Or, Has, True_
 
 from ...macros import (
     can_grapple,
@@ -48,7 +48,11 @@ ESCAPE_FROM_NABOO = Chapter(
         "Tower": (
             ExitData(
                 "Rooftops After Small Blaster Target Gate",
-                can_activate_close_target,
+                logic_options(
+                    base=True_(),
+                    normal=can_activate_close_target,
+                ),
+                er_rule=can_activate_close_target,
                 new_level="rescue_c",
             ),
         ),
@@ -56,11 +60,18 @@ ESCAPE_FROM_NABOO = Chapter(
             ExitData(
                 "Final Rooftop",
                 logic_options(
+                    base=True_(),
+                    moderate=Or(
+                        HasAnyAbilities(BLASTER | WEAPON_EWOK),
+                        can_self_destruct & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                    ),
+                ),
+                er_rule=logic_options(
                     base=HasAbility(BLASTER),
                     # Ewoks are awkward because they don't auto-target the targets.
                     normal=HasAnyAbilities(BLASTER | WEAPON_EWOK),
                     # The platforms that raise up to the targets start slightly raised above the ground, too high for
-                    # Astromech Doirds and Droids that cannot jump to get on, so if using Self Destruct to activate
+                    # Astromech Droids and Droids that cannot jump to get on, so if using Self Destruct to activate
                     # these targets, a Droid that can jump is required.
                     moderate=Or(
                         HasAnyAbilities(BLASTER | WEAPON_EWOK),
@@ -74,7 +85,7 @@ ESCAPE_FROM_NABOO = Chapter(
         "Final Rooftop": (
             ExitData(
                 "Chapter Completion",
-                logic_options(
+                er_rule=logic_options(
                     # The button to press is in a raised area, and there is a destroyable cover over the chapter
                     # completion.
                     base=HasAllAbilities(CAN_JUMP_NORMAL_HEIGHT | CAN_ATTACK_UP_CLOSE),
@@ -115,7 +126,7 @@ ESCAPE_FROM_NABOO = Chapter(
         ),
         "Roof Tower Lower Ledge Minikit": minikit_data(
             "Tower",
-            logic_options(
+            er_rule=logic_options(
                 # Destroy the windows to get into the outside area.
                 # If the player jumps down without being able to grapple back up, they have to restart the level, so
                 # expect grapple on the base logic difficulty.
@@ -138,6 +149,11 @@ ESCAPE_FROM_NABOO = Chapter(
         "Sith Force Flowerbeds Minikit": minikit_data(
             "Tower",
             logic_options(
+                base=HasAllAbilities(SITH | HOVER),
+                normal=HasAbility(HOVER) & can_sith_force,
+                moderate=can_sith_force
+            ),
+            er_rule=logic_options(
                 # Grapple to get up/down the tower/roofing. Hover to cross the gap between roofs. Sith to force the
                 # flowers.
                 base=HasAllAbilities(SITH | HOVER | GRAPPLE),
@@ -154,6 +170,10 @@ ESCAPE_FROM_NABOO = Chapter(
         "Minikit After Access Hatch": minikit_data(
             "Rooftops After Small Blaster Target Gate",
             logic_options(
+                base=HasAllAbilities(SHORTIE | HIGH_JUMP),
+                moderate=HasAbility(SHORTIE) & HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
+            ),
+            er_rule=logic_options(
                 # Grapple or High Jump up and then use the hatch.
                 base=HasAbility(SHORTIE) & HasAnyAbilities(GRAPPLE | HIGH_JUMP),
                 # Force Grapple Leap is considered.
@@ -165,7 +185,8 @@ ESCAPE_FROM_NABOO = Chapter(
         ),
         "Force All Fences Minikit": minikit_data(
             "Rooftops After Small Blaster Target Gate",
-            logic_options(
+            HasAbility(JEDI),
+            er_rule=logic_options(
                 # Jedi alone cannot get here, so Grapple or High Jump are needed.
                 base=HasAbility(JEDI) & HasAnyAbilities(GRAPPLE | HIGH_JUMP),
                 # Also consider Force Grapple Leap.
@@ -181,6 +202,10 @@ ESCAPE_FROM_NABOO = Chapter(
         "Force Mural Minikit": minikit_data(
             "Rooftops After Small Blaster Target Gate",
             logic_options(
+                base=HasAllAbilities(BOUNTY_HUNTER | JEDI),
+                normal=HasAbility(JEDI) & can_destroy_close_silver_bricks,
+            ),
+            er_rule=logic_options(
                 # All Bounty Hunters can grapple.
                 base=HasAllAbilities(BOUNTY_HUNTER | JEDI),
                 # Allow using extras to destroy the silver brick windows, and allow Force Grapple Leap.
@@ -198,6 +223,10 @@ ESCAPE_FROM_NABOO = Chapter(
             "Final Rooftop",
             logic_options(
                 base=HasAbility(BOUNTY_HUNTER),
+                normal=can_destroy_close_silver_bricks,
+            ),
+            er_rule=logic_options(
+                base=HasAbility(BOUNTY_HUNTER),
                 # The button to press is in a raised area.
                 normal=can_destroy_close_silver_bricks & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                 # The button to press is in a raised area. Astromech droids can just barely get up.
@@ -208,6 +237,10 @@ ESCAPE_FROM_NABOO = Chapter(
         "Stack Plant Pots High Minikit": minikit_data(
             "Final Rooftop",
             logic_options(
+                base=HasAbility(JEDI),
+                moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
+            ),
+            er_rule=logic_options(
                 # Stack the plant pots and then double jump to the minikit.
                 base=HasAbility(JEDI),
                 # Triple high jump can reach the minikit without stacking any plant pots.

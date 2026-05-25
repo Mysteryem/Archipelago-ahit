@@ -30,7 +30,7 @@ INVASION_OF_NABOO = Chapter(
         "After First Fallen Tree": (
             ExitData(
                 "After Crashed MTT",
-                logic_options(
+                er_rule=logic_options(
                     base=HasAbility(JEDI),
                     moderate=HasAnyAbilities(JEDI | HIGH_JUMP)
                 ),
@@ -42,12 +42,16 @@ INVASION_OF_NABOO = Chapter(
         ),
         "Cliff Face Ruins Entrance": (
             # Hover across the gap or force down the mosaic.
-            ExitData("Cliff Face Ruins Collapsing Debris Section", HasAnyAbilities(JEDI | HOVER)),
+            ExitData("Cliff Face Ruins Collapsing Debris Section", er_rule=HasAnyAbilities(JEDI | HOVER)),
         ),
         "Cliff Face Ruins Collapsing Debris Section": (
             ExitData(
                 "Cliff Face Ruins Past Collapsing Debris",
                 logic_options(
+                    base=HasAbility(HIGH_JUMP),
+                    moderate=True_(),
+                ),
+                er_rule=logic_options(
                     base=HasAllAbilities(JEDI | HIGH_JUMP),
                     # Jedi triple jump gets more height than a high jump.
                     # There is, however a collapsing debris that sits in a dip, so requires a high triple jump to get on
@@ -58,12 +62,16 @@ INVASION_OF_NABOO = Chapter(
                     # A jetpack can also get across here by jumping from each collapsing platform and then hovering to
                     # the next, but needs a High Jump/Jedi to get up at the start.
                     # Restarting the level is required to re-attempt, so this is in Hard logic.
-                    hard=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM) & HasAny("Jar Jar Binks", "Captain Tarpals"),
+                    hard=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM) | HasAllAbilities(HIGH_JUMP | JETPACK),
                 ),
             ),
             ExitData(
                 "Cliff Face Ruins Raised Square",
                 logic_options(
+                    base=False_(),
+                    hard=HasAbility(JETPACK),
+                ),
+                er_rule=logic_options(
                     # Not expected, use the exit from "Cliff Face Ruins Past Collapsing Debris" instead.
                     base=False_(),
                     # Triple or high jump up to the first collapsing platform, then jumping from each collapsing
@@ -77,7 +85,7 @@ INVASION_OF_NABOO = Chapter(
         "Cliff Face Ruins Past Collapsing Debris": (
             ExitData(
                 "Cliff Face Ruins End Platform",
-                logic_options(
+                er_rule=logic_options(
                     # Force down the blocks from on top of the square to make a platform, then jump up.
                     base=HasAbility(JEDI),
                     # Triple jump up, ignoring the force blocks.
@@ -86,7 +94,7 @@ INVASION_OF_NABOO = Chapter(
             ),
             ExitData(
                 "Cliff Face Ruins Raised Square",
-                logic_options(
+                er_rule=logic_options(
                     # Force down the blocks on the top of the square and then high jump up.
                     base=HasAllAbilities(JEDI | HIGH_JUMP),
                     # Triple jump up (don't even need to force down the blocks).
@@ -98,6 +106,11 @@ INVASION_OF_NABOO = Chapter(
             ExitData(
                 "Cliff Face Ruins End Platform",
                 logic_options(
+                    base=False_(),
+                    normal=HasAbility(JETPACK),
+                    moderate=True_(),
+                ),
+                er_rule=logic_options(
                     # Not expected, use the exit from "Cliff Face Ruins Past Collapsing Debris" instead.
                     base=False_(),
                     # Jump and jetpack hover across.
@@ -120,6 +133,11 @@ INVASION_OF_NABOO = Chapter(
             ExitData(
                 "Cliff Face Ruins Raised Square",
                 logic_options(
+                    base=False_(),
+                    normal=HasAbility(HOVER),
+                    moderate=True_(),
+                ),
+                er_rule=logic_options(
                     # Not intended.
                     base=False_(),
                     normal=HasAbility(HOVER),
@@ -134,7 +152,7 @@ INVASION_OF_NABOO = Chapter(
         "Swamp Ruins Entrance": (
             ExitData(
                 "Swamp Ruins",
-                logic_options(
+                er_rule=logic_options(
                     # Move the blocks out of the way to collapse the log.
                     base=HasAbility(JEDI),
                     # A triple jump can bypass the log entirely, but the jump is quite tight.
@@ -154,7 +172,7 @@ INVASION_OF_NABOO = Chapter(
             # ),
             ExitData(
                 "Swamp Before Water",
-                logic_options(
+                er_rule=logic_options(
                     # High jump up to get on top of the collapsing debris.
                     base=HasAbility(HIGH_JUMP),
                     # Alternatively, jump + jetpack hover across from the higher swamp area.
@@ -210,12 +228,12 @@ INVASION_OF_NABOO = Chapter(
         ),
         "Destroy Fallen Tree Minikit": minikit_data(
             "After First Fallen Tree",
-            HasAbility(JEDI),
+            er_rule=HasAbility(JEDI),
             pickup_name="m_pup1",
         ),
         "Minikit Above Crashed MTT": minikit_data(
             "After First Fallen Tree",
-            logic_options(
+            er_rule=logic_options(
                 # Destroy the MTT using the force.
                 base=HasAbility(JEDI),
                 # A high jump from the MTT's side-cannon is just enough to get on top of the MTT's hitbox.
@@ -225,12 +243,16 @@ INVASION_OF_NABOO = Chapter(
         ),
         "Minikit Under Crashed MTT": minikit_data(
             "After First Fallen Tree",
-            HasAbility(JEDI),
+            er_rule=HasAbility(JEDI),
             pickup_name="m_pOOP3",
         ),
         "High Minikit Above Steps": minikit_data(
             "After Crashed MTT",
             logic_options(
+                base=HasAbility(HIGH_JUMP),
+                moderate=True_(),
+            ),
+            er_rule=logic_options(
                 base=HasAllAbilities(JEDI | HIGH_JUMP),
                 moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
             ),
@@ -242,7 +264,7 @@ INVASION_OF_NABOO = Chapter(
         ),
         "Minikit In Ruins Alcove": minikit_data(
             "Swamp Ruins Entrance",
-            HasAbility(JEDI),
+            er_rule=HasAbility(JEDI),
             pickup_name="mk_2",
         ),
         "Minikit After Access Hatch": minikit_data(
@@ -252,7 +274,7 @@ INVASION_OF_NABOO = Chapter(
         ),
         "Minikit In Boarded Up Room": minikit_data(
             "Swamp Ruins",
-            logic_options(
+            er_rule=logic_options(
                 # Force the boards out of the way.
                 base=HasAbility(JEDI),
                 # The collision on the boards is broken, you can walk through them if you know what you're doing.
@@ -262,7 +284,7 @@ INVASION_OF_NABOO = Chapter(
         ),
         "Statue Puzzle Minikit": minikit_data(
             "Swamp Before Water",
-            HasAbility(JEDI),
+            er_rule=HasAbility(JEDI),
             pickup_name="m_pup1",
         ),
     },

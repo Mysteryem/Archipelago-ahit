@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, Has, HasAny
+from rule_builder.rules import And, Or, Has, HasAny, True_
 
 from ...macros import (
     can_self_destruct,
@@ -33,14 +33,13 @@ RETAKE_THEED_PALACE = Chapter(
             ExitData(
                 "Inside Palace",
                 logic_options(
-                    #
                     base=And(
                         # Use the panel.
                         HasAbility(ASTROMECH_PANEL),
                         # Ascend to the higher area with the panel.
                         HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
                         # Base logic expects being able to defeat the Droideka.
-                        HasAnyAbilities(JEDI | BOUNTY_HUNTER) | Has("Droideka"),
+                        base_can_damage_shielded_droideka,
                     ),
                     # Jump up the bricks to the side of the bricks that make the ramp.
                     # And just ignore Droideka if they cannot be defeated.
@@ -68,6 +67,14 @@ RETAKE_THEED_PALACE = Chapter(
             ExitData(
                 "Courtyard",
                 logic_options(
+                    base=HasAbility(CAN_BUILD_BRICKS),
+                    normal=HasAbility(CAN_BUILD_BRICKS) & can_damage_at_close_range,
+                    moderate=And(
+                        HasAbility(CAN_BUILD_BRICKS),
+                        can_damage_at_close_range | can_deflect_bolts,
+                    ),
+                ),
+                er_rule=logic_options(
                     # All characters that can build bricks can jump, and being able to damage shielded droideka implies
                     # being able to destroy the statue to spawn the astromech panel bricks.
                     base=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & base_can_damage_shielded_droideka,
@@ -100,6 +107,11 @@ RETAKE_THEED_PALACE = Chapter(
             ExitData(
                 "Rooftops",
                 logic_options(
+                    base=HasAbility(SHORTIE),
+                    normal=HasAnyAbilities(HIGH_JUMP | SHORTIE),
+                    moderate=HasAnyAbilities(JEDI | HIGH_JUMP | SHORTIE),
+                ),
+                er_rule=logic_options(
                     # Destroy the flowerbed and use the chute and use the force to destroy the obstacles blocking the
                     # way.
                     # Or hover past the obstacles.
@@ -124,6 +136,11 @@ RETAKE_THEED_PALACE = Chapter(
             ExitData(
                 "Dining Hall",
                 logic_options(
+                    base=True_(),
+                    # Triple high jump can stand on one of the taller bushes and triple high jump up.
+                    moderate=HasAnyAbilities(JEDI | GRAPPLE | SHORTIE | CAN_HIGH_JUMP_SLAM),
+                ),
+                er_rule=logic_options(
                     # Jedi can force platforms.
                     # Grapple can destroy the flowerbed hiding the grapple point.
                     # Shortie can use the chute.
@@ -137,7 +154,17 @@ RETAKE_THEED_PALACE = Chapter(
         "Dining Hall": (
             ExitData(
                 "Hangar",
-                logic_options(
+                # Base:
+                #  HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP) implies CAN_BARELY_JUMP
+                #  base_can_damage_shielded_droideka is Or(HasAnyAbilities(JEDI | BOUNTY_HUNTER), Has("Droideka"))
+                # Normal:
+                #  HasAnyAbilities(HIGH_JUMP | SHORTIE) implies HasAbility(CAN_BARELY_JUMP).
+                #  can_damage_at_close_range is already needed at "After Collapsed Floor In Palace -> Courtyard".
+                # Moderate:
+                #  can_damage_at_close_range | can_deflect_bolts is already needed at
+                #  "After Collapsed Floor In Palace -> Courtyard".
+                #  CAN_BUILD_BRICKS implies CAN_BARELY_JUMP.
+                er_rule=logic_options(
                     # Fight the Droideka, destroy the statue, and stand on the button.
                     # A character that can jump, even astromech droids, is needed to get up a small lip before the
                     # button.
@@ -167,6 +194,17 @@ RETAKE_THEED_PALACE = Chapter(
         "Hangar": (
             ExitData(
                 "Chapter Completion",
+                logic_options(
+                    # All: ASTROMECH_PANEL is needed near the start.
+                    base=HasAllAbilities(JEDI | GRAPPLE),
+                    normal=HasAnyAbilities(JEDI | BLASTER),
+                    #  can_damage_at_close_range | can_deflect_bolts is already needed at
+                    #  "After Collapsed Floor In Palace -> Courtyard".
+                    moderate=Or(
+                        HasAnyAbilities(JEDI | BLASTER),
+                        HasAbility(HIGH_JUMP),
+                    ),
+                ),
                 # Logic breakdown for freeing each set of captive pilots:
                 #  High up droid in the middle, with two captive pilots:
                 #   Base: Reach the droid by using the force on the boxes with P2 (Jedi)
@@ -187,13 +225,13 @@ RETAKE_THEED_PALACE = Chapter(
                 #   Normal: Alternatively, shoot the droid from afar (blaster) or High Jump up from the large box
                 #    (high_jump AND can_damage_at_close_range)
                 #  Actually completing the chapter also requires astromech_panel.
-                logic_options(
+                er_rule=logic_options(
                     base=HasAllAbilities(JEDI | GRAPPLE | ASTROMECH_PANEL),
                     normal=HasAnyAbilities(JEDI | BLASTER | ASTROMECH_PANEL),
                     moderate=And(
                         Or(
                             HasAnyAbilities(JEDI | BLASTER),
-                            HasAbility(HIGH_JUMP) & can_damage_at_close_range,
+                            HasAbility(HIGH_JUMP) & (can_damage_at_close_range | can_deflect_bolts),
                         ),
                         HasAbility(ASTROMECH_PANEL),
                     )
@@ -244,6 +282,14 @@ RETAKE_THEED_PALACE = Chapter(
         "Minikit In Hidden Panel Behind Statue": minikit_data(
             "After Collapsed Floor In Palace",
             logic_options(
+                # base_can_damage_shielded_droideka implies CAN_ATTACK_UP_CLOSE
+                base=True_(),
+                # Includes self-destruct.
+                normal=can_damage_at_close_range,
+                # Include Deflect Bolts.
+                moderate=can_damage_at_close_range | can_deflect_bolts,
+            ),
+            er_rule=logic_options(
                 base=HasAbility(CAN_ATTACK_UP_CLOSE),
                 # Includes self-destruct.
                 normal=can_damage_at_close_range,
@@ -263,8 +309,15 @@ RETAKE_THEED_PALACE = Chapter(
         ),
         "Minikit On Courtyard Far Ledge": minikit_data(
             "Courtyard",
+            # Base/Normal:
+            #  HasAnyAbilities(JEDI | SHORTIE | HOVER) is already needed at
+            #  "Inside Palace -> After Collapsed Floor In Palace"
+            # Moderate:
+            #  HasAnyAbilities(JEDI | SHORTIE | HOVER | HIGH_JUMP) is already needed at
+            #  "Inside Palace -> After Collapsed Floor In Palace"
+            True_(),
             # Hover/jump from the platform that lifts into the air, or take the chute behind it.
-            HasAnyAbilities(JEDI | HOVER | SHORTIE | HIGH_JUMP),
+            er_rule=HasAnyAbilities(JEDI | SHORTIE | HOVER | HIGH_JUMP),
             pickup_name="m_pup2",
         ),
         "Courtyard High Minikit": minikit_data(
@@ -278,6 +331,11 @@ RETAKE_THEED_PALACE = Chapter(
         "Build And Destroy Silver Bricks In Boxes Minikit": minikit_data(
             "Rooftops",
             logic_options(
+                # All: CAN_BUILD_BRICKS is needed at "After Collapsed Floor In Palace -> Courtyard".
+                base=HasAbility(BOUNTY_HUNTER),
+                normal=can_destroy_close_silver_bricks,
+            ),
+            er_rule=logic_options(
                 base=HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS),
                 normal=HasAbility(CAN_BUILD_BRICKS) & can_destroy_close_silver_bricks,
             ),
