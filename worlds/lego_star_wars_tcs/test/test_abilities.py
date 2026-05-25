@@ -62,7 +62,8 @@ class TestAbilities(TestCase):
             implied_abilities_lines = [
                 "{",
                 "    # All characters with this ability: Also have these abilities,",
-                "    # HasAllAbilities(left | right) -> HasAbility(left)"
+                "    # HasAllAbilities(left | right) -> HasAbility(left)",
+                "    # HasAnyAbilities(left | right) -> HasAbility(right)",
             ]
             for ability, implied in self.implied_abilities_dict.items():
                 if implied is CharacterAbility.NONE:
