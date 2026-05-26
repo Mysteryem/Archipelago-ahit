@@ -51,14 +51,14 @@ CAN_EXPLODE_FIRST_EXPLOSIVES = CAN_HURT_GRIEVOUS.and_rule(
 CAN_EXPLODE_SECOND_EXPLOSIVES = logic_options(
     # In base logic, exploding the first explosives and shooting the second explosives is expected.
     base=And(
-        CAN_EXPLODE_FIRST_EXPLOSIVES.base,
+        CAN_EXPLODE_FIRST_EXPLOSIVES,
         HasAbility(JEDI),
         HasAbilityCombination(BLASTER | CAN_JUMP_NORMAL_HEIGHT),
         CanReachRegion("General Grievous - Shoot Second Explosives Section"),
     ),
     normal=(
         And(
-            CAN_EXPLODE_FIRST_EXPLOSIVES.normal,
+            CAN_EXPLODE_FIRST_EXPLOSIVES,
             Or(
                 # If you walk up to Grievous the second explosives explode.
                 CanReachRegion("General Grievous - Force Third Explosives Section"),
@@ -314,9 +314,9 @@ GENERAL_GRIEVOUS = Chapter(
                 "Force Third Explosives Section",
                 # Exploding the second explosives spawns bricks that can be forced into stairs.
                 logic_options(
-                    base=HasAbility(JEDI) & CAN_EXPLODE_SECOND_EXPLOSIVES.base,
+                    base=HasAbility(JEDI) & CAN_EXPLODE_SECOND_EXPLOSIVES,
                     normal=Or(
-                        HasAbility(JEDI) & CAN_EXPLODE_SECOND_EXPLOSIVES.normal,
+                        HasAbility(JEDI) & CAN_EXPLODE_SECOND_EXPLOSIVES,
                         HasAbility(HIGH_JUMP),
                     ),
                     # Triple jump or high jump up.
@@ -334,7 +334,7 @@ GENERAL_GRIEVOUS = Chapter(
                         HasAnyAbilities(CAN_DOUBLE_JUMP | JETPACK),
                         # Astromech hover can make it, so long as the bricks from the second explosives have
                         # spawned so that there is enough starting height.
-                        HasAbility(ASTROMECH_DROID) & CAN_EXPLODE_SECOND_EXPLOSIVES.normal,
+                        HasAbility(ASTROMECH_DROID) & CAN_EXPLODE_SECOND_EXPLOSIVES,
                     ),
                 ),
             ),
@@ -502,7 +502,7 @@ GENERAL_GRIEVOUS = Chapter(
                             Has("Stud Magnet"),
                             # Force the third explosives partially out, then jump on top of them as they return, to get
                             # extra height, to then double jump to the minikit.
-                            CAN_EXPLODE_FIRST_TWO_EXPLOSIVES.normal,
+                            CAN_EXPLODE_FIRST_TWO_EXPLOSIVES,
                         ),
                     ),
                 ),

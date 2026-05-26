@@ -40,16 +40,11 @@ can_damage_at_close_range = Or(
     HasAnyAbilities(BLASTER | WEAPON_EWOK | CAN_MELEE),
     can_self_destruct
 )
-can_fight_close_droids = logic_options(
-    base=base_can_damage_at_close_range,
+can_damage_at_close_range = logic_options(
+    base=HasAnyAbilities(BLASTER | WEAPON_EWOK | CAN_MELEE),
     normal=Or(
-        can_damage_at_close_range,
-        can_super_zap,
-    ),
-    moderate=Or(
-        can_damage_at_close_range,
-        can_super_zap,
-        can_deflect_bolts,
+        HasAnyAbilities(BLASTER | WEAPON_EWOK | CAN_MELEE),
+        can_self_destruct,
     ),
 )
 can_damage_shielded_droideka = logic_options(

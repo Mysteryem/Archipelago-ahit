@@ -40,7 +40,7 @@ RETAKE_THEED_PALACE = Chapter(
                         # Ascend to the higher area with the panel.
                         HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
                         # Base logic expects being able to defeat the Droideka.
-                        can_damage_shielded_droideka.base,
+                        can_damage_shielded_droideka,
                     ),
                     # Jump up the bricks to the side of the bricks that make the ramp.
                     # And just ignore Droideka if they cannot be defeated.
@@ -78,7 +78,7 @@ RETAKE_THEED_PALACE = Chapter(
                 er_rule=logic_options(
                     # All characters that can build bricks can jump, and being able to damage shielded droideka implies
                     # being able to destroy the statue to spawn the astromech panel bricks.
-                    base=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & can_damage_shielded_droideka.base,
+                    base=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & can_damage_shielded_droideka,
                     # There's no expectation to be able to kill droideka so dealing damage at close range is enough,
                     # though Astromech can remove shields anyway.
                     normal=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & can_damage_at_close_range,

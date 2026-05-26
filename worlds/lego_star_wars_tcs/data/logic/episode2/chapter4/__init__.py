@@ -44,7 +44,7 @@ JEDI_BATTLE = Chapter(
         "Padmé Pillar Lower Minikit": minikit_data(
             "Arena",
             logic_options(
-                base=HasAbility(HIGH_JUMP) & can_damage_shielded_droideka.base,
+                base=HasAbility(HIGH_JUMP) & can_damage_shielded_droideka,
                 normal=HasAbility(HIGH_JUMP),
                 moderate=HasAnyAbilities(HIGH_JUMP | JEDI),
             ),
@@ -53,7 +53,7 @@ JEDI_BATTLE = Chapter(
         "Padmé Pillar Upper Minikit": minikit_data(
             "Arena",
             logic_options(
-                base=HasAbility(HIGH_JUMP) & can_damage_shielded_droideka.base,
+                base=HasAbility(HIGH_JUMP) & can_damage_shielded_droideka,
                 normal=HasAbility(HIGH_JUMP),
                 moderate=HasAnyAbilities(HIGH_JUMP | JEDI),
             ),
@@ -67,7 +67,7 @@ JEDI_BATTLE = Chapter(
         "Anakin Pillar Lower Minikit": minikit_data(
             "Arena",
             logic_options(
-                base=HasAnyAbilities(GRAPPLE | HIGH_JUMP) & can_damage_shielded_droideka.base,
+                base=HasAnyAbilities(GRAPPLE | HIGH_JUMP) & can_damage_shielded_droideka,
                 normal=HasAbility(HIGH_JUMP) | can_grapple,
                 moderate=HasAnyAbilities(GRAPPLE | HIGH_JUMP | JEDI),
             ),
@@ -76,7 +76,7 @@ JEDI_BATTLE = Chapter(
         "Anakin Pillar Upper Minikit": minikit_data(
             "Arena",
             logic_options(
-                base=HasAnyAbilities(GRAPPLE | HIGH_JUMP) & can_damage_shielded_droideka.base,
+                base=HasAnyAbilities(GRAPPLE | HIGH_JUMP) & can_damage_shielded_droideka,
                 normal=HasAbility(HIGH_JUMP) | can_grapple,
                 moderate=HasAnyAbilities(GRAPPLE | HIGH_JUMP | JEDI),
             ),
@@ -90,7 +90,7 @@ JEDI_BATTLE = Chapter(
                 base=Or(
                     HasAbility(HIGH_JUMP),
                     HasAllAbilities(GRAPPLE | IMPERIAL),
-                ) & can_damage_shielded_droideka.base,
+                ) & can_damage_shielded_droideka,
                 normal=HasAbility(HIGH_JUMP) | HasAllAbilities(GRAPPLE | IMPERIAL),
                 moderate=HasAnyAbilities(HIGH_JUMP | JEDI) | HasAllAbilities(GRAPPLE | IMPERIAL),
             ),
@@ -102,7 +102,7 @@ JEDI_BATTLE = Chapter(
             # platform to the upper minikit platform.
             logic_options(
                 base=Or(
-                    HasAbility(HIGH_JUMP) & can_damage_shielded_droideka.base,
+                    HasAbility(HIGH_JUMP) & can_damage_shielded_droideka,
                     HasAllAbilities(GRAPPLE | IMPERIAL | JEDI),
                 ),
                 normal=HasAbility(HIGH_JUMP) | HasAllAbilities(GRAPPLE | IMPERIAL | JEDI),
