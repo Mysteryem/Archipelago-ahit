@@ -121,7 +121,7 @@ DROID_FACTORY = Chapter(
                     base=Or(
                         # Activate the first two targets by grappling up to them and shooting the targets, then jump off
                         # the now moving crucible to get to the upper area.
-                        HasAbility(GRAPPLE),
+                        can_grapple,
                         # Skip the first two targets and hover to the second, where objects must be destroyed to spawn
                         # a third target, and then the third target must be activated. A basic jump is required to get
                         # onto the crucible that is now moving up and down.
@@ -315,7 +315,7 @@ DROID_FACTORY = Chapter(
         "Lava Room Minikit": minikit_data(
             "Lava Room",
             logic_options(
-                base=HasAbility(GRAPPLE),
+                base=can_grapple,
                 # JEDI/HIGH_JUMP can jump from the corner of a spinning platform.
                 normal=can_grapple | HasAbility(HIGH_JUMP),
             ),

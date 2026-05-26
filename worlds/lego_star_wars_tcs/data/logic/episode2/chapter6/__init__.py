@@ -52,9 +52,7 @@ COUNT_DOOKU = Chapter(
         "Grapple Up Cliff Minikit": minikit_data(
             "Landing Pad",
             logic_options(
-                base=HasAbility(GRAPPLE),
-                # Allow Force Grapple Leap.
-                normal=can_grapple,
+                base=can_grapple,
                 # Allow Triple Jump.
                 moderate=HasAnyAbilities(GRAPPLE | JEDI | CAN_HIGH_JUMP_SLAM),
             ),
@@ -211,7 +209,7 @@ COUNT_DOOKU = Chapter(
         ),
         er_rule=logic_options(
             # Destroy the silver brick object blocking the access hatch, use the hatch, then grapple to the Power Brick.
-            base=can_destroy_close_silver_bricks & HasAllAbilities(SHORTIE | GRAPPLE),
+            base=can_destroy_close_silver_bricks & can_grapple & HasAbility(SHORTIE),
             # Allow other means of destroying silver bricks, and Force Grapple Leap.
             normal=And(
                 can_destroy_close_silver_bricks,

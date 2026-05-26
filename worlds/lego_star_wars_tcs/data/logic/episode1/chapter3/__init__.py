@@ -36,8 +36,7 @@ ESCAPE_FROM_NABOO = Chapter(
             ExitData(
                 "Rooftops Climb",
                 logic_options(
-                    base=HasAbility(GRAPPLE),
-                    normal=can_grapple,
+                    base=can_grapple,
                     moderate=can_grapple | HasAbility(CAN_HIGH_JUMP_SLAM),
                 )
             ),
@@ -169,14 +168,12 @@ ESCAPE_FROM_NABOO = Chapter(
             "Rooftops After Small Blaster Target Gate",
             logic_options(
                 base=HasAllAbilities(SHORTIE | HIGH_JUMP),
+                # Jedi can triple jump up instead of using high jump, so Force Grapple Leap is irrelevant.
                 moderate=HasAbility(SHORTIE) & HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
             ),
             er_rule=logic_options(
                 # Grapple or High Jump up and then use the hatch.
-                base=HasAbility(SHORTIE) & HasAnyAbilities(GRAPPLE | HIGH_JUMP),
-                # Force Grapple Leap is considered.
-                normal=HasAbility(SHORTIE) & (can_grapple | HasAbility(HIGH_JUMP)),
-                # Jedi can triple jump up instead of using high jump, so Force Grapple Leap is irrelevant.
+                base=HasAbility(SHORTIE) & (can_grapple | HasAbility(HIGH_JUMP)),
                 moderate=HasAbility(SHORTIE) & HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
             ),
             pickup_name="mk_0",
@@ -200,12 +197,12 @@ ESCAPE_FROM_NABOO = Chapter(
         "Force Mural Minikit": minikit_data(
             "Rooftops After Small Blaster Target Gate",
             logic_options(
+                # All Bounty Hunters can grapple.
                 base=HasAllAbilities(BOUNTY_HUNTER | JEDI),
                 normal=HasAbility(JEDI) & can_destroy_close_silver_bricks,
             ),
             er_rule=logic_options(
-                # All Bounty Hunters can grapple.
-                base=can_destroy_close_silver_bricks & HasAllAbilities(JEDI | GRAPPLE),
+                base=can_destroy_close_silver_bricks & HasAbility(JEDI) & can_grapple,
                 # Allow using extras to destroy the silver brick windows, and allow Force Grapple Leap.
                 normal=And(
                     HasAbility(JEDI),

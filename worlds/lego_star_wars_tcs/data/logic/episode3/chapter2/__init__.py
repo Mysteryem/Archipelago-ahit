@@ -145,8 +145,7 @@ CHANCELLOR_IN_PERIL = Chapter(
         "Hangar Minikit": minikit_data(
             "Hangar",
             logic_options(
-                base=HasAbility(GRAPPLE),
-                normal=can_grapple,
+                base=can_grapple,
                 # Triple jump from the red starfighter
                 moderate=HasAnyAbilities(JEDI | GRAPPLE | CAN_HIGH_JUMP_SLAM),
             ),
@@ -155,7 +154,7 @@ CHANCELLOR_IN_PERIL = Chapter(
         "Generator Room Grapple Minikit": minikit_data(
             "Generator Room",
             logic_options(
-                base=HasAbility(GRAPPLE),
+                base=can_grapple,
                 normal=can_grapple | HasAbility(HIGH_JUMP),
                 moderate=HasAnyAbilities(GRAPPLE | JEDI | HIGH_JUMP),
             ),

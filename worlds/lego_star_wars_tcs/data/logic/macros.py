@@ -83,9 +83,12 @@ can_destroy_far_silver_bricks = Or(
     HasAbility(BOUNTY_HUNTER),
     HasAbility(BLASTER) & Has("Exploding Blaster Bolts"),
 )
-can_grapple = Or(
-    HasAbility(GRAPPLE),
-    HasAbility(JEDI) & Has("Force Grapple Leap")
+can_grapple = logic_options(
+    base=HasAbility(GRAPPLE),
+    normal=Or(
+        HasAbility(GRAPPLE),
+        HasAbility(JEDI) & Has("Force Grapple Leap")
+    )
 )
 # Pre-optimised version of can_sith_force & can_grapple.
 can_sith_force_and_grapple = logic_options(
