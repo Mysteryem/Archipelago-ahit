@@ -6,7 +6,7 @@ from ...macros import (
     base_can_damage_at_close_range,
     can_damage_at_close_range,
     can_sith_force,
-    base_can_damage_shielded_droideka,
+    can_damage_shielded_droideka,
     can_deflect_bolts,
 )
 from ...option_filters import logic_options
@@ -40,7 +40,7 @@ RETAKE_THEED_PALACE = Chapter(
                         # Ascend to the higher area with the panel.
                         HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
                         # Base logic expects being able to defeat the Droideka.
-                        base_can_damage_shielded_droideka,
+                        can_damage_shielded_droideka.base,
                     ),
                     # Jump up the bricks to the side of the bricks that make the ramp.
                     # And just ignore Droideka if they cannot be defeated.
@@ -78,7 +78,7 @@ RETAKE_THEED_PALACE = Chapter(
                 er_rule=logic_options(
                     # All characters that can build bricks can jump, and being able to damage shielded droideka implies
                     # being able to destroy the statue to spawn the astromech panel bricks.
-                    base=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & base_can_damage_shielded_droideka,
+                    base=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & can_damage_shielded_droideka.base,
                     # There's no expectation to be able to kill droideka so dealing damage at close range is enough,
                     # though Astromech can remove shields anyway.
                     normal=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & can_damage_at_close_range,
@@ -157,7 +157,8 @@ RETAKE_THEED_PALACE = Chapter(
                 "Hangar",
                 # Base:
                 #  HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP) implies CAN_BARELY_JUMP
-                #  base_can_damage_shielded_droideka is Or(HasAnyAbilities(JEDI | BOUNTY_HUNTER), Has("Droideka"))
+                #  can_damage_shielded_droideka.base is
+                #  Or(HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM), Has("Droideka"))
                 # Normal:
                 #  HasAnyAbilities(HIGH_JUMP | SHORTIE) implies HasAbility(CAN_BARELY_JUMP).
                 #  can_damage_at_close_range is already needed at "After Collapsed Floor In Palace -> Courtyard".
@@ -170,7 +171,7 @@ RETAKE_THEED_PALACE = Chapter(
                     # A character that can jump, even astromech droids, is needed to get up a small lip before the
                     # button.
                     base=Or(
-                        HasAnyAbilities(JEDI | BOUNTY_HUNTER),
+                        HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM),
                         Has("Droideka") & HasAbility(CAN_BARELY_JUMP),
                     ),
                     # The droideka can be ignored.
@@ -283,7 +284,7 @@ RETAKE_THEED_PALACE = Chapter(
         "Minikit In Hidden Panel Behind Statue": minikit_data(
             "After Collapsed Floor In Palace",
             logic_options(
-                # base_can_damage_shielded_droideka implies base_can_damage_at_close_range
+                # can_damage_shielded_droideka.base implies base_can_damage_at_close_range
                 base=True_(),
                 # Includes self-destruct.
                 normal=can_damage_at_close_range,

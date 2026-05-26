@@ -5,7 +5,7 @@ from ...macros import (
     base_can_damage_at_close_range,
     can_damage_at_close_range,
     can_deflect_bolts,
-    base_can_damage_shielded_droideka,
+    can_damage_shielded_droideka,
     can_activate_close_target,
 )
 from ...option_filters import logic_options
@@ -52,7 +52,7 @@ DROID_FACTORY = Chapter(
                 logic_options(
                     # No fancy tricks, just outrun the conveyor enough to pass under the crusher.
                     # There is a Droideka in the middle that base logic is expected to be able to defeat.
-                    base=HasAbility(RUN_SPEED_0_9_OR_HIGHER) & base_can_damage_shielded_droideka,
+                    base=HasAbility(RUN_SPEED_0_9_OR_HIGHER) & can_damage_shielded_droideka.base,
                     # Yoda/Yoda (Ghost) can attack to move faster.
                     # Boba Fett (Boy) can safely jump beneath the crusher, whereas other slow characters appear to be
                     # unable to, instead hitting the crusher's hurtbox and dying.
