@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Literal
 
 from Options import CommonOptions
 from rule_builder.field_resolvers import FromWorldAttr
-from rule_builder.rules import Rule, TWorld, True_
+from rule_builder.rules import Rule, TWorld, True_, Has, Or, And, NestedRule
 from rule_builder.options import OptionFilter
 
 from ...constants import GAME_NAME
@@ -154,23 +154,94 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         return self._apply_rule_op(rule, or_, apply_to)
 
 
+def _recursively_replace_logic_options(rule: Rule, difficulty_attribute: Literal["base", "normal", "moderate", "hard"]):
+    if isinstance(rule, LogicOptions):
+        if rule.options:
+            # OptionFilters would probably be annoying to combine correctly, especially if filtered_resolution
+            # differs between the LogicOptions and the rule being getattr-ed.
+            raise Exception("LogicOptions should not use OptionFilters, filter the individual rules instead.")
+        return _recursively_replace_logic_options(getattr(rule, difficulty_attribute), difficulty_attribute)
+    if isinstance(rule, NestedRule):
+        # Recursively iterate through children and replace rules as necessary.
+        # Scan for a rule that could need replacement.
+        for child in rule.children:
+            if isinstance(child, (LogicOptions, NestedRule)):
+                # A rule that could need replacing has been found.
+
+                # Find which NestedRule type we are.
+                if isinstance(rule, And):
+                    cls = And
+                elif isinstance(rule, Or):
+                    cls = Or
+                else:
+                    raise Exception(f"Cannot handle unknown type NestedRule: {rule}")
+
+                new_children = []
+                changed = False
+                for child2 in rule.children:
+                    replacement_child = _recursively_replace_logic_options(child2, difficulty_attribute)
+                    # If no changes are made, then the input rule is returned.
+                    if replacement_child is not child2:
+                        changed = True
+                    new_children.append(replacement_child)
+                if changed:
+                    return cls(
+                        *new_children,
+                        options=rule.options,
+                        filtered_resolution=rule.filtered_resolution
+                    )
+                # No rules have changed, so fall through to returning the input rule.
+        # No rules could need replacement, so fall through to returning the input rule.
+    return rule
+
+
 def logic_options(
         base: Rule[TWorld],
         normal: Rule[TWorld] | None = None,
         moderate: Rule[TWorld] | None = None,
         hard: Rule[TWorld] | None = None,
 ) -> LogicOptions[TWorld]:
+    # If any of base/normal/moderate/hard contain a LogicOptions rule, replace that with the base/normal/moderate/hard
+    # rule.
+    base_rule = _recursively_replace_logic_options(base, "base")
+
     if normal is None:
         normal = base
+        if base_rule is base:
+            # No replacement occurred.
+            normal_rule = base
+        else:
+            normal_rule = _recursively_replace_logic_options(base, "normal")
+    else:
+        normal_rule = _recursively_replace_logic_options(normal, "normal")
+
     if moderate is None:
         moderate = normal
+        if normal_rule is normal:
+            # No replacement occurred.
+            moderate_rule = normal
+        else:
+            moderate_rule = _recursively_replace_logic_options(normal, "moderate")
+    else:
+        moderate_rule = _recursively_replace_logic_options(moderate, "moderate")
+
     if hard is None:
-        hard = moderate
+        # hard = moderate
+        if moderate_rule is moderate:
+            # No replacement occurred.
+            hard_rule = moderate
+        else:
+            hard_rule = _recursively_replace_logic_options(moderate, "hard")
+    else:
+        hard_rule = _recursively_replace_logic_options(hard, "hard")
 
-    if hard == base:
-        # This is not really a problem, but it could indicate an issue elsewhere.
-        raise Exception("Hard and Base rules are the same.")
+    if hard_rule is moderate_rule and hard_rule is normal_rule and hard_rule is base_rule:
+        # This is not really a problem, but it could indicate an issue elsewhere if all the provided rules are the same.
+        raise Exception("All rules are the same. Maybe don't use logic_options.")
 
-    return LogicOptions(base, normal, moderate, hard)
+    return LogicOptions(base_rule, normal_rule, moderate_rule, hard_rule)
+
+
+
 
 
