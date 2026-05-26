@@ -111,7 +111,7 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
             return logic
 
         if isinstance(rule, LogicOptions):
-            rule = getattr(self, apply_to)
+            rule = getattr(rule, apply_to)
 
         if apply_to == "base":
             return LogicOptions(
