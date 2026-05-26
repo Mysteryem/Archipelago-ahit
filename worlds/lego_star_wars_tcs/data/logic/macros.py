@@ -35,11 +35,6 @@ can_deflect_bolts = Or(
     HasAbility(CAN_AGGRAVATE_ENEMIES) & Has("Deflect Bolts"),
 )
 can_super_zap = HasAbility(WEAPON_ZAPPER) & Has("Super Zapper")
-base_can_damage_at_close_range = HasAnyAbilities(BLASTER | WEAPON_EWOK | CAN_MELEE)
-can_damage_at_close_range = Or(
-    HasAnyAbilities(BLASTER | WEAPON_EWOK | CAN_MELEE),
-    can_self_destruct
-)
 can_damage_at_close_range = logic_options(
     base=HasAnyAbilities(BLASTER | WEAPON_EWOK | CAN_MELEE),
     normal=Or(

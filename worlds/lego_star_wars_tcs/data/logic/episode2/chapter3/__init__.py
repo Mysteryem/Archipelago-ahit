@@ -2,7 +2,6 @@ from rule_builder.rules import And, Or, Has, HasAny
 
 from ...macros import (
     can_grapple,
-    base_can_damage_at_close_range,
     can_damage_at_close_range,
     can_deflect_bolts,
     can_damage_shielded_droideka,
@@ -37,9 +36,7 @@ DROID_FACTORY = Chapter(
                 "Factory Conveyor",
                 logic_options(
                     # The Geonosians must be killed to proceed.
-                    base=base_can_damage_at_close_range,
-                    # Allow Self Destruct.
-                    normal=can_damage_at_close_range,
+                    base=can_damage_at_close_range,
                     # Allow Deflect Bolts.
                     moderate=can_damage_at_close_range | can_deflect_bolts,
                 ),
@@ -174,7 +171,7 @@ DROID_FACTORY = Chapter(
                     base=And(
                         HasAnyAbilities(HOVER | GRAPPLE | CAN_DOUBLE_JUMP),
                         HasAbility(ASTROMECH_PANEL),
-                        base_can_damage_at_close_range,
+                        can_damage_at_close_range,
                     ),
                     moderate=Or(
                         HasAnyAbilities(HOVER | GRAPPLE | CAN_DOUBLE_JUMP),
@@ -205,10 +202,7 @@ DROID_FACTORY = Chapter(
         "Geonosian Hive": (
             ExitData(
                 "Force Fields Maze Room",
-                logic_options(
-                    base=base_can_damage_at_close_range,
-                    normal=can_damage_at_close_range,
-                ),
+                can_damage_at_close_range,
             ),
             ExitData(
                 "Geonosian Hive Across Lava",

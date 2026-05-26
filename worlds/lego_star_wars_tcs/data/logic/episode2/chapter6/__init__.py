@@ -3,7 +3,7 @@ from rule_builder.rules import Or, And, HasAny
 from ...macros import (
     can_grapple,
     can_destroy_close_silver_bricks,
-    base_can_damage_at_close_range,
+    can_damage_at_close_range,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -69,7 +69,7 @@ COUNT_DOOKU = Chapter(
             "Landing Pad",
             logic_options(
                 # Expect defeating the enemies.
-                base=HasAbility(HIGH_JUMP) & base_can_damage_at_close_range,
+                base=HasAbility(HIGH_JUMP) & can_damage_at_close_range,
                 normal=Or(
                     # Ignore the enemies if necessary.
                     HasAbility(HIGH_JUMP),
@@ -90,7 +90,7 @@ COUNT_DOOKU = Chapter(
             "Landing Pad",
             logic_options(
                 # Expect defeating the enemies.
-                base=HasAbility(CAN_DOUBLE_JUMP) & base_can_damage_at_close_range,
+                base=HasAbility(CAN_DOUBLE_JUMP) & can_damage_at_close_range,
                 # Ignore the enemies if necessary.
                 normal=HasAbility(CAN_DOUBLE_JUMP),
                 # The jump + jetpack hover can just barely make it onto the second platform.
@@ -102,7 +102,7 @@ COUNT_DOOKU = Chapter(
             "Landing Pad",
             logic_options(
                 # Expect defeating enemies.
-                base=HasAbility(HIGH_JUMP) & base_can_damage_at_close_range,
+                base=HasAbility(HIGH_JUMP) & can_damage_at_close_range,
                 # Ignore the enemies if necessary.
                 normal=HasAbility(HIGH_JUMP),
                 # Allow triple jump.
