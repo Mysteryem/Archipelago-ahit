@@ -170,16 +170,12 @@ DARTH_MAUL = Chapter(
         ),
         "Behind Silver Bricks Minikit": minikit_data(
             "Tower Room",
-            logic_options(
-                # IS_NON_GHOST_JEDI implies CAN_JUMP_NORMAL_DISTANCE.
-                base=HasAbility(BOUNTY_HUNTER),
-                # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_NORMAL_DISTANCE.
-                # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_NORMAL_DISTANCE.
-                normal=can_destroy_close_silver_bricks,
-            ),
+            # IS_NON_GHOST_JEDI implies CAN_JUMP_NORMAL_DISTANCE.
+            # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_NORMAL_DISTANCE.
+            # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_NORMAL_DISTANCE.
+            can_destroy_close_silver_bricks,
             er_rule=logic_options(
-                base=HasAllAbilities(CAN_JUMP_NORMAL_DISTANCE | BOUNTY_HUNTER),
-                normal=HasAbility(CAN_JUMP_NORMAL_DISTANCE) & can_destroy_close_silver_bricks,
+                base=HasAbility(CAN_JUMP_NORMAL_DISTANCE) & can_destroy_close_silver_bricks,
                 # Include Ewok and other slow characters that can only barely get enough jump distance.
                 moderate=HasAbility(CAN_BARELY_JUMP) & can_destroy_close_silver_bricks,
             ),

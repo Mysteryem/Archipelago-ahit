@@ -301,11 +301,7 @@ RETAKE_THEED_PALACE = Chapter(
         ),
         "Minikit Behind Dark Side Barrier": minikit_data(
             "After Collapsed Floor In Palace",
-            logic_options(
-                base=HasAbility(SITH),
-                # Includes Dark Side.
-                normal=can_sith_force,
-            ),
+            can_sith_force,
             pickup_name="mk_1",
         ),
         "Minikit On Courtyard Far Ledge": minikit_data(
@@ -331,15 +327,9 @@ RETAKE_THEED_PALACE = Chapter(
         ),
         "Build And Destroy Silver Bricks In Boxes Minikit": minikit_data(
             "Rooftops",
-            logic_options(
-                # All: CAN_BUILD_BRICKS is needed at "After Collapsed Floor In Palace -> Courtyard".
-                base=HasAbility(BOUNTY_HUNTER),
-                normal=can_destroy_close_silver_bricks,
-            ),
-            er_rule=logic_options(
-                base=HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS),
-                normal=HasAbility(CAN_BUILD_BRICKS) & can_destroy_close_silver_bricks,
-            ),
+            # All: CAN_BUILD_BRICKS is needed at "After Collapsed Floor In Palace -> Courtyard".
+            can_destroy_close_silver_bricks,
+            er_rule=HasAbility(CAN_BUILD_BRICKS) & can_destroy_close_silver_bricks,
             pickup_name="m_pup1",
         ),
         "Minikit On Dining Hall Ledge": minikit_data(
@@ -394,11 +384,19 @@ RETAKE_THEED_PALACE = Chapter(
         "Hangar Far Left Minikit": minikit_data(
             "Hangar",
             logic_options(
+                base=HasAllAbilities(SITH | BOUNTY_HUNTER),
+                normal=Or(
+                    HasAbility(HIGH_JUMP),
+                    can_sith_force & can_destroy_close_silver_bricks,
+                ),
+                moderate=HasAnyAbilities(JEDI | HIGH_JUMP),
+            ),
+            er_rule=logic_options(
                 # Jedi to move blocks to get to the silver bricks.
                 # Bounty hunter to destroy the silver bricks.
                 # Build Bricks to build the platform (all Jedi/Sith can build bricks).
                 # Sith force to move the platform into position.
-                base=HasAllAbilities(SITH | BOUNTY_HUNTER),
+                base=can_sith_force & can_destroy_close_silver_bricks,
                 # High jump can just jump up to the minikit from the right side, no Jedi needed.
                 normal=Or(
                     HasAbility(HIGH_JUMP),

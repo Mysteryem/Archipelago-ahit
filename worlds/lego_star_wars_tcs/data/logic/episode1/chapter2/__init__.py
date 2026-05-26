@@ -1,6 +1,6 @@
 from rule_builder.rules import And, Or, HasAny, False_, True_
 
-from ...macros import can_destroy_close_silver_bricks, can_self_destruct
+from ...macros import can_self_destruct
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ...types import minikit_data, ExitData, Chapter, LocationData
@@ -163,12 +163,9 @@ INVASION_OF_NABOO = Chapter(
         "Swamp Ruins": (
             # ExitData(
             #     "Swamp Behind MTT",
-            #     logic_options(
-            #         base=HasAbility(BOUNTY_HUNTER),
-            #         normal=can_destroy_close_silver_bricks,
-            #         # The collision for the MTT is enormous, though there's probably ways to get out-of-bounds to get
-            #         # behind it.
-            #     ),
+            #     # The collision for the MTT is enormous, though there's probably ways to get out-of-bounds to get
+            #     # behind it.
+            #     can_destroy_close_silver_bricks,
             # ),
             ExitData(
                 "Swamp Before Water",

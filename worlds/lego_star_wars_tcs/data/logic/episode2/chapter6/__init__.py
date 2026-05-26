@@ -209,5 +209,27 @@ COUNT_DOOKU = Chapter(
                 ),
             ),
         ),
+        er_rule=logic_options(
+            # Destroy the silver brick object blocking the access hatch, use the hatch, then grapple to the Power Brick.
+            base=can_destroy_close_silver_bricks & HasAllAbilities(SHORTIE | GRAPPLE),
+            # Allow other means of destroying silver bricks, and Force Grapple Leap.
+            normal=And(
+                can_destroy_close_silver_bricks,
+                HasAbility(SHORTIE),
+                # High jumpers, except Grievous' Bodyguard, can jump to the Power Brick from the grapple point.
+                can_grapple | HasAny("General Grievous", "Jar Jar Binks", "Captain Tarpals"),
+            ),
+            # Triple jump can skip the access hatch and skip the grapple.
+            moderate=Or(
+                HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
+                And(
+                    can_destroy_close_silver_bricks,
+                    HasAbility(SHORTIE),
+                    # There is no need to list Jar Jar Binks and Captain Tarpals individually, instead of HIGH_JUMP,
+                    # because the CAN_HIGH_JUMP_SLAM characters can reach the Power Brick on their own.
+                    HasAnyAbilities(GRAPPLE | HIGH_JUMP),
+                ),
+            ),
+        ),
     ),
 )

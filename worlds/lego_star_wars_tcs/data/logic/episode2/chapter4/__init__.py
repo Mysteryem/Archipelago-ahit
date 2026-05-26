@@ -137,5 +137,6 @@ JEDI_BATTLE = Chapter(
             base=HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
             normal=can_destroy_close_silver_bricks & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
         ),
+        er_rule=can_destroy_close_silver_bricks & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
     ),
 )

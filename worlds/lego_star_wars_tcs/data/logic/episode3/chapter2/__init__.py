@@ -220,10 +220,7 @@ CHANCELLOR_IN_PERIL = Chapter(
             "Ship's Bridge",
             # With ER, base logic would need to consider defeating the Bodyguards, a melee attack or explosion are
             # required, as they seem to always deflect blasters.
-            # logic_options(
-            #     base=HasAbility(CAN_JUMP_NORMAL_HEIGHT) & HasAnyAbilities(CAN_MELEE | BOUNTY_HUNTER),
-            #     normal=HasAbility(CAN_JUMP_NORMAL_HEIGHT) & (HasAbility(CAN_MELEE) | can_destroy_close_silver_bricks),
-            # ),
+            # er_rule=HasAbility(CAN_JUMP_NORMAL_HEIGHT) & (HasAbility(CAN_MELEE) | can_destroy_close_silver_bricks),
             pickup_name="mk_0",
         ),
         "Bridge Right Minikit": minikit_data(
@@ -234,13 +231,10 @@ CHANCELLOR_IN_PERIL = Chapter(
     },
     power_brick=LocationData(
         "Horizontal Elevator Shaft",
+        can_destroy_close_silver_bricks,
         # With ER, base logic would expect reversing the elevator to get the Power Brick.
-        # logic_options(
-        #     base=HasAllAbilities(BOUNTY_HUNTER | ASTROMECH_PANEL),
-        #     normal=can_destroy_close_silver_bricks,
-        # ),
-        logic_options(
-            base=HasAbility(BOUNTY_HUNTER),
+        er_rule=logic_options(
+            base=can_destroy_close_silver_bricks & HasAbility(ASTROMECH_PANEL),
             normal=can_destroy_close_silver_bricks,
         ),
     ),

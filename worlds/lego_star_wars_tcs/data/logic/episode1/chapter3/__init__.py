@@ -156,9 +156,7 @@ ESCAPE_FROM_NABOO = Chapter(
             er_rule=logic_options(
                 # Grapple to get up/down the tower/roofing. Hover to cross the gap between roofs. Sith to force the
                 # flowers.
-                base=HasAllAbilities(SITH | HOVER | GRAPPLE),
-                # Dark Side and Force Grapple Leap are considered.
-                normal=HasAbility(HOVER) & can_sith_force_and_grapple,
+                base=HasAbility(HOVER) & can_sith_force_and_grapple,
                 # Triple jump can cross the gap and replace using grapple to get to the minikit.
                 # Note that to continue with the level, one of the flowerbeds in the first lower section cannot be
                 # destroyed because it is needed to get enough height to triple jump back up to the higher section and
@@ -207,12 +205,12 @@ ESCAPE_FROM_NABOO = Chapter(
             ),
             er_rule=logic_options(
                 # All Bounty Hunters can grapple.
-                base=HasAllAbilities(BOUNTY_HUNTER | JEDI),
+                base=can_destroy_close_silver_bricks & HasAllAbilities(JEDI | GRAPPLE),
                 # Allow using extras to destroy the silver brick windows, and allow Force Grapple Leap.
                 normal=And(
                     HasAbility(JEDI),
                     can_destroy_close_silver_bricks,
-                    HasAnyAbilities(GRAPPLE | HIGH_JUMP) | Has("Force Grapple Leap")
+                    HasAbility(HIGH_JUMP) | can_grapple,
                 ),
                 # Triple jump skips any need to grapple.
                 moderate=can_destroy_close_silver_bricks & HasAbility(JEDI),
@@ -221,12 +219,10 @@ ESCAPE_FROM_NABOO = Chapter(
         ),
         "Minikit Under Silver Cover": minikit_data(
             "Final Rooftop",
-            logic_options(
-                base=HasAbility(BOUNTY_HUNTER),
-                normal=can_destroy_close_silver_bricks,
-            ),
+            can_destroy_close_silver_bricks,
             er_rule=logic_options(
-                base=HasAbility(BOUNTY_HUNTER),
+                # (all bounty hunters can jump normal height)
+                base=can_destroy_close_silver_bricks & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                 # The button to press is in a raised area.
                 normal=can_destroy_close_silver_bricks & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                 # The button to press is in a raised area. Astromech droids can just barely get up.
@@ -252,17 +248,28 @@ ESCAPE_FROM_NABOO = Chapter(
     power_brick=LocationData(
         "Rooftops Climb",
         logic_options(
-            # There are Silver brick objects to destroy and Dark Side force flowers to force.
-            # All Sith (and Jedi) can build bricks and push blocks.
             base=HasAllAbilities(SITH | BOUNTY_HUNTER),
-            # Allow using Dark Side instead of Sith. Yoda (and Yoda (Ghost)) struggle a lot to use force on one of the
-            # flowers, so they are excluded.
             normal=And(
                 Or(
                     HasAbility(SITH),
                     Has("Dark Side") & HasAbilitiesExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
                 ),
                 can_destroy_close_silver_bricks
+            ),
+            moderate=Or(
+                HasAbility(SITH),
+                Has("Dark Side") & HasAbilitiesExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
+            )
+        ),
+        er_rule=logic_options(
+            # There are Silver brick objects to destroy and Dark Side force flowers to force.
+            # All Sith (and Jedi) can build bricks and push blocks.
+            base=And(
+                can_destroy_close_silver_bricks,
+                can_sith_force,
+                # When Dark Side is allowed instead of just Sith. Yoda (and Yoda (Ghost)) struggle a lot to use force on
+                # one of the flowers, so they are excluded.
+                HasAbilitiesExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
             ),
             # The Silver brick objects can actually be destroyed with a slam attack for some reason, so being able to
             # destroy Silver brick objects is not needed.

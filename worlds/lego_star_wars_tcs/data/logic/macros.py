@@ -13,23 +13,28 @@ can_super_ewok_catapult = HasAbility(WEAPON_EWOK) & Has("Super Ewok Catapult")
 
 
 # All Sith are Jedi.
-can_sith_force = And(
-    HasAbility(JEDI),
-    HasAbility(SITH) | Has("Dark Side"),
+can_sith_force = logic_options(
+    base=HasAbility(SITH),
+    # Alternative because SITH implies JEDI:
+    # normal=And(
+    #     HasAbility(JEDI),
+    #     HasAbility(SITH) | Has("Dark Side"),
+    # )
+    normal=Or(
+        HasAbility(SITH),
+        Has("Dark Side") & HasAbility(JEDI),
+    )
 )
-# Alternative:
-# can_sith_force = Or(
-#     HasAbility(SITH),
-#     HasAbility(JEDI) & Has("Dark Side"),
-# )
-can_destroy_close_silver_bricks = Or(
-    HasAbility(BOUNTY_HUNTER),
-    Or(
+
+can_destroy_close_silver_bricks = logic_options(
+    base=HasAbility(BOUNTY_HUNTER),
+    normal=Or(
         can_self_destruct,
         Has("Exploding Blaster Bolts") & HasAnyAbilities(BLASTER | WEAPON_EWOK),
         Has("Super Ewok Catapult") & HasAbility(WEAPON_EWOK),
-    )
+    ),
 )
+
 can_deflect_bolts = Or(
     HasAbility(CAN_DEFLECT_BOLTS),
     HasAbility(CAN_AGGRAVATE_ENEMIES) & Has("Deflect Bolts"),
@@ -83,7 +88,10 @@ can_grapple = Or(
     HasAbility(JEDI) & Has("Force Grapple Leap")
 )
 # Pre-optimised version of can_sith_force & can_grapple.
-can_sith_force_and_grapple = can_sith_force & (HasAbility(GRAPPLE) | Has("Force Grapple Leap"))
+can_sith_force_and_grapple = logic_options(
+    base=can_sith_force & HasAbility(GRAPPLE),
+    normal=can_sith_force & (HasAbility(GRAPPLE) | Has("Force Grapple Leap")),
+)
 can_fight_or_bypass_skippable_droideka = Or(
     can_damage_shielded_droideka,
     True_(options=normal_logic)

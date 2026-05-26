@@ -429,6 +429,23 @@ GENERAL_GRIEVOUS = Chapter(
                     ),
                 ),
             ),
+            er_rule=logic_options(
+                base=can_destroy_close_silver_bricks & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                moderate=Or(
+                    # Triple jump over the silver brick wall.
+                    # The devs made the collision box come forwards at the top, but didn't make it high enough, so
+                    # making the collision box come forwards actually helps here.
+                    # Triple high jump can get enough height from next to the silver brick wall, whereas Jedi need to
+                    # move back a bit from the wall, to the slightly higher area, otherwise they do not get enough
+                    # height.
+                    HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
+                    And(
+                        can_destroy_close_silver_bricks,
+                        # Astromech droids can also make it up with their hover.
+                        HasAnyAbilities(CAN_JUMP_NORMAL_HEIGHT | ASTROMECH_DROID),
+                    ),
+                ),
+            ),
             pickup_name="m_pup3",
         ),
         "Force Platforms High Minikit": minikit_data(
