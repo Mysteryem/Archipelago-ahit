@@ -442,7 +442,11 @@ COMMON_JETPACK_BOUNTY_HUNTER = COMMON_NON_DROID_BOUNTY_HUNTER | COMMON_JETPACK
 
 COMMON_PROTOCOL_DROID = PROTOCOL_PANEL | CAN_SELF_DESTRUCT
 
-MIXIN_FORCE_GHOST = ~(CAN_AGGRAVATE_ENEMIES | IS_NON_GHOST_JEDI)
+# Yoda's low base movement speed greatly reduces his triple jump horizontal distance, so he cannot
+# CAN_TRIPLE_JUMP_GREAT_DISTANCE.
+COMMON_YODA = JEDI | COMMON_MELEE_NON_DROID | CAN_DOUBLE_JUMP | CAN_DEFLECT_BOLTS | IS_NON_GHOST_JEDI
+
+MIXIN_FORCE_GHOST = ~(CAN_AGGRAVATE_ENEMIES | IS_NON_GHOST_JEDI | CAN_DEFLECT_BOLTS)
 
 
 ITEM_DATA: list[GenericItemData] = [
@@ -468,12 +472,7 @@ ITEM_DATA: list[GenericItemData] = [
     _char(12, "C-3PO", 12, COMMON_PROTOCOL_DROID, 0.75, Alignment.PASSIVE),
     _char(13, "Mace Windu", 62, COMMON_HATLESS_JEDI),
     _char(14, "Padmé (Clawed)", 78, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
-    _char(15, "Yoda", 10,
-          # Yoda's low base movement speed greatly reduces his triple jump horizontal distance.
-          JEDI
-          | COMMON_PACIFIST_NON_DROID
-          | CAN_DOUBLE_JUMP,
-          0.8),
+    _char(15, "Yoda", 10, COMMON_YODA, 0.8),
     _char(16, "Obi-Wan Kenobi (Episode 3)", 74, COMMON_HATLESS_JEDI),
     _char(17, "Anakin Skywalker (Jedi)", 96, COMMON_HATLESS_JEDI),
     _char(18, "Chancellor Palpatine", 73, COMMON_HATLES_PACIFIST_NON_DROID),
@@ -634,14 +633,7 @@ ITEM_DATA: list[GenericItemData] = [
           | CAN_MELEE,
           alignment=Alignment.EVIL),
     _char(117, "Ben Kenobi (Ghost)", 195, COMMON_HATLESS_JEDI & MIXIN_FORCE_GHOST, alignment=Alignment.PASSIVE),
-    _char(118, "Yoda (Ghost)", 227,
-          # Yoda's low base movement speed greatly reduces his triple jump horizontal distance.
-          (JEDI
-           | COMMON_PACIFIST_NON_DROID
-           | CAN_DOUBLE_JUMP)
-          & MIXIN_FORCE_GHOST,
-          0.8,
-          Alignment.PASSIVE),
+    _char(118, "Yoda (Ghost)", 227, COMMON_YODA & MIXIN_FORCE_GHOST, 0.8, Alignment.PASSIVE),
     _char(119, "R2-Q5", 314, COMMON_ASTROMECH_DROID, 1.0, Alignment.PASSIVE),
     _char(120, "Padmé", 76, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID),
     _char(121, "Luke Skywalker (Hoth)", 204, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),  # Ability missing from manual
