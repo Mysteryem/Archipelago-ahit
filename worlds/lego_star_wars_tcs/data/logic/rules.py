@@ -3,18 +3,21 @@ from typing import ClassVar, Iterable, TYPE_CHECKING
 from typing_extensions import override
 
 from BaseClasses import CollectionState
-from rule_builder.rules import Rule, TWorld, True_, OptionFilter, Filtered, HasAny
+from rule_builder.rules import Rule, TWorld, True_, OptionFilter, Filtered, HasAny, Has, HasFromListUnique, HasAll
 from rule_builder.field_resolvers import FieldResolver, resolve_field
 
 from ...character_ability import CharacterAbility
 from ...constants import GAME_NAME
 from ...items import CHARACTERS_AND_VEHICLES_BY_NAME
+from ...options import ChapterUnlockRequirement, EpisodeUnlockRequirement
 
 
 if TYPE_CHECKING:
     from ... import LegoStarWarsTCSWorld
+    from .types import Chapter
 else:
     LegoStarWarsTCSWorld = TWorld
+    Chapter = object
 
 
 def _caching_enabled(world: LegoStarWarsTCSWorld):
@@ -143,6 +146,40 @@ class HasAnyAbilities(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         @override
         def _evaluate(self, state: CollectionState) -> bool:
             return state.prog_items[self.player]["COMBINED_ABILITIES"] & self.abilities_as_int != 0
+
+
+@dataclasses.dataclass
+class HasAbilityCombination(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+    """A rule that checks if the player has any character with all the given abilities.
+
+    This is an expensive, but rarely used rule for cases where it is not worth defining a new ability just for this
+    case."""
+    abilities: CharacterAbility | FieldResolver
+
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        abilities = resolve_field(self.abilities, world, CharacterAbility)
+
+        return self._make_rule(abilities).resolve(world)
+
+    @staticmethod
+    def _make_rule(abilities: CharacterAbility) -> Rule:
+        common_abilities = ~CharacterAbility.NONE
+        matching_characters = []
+        for character in CHARACTERS_AND_VEHICLES_BY_NAME.values():
+            # "Super Gonk Droid" is a collect override when "Gonk Droid" and "Super Gonk" are both collected.
+            if ((not character.is_sendable and character.name != "Super Gonk Droid")
+                    or abilities not in character.abilities):
+                continue
+            matching_characters.append(character)
+            common_abilities &= character.abilities
+
+        if len(matching_characters) >= 8:
+            # If there are lots of characters that match this, check for having all the required abilities first
+            # because that is a faster check.
+            return HasAllAbilities(common_abilities) & HasAny(*matching_characters)
+        else:
+            return HasAny(*matching_characters)
 
 
 @dataclasses.dataclass

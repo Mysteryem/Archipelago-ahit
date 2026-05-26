@@ -1,13 +1,17 @@
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from rule_builder.rules import Rule, True_
+from rule_builder.rules import Rule, True_, False_
 
 
 @dataclass(frozen=True)
 class LocationData:
     region: str
     rule: Rule = field(default_factory=True_)
+    er_rule: Rule | None = None
+    """While ER is not implemented, comparing generation using the slower ER rules vs pre-optimised normal rules can
+    identify issues in the logic if their two sets of rules don't produce identical results.
+    If `er_rule` is None, use `rule` instead."""
 
 
 @dataclass(frozen=True)
@@ -38,18 +42,19 @@ class MinikitData(LocationData):
                 raise Exception(f"Invalid pickup name {name} encodes to {byte_size} bytes, but the max is 7.")
 
 
-def minikit_data(region: str, rule: Rule | None = None, *, pickup_name: str) -> MinikitData:
+def minikit_data(region: str, rule: Rule | None = None, *, er_rule: Rule = True_(), pickup_name: str) -> MinikitData:
     """Helper for defining minikit data with a single pickup name."""
     if rule is None:
-        return MinikitData(region, pickup_names=(pickup_name,))
+        return MinikitData(region, er_rule=er_rule, pickup_names=(pickup_name,))
     else:
-        return MinikitData(region, rule, (pickup_name,))
+        return MinikitData(region, rule, er_rule, (pickup_name,))
 
 
 @dataclass(frozen=True)
 class ExitData:
     to_region: str
     rule: Rule = field(default_factory=True_)
+    er_rule: Rule | None = None
     name: str | None = None
     new_level: str | None = None
 

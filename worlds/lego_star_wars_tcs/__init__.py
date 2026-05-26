@@ -799,19 +799,19 @@ class LegoStarWarsTCSWorld(World):
                 # better performance, at the cost of readability.
                 if (item.name == "Gonk Droid"
                         and "Super Gonk" in player_prog
-                        and "SUPER_GONK_ACTIVATED" not in player_prog):
+                        and "Super Gonk Droid" not in player_prog):
                     # The pair is newly complete, so grant the abilities.
                     player_prog["COMBINED_ABILITIES"] |= SUPER_GONK_DROID_ABILITIES_VALUE
                     player_prog[SUPER_GONK_DROID_ABILITIES_VALUE] += 1
-                    player_prog["SUPER_GONK_ACTIVATED"] = 1
+                    player_prog["Super Gonk Droid"] = 1
             # Super Gonk is an Extra, so does not have abilities, so has to be checked in a separate branch.
             elif item.name == "Super Gonk":
                 player_prog = state.prog_items[self.player]
-                if "Gonk Droid" in player_prog and "SUPER_GONK_ACTIVATED" not in player_prog:
+                if "Gonk Droid" in player_prog and "Super Gonk Droid" not in player_prog:
                     # The pair is newly complete, so grant the abilities.
                     player_prog["COMBINED_ABILITIES"] |= SUPER_GONK_DROID_ABILITIES_VALUE
                     player_prog[SUPER_GONK_DROID_ABILITIES_VALUE] += 1
-                    player_prog["SUPER_GONK_ACTIVATED"] = 1
+                    player_prog["Super Gonk Droid"] = 1
             return True
         return False
 
@@ -845,12 +845,12 @@ class LegoStarWarsTCSWorld(World):
             # in a single branch, and `.remove()` is not performance critical, so it's not a concern.
             if item.name in SUPER_GONK_ITEMS:
                 player_prog = state.prog_items[self.player]
-                if ("SUPER_GONK_ACTIVATED" in player_prog
+                if ("Super Gonk Droid" in player_prog
                         and ("Gonk Droid" not in player_prog or "Super Gonk" not in player_prog)):
                     # One of the pair is no longer provided, so remove the abilities.
                     self._remove_state_abilities(state, SUPER_GONK_DROID_ABILITIES_VALUE)
                     # Remove the marker that Super Gonk abilities have been provided.
-                    del player_prog["SUPER_GONK_ACTIVATED"]
+                    del player_prog["Super Gonk Droid"]
             return True
         return False
 
