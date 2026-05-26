@@ -2,7 +2,7 @@ from collections import defaultdict
 from unittest import TestCase
 
 from ..items import CHARACTERS_AND_VEHICLES_BY_NAME
-from ..character_ability import CharacterAbility, IMPLIED_ABILITIES, ABILITY_REDUCTIONS
+from ..character_ability import CharacterAbility, IMPLIED_ABILITIES, ABILITY_REDUCTIONS, COMBINATION_ABILITY_REDUCTIONS
 
 CHARACTERS = [c for c in CHARACTERS_AND_VEHICLES_BY_NAME.values() if c.is_sendable or c.name == "Super Gonk Droid"]
 
@@ -86,36 +86,36 @@ class TestAbilities(TestCase):
     def test_no_unused_abilities(self):
         self.assertIs(self.unused_abilities, CharacterAbility.NONE)
 
+    def abilities_tup_gen(self, to_gen_from: CharacterAbility, r_max: int):
+        """
+        itertools.combinations, but with pre-filtering for known bad cases.
+        If A, B are pointless, then A, B, C won't be tried.
+        """
+        if r_max < 2:
+            raise ValueError(f"r_max must be at least 2, but got {r_max}")
+        tup_list = [(c, self.implied_abilities_dict[c]) for c in to_gen_from]
+
+        def abilities_tup_gen_recur(
+                start_offset: int,
+                last_v: CharacterAbility,
+                last_v_implies: CharacterAbility,
+                recursion_depth_remaining: int):
+            for i in range(start_offset, len(to_gen_from)):
+                v, v_implies = tup_list[i]
+                # Reduce the search space by skipping cases where one already seen abilities imply another ability.
+                # e.g. JEDI is implied_by SITH, so skip combinations involving SITH and JEDI.
+                if v in last_v_implies or (last_v & v_implies is not CharacterAbility.NONE):
+                    continue
+                # PyCharm being dumb. The outermost parenthesis are required.
+                # noinspection PyRedundantParentheses
+                yield (combined := (last_v | v))
+                if recursion_depth_remaining > 0:
+                    combined_implies = v_implies | last_v_implies
+                    yield from abilities_tup_gen_recur(i + 1, combined, combined_implies,
+                                                       recursion_depth_remaining - 1)
+        yield from abilities_tup_gen_recur(0, CharacterAbility.NONE, CharacterAbility.NONE, r_max - 1)
+
     def test_pair_reductions(self):
-        def abilities_tup_gen(to_gen_from: CharacterAbility, r_max: int):
-            """
-            itertools.combinations, but with pre-filtering for known bad cases.
-            If A, B are pointless, then A, B, C won't be tried.
-            """
-            if r_max < 2:
-                raise ValueError(f"r_max must be at least 2, but got {r_max}")
-            tup_list = [(c, self.implied_abilities_dict[c]) for c in to_gen_from]
-
-            def abilities_tup_gen_recur(
-                    start_offset: int,
-                    last_v: CharacterAbility,
-                    last_v_implies: CharacterAbility,
-                    recursion_depth_remaining: int):
-                for i in range(start_offset, len(to_gen_from)):
-                    v, v_implies = tup_list[i]
-                    # Reduce the search space by skipping cases where one already seen abilities imply another ability.
-                    # e.g. JEDI is implied_by SITH, so skip combinations involving SITH and JEDI.
-                    if v in last_v_implies or (last_v & v_implies is not CharacterAbility.NONE):
-                        continue
-                    # PyCharm being dumb. The outermost parenthesis are required.
-                    # noinspection PyRedundantParentheses
-                    yield (combined := (last_v | v))
-                    if recursion_depth_remaining > 0:
-                        combined_implies = v_implies | last_v_implies
-                        yield from abilities_tup_gen_recur(i + 1, combined, combined_implies,
-                                                           recursion_depth_remaining - 1)
-
-            yield from abilities_tup_gen_recur(0, CharacterAbility.NONE, CharacterAbility.NONE, r_max - 1)
 
         reductions: dict[CharacterAbility, CharacterAbility] = {}
 
@@ -135,7 +135,7 @@ class TestAbilities(TestCase):
             # useless, so skip most combinations by reducing the max combination length.
             if ability_main in CharacterAbility.CAN_BARELY_JUMP | CharacterAbility.CAN_JUMP_NORMAL_HEIGHT:
                 r_max = min(r_max, 2)
-            for reduced_abilities in abilities_tup_gen(relevant_abilities, r_max):
+            for reduced_abilities in self.abilities_tup_gen(relevant_abilities, r_max):
                 for user_of_ability_main in self.ability_to_used_by[ability_main]:
                     if not any(reduce_ability in user_of_ability_main for reduce_ability in reduced_abilities):
                         break
@@ -159,3 +159,47 @@ class TestAbilities(TestCase):
                                  else f"No reduction should be defined for {key.name}, but a reduction to"
                                       f" {defined.name} is defined.")
 
+    def test_combination_reductions(self):
+        combination_reductions: dict[CharacterAbility, CharacterAbility] = {}
+        characters_with_combination_anded_bits: dict[CharacterAbility, CharacterAbility] = {}
+        for ability, implies in self.implied_abilities_dict.items():
+            for combination in self.abilities_tup_gen(implies, 7):
+                if combination.bit_count() == 1:
+                    continue
+
+                if combination in characters_with_combination_anded_bits:
+                    anded_abilities = characters_with_combination_anded_bits[combination]
+                else:
+                    anded_abilities = ~CharacterAbility.NONE
+                    characters = set().union(*(self.ability_to_used_by[part] for part in combination))
+                    for character in characters:
+                        if combination in character:
+                            anded_abilities &= character
+                    if anded_abilities is ~CharacterAbility.NONE:
+                        self.fail(f"Ability combination {combination!r} is not used by any characters. This should not"
+                                  f" happen because the only checked combinations are those that are implied by another"
+                                  f" ability.")
+                    characters_with_combination_anded_bits[combination] = anded_abilities
+
+                if ability in anded_abilities:
+                    # All characters with `combination` have `ability`.
+                    # (and all characters with `ability` have `combination` because `ability` implies `combination`)
+                    if combination in combination_reductions:
+                        self.fail(f"{combination!r} already reduces to {combination_reductions[combination]!r}, but"
+                                  f" tried to mark it as reducing to {ability!r}")
+                    combination_reductions[combination] = ability
+
+        if combination_reductions != COMBINATION_ABILITY_REDUCTIONS:
+            expected_str_lines = [
+                "{",
+                "    # 1) All characters with this combination: 2) Have this ability.",
+                "    # 2) Have these abilities: 1) All characters with this ability.",
+                "    # HasAbilityCombination(A | B) can be reduced to HasAbility(C).",
+            ]
+            for combination, reduced_to in combination_reductions.items():
+                combination_name = combination.name
+                combination_name = combination_name.replace("|", " | ")
+                expected_str_lines.append(f"    {combination_name}: {reduced_to.name},")
+            expected_str_lines.append("}")
+            expected_str = "\n".join(expected_str_lines)
+            self.fail(f"Combination ability reductions did not match. Was expecting:\n{expected_str}")

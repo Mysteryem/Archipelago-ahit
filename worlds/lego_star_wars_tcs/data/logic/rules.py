@@ -164,12 +164,18 @@ class HasAbilityCombination(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
 
     @staticmethod
     def _make_rule(abilities: CharacterAbility) -> Rule:
+        # Remove abilities implied by another ability that is requested.
+        # e.g. (JEDI | CAN_MELEE) can be reduced to just (JEDI)
+        simplified = abilities.simplify_combination()
+        if simplified.bit_count() == 1:
+            return HasAbility(simplified)
+
         common_abilities = ~CharacterAbility.NONE
         matching_characters = []
         for character in CHARACTERS_AND_VEHICLES_BY_NAME.values():
             # "Super Gonk Droid" is a collect override when "Gonk Droid" and "Super Gonk" are both collected.
             if ((not character.is_sendable and character.name != "Super Gonk Droid")
-                    or abilities not in character.abilities):
+                    or simplified not in character.abilities):
                 continue
             matching_characters.append(character)
             common_abilities &= character.abilities
