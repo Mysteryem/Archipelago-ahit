@@ -1,9 +1,9 @@
 from rule_builder.rules import True_, Or, False_, CanReachRegion, And, Has
 
 from ...macros import (
-    can_destroy_close_silver_bricks,
-    can_damage_at_close_range,
-    can_self_destruct,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    CAN_DAMAGE_AT_CLOSE_RANGE,
+    CAN_USE_SELF_DESTRUCT,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
@@ -29,7 +29,7 @@ CAN_HURT_GRIEVOUS = logic_options(
     #     can_destroy_close_silver_bricks,
     # ),
     # Allow Blasters/Ewoks/Self Destruct.
-    moderate=can_damage_at_close_range,
+    moderate=CAN_DAMAGE_AT_CLOSE_RANGE,
 )
 
 # The first explosives are not active until you hurt Grievous.
@@ -414,7 +414,7 @@ GENERAL_GRIEVOUS = Chapter(
             logic_options(
                 base=HasAbility(BOUNTY_HUNTER),
                 normal=And(
-                    can_destroy_close_silver_bricks,
+                    CAN_DESTROY_CLOSE_SILVER_BRICKS,
                     HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                 ),
                 moderate=Or(
@@ -426,14 +426,14 @@ GENERAL_GRIEVOUS = Chapter(
                     # height.
                     HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                     And(
-                        can_destroy_close_silver_bricks,
+                        CAN_DESTROY_CLOSE_SILVER_BRICKS,
                         # Astromech droids can also make it up with their hover.
                         HasAnyAbilities(CAN_JUMP_NORMAL_HEIGHT | ASTROMECH_DROID),
                     ),
                 ),
             ),
             er_rule=logic_options(
-                base=can_destroy_close_silver_bricks & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                base=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                 moderate=Or(
                     # Triple jump over the silver brick wall.
                     # The devs made the collision box come forwards at the top, but didn't make it high enough, so
@@ -443,7 +443,7 @@ GENERAL_GRIEVOUS = Chapter(
                     # height.
                     HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                     And(
-                        can_destroy_close_silver_bricks,
+                        CAN_DESTROY_CLOSE_SILVER_BRICKS,
                         # Astromech droids can also make it up with their hover.
                         HasAnyAbilities(CAN_JUMP_NORMAL_HEIGHT | ASTROMECH_DROID),
                     ),
@@ -483,14 +483,14 @@ GENERAL_GRIEVOUS = Chapter(
                             # Slam next to the bricks.
                             HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                             # Explode next to the bricks.
-                            can_self_destruct,
+                            CAN_USE_SELF_DESTRUCT,
                         ),
                     ),
                 ),
                 moderate=Or(
                     HasAnyAbilities(BLASTER | WEAPON_EWOK),
                     # Exploding also works from "General Grievous - Shoot Second Explosives Section".
-                    can_self_destruct,
+                    CAN_USE_SELF_DESTRUCT,
                     And(
                         CanReachRegion("General Grievous - Third Explosives Section Gap Area"),
                         HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),

@@ -1,8 +1,8 @@
 from rule_builder.rules import HasAny, True_
 
 from ...macros import (
-    can_grapple,
-    can_destroy_close_silver_bricks,
+    CAN_GRAPPLE,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAnyAbilities
@@ -148,7 +148,7 @@ CHANCELLOR_IN_PERIL = Chapter(
         "Hangar Minikit": minikit_data(
             "Hangar",
             logic_options(
-                base=can_grapple,
+                base=CAN_GRAPPLE,
                 # Triple jump from the red starfighter
                 moderate=HasAnyAbilities(JEDI | GRAPPLE | CAN_HIGH_JUMP_SLAM),
             ),
@@ -157,8 +157,8 @@ CHANCELLOR_IN_PERIL = Chapter(
         "Generator Room Grapple Minikit": minikit_data(
             "Generator Room",
             logic_options(
-                base=can_grapple,
-                normal=can_grapple | HasAbility(HIGH_JUMP),
+                base=CAN_GRAPPLE,
+                normal=CAN_GRAPPLE | HasAbility(HIGH_JUMP),
                 moderate=HasAnyAbilities(GRAPPLE | JEDI | HIGH_JUMP),
             ),
             pickup_name="m_pup1",
@@ -233,11 +233,11 @@ CHANCELLOR_IN_PERIL = Chapter(
     },
     power_brick=LocationData(
         "Horizontal Elevator Shaft",
-        can_destroy_close_silver_bricks,
+        CAN_DESTROY_CLOSE_SILVER_BRICKS,
         # With ER, base logic would expect reversing the elevator to get the Power Brick.
         er_rule=logic_options(
-            base=can_destroy_close_silver_bricks & HasAbility(ASTROMECH_PANEL),
-            normal=can_destroy_close_silver_bricks,
+            base=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(ASTROMECH_PANEL),
+            normal=CAN_DESTROY_CLOSE_SILVER_BRICKS,
         ),
     ),
 )

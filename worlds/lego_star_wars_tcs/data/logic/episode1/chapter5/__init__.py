@@ -1,12 +1,12 @@
 from rule_builder.rules import And, Or, Has, HasAny, True_
 
 from ...macros import (
-    can_self_destruct,
-    can_destroy_close_silver_bricks,
-    can_damage_at_close_range,
-    can_sith_force,
-    can_damage_shielded_droideka,
-    can_deflect_bolts,
+    CAN_USE_SELF_DESTRUCT,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    CAN_DAMAGE_AT_CLOSE_RANGE,
+    CAN_SITH_FORCE,
+    CAN_DAMAGE_SHIELDED_DROIDEKA,
+    CAN_USE_DEFLECT_BOLTS,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -39,7 +39,7 @@ RETAKE_THEED_PALACE = Chapter(
                         # Ascend to the higher area with the panel.
                         HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
                         # Base logic expects being able to defeat the Droideka.
-                        can_damage_shielded_droideka,
+                        CAN_DAMAGE_SHIELDED_DROIDEKA,
                     ),
                     # Jump up the bricks to the side of the bricks that make the ramp.
                     # And just ignore Droideka if they cannot be defeated.
@@ -68,23 +68,23 @@ RETAKE_THEED_PALACE = Chapter(
                 "Courtyard",
                 logic_options(
                     base=HasAbility(CAN_BUILD_BRICKS),
-                    normal=HasAbility(CAN_BUILD_BRICKS) & can_damage_at_close_range,
+                    normal=HasAbility(CAN_BUILD_BRICKS) & CAN_DAMAGE_AT_CLOSE_RANGE,
                     moderate=And(
                         HasAbility(CAN_BUILD_BRICKS),
-                        can_damage_at_close_range | can_deflect_bolts,
+                        CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS,
                     ),
                 ),
                 er_rule=logic_options(
                     # All characters that can build bricks can jump, and being able to damage shielded droideka implies
                     # being able to destroy the statue to spawn the astromech panel bricks.
-                    base=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & can_damage_shielded_droideka,
+                    base=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & CAN_DAMAGE_SHIELDED_DROIDEKA,
                     # There's no expectation to be able to kill droideka so dealing damage at close range is enough,
                     # though Astromech can remove shields anyway.
-                    normal=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & can_damage_at_close_range,
+                    normal=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL) & CAN_DAMAGE_AT_CLOSE_RANGE,
                     # Alternatively expect Deflect Bolts to deflect enemy blaster bolts into the statue.
                     moderate=And(
                         HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL),
-                        can_damage_at_close_range | can_deflect_bolts,
+                        CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS,
                     ),
                 ),
                 # retake_c does not exist.
@@ -174,7 +174,7 @@ RETAKE_THEED_PALACE = Chapter(
                         Has("Droideka") & HasAbility(CAN_BARELY_JUMP),
                     ),
                     # The droideka can be ignored.
-                    normal=HasAbility(CAN_BARELY_JUMP) & can_damage_at_close_range,
+                    normal=HasAbility(CAN_BARELY_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
                     # Allow Deflect Bolts to destroy the statue.
                     # Droideka can also get up the small lip to get to the button, by repeatedly switching between
                     # Droideka and another character while rolling against the lip.
@@ -183,7 +183,7 @@ RETAKE_THEED_PALACE = Chapter(
                     # Droideka.
                     moderate=Or(
                         And(
-                            can_damage_at_close_range | can_deflect_bolts,
+                            CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS,
                             HasAbility(CAN_BARELY_JUMP),
                         ),
                         Has("Droideka"),
@@ -232,7 +232,7 @@ RETAKE_THEED_PALACE = Chapter(
                     moderate=And(
                         Or(
                             HasAnyAbilities(JEDI | BLASTER),
-                            HasAbility(HIGH_JUMP) & (can_damage_at_close_range | can_deflect_bolts),
+                            HasAbility(HIGH_JUMP) & (CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS),
                         ),
                         HasAbility(ASTROMECH_PANEL),
                     )
@@ -267,7 +267,7 @@ RETAKE_THEED_PALACE = Chapter(
                         Or(
                             HasAbility(BLASTER),
                             Has("Super Jedi Slam"),
-                            can_self_destruct,
+                            CAN_SELF_DESTRUCT,
                             HasAbility(WEAPON_EWOK) & HasAny("Super Ewok Catapult", "Exploding Blaster Bolts")
                         )
                     )
@@ -286,22 +286,22 @@ RETAKE_THEED_PALACE = Chapter(
                 # can_damage_shielded_droideka.base implies can_damage_at_close_range.base
                 base=True_(),
                 # Includes self-destruct.
-                normal=can_damage_at_close_range,
+                normal=CAN_DAMAGE_AT_CLOSE_RANGE,
                 # Include Deflect Bolts.
-                moderate=can_damage_at_close_range | can_deflect_bolts,
+                moderate=CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS,
             ),
             er_rule=logic_options(
-                base=can_damage_at_close_range,
+                base=CAN_DAMAGE_AT_CLOSE_RANGE,
                 # Includes self-destruct.
-                normal=can_damage_at_close_range,
+                normal=CAN_DAMAGE_AT_CLOSE_RANGE,
                 # Include Deflect Bolts.
-                moderate=can_damage_at_close_range | can_deflect_bolts,
+                moderate=CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS,
             ),
             pickup_name="mk_0",
         ),
         "Minikit Behind Dark Side Barrier": minikit_data(
             "After Collapsed Floor In Palace",
-            can_sith_force,
+            CAN_SITH_FORCE,
             pickup_name="mk_1",
         ),
         "Minikit On Courtyard Far Ledge": minikit_data(
@@ -328,8 +328,8 @@ RETAKE_THEED_PALACE = Chapter(
         "Build And Destroy Silver Bricks In Boxes Minikit": minikit_data(
             "Rooftops",
             # All: CAN_BUILD_BRICKS is needed at "After Collapsed Floor In Palace -> Courtyard".
-            can_destroy_close_silver_bricks,
-            er_rule=HasAbility(CAN_BUILD_BRICKS) & can_destroy_close_silver_bricks,
+            CAN_DESTROY_CLOSE_SILVER_BRICKS,
+            er_rule=HasAbility(CAN_BUILD_BRICKS) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
             pickup_name="m_pup1",
         ),
         "Minikit On Dining Hall Ledge": minikit_data(
@@ -387,7 +387,7 @@ RETAKE_THEED_PALACE = Chapter(
                 base=HasAllAbilities(SITH | BOUNTY_HUNTER),
                 normal=Or(
                     HasAbility(HIGH_JUMP),
-                    can_sith_force & can_destroy_close_silver_bricks,
+                    CAN_SITH_FORCE & CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 ),
                 moderate=HasAnyAbilities(JEDI | HIGH_JUMP),
             ),
@@ -396,11 +396,11 @@ RETAKE_THEED_PALACE = Chapter(
                 # Bounty hunter to destroy the silver bricks.
                 # Build Bricks to build the platform (all Jedi/Sith can build bricks).
                 # Sith force to move the platform into position.
-                base=can_sith_force & can_destroy_close_silver_bricks,
+                base=CAN_SITH_FORCE & CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 # High jump can just jump up to the minikit from the right side, no Jedi needed.
                 normal=Or(
                     HasAbility(HIGH_JUMP),
-                    can_sith_force & can_destroy_close_silver_bricks,
+                    CAN_SITH_FORCE & CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 ),
                 # Triple jump is higher than high jump.
                 moderate=HasAnyAbilities(JEDI | HIGH_JUMP),

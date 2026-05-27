@@ -1,11 +1,11 @@
 from rule_builder.rules import And, Or, Has, HasAny
 
 from ...macros import (
-    can_grapple,
-    can_damage_at_close_range,
-    can_deflect_bolts,
-    can_damage_shielded_droideka,
-    can_activate_close_target,
+    CAN_GRAPPLE,
+    CAN_DAMAGE_AT_CLOSE_RANGE,
+    CAN_USE_DEFLECT_BOLTS,
+    CAN_DAMAGE_SHIELDED_DROIDEKA,
+    CAN_ACTIVATE_CLOSE_TARGET,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -36,9 +36,9 @@ DROID_FACTORY = Chapter(
                 "Factory Conveyor",
                 logic_options(
                     # The Geonosians must be killed to proceed.
-                    base=can_damage_at_close_range,
+                    base=CAN_DAMAGE_AT_CLOSE_RANGE,
                     # Allow Deflect Bolts.
-                    moderate=can_damage_at_close_range | can_deflect_bolts,
+                    moderate=CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS,
                 ),
                 new_level="factory_b",
             ),
@@ -49,7 +49,7 @@ DROID_FACTORY = Chapter(
                 logic_options(
                     # No fancy tricks, just outrun the conveyor enough to pass under the crusher.
                     # There is a Droideka in the middle that base logic is expected to be able to defeat.
-                    base=HasAbility(RUN_SPEED_0_9_OR_HIGHER) & can_damage_shielded_droideka,
+                    base=HasAbility(RUN_SPEED_0_9_OR_HIGHER) & CAN_DAMAGE_SHIELDED_DROIDEKA,
                     # Yoda/Yoda (Ghost) can attack to move faster.
                     # Boba Fett (Boy) can safely jump beneath the crusher, whereas other slow characters appear to be
                     # unable to, instead hitting the crusher's hurtbox and dying.
@@ -90,7 +90,7 @@ DROID_FACTORY = Chapter(
                     normal=And(
                         HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
                         # Despite being a target, it is just a regular destroyable object.
-                        can_damage_at_close_range,
+                        CAN_DAMAGE_AT_CLOSE_RANGE,
                         HasAbility(IMPERIAL),
                     ),
                 ),
@@ -121,12 +121,12 @@ DROID_FACTORY = Chapter(
                     base=Or(
                         # Activate the first two targets by grappling up to them and shooting the targets, then jump off
                         # the now moving crucible to get to the upper area.
-                        can_grapple,
+                        CAN_GRAPPLE,
                         # Skip the first two targets and hover to the second, where objects must be destroyed to spawn
                         # a third target, and then the third target must be activated. A basic jump is required to get
                         # onto the crucible that is now moving up and down.
                         # This is considered intended because P2's AI will hover over here
-                        HasAllAbilities(HOVER | JEDI) & can_activate_close_target
+                        HasAllAbilities(HOVER | JEDI) & CAN_ACTIVATE_CLOSE_TARGET
                     ),
                     # General Grievous can just high jump up with good timing so that he rolls forwards at the edge of
                     # the platform, but this is too niche of trick for normal imo.
@@ -136,10 +136,10 @@ DROID_FACTORY = Chapter(
                         # high jump, which can then jump up to the upper area.
                         HasAllAbilities(HOVER | HIGH_JUMP),
                         And(
-                            can_activate_close_target,
+                            CAN_ACTIVATE_CLOSE_TARGET,
                             Or(
                                 # Activate the first two targets.
-                                can_grapple,
+                                CAN_GRAPPLE,
                                 # Skip the first two targets [...]
                                 HasAllAbilities(HOVER | JEDI)
                             ),
@@ -171,7 +171,7 @@ DROID_FACTORY = Chapter(
                     base=And(
                         HasAnyAbilities(HOVER | GRAPPLE | CAN_DOUBLE_JUMP),
                         HasAbility(ASTROMECH_PANEL),
-                        can_damage_at_close_range,
+                        CAN_DAMAGE_AT_CLOSE_RANGE,
                     ),
                     moderate=Or(
                         HasAnyAbilities(HOVER | GRAPPLE | CAN_DOUBLE_JUMP),
@@ -202,7 +202,7 @@ DROID_FACTORY = Chapter(
         "Geonosian Hive": (
             ExitData(
                 "Force Fields Maze Room",
-                can_damage_at_close_range,
+                CAN_DAMAGE_AT_CLOSE_RANGE,
             ),
             ExitData(
                 "Geonosian Hive Across Lava",
@@ -217,7 +217,7 @@ DROID_FACTORY = Chapter(
                             # Grapple or high jump up to the cave support thing and destroy it, then hover across.
                             Or(
                                 HasAbility(GRAPPLE),
-                                HasAbility(HIGH_JUMP) & can_damage_at_close_range,
+                                HasAbility(HIGH_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
                             ),
                             HasAbility(HOVER),
                         ),
@@ -232,7 +232,7 @@ DROID_FACTORY = Chapter(
                             # Grapple or high jump up to the cave support thing and destroy it, then hover across.
                             Or(
                                 HasAbility(GRAPPLE),
-                                HasAbility(HIGH_JUMP) & can_damage_at_close_range,
+                                HasAbility(HIGH_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
                             ),
                             HasAbility(HOVER),
                         ),
@@ -315,9 +315,9 @@ DROID_FACTORY = Chapter(
         "Lava Room Minikit": minikit_data(
             "Lava Room",
             logic_options(
-                base=can_grapple,
+                base=CAN_GRAPPLE,
                 # JEDI/HIGH_JUMP can jump from the corner of a spinning platform.
-                normal=can_grapple | HasAbility(HIGH_JUMP),
+                normal=CAN_GRAPPLE | HasAbility(HIGH_JUMP),
             ),
             pickup_name="m_pup1",
         ),

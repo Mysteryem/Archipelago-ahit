@@ -1,7 +1,7 @@
 from rule_builder.rules import Or, Has, True_, False_
 
 from ...macros import (
-    can_destroy_close_silver_bricks,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -173,11 +173,11 @@ DARTH_MAUL = Chapter(
             # IS_NON_GHOST_JEDI implies CAN_JUMP_NORMAL_DISTANCE.
             # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_NORMAL_DISTANCE.
             # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_NORMAL_DISTANCE.
-            can_destroy_close_silver_bricks,
+            CAN_DESTROY_CLOSE_SILVER_BRICKS,
             er_rule=logic_options(
-                base=HasAbility(CAN_JUMP_NORMAL_DISTANCE) & can_destroy_close_silver_bricks,
+                base=HasAbility(CAN_JUMP_NORMAL_DISTANCE) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 # Include Ewok and other slow characters that can only barely get enough jump distance.
-                moderate=HasAbility(CAN_BARELY_JUMP) & can_destroy_close_silver_bricks,
+                moderate=HasAbility(CAN_BARELY_JUMP) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
             ),
             pickup_name="m_pup1",
         ),

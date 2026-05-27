@@ -1,9 +1,9 @@
 from rule_builder.rules import Or, And, HasAny
 
 from ...macros import (
-    can_grapple,
-    can_destroy_close_silver_bricks,
-    can_damage_at_close_range,
+    CAN_GRAPPLE,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    CAN_DAMAGE_AT_CLOSE_RANGE,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -52,7 +52,7 @@ COUNT_DOOKU = Chapter(
         "Grapple Up Cliff Minikit": minikit_data(
             "Landing Pad",
             logic_options(
-                base=can_grapple,
+                base=CAN_GRAPPLE,
                 # Allow Triple Jump.
                 moderate=HasAnyAbilities(GRAPPLE | JEDI | CAN_HIGH_JUMP_SLAM),
             ),
@@ -67,7 +67,7 @@ COUNT_DOOKU = Chapter(
             "Landing Pad",
             logic_options(
                 # Expect defeating the enemies.
-                base=HasAbility(HIGH_JUMP) & can_damage_at_close_range,
+                base=HasAbility(HIGH_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
                 normal=Or(
                     # Ignore the enemies if necessary.
                     HasAbility(HIGH_JUMP),
@@ -88,7 +88,7 @@ COUNT_DOOKU = Chapter(
             "Landing Pad",
             logic_options(
                 # Expect defeating the enemies.
-                base=HasAbility(CAN_DOUBLE_JUMP) & can_damage_at_close_range,
+                base=HasAbility(CAN_DOUBLE_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
                 # Ignore the enemies if necessary.
                 normal=HasAbility(CAN_DOUBLE_JUMP),
                 # The jump + jetpack hover can just barely make it onto the second platform.
@@ -100,7 +100,7 @@ COUNT_DOOKU = Chapter(
             "Landing Pad",
             logic_options(
                 # Expect defeating enemies.
-                base=HasAbility(HIGH_JUMP) & can_damage_at_close_range,
+                base=HasAbility(HIGH_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
                 # Ignore the enemies if necessary.
                 normal=HasAbility(HIGH_JUMP),
                 # Allow triple jump.
@@ -190,16 +190,16 @@ COUNT_DOOKU = Chapter(
             base=HasAllAbilities(BOUNTY_HUNTER | SHORTIE | GRAPPLE),
             # Allow other means of destroying silver bricks, and Force Grapple Leap.
             normal=And(
-                can_destroy_close_silver_bricks,
+                CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 HasAbility(SHORTIE),
                 # High jumpers, except Grievous' Bodyguard, can jump to the Power Brick from the grapple point.
-                can_grapple | HasAny("General Grievous", "Jar Jar Binks", "Captain Tarpals"),
+                CAN_GRAPPLE | HasAny("General Grievous", "Jar Jar Binks", "Captain Tarpals"),
             ),
             # Triple jump can skip the access hatch and skip the grapple.
             moderate=Or(
                 HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                 And(
-                    can_destroy_close_silver_bricks,
+                    CAN_DESTROY_CLOSE_SILVER_BRICKS,
                     HasAbility(SHORTIE),
                     # There is no need to list Jar Jar Binks and Captain Tarpals individually, instead of HIGH_JUMP,
                     # because the CAN_HIGH_JUMP_SLAM characters can reach the Power Brick on their own.
@@ -209,19 +209,19 @@ COUNT_DOOKU = Chapter(
         ),
         er_rule=logic_options(
             # Destroy the silver brick object blocking the access hatch, use the hatch, then grapple to the Power Brick.
-            base=can_destroy_close_silver_bricks & can_grapple & HasAbility(SHORTIE),
+            base=CAN_DESTROY_CLOSE_SILVER_BRICKS & CAN_GRAPPLE & HasAbility(SHORTIE),
             # Allow other means of destroying silver bricks, and Force Grapple Leap.
             normal=And(
-                can_destroy_close_silver_bricks,
+                CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 HasAbility(SHORTIE),
                 # High jumpers, except Grievous' Bodyguard, can jump to the Power Brick from the grapple point.
-                can_grapple | HasAny("General Grievous", "Jar Jar Binks", "Captain Tarpals"),
+                CAN_GRAPPLE | HasAny("General Grievous", "Jar Jar Binks", "Captain Tarpals"),
             ),
             # Triple jump can skip the access hatch and skip the grapple.
             moderate=Or(
                 HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                 And(
-                    can_destroy_close_silver_bricks,
+                    CAN_DESTROY_CLOSE_SILVER_BRICKS,
                     HasAbility(SHORTIE),
                     # There is no need to list Jar Jar Binks and Captain Tarpals individually, instead of HIGH_JUMP,
                     # because the CAN_HIGH_JUMP_SLAM characters can reach the Power Brick on their own.

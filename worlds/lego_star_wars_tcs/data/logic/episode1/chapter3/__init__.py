@@ -1,13 +1,13 @@
 from rule_builder.rules import And, Or, Has, True_
 
 from ...macros import (
-    can_grapple,
-    can_self_destruct,
-    can_destroy_close_silver_bricks,
-    can_damage_at_close_range,
-    can_sith_force_and_grapple,
-    can_sith_force,
-    can_activate_close_target,
+    CAN_GRAPPLE,
+    CAN_USE_SELF_DESTRUCT,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    CAN_DAMAGE_AT_CLOSE_RANGE,
+    CAN_SITH_FORCE_AND_GRAPPLE,
+    CAN_SITH_FORCE,
+    CAN_ACTIVATE_CLOSE_TARGET,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilitiesExceptCharacters
@@ -36,8 +36,8 @@ ESCAPE_FROM_NABOO = Chapter(
             ExitData(
                 "Rooftops Climb",
                 logic_options(
-                    base=can_grapple,
-                    moderate=can_grapple | HasAbility(CAN_HIGH_JUMP_SLAM),
+                    base=CAN_GRAPPLE,
+                    moderate=CAN_GRAPPLE | HasAbility(CAN_HIGH_JUMP_SLAM),
                 )
             ),
         ),
@@ -49,9 +49,9 @@ ESCAPE_FROM_NABOO = Chapter(
                 "Rooftops After Small Blaster Target Gate",
                 logic_options(
                     base=True_(),
-                    normal=can_activate_close_target,
+                    normal=CAN_ACTIVATE_CLOSE_TARGET,
                 ),
-                er_rule=can_activate_close_target,
+                er_rule=CAN_ACTIVATE_CLOSE_TARGET,
                 new_level="rescue_c",
             ),
         ),
@@ -62,7 +62,7 @@ ESCAPE_FROM_NABOO = Chapter(
                     base=True_(),
                     moderate=Or(
                         HasAnyAbilities(BLASTER | WEAPON_EWOK),
-                        can_self_destruct & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                        CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                     ),
                 ),
                 er_rule=logic_options(
@@ -74,7 +74,7 @@ ESCAPE_FROM_NABOO = Chapter(
                     # these targets, a Droid that can jump is required.
                     moderate=Or(
                         HasAnyAbilities(BLASTER | WEAPON_EWOK),
-                        can_self_destruct & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                        CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                     ),
                 ),
                 # rescue_d does not exist.
@@ -87,11 +87,11 @@ ESCAPE_FROM_NABOO = Chapter(
                 er_rule=logic_options(
                     # The button to press is in a raised area, and there is a destroyable cover over the chapter
                     # completion.
-                    base=HasAbility(CAN_JUMP_NORMAL_HEIGHT) & can_damage_at_close_range,
+                    base=HasAbility(CAN_JUMP_NORMAL_HEIGHT) & CAN_DAMAGE_AT_CLOSE_RANGE,
                     # Consider Self Destruct for dealing damage.
-                    normal=can_damage_at_close_range & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                    normal=CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                     # Astromech droids can just barely get up to the raised area.
-                    moderate=can_damage_at_close_range & HasAbility(CAN_BARELY_JUMP),
+                    moderate=CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CAN_BARELY_JUMP),
                 ),
                 new_level="rescue_status",
             ),
@@ -134,12 +134,12 @@ ESCAPE_FROM_NABOO = Chapter(
                 # There is a small lip around the upper area, that needs a jump or Astromech hover to cross.
                 # TODO: Check if Captain Tarpals can destroy these windows.
                 normal=And(
-                    can_damage_at_close_range,
+                    CAN_DAMAGE_AT_CLOSE_RANGE,
                     HasAbility(CAN_BARELY_JUMP),
                 ),
                 # Droideka can also get over the lip by taking a running start from the furthest right flower bed.
                 moderate=And(
-                    can_damage_at_close_range,
+                    CAN_DAMAGE_AT_CLOSE_RANGE,
                     HasAbility(CAN_BARELY_JUMP) | Has("Droideka"),
                 ),
             ),
@@ -149,18 +149,18 @@ ESCAPE_FROM_NABOO = Chapter(
             "Tower",
             logic_options(
                 base=HasAllAbilities(SITH | HOVER),
-                normal=HasAbility(HOVER) & can_sith_force,
-                moderate=can_sith_force
+                normal=HasAbility(HOVER) & CAN_SITH_FORCE,
+                moderate=CAN_SITH_FORCE
             ),
             er_rule=logic_options(
                 # Grapple to get up/down the tower/roofing. Hover to cross the gap between roofs. Sith to force the
                 # flowers.
-                base=HasAbility(HOVER) & can_sith_force_and_grapple,
+                base=HasAbility(HOVER) & CAN_SITH_FORCE_AND_GRAPPLE,
                 # Triple jump can cross the gap and replace using grapple to get to the minikit.
                 # Note that to continue with the level, one of the flowerbeds in the first lower section cannot be
                 # destroyed because it is needed to get enough height to triple jump back up to the higher section and
                 # continue with the level.
-                moderate=can_sith_force
+                moderate=CAN_SITH_FORCE
             ),
             pickup_name="m_pup1",
         ),
@@ -173,7 +173,7 @@ ESCAPE_FROM_NABOO = Chapter(
             ),
             er_rule=logic_options(
                 # Grapple or High Jump up and then use the hatch.
-                base=HasAbility(SHORTIE) & (can_grapple | HasAbility(HIGH_JUMP)),
+                base=HasAbility(SHORTIE) & (CAN_GRAPPLE | HasAbility(HIGH_JUMP)),
                 moderate=HasAbility(SHORTIE) & HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
             ),
             pickup_name="mk_0",
@@ -199,31 +199,31 @@ ESCAPE_FROM_NABOO = Chapter(
             logic_options(
                 # All Bounty Hunters can grapple.
                 base=HasAllAbilities(BOUNTY_HUNTER | JEDI),
-                normal=HasAbility(JEDI) & can_destroy_close_silver_bricks,
+                normal=HasAbility(JEDI) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
             ),
             er_rule=logic_options(
-                base=can_destroy_close_silver_bricks & HasAbility(JEDI) & can_grapple,
+                base=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(JEDI) & CAN_GRAPPLE,
                 # Allow using extras to destroy the silver brick windows, and allow Force Grapple Leap.
                 normal=And(
                     HasAbility(JEDI),
-                    can_destroy_close_silver_bricks,
-                    HasAbility(HIGH_JUMP) | can_grapple,
+                    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+                    HasAbility(HIGH_JUMP) | CAN_GRAPPLE,
                 ),
                 # Triple jump skips any need to grapple.
-                moderate=can_destroy_close_silver_bricks & HasAbility(JEDI),
+                moderate=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(JEDI),
             ),
             pickup_name="m_pup1",
         ),
         "Minikit Under Silver Cover": minikit_data(
             "Final Rooftop",
-            can_destroy_close_silver_bricks,
+            CAN_DESTROY_CLOSE_SILVER_BRICKS,
             er_rule=logic_options(
                 # (all bounty hunters can jump normal height)
-                base=can_destroy_close_silver_bricks & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                base=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                 # The button to press is in a raised area.
-                normal=can_destroy_close_silver_bricks & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                normal=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
                 # The button to press is in a raised area. Astromech droids can just barely get up.
-                moderate=can_destroy_close_silver_bricks & HasAbility(CAN_BARELY_JUMP),
+                moderate=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_BARELY_JUMP),
             ),
             pickup_name="mk_1",
         ),
@@ -251,7 +251,7 @@ ESCAPE_FROM_NABOO = Chapter(
                     HasAbility(SITH),
                     Has("Dark Side") & HasAbilitiesExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
                 ),
-                can_destroy_close_silver_bricks
+                CAN_DESTROY_CLOSE_SILVER_BRICKS
             ),
             moderate=Or(
                 HasAbility(SITH),
@@ -262,8 +262,8 @@ ESCAPE_FROM_NABOO = Chapter(
             # There are Silver brick objects to destroy and Dark Side force flowers to force.
             # All Sith (and Jedi) can build bricks and push blocks.
             base=And(
-                can_destroy_close_silver_bricks,
-                can_sith_force,
+                CAN_DESTROY_CLOSE_SILVER_BRICKS,
+                CAN_SITH_FORCE,
                 # When Dark Side is allowed instead of just Sith. Yoda (and Yoda (Ghost)) struggle a lot to use force on
                 # one of the flowers, so they are excluded.
                 HasAbilitiesExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")

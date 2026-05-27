@@ -1,6 +1,5 @@
 from rule_builder.rules import And, True_
 
-from ...macros import can_true_triple_jump
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ...types import minikit_data, ExitData, Chapter, LocationData
@@ -213,7 +212,7 @@ NEGOTIATIONS = Chapter(
                 base=HasAbility(JEDI),
                 # Triple jump up to the platform then triple jump to the minikit. Grievous' Bodyguard cannot get the
                 # distance required. TODO: Check Grievous' Bodyguard.
-                moderate=can_true_triple_jump,
+                moderate=HasAbility(JEDI | CAN_TRIPLE_JUMP_GREAT_DISTANCE),
             ),
             pickup_name="m_pup2",
         ),

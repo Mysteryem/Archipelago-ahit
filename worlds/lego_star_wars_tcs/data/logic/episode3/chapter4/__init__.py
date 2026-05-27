@@ -1,11 +1,11 @@
 from rule_builder.rules import True_, And, Has, Or, HasAny
 
 from ...macros import (
-    can_destroy_close_silver_bricks,
-    can_grapple,
-    can_sith_force,
-    can_damage_at_close_range,
-    can_self_destruct,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    CAN_GRAPPLE,
+    CAN_SITH_FORCE,
+    CAN_DAMAGE_AT_CLOSE_RANGE,
+    CAN_USE_SELF_DESTRUCT,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
@@ -56,7 +56,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                 "Beach Invasion",
                 # Optimised out the HasAbility(JEDI) that is needed to reach here.
                 logic_options(
-                    base=can_grapple,
+                    base=CAN_GRAPPLE,
                     normal=HasAbility(GRAPPLE) | Has("Force Grapple Leap"),
                     moderate=True_(),
                 ),
@@ -64,7 +64,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                 er_rule=(
                     # First Wookie.
                     logic_options(
-                        base=can_grapple,
+                        base=CAN_GRAPPLE,
                         # Triple jump is just enough to make it up to the first platforms.
                         # You can also triple jump from the hat machine, but the jump doesn't seem any easier.
                         moderate=HasAnyAbilities(GRAPPLE | JEDI | CAN_HIGH_JUMP_SLAM),
@@ -86,7 +86,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                         ),
                     ).and_rule(
                         # Third Wookie.
-                        can_damage_at_close_range,
+                        CAN_DAMAGE_AT_CLOSE_RANGE,
                     ),
                 ),
                 new_level="kashyyyk_b",
@@ -110,13 +110,13 @@ DEFENSE_OF_KASHYYYK = Chapter(
                             HasAbility(WEAPON_EWOK),
                             HasAny("Super Ewok Catapult", "Exploding Blaster Bolts"),
                         ),
-                        can_self_destruct & HasAnyAbilities(HOVER | CAN_JUMP_NORMAL_DISTANCE),
+                        CAN_USE_SELF_DESTRUCT & HasAnyAbilities(HOVER | CAN_JUMP_NORMAL_DISTANCE),
                     ),
                 ),
                 er_rule=logic_options(
                     # Note: Blasters do not autotarget the targets until the grapple point has been revealed by forcing
                     # the plant, and the bridge has been forced into place.
-                    base=HasAbility(JEDI) & can_grapple,
+                    base=HasAbility(JEDI) & CAN_GRAPPLE,
                     normal=And(
                         HasAbility(JEDI),
                         Or(
@@ -124,7 +124,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                                 # Get up to the bridge
                                 Or(
                                     _CAN_BUILD_BEACHFRONT_CLONE_WALKER_ER,
-                                    can_grapple,
+                                    CAN_GRAPPLE,
                                 ),
                                 # Activate the targets from the bridge (once the bridge and plant have been forced).
                                 Or(
@@ -153,7 +153,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                                 # Get up to the bridge
                                 Or(
                                     _CAN_BUILD_BEACHFRONT_CLONE_WALKER_ER,
-                                    can_grapple,
+                                    CAN_GRAPPLE,
                                     HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                                 ),
                                 # Activate the targets from the bridge (once the bridge and plant have been forced).
@@ -168,7 +168,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                                         # Droid.
                                         Has("Self Destruct") & HasAbility(ASTROMECH_DROID),
                                         # Or jumping over to them, swapping to a droid and then exploding.
-                                        can_self_destruct & HasAbility(CAN_JUMP_NORMAL_DISTANCE),
+                                        CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_NORMAL_DISTANCE),
                                     )
                                 )
                             ),
@@ -186,7 +186,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                 True_(),
                 er_rule=logic_options(
                     # Expect fighting the spawned droids to get through, but not killing the commander battle droids.
-                    base=can_damage_at_close_range,
+                    base=CAN_DAMAGE_AT_CLOSE_RANGE,
                     normal=True_(),
                 ),
                 new_level="kashyyyk_d",
@@ -229,8 +229,8 @@ DEFENSE_OF_KASHYYYK = Chapter(
             # Character swapping while on the edge of the platform can help to restore jumps.
             er_rule=logic_options(
                 # Expect Jetpack because of the annoying edge of the wookie platform.
-                base=can_grapple & HasAllAbilities(JETPACK | HIGH_JUMP),
-                normal=can_grapple & HasAllAbilities(HOVER | HIGH_JUMP),
+                base=CAN_GRAPPLE & HasAllAbilities(JETPACK | HIGH_JUMP),
+                normal=CAN_GRAPPLE & HasAllAbilities(HOVER | HIGH_JUMP),
                 # Pretty difficult with Yoda due to his reduced air movement speed during triple jumps.
                 # Yoda can actually just double jump from the wookie platform to the next platform.
                 moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
@@ -301,12 +301,12 @@ DEFENSE_OF_KASHYYYK = Chapter(
             # jump to the minikit.
             True_(),
             er_rule=logic_options(
-                base=HasAbility(JEDI) & can_grapple,
+                base=HasAbility(JEDI) & CAN_GRAPPLE,
                 normal=And(
                     HasAbility(JEDI),
                     Or(
                         _CAN_BUILD_BEACHFRONT_CLONE_WALKER_ER,
-                        can_grapple,
+                        CAN_GRAPPLE,
                     ),
                 ),
             ),
@@ -340,7 +340,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             er_rule=logic_options(
                 # Expect high jump because it is not obvious that a double jump can get up here.
                 # Expect defeating the commander too.
-                base=HasAbility(HIGH_JUMP) & can_damage_at_close_range,
+                base=HasAbility(HIGH_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
                 # The terrain below the commander slopes up in the direction away from the spawn into the swamp, which
                 # gives enough height to double jump up to the commander and the minikit.
                 normal=HasAbility(CAN_DOUBLE_JUMP),
@@ -364,17 +364,17 @@ DEFENSE_OF_KASHYYYK = Chapter(
                 moderate=True_(),
             ),
             er_rule=logic_options(
-                base=can_sith_force & can_grapple & HasAbility(HOVER),
+                base=CAN_SITH_FORCE & CAN_GRAPPLE & HasAbility(HOVER),
                 normal=Or(
-                    can_sith_force & can_grapple & HasAbility(HOVER),
+                    CAN_SITH_FORCE & CAN_GRAPPLE & HasAbility(HOVER),
                     # Fight the Clone Walker, then ride it as a High Jump character, and then high jump out of the
                     # walker and up to the minikit platform.
-                    can_damage_at_close_range & HasAbilityCombination(HIGH_JUMP | CAN_RIDE_VEHICLES),
+                    CAN_DAMAGE_AT_CLOSE_RANGE & HasAbilityCombination(HIGH_JUMP | CAN_RIDE_VEHICLES),
                 ),
                 moderate=Or(
                     # Triple jump can cross the gap between the grapple platform and minikit platform.
-                    can_sith_force & can_grapple,
-                    can_damage_at_close_range & HasAbilityCombination(HIGH_JUMP | CAN_RIDE_VEHICLES),
+                    CAN_SITH_FORCE & CAN_GRAPPLE,
+                    CAN_DAMAGE_AT_CLOSE_RANGE & HasAbilityCombination(HIGH_JUMP | CAN_RIDE_VEHICLES),
                     # Fight the Clone Walker, like in the High Jump case, but a Jedi can triple jump out of the walker
                     # and up to the platform.
                     HasAbilityCombination(JEDI | CAN_RIDE_VEHICLES),
@@ -392,16 +392,16 @@ DEFENSE_OF_KASHYYYK = Chapter(
             logic_options(
                 # Base and normal need JEDI and can_grapple to get here.
                 base=True_(),
-                moderate=can_grapple,
+                moderate=CAN_GRAPPLE,
                 # It's possible to get here without grapple, and with Yoda, who cannot make the triple jump from the
                 # button.
-                hard=can_grapple | HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | CAN_HIGH_JUMP_SLAM)
+                hard=CAN_GRAPPLE | HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | CAN_HIGH_JUMP_SLAM)
             ),
             er_rule=logic_options(
-                base=HasAbility(JEDI) & can_grapple,
+                base=HasAbility(JEDI) & CAN_GRAPPLE,
                 normal=And(
                     # Grapple needed to reach the minikit.
-                    can_grapple,
+                    CAN_GRAPPLE,
                     # Force the plants to spawn platforms.
                     # High jump up, ignoring the plants.
                     # Ride the Clone Walker and use it to jump onto the section with rolling boulders.
@@ -416,7 +416,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                     HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | CAN_HIGH_JUMP_SLAM),
                     And(
                         # Grapple needed to reach the minikit.
-                        can_grapple,
+                        CAN_GRAPPLE,
                         # High jump up, ignoring the plants.
                         # Ride the Clone Walker and use it to jump onto the section with rolling boulders.
                         HasAnyAbilities(HIGH_JUMP | CAN_RIDE_VEHICLES),
@@ -441,9 +441,9 @@ DEFENSE_OF_KASHYYYK = Chapter(
         # JEDI is needed to reach here, so the normal+ rules can be slightly optimised.
         logic_options(
             base=HasAllAbilities(SITH | BOUNTY_HUNTER),
-            normal=HasAbility(SITH) | Has("Dark Side") & can_destroy_close_silver_bricks,
+            normal=HasAbility(SITH) | Has("Dark Side") & CAN_DESTROY_CLOSE_SILVER_BRICKS,
         ),
-        er_rule=can_sith_force & can_destroy_close_silver_bricks,
+        er_rule=CAN_SITH_FORCE & CAN_DESTROY_CLOSE_SILVER_BRICKS,
     ),
     ridables={
         "Clone Walker": LocationData(

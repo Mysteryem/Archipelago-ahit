@@ -1,9 +1,9 @@
 from rule_builder.rules import Or
 
 from ...macros import (
-    can_grapple,
-    can_destroy_close_silver_bricks,
-    can_damage_shielded_droideka,
+    CAN_GRAPPLE,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    CAN_DAMAGE_SHIELDED_DROIDEKA,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -49,7 +49,7 @@ JEDI_BATTLE = Chapter(
         "Padmé Pillar Lower Minikit": minikit_data(
             "Arena",
             logic_options(
-                base=HasAbility(HIGH_JUMP) & can_damage_shielded_droideka,
+                base=HasAbility(HIGH_JUMP) & CAN_DAMAGE_SHIELDED_DROIDEKA,
                 normal=HasAbility(HIGH_JUMP),
                 moderate=HasAnyAbilities(HIGH_JUMP | JEDI),
             ),
@@ -58,7 +58,7 @@ JEDI_BATTLE = Chapter(
         "Padmé Pillar Upper Minikit": minikit_data(
             "Arena",
             logic_options(
-                base=HasAbility(HIGH_JUMP) & can_damage_shielded_droideka,
+                base=HasAbility(HIGH_JUMP) & CAN_DAMAGE_SHIELDED_DROIDEKA,
                 normal=HasAbility(HIGH_JUMP),
                 moderate=HasAnyAbilities(HIGH_JUMP | JEDI),
             ),
@@ -72,8 +72,8 @@ JEDI_BATTLE = Chapter(
         "Anakin Pillar Lower Minikit": minikit_data(
             "Arena",
             logic_options(
-                base=HasAnyAbilities(GRAPPLE | HIGH_JUMP) & can_damage_shielded_droideka,
-                normal=HasAbility(HIGH_JUMP) | can_grapple,
+                base=HasAnyAbilities(GRAPPLE | HIGH_JUMP) & CAN_DAMAGE_SHIELDED_DROIDEKA,
+                normal=HasAbility(HIGH_JUMP) | CAN_GRAPPLE,
                 moderate=HasAnyAbilities(GRAPPLE | HIGH_JUMP | JEDI),
             ),
             pickup_name="m_pup4",
@@ -81,8 +81,8 @@ JEDI_BATTLE = Chapter(
         "Anakin Pillar Upper Minikit": minikit_data(
             "Arena",
             logic_options(
-                base=HasAnyAbilities(GRAPPLE | HIGH_JUMP) & can_damage_shielded_droideka,
-                normal=HasAbility(HIGH_JUMP) | can_grapple,
+                base=HasAnyAbilities(GRAPPLE | HIGH_JUMP) & CAN_DAMAGE_SHIELDED_DROIDEKA,
+                normal=HasAbility(HIGH_JUMP) | CAN_GRAPPLE,
                 moderate=HasAnyAbilities(GRAPPLE | HIGH_JUMP | JEDI),
             ),
             pickup_name="m_pup5",
@@ -95,7 +95,7 @@ JEDI_BATTLE = Chapter(
                 base=Or(
                     HasAbility(HIGH_JUMP),
                     HasAllAbilities(GRAPPLE | IMPERIAL),
-                ) & can_damage_shielded_droideka,
+                ) & CAN_DAMAGE_SHIELDED_DROIDEKA,
                 normal=HasAbility(HIGH_JUMP) | HasAllAbilities(GRAPPLE | IMPERIAL),
                 moderate=HasAnyAbilities(HIGH_JUMP | JEDI) | HasAllAbilities(GRAPPLE | IMPERIAL),
             ),
@@ -107,7 +107,7 @@ JEDI_BATTLE = Chapter(
             # platform to the upper minikit platform.
             logic_options(
                 base=Or(
-                    HasAbility(HIGH_JUMP) & can_damage_shielded_droideka,
+                    HasAbility(HIGH_JUMP) & CAN_DAMAGE_SHIELDED_DROIDEKA,
                     HasAllAbilities(GRAPPLE | IMPERIAL | JEDI),
                 ),
                 normal=HasAbility(HIGH_JUMP) | HasAllAbilities(GRAPPLE | IMPERIAL | JEDI),
@@ -140,8 +140,8 @@ JEDI_BATTLE = Chapter(
         "Arena",
         logic_options(
             base=HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
-            normal=can_destroy_close_silver_bricks & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
+            normal=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
         ),
-        er_rule=can_destroy_close_silver_bricks & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
+        er_rule=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
     ),
 )

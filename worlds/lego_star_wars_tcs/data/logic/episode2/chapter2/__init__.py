@@ -1,6 +1,6 @@
 from rule_builder.rules import And, Or, Has, HasAny
 
-from ...macros import can_sith_force, can_deflect_bolts
+from ...macros import CAN_SITH_FORCE, CAN_USE_DEFLECT_BOLTS
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ...types import minikit_data, ExitData, Chapter, LocationData
@@ -63,7 +63,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                     # Super Zapper can destroy the robots, but cannot destroy the turrets.
                     moderate=Or(
                         HasAnyAbilities(IS_NON_GHOST_JEDI | BLASTER),
-                        can_deflect_bolts,
+                        CAN_USE_DEFLECT_BOLTS,
                     ),
                 ),
             ),
@@ -234,7 +234,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                 base=HasAbility(SITH),
                 # Note: AI P2 will only use Sith Force as a SITH, ignoring Dark Side, so using Dark Side here requires
                 # Moderate logic for the basic 1P2C usage.
-                moderate=can_sith_force,
+                moderate=CAN_SITH_FORCE,
             ),
             pickup_name="m_pup1",
         )

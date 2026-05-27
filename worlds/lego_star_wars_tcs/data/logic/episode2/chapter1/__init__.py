@@ -1,7 +1,7 @@
 from rule_builder.rules import Has
 
 from ...macros import (
-    can_shoot_allow_torpedoes,
+    CAN_SHOOT_ALLOW_TORPEDOES,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility
@@ -47,7 +47,7 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
             "Spawn",
             logic_options(
                 base=HasAbility(VEHICLE_BLASTER),
-                normal=can_shoot_allow_torpedoes,
+                normal=CAN_SHOOT_ALLOW_TORPEDOES,
             ),
             pickup_names=("TKIT1", "TKIT2", "TKIT3", "TKIT4", "TKIT5")
         ),
@@ -61,7 +61,7 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
             "Spawn",
             logic_options(
                 base=HasAbility(VEHICLE_BLASTER),
-                normal=can_shoot_allow_torpedoes,
+                normal=CAN_SHOOT_ALLOW_TORPEDOES,
             ),
             pickup_name="JJ_KIT",
         ),
@@ -79,7 +79,7 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
             logic_options(
                 base=HasAbility(VEHICLE_BLASTER),
                 moderate=HasAbility(VEHICLE_BLASTER) | Has("Infinite Torpedos"),
-                hard=can_shoot_allow_torpedoes,
+                hard=CAN_SHOOT_ALLOW_TORPEDOES,
             ),
             pickup_names=(
                 # In "Spawn".
@@ -116,7 +116,7 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
             "After First Forcefield Trap",
             logic_options(
                 base=HasAbility(VEHICLE_BLASTER),
-                normal=can_shoot_allow_torpedoes,
+                normal=CAN_SHOOT_ALLOW_TORPEDOES,
             ),
             pickup_names=("TKIT1", "TKIT2", "TKIT3", "TKIT4", "TKIT5")
         ),

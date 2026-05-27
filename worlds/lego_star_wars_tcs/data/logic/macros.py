@@ -8,12 +8,12 @@ from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
 
 # Implemented as a CharacterAbility for now.
 # can_jetpack_hover = HasAny("Boba Fett", "Jango Fett")
-can_self_destruct = HasAbility(CAN_SELF_DESTRUCT) & Has("Self Destruct")
-can_super_ewok_catapult = HasAbility(WEAPON_EWOK) & Has("Super Ewok Catapult")
+CAN_USE_SELF_DESTRUCT = HasAbility(CAN_SELF_DESTRUCT) & Has("Self Destruct")
+CAN_SUPER_EWOK_CATAPULT = HasAbility(WEAPON_EWOK) & Has("Super Ewok Catapult")
 
 
 # All Sith are Jedi.
-can_sith_force = logic_options(
+CAN_SITH_FORCE = logic_options(
     base=HasAbility(SITH),
     # Alternative because SITH implies JEDI:
     # normal=And(
@@ -26,28 +26,40 @@ can_sith_force = logic_options(
     )
 )
 
-can_destroy_close_silver_bricks = logic_options(
+CAN_DESTROY_CLOSE_SILVER_BRICKS = logic_options(
     base=HasAbility(BOUNTY_HUNTER),
     normal=Or(
-        can_self_destruct,
+        CAN_USE_SELF_DESTRUCT,
         Has("Exploding Blaster Bolts") & HasAnyAbilities(BLASTER | WEAPON_EWOK),
         Has("Super Ewok Catapult") & HasAbility(WEAPON_EWOK),
     ),
 )
 
-can_deflect_bolts = Or(
+CAN_USE_DEFLECT_BOLTS = Or(
     HasAbility(CAN_DEFLECT_BOLTS),
     HasAbility(CAN_AGGRAVATE_ENEMIES) & Has("Deflect Bolts"),
 )
-can_super_zap = HasAbility(WEAPON_ZAPPER) & Has("Super Zapper")
-can_damage_at_close_range = logic_options(
+CAN_SUPER_ZAP = HasAbility(WEAPON_ZAPPER) & Has("Super Zapper")
+CAN_DAMAGE_AT_CLOSE_RANGE = logic_options(
     base=HasAnyAbilities(BLASTER | WEAPON_EWOK | CAN_MELEE),
     normal=Or(
         HasAnyAbilities(BLASTER | WEAPON_EWOK | CAN_MELEE),
-        can_self_destruct,
+        CAN_USE_SELF_DESTRUCT,
     ),
 )
-can_damage_shielded_droideka = logic_options(
+# can_fight_close_droids = logic_options(
+#     base=CAN_DAMAGE_AT_CLOSE_RANGE,
+#     normal=Or(
+#         CAN_DAMAGE_AT_CLOSE_RANGE,
+#         CAN_SUPER_ZAP,
+#     ),
+#     moderate=Or(
+#         CAN_DAMAGE_AT_CLOSE_RANGE,
+#         CAN_SUPER_ZAP,
+#         CAN_USE_DEFLECT_BOLTS,
+#     ),
+# )
+CAN_DAMAGE_SHIELDED_DROIDEKA = logic_options(
     # Only expect slam attacks, Bounty Hunter thermal detonators, or Droideka bolts.
     base=Or(
         HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM),
@@ -57,10 +69,10 @@ can_damage_shielded_droideka = logic_options(
     normal=Or(
         HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM),
         Has("Droideka"),
-        HasAbility(WEAPON_ZAPPER) & can_damage_at_close_range,
-        can_super_zap,
+        HasAbility(WEAPON_ZAPPER) & CAN_DAMAGE_AT_CLOSE_RANGE,
+        CAN_SUPER_ZAP,
         Or(
-            can_self_destruct,
+            CAN_USE_SELF_DESTRUCT,
             Has("Exploding Blaster Bolts") & HasAnyAbilities(BLASTER | WEAPON_EWOK),
             Has("Super Ewok Catapult") & HasAbility(WEAPON_EWOK),
         )
@@ -69,21 +81,21 @@ can_damage_shielded_droideka = logic_options(
     moderate=Or(
         HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM),
         Has("Droideka"),
-        HasAbility(WEAPON_ZAPPER) & can_damage_at_close_range,
-        can_super_zap,
+        HasAbility(WEAPON_ZAPPER) & CAN_DAMAGE_AT_CLOSE_RANGE,
+        CAN_SUPER_ZAP,
         Or(
-            can_self_destruct,
+            CAN_USE_SELF_DESTRUCT,
             Has("Exploding Blaster Bolts") & HasAnyAbilities(BLASTER | WEAPON_EWOK),
             Has("Super Ewok Catapult") & HasAbility(WEAPON_EWOK),
-            can_deflect_bolts,
+            CAN_USE_DEFLECT_BOLTS,
         )
     ),
 )
-can_destroy_far_silver_bricks = Or(
+CAN_DESTROY_FAR_SILVER_BRICKS = Or(
     HasAbility(BOUNTY_HUNTER),
     HasAbility(BLASTER) & Has("Exploding Blaster Bolts"),
 )
-can_grapple = logic_options(
+CAN_GRAPPLE = logic_options(
     base=HasAbility(GRAPPLE),
     normal=Or(
         HasAbility(GRAPPLE),
@@ -91,45 +103,46 @@ can_grapple = logic_options(
     )
 )
 # Pre-optimised version of can_sith_force & can_grapple.
-can_sith_force_and_grapple = logic_options(
-    base=can_sith_force & HasAbility(GRAPPLE),
-    normal=can_sith_force & (HasAbility(GRAPPLE) | Has("Force Grapple Leap")),
+CAN_SITH_FORCE_AND_GRAPPLE = logic_options(
+    base=CAN_SITH_FORCE & HasAbility(GRAPPLE),
+    normal=CAN_SITH_FORCE & (HasAbility(GRAPPLE) | Has("Force Grapple Leap")),
 )
-can_fight_or_bypass_skippable_droideka = Or(
-    can_damage_shielded_droideka,
+CAN_FIGHT_OR_BYPASS_SKIPPABLE_DROIDEKA = Or(
+    CAN_DAMAGE_SHIELDED_DROIDEKA,
     True_(options=normal_logic)
 )
 
-can_activate_close_target = logic_options(
+CAN_ACTIVATE_CLOSE_TARGET = logic_options(
     base=HasAbility(BLASTER),
     # Ewoks are awkward because they don't auto-target the targets.
     normal=HasAnyAbilities(BLASTER | WEAPON_EWOK),
     # Self Destruct works too, though this is probably not well known.
     moderate=Or(
         HasAnyAbilities(BLASTER | WEAPON_EWOK),
-        can_self_destruct,
+        CAN_USE_SELF_DESTRUCT,
     ),
 )
-# can_triple_jump = (
-#     HasAbility(JEDI)
-# )
-# can_triple_high_jump = (
-#     HasAbility(CAN_HIGH_JUMP_SLAM)
-# )
-# Does not include Grievous' Bodyguard who has the height of a triple jump, but not the distance.
-can_true_triple_jump = (
-    Or(HasAbility(JEDI), Has("General Grievous"))
-)
-can_true_high_double_jump = (
-    HasAny("Jar Jar Binks", "Captain Tarpals", "General Grievous")
-)
-# can_true_triple_high_jump = (
-#     Has("General Grievous")
-# )
 
 # Either Infinite Torpedos [sic] is unlocked, or the player enabled gathering torpedoes within the level.
-can_destroy_objects_with_pod_racers = (
+CAN_DESTROY_OBJECTS_WITH_POD_RACERS = (
         Has("Infinite Torpedos")
         | OptionFilter(LogicExpectNonInfiniteTorpedoesPodRacer, True)
 )
-can_shoot_allow_torpedoes = HasAbility(VEHICLE_BLASTER) | can_destroy_objects_with_pod_racers
+CAN_SHOOT_ALLOW_TORPEDOES = HasAbility(VEHICLE_BLASTER) | CAN_DESTROY_OBJECTS_WITH_POD_RACERS
+
+# Captain Tarpals' melee attacks are coded weird, and cannot destroy various objects in the game.
+# TODO: Regular melee attacks and Gamorrean Guard could be similar?
+CAN_ATTACK_UP_CLOSE_EXCEPT_TARPALS = (
+    logic_options(
+        base=Or(
+            HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM | BLASTER | WEAPON_EWOK),
+            HasAbilitiesExceptCharacters(CAN_MELEE, "Captain Tarpals"),
+        ),
+        # Allow Self Destruct.
+        normal=Or(
+            HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM | BLASTER | WEAPON_EWOK),
+            CAN_USE_SELF_DESTRUCT,
+            HasAbilitiesExceptCharacters(CAN_MELEE, "Captain Tarpals"),
+        ),
+    )
+),
