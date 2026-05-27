@@ -222,4 +222,4 @@ class HasAbilitiesExceptCharacters(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         characters = [c.name for c in CHARACTERS_AND_VEHICLES_BY_NAME.values()
                       if abilities in c.abilities and c.name not in except_characters]
         # todo: Subclass HasAny.Resolved for a custom __str__, explain_str and explain_json
-        return HasAny(*characters, options=self.options, filtered_resolution=self.filtered_resolution).resolve(world)
+        return HasAny(*characters).resolve(world)
