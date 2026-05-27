@@ -124,6 +124,9 @@ GENERAL_GRIEVOUS = Chapter(
     purchase_characters={
         "General Grievous": 70_000,
     },
+    extra_toggle_characters=(
+        "Buzz Droid",
+    ),
     regions={
         "Circular Platform": (
             ExitData(

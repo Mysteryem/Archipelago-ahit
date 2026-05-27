@@ -27,6 +27,9 @@ CHANCELLOR_IN_PERIL = Chapter(
         "Count Dooku": 100_000,
         "Grievous' Bodyguard": 42_000,
     },
+    extra_toggle_characters=(
+        "Buzz Droid",
+    ),
     regions={
         "Hangar": (
             ExitData(

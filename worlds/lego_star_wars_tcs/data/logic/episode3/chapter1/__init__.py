@@ -16,6 +16,12 @@ BATTLE_OVER_CORUSCANT = Chapter(
         "Vulture Droid": 30000,
         "Clone Arcfighter": 33000,
     },
+    extra_toggle_characters=(
+        # Completely useless in this level because it cannot shoot, and at least one unlocked vehicle is needed to
+        # enter the chapter in the first place.
+        # Interestingly, it can use the Self Destruct extra, but I could not find a use for this.
+        "Buzz Droid",
+    ),
     start_region="Space Battle Spawn",
     start_level="dogfight_a",
     extra_chapter_entrance_rules=logic_options(

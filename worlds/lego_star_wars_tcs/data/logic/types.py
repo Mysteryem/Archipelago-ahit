@@ -86,6 +86,7 @@ class Chapter:
     extra_chapter_entrance_rules: Rule = field(default_factory=True_)
     story_characters: tuple[str, ...] = ()
     purchase_characters: dict[str, int] = field(default_factory=dict)
+    extra_toggle_characters: tuple[str, ...] = ()
     level_minikits: dict[str, dict[str, MinikitData]] = field(init=False, default_factory=dict)
     level_names: frozenset[str] = field(init=False)
     region_to_level: dict[str, str] = field(init=False, default_factory=dict)

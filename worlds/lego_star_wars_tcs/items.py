@@ -736,6 +736,21 @@ ITEM_DATA: list[GenericItemData] = [
     # "Extra Toggle" characters.
     _char(-1, "Womp Rat", 165, run_speed=1.8, alignment=Alignment.PASSIVE),
     _char(-1, "Skeleton", 231, CAN_MELEE),
+    _char(-1, "Buzz Droid", 294, CAN_SELF_DESTRUCT | CAN_MELEE),
+    # Floats above the ground, preventing the last safe position from updating.
+    # Shoots short range blaster bolts that deal no damage to enemies, but can destroy objects and are affected by
+    # Exploding Blaster Bolts (allowing dealing damage to enemies).
+    _char(-1, "Training Remote", 19, CAN_SELF_DESTRUCT, 1.05),
+    _char(-1, "Rebel Engineer", 224, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
+    _char(-1, "Droid 1", 174, BLASTER | CAN_SELF_DESTRUCT, 0.6, Alignment.PASSIVE),
+    _char(-1, "Droid 2", 175, BLASTER | CAN_SELF_DESTRUCT, 0.6, Alignment.PASSIVE),
+    _char(-1, "Droid 3", 176, BLASTER | CAN_SELF_DESTRUCT, 0.4, Alignment.PASSIVE),
+    _char(-1, "Droid 4", 177, BLASTER | CAN_SELF_DESTRUCT, 0.6, Alignment.PASSIVE),
+    _char(-1, "Mouse Droid", 44, CAN_SELF_DESTRUCT, 2.4, Alignment.PASSIVE),
+    # Based on Stormtrooper, so no melee attack.
+    _char(-1, "Imperial Engineer", 233, IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID | CAN_FLOP_JUMP,
+          alignment=Alignment.EVIL),
+    _char(-1, "Han Solo (frozen in carbonite)", 105, run_speed=0.75),
 
     # Miscellaneous vehicles.
     # This is the vehicle present in the outside area of the Cantina. 'map' is the internal name for the Cantina.

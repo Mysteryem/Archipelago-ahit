@@ -33,6 +33,11 @@ JEDI_BATTLE = Chapter(
         "Aayla Secura": 37_000,
         "Plo Koon": 39_000,
     },
+    extra_toggle_characters=(
+        # Skeleton can melee and is targetable, but this is not relevant in 2-4 because of Jedi being needed to
+        # progress.
+        "Skeleton",
+    ),
     start_region="Arena",
     start_level="jedi_b",
     regions={
