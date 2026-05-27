@@ -210,9 +210,8 @@ NEGOTIATIONS = Chapter(
             er_rule=logic_options(
                 # Stack the boxes and force the lever to activate the platform.
                 base=HasAbility(JEDI),
-                # Triple jump up to the platform then triple jump to the minikit. Grievous' Bodyguard cannot get the
-                # distance required. TODO: Check Grievous' Bodyguard.
-                moderate=HasAbility(JEDI | CAN_TRIPLE_JUMP_GREAT_DISTANCE),
+                # Triple jump up to the platform then triple jump to the minikit.
+                moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
             ),
             pickup_name="m_pup2",
         ),
