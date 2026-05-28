@@ -739,8 +739,8 @@ ITEM_DATA: list[GenericItemData] = [
     _char(-1, "Buzz Droid", 294, CAN_SELF_DESTRUCT | CAN_MELEE),
     # Floats above the ground, preventing the last safe position from updating.
     # Shoots short range blaster bolts that deal no damage to enemies, but can destroy objects and are affected by
-    # Exploding Blaster Bolts (allowing dealing damage to enemies).
-    _char(-1, "Training Remote", 19, CAN_SELF_DESTRUCT, 1.05),
+    # Exploding Blaster Bolts (allowing dealing damage to enemies). The 0-damage blaster bolts will also aggro enemies.
+    _char(-1, "Training Remote", 19, CAN_SELF_DESTRUCT | CAN_AGGRAVATE_ENEMIES, 1.05),
     _char(-1, "Rebel Engineer", 224, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID),
     _char(-1, "Droid 1", 174, BLASTER | CAN_SELF_DESTRUCT, 0.6, Alignment.PASSIVE),
     _char(-1, "Droid 2", 175, BLASTER | CAN_SELF_DESTRUCT, 0.6, Alignment.PASSIVE),
