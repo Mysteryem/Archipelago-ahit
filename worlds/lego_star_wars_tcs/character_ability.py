@@ -147,7 +147,11 @@ class CharacterAbility(IntFlag):
     #         return NotImplemented
 
     def simplify_and(self) -> "CharacterAbility":
-        if self.value.bit_count() < 2:
+        """
+        JEDI and CAN_BUILD_BRICKS -> JEDI because JEDI implies CAN_BUILD_BRICKS.
+        :return:
+        """
+        if self.bit_count() < 2:
             return self
         simplified = self
         for ability in self:
@@ -156,7 +160,11 @@ class CharacterAbility(IntFlag):
         return simplified
 
     def simplify_or(self) -> "CharacterAbility":
-        if self.value.bit_count() < 2:
+        """
+        JEDI or CAN_BUILD_BRICKS -> CAN_BUILD_BRICKS because JEDI implies CNA_BUILD_BRICKS
+        :return:
+        """
+        if self.bit_count() < 2:
             return self
         simplified = self
 
