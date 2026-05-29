@@ -35,7 +35,8 @@ class Alignment(IntEnum):
     GOOD = auto()  # Enemies will attack on sight.
     NEUTRAL = auto()  # Enemies will only attack if attacked first (or attacks are used nearby).
     PASSIVE = auto()  # Enemies will not attack. Switching to a passive character will lose aggro.
-    EVIL = auto()  # Enemies will only attack if attacked first (or attacks are used nearby).
+    # Enemies will only attack if attacked first (or attacks are used nearby). These characters have the "baddie" tag.
+    EVIL = auto()
 
 
 @dataclass(frozen=True)
