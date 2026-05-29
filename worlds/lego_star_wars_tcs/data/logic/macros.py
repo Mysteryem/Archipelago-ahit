@@ -2,7 +2,7 @@ from rule_builder.rules import Has, HasAny, True_, Or, Rule
 from rule_builder.options import OptionFilter
 
 from .option_filters import normal_logic, logic_options
-from .rules import HasAbility, HasAnyAbilities, HasAbilitiesExceptCharacters
+from .rules import HasAbility, HasAnyAbilities, HasAbilityExceptCharacters
 from ...character_ability import *
 from ...items import LOGIC_CONSIDERED_CHARACTERS, SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTER_NAMES
 from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
@@ -184,13 +184,13 @@ CAN_ATTACK_UP_CLOSE_EXCEPT_TARPALS = (
     logic_options(
         base=Or(
             HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM | BLASTER | WEAPON_EWOK),
-            HasAbilitiesExceptCharacters(CAN_MELEE, "Captain Tarpals"),
+            HasAbilityExceptCharacters(CAN_MELEE, "Captain Tarpals"),
         ),
         # Allow Self Destruct.
         normal=Or(
             HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM | BLASTER | WEAPON_EWOK),
             CAN_USE_SELF_DESTRUCT,
-            HasAbilitiesExceptCharacters(CAN_MELEE, "Captain Tarpals"),
+            HasAbilityExceptCharacters(CAN_MELEE, "Captain Tarpals"),
         ),
     )
 ),
