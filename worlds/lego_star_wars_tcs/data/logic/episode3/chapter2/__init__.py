@@ -32,7 +32,7 @@ CHANCELLOR_IN_PERIL = Chapter(
     story_characters=(
         "Anakin Skywalker (Jedi)",
         "Chancellor Palpatine",
-        "Obi-Wan Kenobi (Episode 3)",
+        "Obi-Wan Kenobi (Episode III)",
         "R2-D2",
     ),
     purchase_characters={

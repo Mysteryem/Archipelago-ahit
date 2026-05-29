@@ -32,10 +32,10 @@ DEFENSE_OF_KASHYYYK = Chapter(
     ),
     purchase_characters={
         "Wookiee": 16_000,
-        "Clone (Episode 3)": 10_000,
-        "Clone (Episode 3, Pilot)": 11_000,
-        "Clone (Episode 3, Swamp)": 12_000,
-        "Clone (Episode 3, Walker)": 12_000,
+        "Clone (Episode III)": 10_000,
+        "Clone (Episode III, Pilot)": 11_000,
+        "Clone (Episode III, Swamp)": 12_000,
+        "Clone (Episode III, Walker)": 12_000,
     },
     regions={
         "Spawn Platform": (

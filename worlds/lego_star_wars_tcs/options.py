@@ -1056,7 +1056,7 @@ class ChaptersThatCanRequirePurchaseCharacters(OptionSet):
     All other Chapters can be specified using their shorthand names, for example:
 
     - 1-2  # Change 1-2 to require Captain Tarpals and Boss Nass
-    - 3-5  # Change 3-5 to require Mace Windu (Episode 3) and Disguised Clone
+    - 3-5  # Change 3-5 to require Mace Windu (Episode III) and Disguised Clone
     - 5-3  # Change 5-3 to require TIE Bomber and Imperial Shuttle
 
     This option does nothing if Chapters are not set to require Story Characters to unlock.

@@ -33,11 +33,11 @@ RUIN_OF_THE_JEDI = Chapter(
         normal=True_(),
     ),
     story_characters=(
-        "Obi-Wan Kenobi (Episode 3)",
+        "Obi-Wan Kenobi (Episode III)",
         "Yoda",
     ),
     purchase_characters={
-        "Mace Windu (Episode 3)": 38_000,
+        "Mace Windu (Episode III)": 38_000,
         "Disguised Clone": 12_000,
     },
     extra_toggle_characters=(

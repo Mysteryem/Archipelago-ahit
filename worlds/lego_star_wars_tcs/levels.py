@@ -284,30 +284,30 @@ CHAPTER_AREA_STORY_CHARACTERS: dict[str, frozenset[str]] = {
             "Jedi Starfighter (Red)",
             # These non-vehicle characters are also listed as player characters in the file, but do not get unlocked
             # when completing the chapter in Story mode, so should not be requirements to play the chapter:
-            # "Obi-Wan Kenobi (Episode 3)",
+            # "Obi-Wan Kenobi (Episode III)",
             # "Anakin Skywalker (Jedi)",
         },
         "3-2": {
             "Anakin Skywalker (Jedi)",
             "Chancellor Palpatine",
-            "Obi-Wan Kenobi (Episode 3)",
+            "Obi-Wan Kenobi (Episode III)",
             "R2-D2",
         },
         "3-3": {
             "Commander Cody",
-            "Obi-Wan Kenobi (Episode 3)",
+            "Obi-Wan Kenobi (Episode III)",
         },
         "3-4": {
             "Chewbacca",
             "Yoda",
         },
         "3-5": {
-            "Obi-Wan Kenobi (Episode 3)",
+            "Obi-Wan Kenobi (Episode III)",
             "Yoda",
         },
         "3-6": {
             "Anakin Skywalker (Jedi)",
-            "Obi-Wan Kenobi (Episode 3)",
+            "Obi-Wan Kenobi (Episode III)",
         },
         "4-1": {
             "Captain Antilles",
@@ -393,7 +393,7 @@ CHAPTER_AREA_STORY_CHARACTERS: dict[str, frozenset[str]] = {
             "C-3PO",
             "Han Solo (Skiff)",
             "Princess Leia (Slave)",
-            "Lando Calrissian (Palace Guard)",
+            "Lando (Palace Guard)",
             "Luke Skywalker (Jedi)",
             "R2-D2",
         },

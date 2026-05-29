@@ -138,7 +138,7 @@ GENERAL_GRIEVOUS = Chapter(
     start_level="grievous_a",
     story_characters=(
         "Commander Cody",
-        "Obi-Wan Kenobi (Episode 3)",
+        "Obi-Wan Kenobi (Episode III)",
     ),
     purchase_characters={
         "General Grievous": 70_000,
