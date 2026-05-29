@@ -271,7 +271,7 @@ DROID_FACTORY = Chapter(
         "Entrance Corridor Right Alcove Minikit": minikit_data(
             "Entrance Corridor",
             logic_options(
-                base=HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                base=HasAbility(CAN_JUMP_HEIGHT_0_37),
                 normal=HasAbility(CAN_BARELY_JUMP),
             ),
             pickup_name="m_pup2",

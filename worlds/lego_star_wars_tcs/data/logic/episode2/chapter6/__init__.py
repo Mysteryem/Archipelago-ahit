@@ -4,6 +4,8 @@ from ...macros import (
     CAN_GRAPPLE,
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_DAMAGE_AT_CLOSE_RANGE,
+    CAN_JUMP_DISTANCE_0_7_CLONE_PLUS,
+    CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -45,7 +47,19 @@ COUNT_DOOKU = Chapter(
                 # Expect an astromech droid specifically so that the minikit can be grabbed without dying.
                 base=HasAbility(ASTROMECH_DROID),
                 # Just jump towards it and accept the death.
-                normal=HasAnyAbilities(CAN_JUMP_NORMAL_DISTANCE),
+                # Dexter is the worst jump distance character that can reach it (0.77)
+                normal=CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
+                hard=Or(
+                    CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
+                    # 1P2C: Jump towards the minikit as one character, and shoot their back with the second character
+                    # for extra distance. This is probably slightly easier with Stud Magnet active, but it is possible
+                    # without.
+                    # I could not get this with minikit Ewok who has 0.69 jump distance, thought it's possible that Ewok
+                    # has a smaller collision box, which would make it more difficult.
+                    # todo: Try Gamorrean Guard who has the same jump distance, but is a taller character.
+                    # todo: Make sure Geonosian/Watto can reach this.
+                    CAN_JUMP_DISTANCE_0_7_CLONE_PLUS & HasAbility(BLASTER),
+                ),
             ),
             pickup_name="mk_4",
         ),

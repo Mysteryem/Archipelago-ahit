@@ -110,7 +110,8 @@ DEFENSE_OF_KASHYYYK = Chapter(
                             HasAbility(WEAPON_EWOK),
                             HasAny("Super Ewok Catapult", "Exploding Blaster Bolts"),
                         ),
-                        CAN_USE_SELF_DESTRUCT & HasAnyAbilities(HOVER | CAN_JUMP_NORMAL_DISTANCE),
+                        # HOVER implies CAN_JUMP_DISTANCE_0_69 so can be optimised away.
+                        CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_DISTANCE_0_69),
                     ),
                 ),
                 er_rule=logic_options(
@@ -168,7 +169,13 @@ DEFENSE_OF_KASHYYYK = Chapter(
                                         # Droid.
                                         Has("Self Destruct") & HasAbility(ASTROMECH_DROID),
                                         # Or jumping over to them, swapping to a droid and then exploding.
-                                        CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_NORMAL_DISTANCE),
+                                        # Boba Fett (Boy) (jump distance 0.56) is not enough for the left side.
+                                        # Works:
+                                        # - Ewok (jump_distance=0.69)
+                                        #   Clone (jump_distance=0.7)
+                                        #   Geonosian ('jump distance'=0.75)
+                                        #   Wookie (jump_distance=0.84)
+                                        CAN_USE_SELF_DESTRUCT & HasAnyAbilities(HOVER | CAN_JUMP_DISTANCE_0_69),
                                     )
                                 )
                             ),

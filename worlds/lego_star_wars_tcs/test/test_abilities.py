@@ -133,7 +133,7 @@ class TestAbilities(TestCase):
             r_max = min(relevant_abilities.value.bit_count() + 1, 5)
             # So many combinations can be reduced to the basic jump height abilities, and most of the combinations are
             # useless, so skip most combinations by reducing the max combination length.
-            if ability_main in CharacterAbility.CAN_BARELY_JUMP | CharacterAbility.CAN_JUMP_NORMAL_HEIGHT:
+            if ability_main in CharacterAbility.CAN_BARELY_JUMP | CharacterAbility.CAN_JUMP_HEIGHT_0_37:
                 r_max = min(r_max, 2)
             for reduced_abilities in self.abilities_tup_gen(relevant_abilities, r_max):
                 for user_of_ability_main in self.ability_to_used_by[ability_main]:

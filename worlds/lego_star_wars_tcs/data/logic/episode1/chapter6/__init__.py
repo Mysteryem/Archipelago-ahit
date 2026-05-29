@@ -2,6 +2,8 @@ from rule_builder.rules import Or, Has, True_, False_
 
 from ...macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    can_jump_distance_rule,
+    CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -170,15 +172,21 @@ DARTH_MAUL = Chapter(
         ),
         "Behind Silver Bricks Minikit": minikit_data(
             "Tower Room",
-            # IS_NON_GHOST_JEDI implies CAN_JUMP_NORMAL_DISTANCE.
-            # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_NORMAL_DISTANCE.
-            # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_NORMAL_DISTANCE.
+            # IS_NON_GHOST_JEDI implies CAN_JUMP_DISTANCE_0_69.
+            # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_DISTANCE_0_69.
+            # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_DISTANCE_0_69.
             CAN_DESTROY_CLOSE_SILVER_BRICKS,
             er_rule=logic_options(
-                base=HasAbility(CAN_JUMP_NORMAL_DISTANCE) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
+                # The first gap, at its shortest point is 0.8296566898853424.
+                # The second gap, at its shortest point is 0.8234030011015903.
+                # Han Solo (jump_distance=0.84) can comfortably jump across.
+                # Dexter Jettstar (jump_distance=0.77) can make it with a decent jump.
+                # Ewok (jump_distance=0.69) can barely make it.
+                base=can_jump_distance_rule(0.83),
+                normal=CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
                 # Include Ewok and other slow characters that can only barely get enough jump distance.
-                moderate=HasAbility(CAN_BARELY_JUMP) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
-            ),
+                moderate=HasAbility(CAN_JUMP_DISTANCE_0_69),
+            ).and_rule(CAN_DESTROY_CLOSE_SILVER_BRICKS),
             pickup_name="m_pup1",
         ),
         "Imperial Platform Minikit": minikit_data(
@@ -188,12 +196,22 @@ DARTH_MAUL = Chapter(
         ),
         "Energy Column Minikit": minikit_data(
             "Energy Columns Room",
-            # Base: IS_NON_GHOST_JEDI implies CAN_JUMP_NORMAL_DISTANCE.
-            # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_NORMAL_DISTANCE.
-            # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_NORMAL_DISTANCE.
+            # Base: IS_NON_GHOST_JEDI implies CAN_JUMP_DISTANCE_0_69.
+            # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_DISTANCE_0_69.
+            # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_DISTANCE_0_69.
             True_(),
-            # The second gap is just too big for Ewok to cross it.
-            er_rule=HasAbility(CAN_JUMP_NORMAL_DISTANCE),
+            # The first gap is about 0.8650856462150265, though Ewok can cross it without too much trouble.
+            # Boba Fett (Boy) cannot cross it.
+            # The second gap is about 0.9404286708182122 and is just too big for Ewok/Clone to cross it.
+            # Dexter Jettster (jump_distance=0.77) can make it across with a decent jump.
+            # Han Solo (jump_distance=0.84) cannot make it without coyote/sliding-off time, but it is otherwise an easy
+            # jump.
+            # The final jump to the energy column platform is about 0.765745545551385 (maybe a little lower at the
+            # closest point).
+            er_rule=logic_options(
+                base=HasAbility(CAN_JUMP_DISTANCE_0_84),
+                normal=CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
+            ),
             pickup_name="mk_1",  # "mk_1" + "\x00" + "2"
         ),
         "Maul Fight Minikit 1": minikit_data(

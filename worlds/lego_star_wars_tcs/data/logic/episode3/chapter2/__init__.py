@@ -137,7 +137,7 @@ CHANCELLOR_IN_PERIL = Chapter(
                 # All Astromech Panel users can walk through the gas, then all that is needed is a jump to get up a
                 # later part.
                 # logic_options(
-                #     base=HasAllAbilities(ASTROMECH_PANEL | CAN_JUMP_NORMAL_HEIGHT),
+                #     base=HasAllAbilities(ASTROMECH_PANEL | CAN_JUMP_HEIGHT_0_37),
                 #     # Astromech Droids can just barely hover around the jump obstacle. The other Astromech Panel users
                 #     # are IG-88 and 4-LOM, who can jump.
                 #     moderate=HasAbility(ASTROMECH_PANEL),
@@ -188,7 +188,7 @@ CHANCELLOR_IN_PERIL = Chapter(
         "Tower Far Left Minikit": minikit_data(
             "Tower Climb",
             # Fully covered without ER.
-            # HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+            # HasAbility(CAN_JUMP_HEIGHT_0_37),
             pickup_name="mk_3",
         ),
         "Tower Access Hatch Minikit": minikit_data(
@@ -234,7 +234,7 @@ CHANCELLOR_IN_PERIL = Chapter(
             "Ship's Bridge",
             # With ER, base logic would need to consider defeating the Bodyguards, a melee attack or explosion are
             # required, as they seem to always deflect blasters.
-            # er_rule=HasAbility(CAN_JUMP_NORMAL_HEIGHT) & (CAN_MELEE_MACRO | CAN_DESTROY_CLOSE_SILVER_BRICKS),
+            # er_rule=HasAbility(CAN_JUMP_HEIGHT_0_37) & (CAN_MELEE_MACRO | CAN_DESTROY_CLOSE_SILVER_BRICKS),
             pickup_name="mk_0",
         ),
         "Bridge Right Minikit": minikit_data(

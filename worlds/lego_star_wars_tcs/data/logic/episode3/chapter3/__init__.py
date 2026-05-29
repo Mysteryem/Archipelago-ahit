@@ -4,6 +4,7 @@ from ...macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS as BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_DAMAGE_AT_CLOSE_RANGE as BASE_CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_USE_SELF_DESTRUCT as BASE_CAN_USE_SELF_DESTRUCT,
+    can_jump_distance_rule,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
@@ -71,7 +72,7 @@ CAN_EXPLODE_SECOND_EXPLOSIVES = logic_options(
     base=And(
         CAN_EXPLODE_FIRST_EXPLOSIVES,
         HasAbility(JEDI),
-        HasAbilityCombination(BLASTER | CAN_JUMP_NORMAL_HEIGHT),
+        HasAbilityCombination(BLASTER | CAN_JUMP_HEIGHT_0_37),
         CanReachRegion("General Grievous - Shoot Second Explosives Section"),
     ),
     normal=(
@@ -81,7 +82,7 @@ CAN_EXPLODE_SECOND_EXPLOSIVES = logic_options(
                 # If you walk up to Grievous the second explosives explode.
                 CanReachRegion("General Grievous - Force Third Explosives Section"),
                 And(
-                    HasAbilityCombination(BLASTER | CAN_JUMP_NORMAL_HEIGHT),
+                    HasAbilityCombination(BLASTER | CAN_JUMP_HEIGHT_0_37),
                     CanReachRegion("General Grievous - Shoot Second Explosives Section"),
                 ),
             ),
@@ -93,7 +94,7 @@ CAN_EXPLODE_SECOND_EXPLOSIVES = logic_options(
         # is requiring moderate logic.
         CanReachRegion("General Grievous - Force Third Explosives Section"),
         And(
-            HasAbilityCombination(BLASTER | CAN_JUMP_NORMAL_HEIGHT),
+            HasAbilityCombination(BLASTER | CAN_JUMP_HEIGHT_0_37),
             CanReachRegion("General Grievous - Shoot Second Explosives Section"),
         ),
     ),
@@ -168,7 +169,19 @@ GENERAL_GRIEVOUS = Chapter(
             ),
             ExitData(
                 "Low Platform With Power Up",
-                HasAbility(CAN_JUMP_NORMAL_DISTANCE),
+                logic_options(
+                    base=HasAbility(CAN_JUMP_DISTANCE_0_69),
+                    moderate=HasAbility(CAN_BARELY_JUMP),
+                ),
+                er_rule=logic_options(
+                    # Ewok (jump_distance>=0.69) can make it across fairly easily jumping across the left/middle of the
+                    # gap.
+                    base=can_jump_distance_rule("Ewok"),
+                    # Boba Fett (Boy) (jump_distance>=0.56) can only barely make it by jumping across the shortest
+                    # distance between the platforms along the far left. Jumping immediately upon landing is probably
+                    # required to prevent sliding off.
+                    moderate=can_jump_distance_rule("Boba Fett (Boy)"),
+                ),
             ),
             ExitData(
                 "Third Explosives Section Gap Area",
@@ -214,11 +227,19 @@ GENERAL_GRIEVOUS = Chapter(
                 "Shoot Second Explosives Section",
                 logic_options(
                     base=HasAnyAbilities(GRAPPLE | CAN_DOUBLE_JUMP),
-                    normal=HasAnyAbilities(GRAPPLE | CAN_DOUBLE_JUMP | CAN_JUMP_SLIGHTLY_HIGHER),
+                    normal=HasAnyAbilities(GRAPPLE | CAN_DOUBLE_JUMP | CAN_JUMP_0_44),
                     moderate=Or(
-                        HasAnyAbilities(GRAPPLE | CAN_DOUBLE_JUMP | CAN_JUMP_SLIGHTLY_HIGHER),
-                        # Captain Panaka can just barely make it up here.
-                        HasAbilityCombination(CAN_JUMP_NORMAL_HEIGHT | CAN_JUMP_NORMAL_DISTANCE),
+                        HasAnyAbilities(GRAPPLE | CAN_DOUBLE_JUMP | CAN_JUMP_0_44),
+                        # (movement speed/jump height/jump distance)
+                        # Boba Fett (Boy) I don't think can make the second or third jumps (0.8/0.37/0.56)
+                        #   Not enough movement speed to slide up the second jump that he doesn't have enough height for
+                        #   and not enough movement speed to make it across the third jump.
+                        # Geonosian cannot make any of the jumps (height) (1.5/0.3/0.75)
+                        # Clone struggles with all the jumps (distance and height) (1.0/0.37/0.7)
+                        # Captain Panaka struggles with the second jump (getting height) (1.2/0.37/0.84)
+                        # Ewok/Ugnaught struggle with the last jump (getting distance) (0.9/0.44/0.69)
+                        # Gamorrean Guard struggles with the last jump (getting distance) (0.75/0.53/0.69)
+                        HasAbilityCombination(CAN_JUMP_HEIGHT_0_37 | CAN_JUMP_DISTANCE_0_69),
                     ),
                 ),
             ),
@@ -306,7 +327,7 @@ GENERAL_GRIEVOUS = Chapter(
                 logic_options(
                     base=HasAbility(CAN_DOUBLE_JUMP),
                     normal=HasAnyAbilities(CAN_DOUBLE_JUMP | JETPACK),
-                    moderate=HasAnyAbilities(CAN_DOUBLE_JUMP | CAN_JUMP_SLIGHTLY_HIGHER),
+                    moderate=HasAnyAbilities(CAN_DOUBLE_JUMP | CAN_JUMP_0_44),
                 )
             )
         ),
@@ -418,9 +439,9 @@ GENERAL_GRIEVOUS = Chapter(
                 er_rule=logic_options(
                     # Jump up and then only expect hover because the cliff gets very thin and is technically not
                     # walkable; you slide off rather slowly.
-                    base=HasAllAbilities(HOVER & CAN_JUMP_SLIGHTLY_HIGHER),
+                    base=HasAllAbilities(HOVER & CAN_JUMP_0_44),
                     # Jump up and then hug the cliff between these two areas, so you won't fall down.
-                    normal=HasAbility(CAN_JUMP_SLIGHTLY_HIGHER),
+                    normal=HasAbility(CAN_JUMP_0_44),
                 ),
             ),
         ),
@@ -433,7 +454,7 @@ GENERAL_GRIEVOUS = Chapter(
                 base=HasAbility(BOUNTY_HUNTER),
                 normal=And(
                     CAN_DESTROY_CLOSE_SILVER_BRICKS,
-                    HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                    HasAbility(CAN_JUMP_HEIGHT_0_37),
                 ),
                 moderate=Or(
                     # Triple jump over the silver brick wall.
@@ -446,12 +467,12 @@ GENERAL_GRIEVOUS = Chapter(
                     And(
                         CAN_DESTROY_CLOSE_SILVER_BRICKS,
                         # Astromech droids can also make it up with their hover.
-                        HasAnyAbilities(CAN_JUMP_NORMAL_HEIGHT | ASTROMECH_DROID),
+                        HasAnyAbilities(CAN_JUMP_HEIGHT_0_37 | ASTROMECH_DROID),
                     ),
                 ),
             ),
             er_rule=logic_options(
-                base=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                base=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_JUMP_HEIGHT_0_37),
                 moderate=Or(
                     # Triple jump over the silver brick wall.
                     # The devs made the collision box come forwards at the top, but didn't make it high enough, so
@@ -463,7 +484,7 @@ GENERAL_GRIEVOUS = Chapter(
                     And(
                         CAN_DESTROY_CLOSE_SILVER_BRICKS,
                         # Astromech droids can also make it up with their hover.
-                        HasAnyAbilities(CAN_JUMP_NORMAL_HEIGHT | ASTROMECH_DROID),
+                        HasAnyAbilities(CAN_JUMP_HEIGHT_0_37 | ASTROMECH_DROID),
                     ),
                 ),
             ),

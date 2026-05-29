@@ -10,7 +10,7 @@ from ...macros import (
     CAN_ACTIVATE_CLOSE_TARGET,
 )
 from ...option_filters import logic_options
-from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilitiesExceptCharacters
+from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilityExceptCharacters
 from ...types import minikit_data, ExitData, Chapter, LocationData
 
 from .....character_ability import *
@@ -62,7 +62,7 @@ ESCAPE_FROM_NABOO = Chapter(
                     base=True_(),
                     moderate=Or(
                         HasAnyAbilities(BLASTER | WEAPON_EWOK),
-                        CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                        CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_HEIGHT_0_37),
                     ),
                 ),
                 er_rule=logic_options(
@@ -74,7 +74,7 @@ ESCAPE_FROM_NABOO = Chapter(
                     # these targets, a Droid that can jump is required.
                     moderate=Or(
                         HasAnyAbilities(BLASTER | WEAPON_EWOK),
-                        CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                        CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_HEIGHT_0_37),
                     ),
                 ),
                 # rescue_d does not exist.
@@ -87,9 +87,9 @@ ESCAPE_FROM_NABOO = Chapter(
                 er_rule=logic_options(
                     # The button to press is in a raised area, and there is a destroyable cover over the chapter
                     # completion.
-                    base=HasAbility(CAN_JUMP_NORMAL_HEIGHT) & CAN_DAMAGE_AT_CLOSE_RANGE,
+                    base=HasAbility(CAN_JUMP_HEIGHT_0_37) & CAN_DAMAGE_AT_CLOSE_RANGE,
                     # Consider Self Destruct for dealing damage.
-                    normal=CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                    normal=CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CAN_JUMP_HEIGHT_0_37),
                     # Astromech droids can just barely get up to the raised area.
                     moderate=CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CAN_BARELY_JUMP),
                 ),
@@ -219,9 +219,9 @@ ESCAPE_FROM_NABOO = Chapter(
             CAN_DESTROY_CLOSE_SILVER_BRICKS,
             er_rule=logic_options(
                 # (all bounty hunters can jump normal height)
-                base=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                base=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_JUMP_HEIGHT_0_37),
                 # The button to press is in a raised area.
-                normal=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_JUMP_NORMAL_HEIGHT),
+                normal=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_JUMP_HEIGHT_0_37),
                 # The button to press is in a raised area. Astromech droids can just barely get up.
                 moderate=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_BARELY_JUMP),
             ),
@@ -249,13 +249,13 @@ ESCAPE_FROM_NABOO = Chapter(
             normal=And(
                 Or(
                     HasAbility(SITH),
-                    Has("Dark Side") & HasAbilitiesExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
+                    Has("Dark Side") & HasAbilityExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
                 ),
                 CAN_DESTROY_CLOSE_SILVER_BRICKS
             ),
             moderate=Or(
                 HasAbility(SITH),
-                Has("Dark Side") & HasAbilitiesExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
+                Has("Dark Side") & HasAbilityExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
             )
         ),
         er_rule=logic_options(
@@ -266,13 +266,13 @@ ESCAPE_FROM_NABOO = Chapter(
                 CAN_SITH_FORCE,
                 # When Dark Side is allowed instead of just Sith. Yoda (and Yoda (Ghost)) struggle a lot to use force on
                 # one of the flowers, so they are excluded.
-                HasAbilitiesExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
+                HasAbilityExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
             ),
             # The Silver brick objects can actually be destroyed with a slam attack for some reason, so being able to
             # destroy Silver brick objects is not needed.
             moderate=Or(
                 HasAbility(SITH),
-                Has("Dark Side") & HasAbilitiesExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
+                Has("Dark Side") & HasAbilityExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
             )
         )
     ),

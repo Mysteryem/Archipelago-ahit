@@ -43,7 +43,7 @@ RETAKE_THEED_PALACE = Chapter(
                     ),
                     # Jump up the bricks to the side of the bricks that make the ramp.
                     # And just ignore Droideka if they cannot be defeated.
-                    normal=HasAllAbilities(ASTROMECH_PANEL | CAN_JUMP_NORMAL_HEIGHT),
+                    normal=HasAllAbilities(ASTROMECH_PANEL | CAN_JUMP_HEIGHT_0_37),
                     # Expert can push R2-D2 onto some objects to get him up to the panel, though I don't know if this is
                     # possible with other characters that cannot jump normally.
                     # expert=HasAbility(ASTROMECH_PANEL),
@@ -251,7 +251,7 @@ RETAKE_THEED_PALACE = Chapter(
                 # jump into the window.
                 normal=Or(
                     HasAbility(JEDI),
-                    HasAllAbilities(GRAPPLE | CAN_JUMP_SLIGHTLY_HIGHER),
+                    HasAllAbilities(GRAPPLE | CAN_JUMP_0_44),
                 ),
                 # Triple High Jump can also reach the upper area that the window is in.
                 # But General Grievous is too big to be able to hit the window without Super Jedi Slam or some means of
@@ -260,7 +260,7 @@ RETAKE_THEED_PALACE = Chapter(
                 # explosions.
                 moderate=Or(
                     HasAbility(JEDI),
-                    HasAllAbilities(GRAPPLE | CAN_JUMP_SLIGHTLY_HIGHER),
+                    HasAllAbilities(GRAPPLE | CAN_JUMP_0_44),
                     Has("Grievous' Bodyguard"),
                     And(
                         Has("General Grievous"),

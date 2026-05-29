@@ -5,6 +5,7 @@ from ...macros import (
     CAN_GRAPPLE,
     CAN_SITH_FORCE,
     CAN_DAMAGE_AT_CLOSE_RANGE as BASE_CAN_DAMAGE_AT_CLOSE_RANGE,
+    CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAnyAbilities, HasAllAbilities
@@ -151,9 +152,18 @@ RUIN_OF_THE_JEDI = Chapter(
                 # Ignore the red bricks and just jump up.
                 normal=HasAnyAbilities(JEDI | HIGH_JUMP),
             ).and_rule(logic_options(
+                # Expect hovering to get the minikit and come back without dying.
                 base=HasAbility(HOVER),
                 # Jump to the minikit and then die.
-                normal=HasAbility(CAN_JUMP_NORMAL_DISTANCE),
+                # Cannot get it:
+                # - Clone (jump_distance=0.7)
+                # I tried the 1P2C strategy of being shot to get extra distance + Stud Magnet, but still could not reach
+                # it with Clone.
+                # Can get it:
+                # - Dexter Jettstar (jump_distance=0.77)
+                # - Han Solo (jmup_distance=0.84)
+                # - Captain Tarpals (single jump) (jump_distance=0.9051)
+                normal=HasAbility(CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS),
             )),
             pickup_name="mk_0",
         ),

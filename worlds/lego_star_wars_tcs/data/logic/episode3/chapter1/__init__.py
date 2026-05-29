@@ -1,4 +1,4 @@
-from ...rules import HasAbility, HasAbilitiesExceptCharacters, True_
+from ...rules import HasAbility, HasAbilityExceptCharacters, True_
 from ...types import minikit_data, ExitData, Chapter, LocationData
 from ...option_filters import logic_options
 from .....character_ability import IS_A_VEHICLE, VEHICLE_BLASTER
@@ -41,7 +41,7 @@ BATTLE_OVER_CORUSCANT = Chapter(
                     # Slave 1 just barely fits through the ship later in the level. To reduce confusion with newer
                     # players, and to potentially help with achieving True Jedi, any vehicle other than Slave 1 is
                     # expected for the base logic.
-                    base=HasAbilitiesExceptCharacters(IS_A_VEHICLE, "Slave 1"),
+                    base=HasAbilityExceptCharacters(IS_A_VEHICLE, "Slave 1"),
                     normal=True_(),
                 ),
             ),

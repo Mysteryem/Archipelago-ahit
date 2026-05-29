@@ -1,8 +1,11 @@
 from unittest import TestCase
 
-from rule_builder.rules import Has, Rule, And
+from rule_builder.rules import Has, Rule, And, Or, HasAny
 
 from ..data.logic.option_filters import logic_options
+from ..data.logic.macros import can_jump_distance_rule
+from ..data.logic.rules import HasAbility
+from ..character_ability import CharacterAbility
 
 BASE_ITEM = "BASE_ITEM"
 NORMAL_ITEM = "NORMAL_ITEM"
@@ -17,7 +20,7 @@ BASIC_OPTIONS = logic_options(
 )
 
 
-class TestRules(TestCase):
+class TestLogicOptionsRules(TestCase):
     def items_from_simple_rule(self, rule: Rule) -> list[str]:
         items = []
         self.assertIsInstance(rule, (Has, And))
@@ -94,3 +97,58 @@ class TestRules(TestCase):
         self.assertEqual(self.items_from_simple_rule(options.moderate), ["base item 2", NORMAL_ITEM])
         self.assertEqual(self.items_from_simple_rule(options.hard), ["hard item 2", NORMAL_ITEM])
 
+
+class TestJumpDistanceMacros(TestCase):
+    def _test(self, distance: float, expected_ability: CharacterAbility, *expected_characters: str):
+        rule = can_jump_distance_rule(distance)
+        if expected_characters:
+            self.assertIsInstance(rule, Or)
+            for child in rule.children:
+                self.assertIsInstance(child, (HasAbility, HasAny))
+                if isinstance(child, HasAbility):
+                    self.assertIs(child.ability, expected_ability)
+                elif isinstance(child, HasAny):
+                    self.assertEqual(set(expected_characters), set(child.item_names))
+        else:
+            self.assertIsInstance(rule, HasAbility)
+            self.assertIs(rule.ability, expected_ability)
+
+    def test_0_5(self):
+        self._test(0.5, CharacterAbility.CAN_BARELY_JUMP)
+
+    def test_0_56(self):
+        self._test(0.56, CharacterAbility.CAN_BARELY_JUMP)
+
+    def test_0_6(self):
+        self._test(0.6, CharacterAbility.CAN_JUMP_DISTANCE_0_69)
+
+    def test_0_65(self):
+        self._test(0.65, CharacterAbility.CAN_JUMP_DISTANCE_0_69)
+
+    def test_0_7(self):
+        self._test(0.7, CharacterAbility.CAN_JUMP_DISTANCE_0_84,
+                   # 0.7
+                   "Clone",
+                   "Clone (Episode III)",
+                   "Clone (Episode III, Pilot)",
+                   "Commander Cody",
+                   "Clone (Episode III, Swamp)",
+                   "Clone (Episode III, Walker)",
+                   "Disguised Clone",
+                   "Boss Nass",
+                   # 0.75
+                   "Geonosian",
+                   "Watto",
+                   # 0.766...
+                   "Dexter Jettster",
+                   )
+
+    def test_0_8(self):
+        self._test(0.8, CharacterAbility.CAN_JUMP_DISTANCE_0_84)
+
+    def test_0_9(self):
+        self._test(0.9, CharacterAbility.CAN_JUMP_DISTANCE_0_92, "Lando Calrissian", "Lando (Palace Guard)")
+
+    def test_1_0(self):
+        with self.assertRaises(ValueError):
+            can_jump_distance_rule(1.0)

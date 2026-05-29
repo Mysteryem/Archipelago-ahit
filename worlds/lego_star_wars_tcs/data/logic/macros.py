@@ -1,15 +1,63 @@
-from rule_builder.rules import Has, HasAny, True_, Or, And
+from rule_builder.rules import Has, HasAny, True_, Or, Rule
 from rule_builder.options import OptionFilter
 
 from .option_filters import normal_logic, logic_options
 from .rules import HasAbility, HasAnyAbilities, HasAbilitiesExceptCharacters
 from ...character_ability import *
+from ...items import LOGIC_CONSIDERED_CHARACTERS, SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTER_NAMES
 from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
 
 # Implemented as a CharacterAbility for now.
 # can_jetpack_hover = HasAny("Boba Fett", "Jango Fett")
 CAN_USE_SELF_DESTRUCT = HasAbility(CAN_SELF_DESTRUCT) & Has("Self Destruct")
 CAN_SUPER_EWOK_CATAPULT = HasAbility(WEAPON_EWOK) & Has("Super Ewok Catapult")
+
+
+def can_jump_distance_rule(distance_or_character: float | str) -> Rule:
+    distance: float
+    if isinstance(distance_or_character, str):
+        distance = LOGIC_CONSIDERED_CHARACTERS[distance_or_character].single_jump_distance
+    else:
+        distance = distance_or_character
+
+    if distance <= 0:
+        raise ValueError(f"Tried to create rule for distance less than or equal to zero. This does not make sens.")
+
+    if distance <= LOGIC_CONSIDERED_CHARACTERS["Boba Fett (Boy)"].single_jump_distance:
+        return HasAbility(CAN_BARELY_JUMP)
+    if distance <= 0.69:
+        base_ability = CAN_JUMP_DISTANCE_0_69
+        max_distance_exclusive = 0.69
+    elif distance <= 0.84:
+        base_ability = CAN_JUMP_DISTANCE_0_84
+        max_distance_exclusive = 0.84
+    elif distance <= 0.92:
+        base_ability = CAN_JUMP_DISTANCE_0_92
+        max_distance_exclusive = 0.92
+    else:
+        raise ValueError(f"Tried to create rule for distance greater than 0.92, but the furthest regular single-jump is"
+                         f" 0.92. Use ")
+
+    all_character_names = []
+    for jump_distance, character_names in SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTER_NAMES.items():
+        if jump_distance >= max_distance_exclusive:
+            # The `base_ability` covers all other characters that can jump this distance.
+            break
+        if jump_distance >= distance:
+            all_character_names.extend(character_names)
+
+    if all_character_names:
+        return HasAbility(base_ability) | HasAny(*all_character_names)
+    else:
+        return HasAbility(base_ability)
+
+
+# No rule is defined for being able to jump at least as far as Boba Fett (Boy) (0.56) because he is the only character
+# with that jump distance, and has the worst jump distance.
+CAN_JUMP_DISTANCE_0_56_BOBA_BOY_PLUS = HasAbility(CAN_BARELY_JUMP)
+CAN_JUMP_DISTANCE_0_7_CLONE_PLUS = can_jump_distance_rule("Clone")
+CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS = can_jump_distance_rule("Dexter Jettster")
+CAN_JUMP_DISTANCE_0_904_LANDO_PLUS = can_jump_distance_rule("Lando Calrissian")
 
 
 # All Sith are Jedi.

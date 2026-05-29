@@ -1,6 +1,6 @@
 from rule_builder.rules import And, Or, Has, HasAny
 
-from ...macros import CAN_SITH_FORCE, CAN_USE_DEFLECT_BOLTS
+from ...macros import CAN_SITH_FORCE, CAN_USE_DEFLECT_BOLTS, CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ...types import minikit_data, ExitData, Chapter, LocationData
@@ -130,9 +130,10 @@ DISCOVERY_ON_KAMINO = Chapter(
             "Bounty Hunter Area",
             logic_options(
                 # Double jump across the platforms and then force the small platform out, to use to reach the minikit.
-                # HOVER/CAN_JUMP_NORMAL_DISTANCE/CAN_DOUBLE_JUMP can jump across the circular platforms, but
-                # HOVER/'can jump slighter further'(CAN_JUMP_NORMAL_DISTANCE + CAN_JUMP_SLIGHTLY_HIGHER)/CAN_DOUBLE_JUMP
-                # is needed to jump to the platform where the minikit is.
+                # HOVER/CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS/CAN_DOUBLE_JUMP can jump across the circular platforms, but
+                # HOVER/'can jump slighter further'(CAN_JUMP_DISTANCE_0_84 + CAN_JUMP_0_44)/CAN_DOUBLE_JUMP
+                # is needed to jump to the platform where the minikit is. CAN_JUMP_DISTANCE_0_84 just barely makes the
+                # jump, so can_jump_distance_rule(0.9) is more appropriate.
                 # Note that the AI P2 will only use JEDI/HIGH_JUMP/Astromech Droid to cross the circular platforms, but
                 # we don't have a good way to logically check for just Astromech Hover and not Jetpack Hover currently.
                 base=HasAbility(JEDI),
@@ -144,6 +145,19 @@ DISCOVERY_ON_KAMINO = Chapter(
         "Five Access Hatches Minikit": minikit_data(
             "Bounty Hunter Area",
             logic_options(
+                base=HasAnyAbilities(CAN_DOUBLE_JUMP | ASTROMECH_DROID) & HasAllAbilities(BLASTER | SHORTIE),
+                moderate=And(
+                    Or(
+                        # Optimise the CAN_JUMP_DISTANCE_0_84 from CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS into the
+                        # HasAnyAbilities.
+                        HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER | CAN_JUMP_DISTANCE_0_84),
+                        Has("Dexter Jettster"),
+                    ),
+                    HasAbility(BLASTER) | Has("General Grievous"),
+                    HasAbility(SHORTIE),
+                ),
+            ),
+            er_rule=logic_options(
                 # AI P2 will only use Double Jump and Astromech Hover, so Jetpack Hover is not allowed here because then
                 # 1P2C would be required.
                 base=HasAnyAbilities(CAN_DOUBLE_JUMP | ASTROMECH_DROID) & HasAllAbilities(BLASTER | SHORTIE),
@@ -153,15 +167,18 @@ DISCOVERY_ON_KAMINO = Chapter(
                 # General Grievous's triple jump can skip needing a BLASTER character to extend the bridge.
                 # todo: It seems to be possible to grab this minikit with Droideka + Yoda + maybe Stud Magnet, but it
                 #  seems inconsistent.
+                # The distance from the start area to the first platform is about 0.9376
+                # Ewok (0.69) and Clone (0.7) cannot jump across the platforms.
+                # Dexter can make it with a good jump.
                 moderate=And(
-                    HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER | CAN_JUMP_NORMAL_DISTANCE),
+                    HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER) | CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
                     HasAbility(BLASTER) | Has("General Grievous"),
                     HasAbility(SHORTIE),
                 ),
                 # # Instead of using a vent, Yoda ceiling clip over the top of the machine and access the minikit from
                 # # behind.
                 # hard=And(
-                #     HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER | CAN_JUMP_NORMAL_DISTANCE),
+                #     HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER | CAN_JUMP_DISTANCE_0_69),
                 #     HasAbility(BLASTER) | Has("General Grievous"),
                 #     HasAbility(SHORTIE) | HasAny("Yoda", "Yoda (Ghost)"),
                 # ),
@@ -175,7 +192,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                 # Swap to Droideka while as close to the Minikit as possible. Stud Magnet isn't even needed.
                 moderate=Or(
                     HasAbility(JEDI),
-                    HasAbility(CAN_JUMP_NORMAL_HEIGHT) & Has("Droideka"),
+                    HasAbility(CAN_JUMP_HEIGHT_0_37) & Has("Droideka"),
                 ),
             ),
             pickup_name="mkvend",
@@ -186,12 +203,12 @@ DISCOVERY_ON_KAMINO = Chapter(
                 # A higher than normal jump is required to get into the alcove that the minikit is in.
                 base=HasAbility(CAN_DOUBLE_JUMP),
                 # Allow characters with a slightly higher jump.
-                normal=HasAbility(CAN_JUMP_SLIGHTLY_HIGHER),
+                normal=HasAbility(CAN_JUMP_0_44),
                 # Allow stormtrooper flop for a tiny bit of extra height.
                 # Allow Taun We and Lama Su, who only have a basic jump height, but can make this jump anyway, sort of
                 # sliding up the wall when holding forwards on the controller.
                 moderate=Or(
-                    HasAnyAbilities(CAN_JUMP_SLIGHTLY_HIGHER | CAN_FLOP_JUMP),
+                    HasAnyAbilities(CAN_JUMP_0_44 | CAN_FLOP_JUMP),
                     HasAny("Taun We", "Lama Su")
                 ),
             ),

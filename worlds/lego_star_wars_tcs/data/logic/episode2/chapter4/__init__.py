@@ -139,9 +139,9 @@ JEDI_BATTLE = Chapter(
     power_brick=LocationData(
         "Arena",
         logic_options(
-            base=HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
-            normal=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
+            base=HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
+            normal=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
         ),
-        er_rule=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_NORMAL_HEIGHT),
+        er_rule=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
     ),
 )

@@ -58,10 +58,12 @@ class MinikitItemData(GenericItemData):
 @dataclass(frozen=True)
 class GenericCharacterData(GenericItemData):
     character_index: int
-    abilities: CharacterAbility = CharacterAbility.NONE
-    run_speed: float = 1.2  # The majority of characters have 1.2.
+    abilities: CharacterAbility
+    run_speed: float  # The majority of characters have 1.2.
     # Jump height is calculated through jump_speed**2/(2*air_gravity) (v0**2/2g: v0 = jump_speed, g=-air_gravity
-    single_jump_height: float = 0.44  # The majority of characters have 0.44 (Jedi and many other decent jumpers).
+    single_jump_height: float  # The majority of characters have 0.44 (Jedi and many other decent jumpers).
+    # Jump distance is calculated through air_time = 2*jump_speed/abs(air_gravity); jump_distance = air_time * run_speed
+    single_jump_distance: float
     shop_slot: int = field(init=False)
     purchase_cost: int = field(init=False)
 
@@ -93,6 +95,14 @@ class CharacterData(GenericCharacterData):
         # Automatically set some implied abilities as a safeguard.
         abilities = self.abilities
 
+        if self.single_jump_height >= 0.44:
+            abilities |= CAN_JUMP_0_44 | CAN_JUMP_HEIGHT_0_37
+        elif self.single_jump_height >= 0.37:
+            abilities |= CAN_JUMP_HEIGHT_0_37
+
+        if self.single_jump_distance >= 0.7:
+            abilities |= CAN_JUMP_DISTANCE_0_69
+
         # All Sith are Jedi.
         if SITH in abilities:
             abilities |= JEDI
@@ -110,34 +120,32 @@ class CharacterData(GenericCharacterData):
         if BOUNTY_HUNTER in abilities:
             abilities |= BLASTER
 
+        assert CAN_BUILD_BRICKS not in abilities or CAN_JUMP_HEIGHT_0_37 in abilities, \
+            f"All characters that can build should be able to jump 0.37 or higher, but {self.name} cannot."
+
         assert BOUNTY_HUNTER not in abilities or self.alignment is Alignment.EVIL, \
             f"{self.name} is a Bounty Hunter, but is not EVIL alignment."
 
-        # All characters that can build happen to have at least normal jump height.
-        if CAN_BUILD_BRICKS in abilities:
-            abilities |= CAN_JUMP_NORMAL_HEIGHT
-
         if (HIGH_JUMP | JEDI) & abilities != 0:
-            abilities |= CAN_JUMP_SLIGHTLY_HIGHER
+            abilities |= CAN_JUMP_0_44
             abilities |= CAN_DOUBLE_JUMP
-        if CAN_JUMP_SLIGHTLY_HIGHER in abilities:
+            abilities |= CAN_JUMP_DISTANCE_0_69
+        if CAN_JUMP_0_44 in abilities:
             abilities |= CAN_FLOP_JUMP
-            # FIXME: Most characters have the same jump_speed as Boba Fett, so what actually tells their jump heights
-            #  apart? Ewoks have this jump height, but definitely cannot jump a normal distance due to lower run_speed.
-            # # All characters that can jump slightly higher can jump a normal distance. # todo: Double check.
-            # abilities |= CAN_JUMP_NORMAL_DISTANCE
         if CAN_FLOP_JUMP in abilities:
-            abilities |= CAN_JUMP_NORMAL_HEIGHT
-        if CAN_JUMP_NORMAL_HEIGHT in abilities:
+            abilities |= CAN_JUMP_HEIGHT_0_37
+        if CAN_JUMP_HEIGHT_0_37 in abilities:
             # Normal jump distance is not guaranteed.
             abilities |= CAN_BARELY_JUMP
+            if self.run_speed >= 1.2:
+                abilities |= CAN_JUMP_DISTANCE_0_69
 
         # Jetpacks are a superior version of Astromech hovering.
         if JETPACK in abilities:
             abilities |= HOVER
         # Hovering is the superior version of jump distance.
         if HOVER in abilities:
-            abilities |= CAN_JUMP_NORMAL_DISTANCE
+            abilities |= CAN_JUMP_DISTANCE_0_69
 
         # Automatically set special Hat Machine abilities that are not set explicitly.
         if CAN_WEAR_HAT in abilities and GRAPPLE in abilities:
@@ -168,6 +176,8 @@ class CharacterData(GenericCharacterData):
 @dataclass(frozen=True)
 class VehicleData(GenericCharacterData):
     item_type: ClassVar[ItemType] = "Vehicle"
+    single_jump_height: float = 0.0
+    single_jump_distance: float = 0.0
 
     def __post_init__(self):
         super().__post_init__()
@@ -396,14 +406,14 @@ _char = CharacterData
 _vehicle = VehicleData
 _extra = ExtraData
 
-COMMON_NORMAL_JUMP_HEIGHT = CAN_BARELY_JUMP | CAN_JUMP_NORMAL_HEIGHT
+COMMON_NORMAL_JUMP_HEIGHT = CAN_BARELY_JUMP | CAN_JUMP_HEIGHT_0_37
 
 COMMON_PACIFIST_NON_DROID = (
         CAN_BUILD_BRICKS
         | CAN_PULL_LEVERS
         | CAN_PUSH_OBJECTS
         | COMMON_NORMAL_JUMP_HEIGHT
-        | CAN_JUMP_NORMAL_DISTANCE
+        | CAN_JUMP_DISTANCE_0_69
         | CAN_RIDE_VEHICLES
 )
 COMMON_SHORT_SLOW = (
@@ -415,25 +425,25 @@ COMMON_SHORT_SLOW = (
     | SHORTIE
 )
 
-COMMON_NORMAL_SPEED_PACIFIST_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_JUMP_NORMAL_DISTANCE
+COMMON_NORMAL_SPEED_PACIFIST_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_JUMP_DISTANCE_0_69
 # TODO: Remove explicit marking of jump height, and deduce it from the jump_height attribute instead.
-COMMON_CAN_JUMP_SLIGHTLY_HIGHER = COMMON_NORMAL_JUMP_HEIGHT | CAN_JUMP_SLIGHTLY_HIGHER | CAN_JUMP_NORMAL_DISTANCE
-COMMON_HIGH_JUMP = CAN_JUMP_SLIGHTLY_HIGHER | CAN_DOUBLE_JUMP | HIGH_JUMP
+COMMON_CAN_JUMP_SLIGHTLY_HIGHER = COMMON_NORMAL_JUMP_HEIGHT | CAN_JUMP_0_44 | CAN_JUMP_DISTANCE_0_69
+COMMON_HIGH_JUMP = CAN_JUMP_0_44 | CAN_DOUBLE_JUMP | HIGH_JUMP
 COMMON_HIGH_JUMP_SLAM = COMMON_HIGH_JUMP | CAN_HIGH_JUMP_SLAM | CAN_MELEE | CAN_DEFLECT_BOLTS
 
 COMMON_MELEE_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_MELEE
-COMMON_MELEE_NON_DROID_HIGHER_JUMP = COMMON_MELEE_NON_DROID | CAN_JUMP_SLIGHTLY_HIGHER
+COMMON_MELEE_NON_DROID_HIGHER_JUMP = COMMON_MELEE_NON_DROID | CAN_JUMP_0_44
 COMMON_BLASTER_NON_DROID = COMMON_PACIFIST_NON_DROID | BLASTER
 COMMON_HATLESS_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_WEAR_HAT
 COMMON_HATLESS_MELEE_NON_DROID = COMMON_MELEE_NON_DROID | CAN_WEAR_HAT
-COMMON_HATLESS_MELEE_NON_DROID_HIGHER_JUMP = COMMON_HATLESS_MELEE_NON_DROID | CAN_JUMP_SLIGHTLY_HIGHER
+COMMON_HATLESS_MELEE_NON_DROID_HIGHER_JUMP = COMMON_HATLESS_MELEE_NON_DROID | CAN_JUMP_0_44
 COMMON_HATLES_PACIFIST_NON_DROID = COMMON_PACIFIST_NON_DROID | CAN_WEAR_HAT
 COMMON_JEDI = JEDI | COMMON_PACIFIST_NON_DROID | CAN_DOUBLE_JUMP | CAN_TRIPLE_JUMP_GREAT_DISTANCE | IS_NON_GHOST_JEDI
 COMMON_SITH = COMMON_JEDI | SITH
 
 COMMON_GRAPPLE = GRAPPLE | BLASTER
 COMMON_BOUNTY_HUNTER = BOUNTY_HUNTER | COMMON_GRAPPLE | CAN_MELEE
-COMMON_JETPACK = HOVER | JETPACK | CAN_JUMP_SLIGHTLY_HIGHER
+COMMON_JETPACK = HOVER | JETPACK | CAN_JUMP_0_44
 COMMON_NON_DROID_BOUNTY_HUNTER = COMMON_BOUNTY_HUNTER | COMMON_PACIFIST_NON_DROID
 COMMON_JETPACK_BOUNTY_HUNTER = COMMON_NON_DROID_BOUNTY_HUNTER | COMMON_JETPACK
 
@@ -449,7 +459,7 @@ def generic_jedi(ap_id: int, name: str, character_id: int, already_got_hat: bool
         alignment = Alignment.PASSIVE
     else:
         alignment = Alignment.GOOD
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, alignment)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, 0.92, alignment)
 
 
 def generic_sith(ap_id: int, name: str, character_id: int, already_got_hat: bool = False, imperial: bool = False):
@@ -458,81 +468,82 @@ def generic_sith(ap_id: int, name: str, character_id: int, already_got_hat: bool
         abilities |= IMPERIAL
     if not already_got_hat:
         abilities |= CAN_WEAR_HAT
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, Alignment.EVIL)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, 0.92, Alignment.EVIL)
 
 
 def generic_astromech(ap_id: int, name: str, character_id: int):
     abilities = ASTROMECH_PANEL | HOVER | ASTROMECH_DROID | CAN_BARELY_JUMP | CAN_SELF_DESTRUCT | WEAPON_ZAPPER
-    return CharacterData(ap_id, name, character_id, abilities, 1.0, 0.11, Alignment.PASSIVE)
+    # todo?: Use hover time to determine jump distance instead of using the calculated value for their barely jump?
+    return CharacterData(ap_id, name, character_id, abilities, 1.0, 0.11, 0.41, Alignment.PASSIVE)
 
 
 def generic_clone(ap_id: int, name: str, character_id: int):
     abilities = IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID
-    return CharacterData(ap_id, name, character_id, abilities, 1.0, 0.37, Alignment.EVIL)
+    return CharacterData(ap_id, name, character_id, abilities, 1.0, 0.37, 0.7, Alignment.EVIL)
 
 
 def generic_officer(ap_id: int, name: str, character_id: int, already_got_hat: bool = False):
     abilities = IMPERIAL | COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID
     if not already_got_hat:
         abilities |= CAN_WEAR_HAT
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, Alignment.EVIL)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, 0.92, Alignment.EVIL)
 
 
 def generic_lando(ap_id: int, name: str, character_id: int, already_got_hat: bool = False):
     abilities = COMMON_GRAPPLE | COMMON_MELEE_NON_DROID
     if not already_got_hat:
         abilities |= CAN_WEAR_HAT
-    return CharacterData(ap_id, name, character_id, abilities, 1.18, 0.44, Alignment.GOOD)
+    return CharacterData(ap_id, name, character_id, abilities, 1.18, 0.44, 0.90413, Alignment.GOOD)
 
 
 def generic_padme(ap_id: int, name: str, character_id: int):
     abilities = COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.37, Alignment.GOOD)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.37, 0.84, Alignment.GOOD)
 
 
 def generic_solo(ap_id: int, name: str, character_id: int):
     # todo: ViolaGuy's standalone TCS randomizer I think has some logic involving the roll that Han Solo can do.
     abilities = COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.37, Alignment.GOOD)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.37, 0.84, Alignment.GOOD)
 
 
 def generic_leia(ap_id: int, name: str, character_id: int, already_got_hat: bool = False):
     abilities = COMMON_GRAPPLE | COMMON_MELEE_NON_DROID
     if not already_got_hat:
         abilities |= CAN_WEAR_HAT
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, Alignment.GOOD)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, 0.92, Alignment.GOOD)
 
 
 def generic_stormtrooper(ap_id: int, name: str, character_id: int):
     abilities = IMPERIAL | COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID | CAN_FLOP_JUMP
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, Alignment.EVIL)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, 0.92, Alignment.EVIL)
 
 
 def generic_rebel(ap_id: int, name: str, character_id: int):
     abilities = COMMON_GRAPPLE | COMMON_MELEE_NON_DROID
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, Alignment.GOOD)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, 0.92, Alignment.GOOD)
 
 
 def generic_greedo(ap_id: int, name: str, character_id: int):
     abilities = COMMON_BOUNTY_HUNTER | COMMON_MELEE_NON_DROID
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, Alignment.EVIL)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, 0.92, Alignment.EVIL)
 
 
 def generic_kaminoan(ap_id: int, name: str, character_id: int):
     abilities = COMMON_PACIFIST_NON_DROID
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.37, Alignment.NEUTRAL)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.37, 0.84, Alignment.NEUTRAL)
 
 
 def generic_skiff_guard(ap_id: int, name: str, character_id: int, already_got_hat: bool = False):
     abilities = COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID
     if not already_got_hat:
         abilities |= CAN_WEAR_HAT
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, Alignment.EVIL)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, 0.92, Alignment.EVIL)
 
 
 def generic_battle_droid(ap_id: int, name: str, character_id: int):
     abilities = BLASTER | CAN_SELF_DESTRUCT
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.0, Alignment.EVIL)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.0, 0.0, Alignment.EVIL)
 
 
 def generic_yoda(ap_id: int, name: str, character_id: int, is_ghost: bool = False):
@@ -545,23 +556,23 @@ def generic_yoda(ap_id: int, name: str, character_id: int, is_ghost: bool = Fals
     else:
         alignment = Alignment.GOOD
     # todo: what is the effective run_speed with the lightsaber out?
-    return CharacterData(ap_id, name, character_id, abilities, 0.8, 0.44, alignment)
+    return CharacterData(ap_id, name, character_id, abilities, 0.8, 0.44, 0.6133333, alignment)
 
 
 def generic_ewok(ap_id: int, name: str, character_id: int):
-    abilities = WEAPON_EWOK | COMMON_SHORT_SLOW | CAN_JUMP_SLIGHTLY_HIGHER
-    return CharacterData(ap_id, name, character_id, abilities, 0.9, 0.44, Alignment.GOOD)
+    abilities = WEAPON_EWOK | COMMON_SHORT_SLOW | CAN_JUMP_0_44
+    return CharacterData(ap_id, name, character_id, abilities, 0.9, 0.44, 0.69, Alignment.GOOD)
 
 
 def generic_protocol_droid(ap_id: int, name: str, character_id: int):
     abilities = PROTOCOL_PANEL | CAN_SELF_DESTRUCT
-    return CharacterData(ap_id, name, character_id, abilities, 0.75, 0.0, Alignment.PASSIVE)
+    return CharacterData(ap_id, name, character_id, abilities, 0.75, 0.0, 0.0, Alignment.PASSIVE)
 
 
 def generic_wookie(ap_id: int, name: str, character_id: int):
     # Wookies can specially wear hats.
     abilities = COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.37, Alignment.GOOD)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.37, 0.84, Alignment.GOOD)
 
 
 def generic_luke(ap_id: int, name: str, character_id: int, already_got_hat: bool = False):
@@ -569,25 +580,44 @@ def generic_luke(ap_id: int, name: str, character_id: int, already_got_hat: bool
     abilities = COMMON_GRAPPLE | COMMON_MELEE_NON_DROID
     if not already_got_hat:
         abilities |= CAN_WEAR_HAT
-    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, Alignment.GOOD)
+    return CharacterData(ap_id, name, character_id, abilities, 1.2, 0.44, 0.92, Alignment.GOOD)
+
+
+def generic_geonosian(ap_id: int, name: str, character_id: int, abilities: CharacterAbility, alignment: Alignment):
+    # Calculated jump distance is 1.2, but it's more like 0.75 or so.
+    # Geonosian gets a jump, and then hovers slightly above the ground, which grants extra height.
+    # Jump Distance:
+    #  I could get across larger gaps than
+    #  - run_speed=1.0, jump_speed=2.1, air_gravity=-6.0 -> jump_distance=0.7 (Clone).
+    #  I could not get across as large gaps as
+    #  - run_speed=1.32, jump_speed=2.4, air_gravity=-7.0 -> jump_distance=0.9 (Captain Tarpals)
+    #  - run_speed=1.2, jump_speed=2.1, air_gravity=-6.0 -> jump_distance=0.84 (Padmé)
+    #  - run_speed=1.0, jump_speed=2.3, air_gravity=-6.0 -> jump_distance=0.77777 (Dexter Jettster)
+    #  I'm guessing the Geonosian jump_distance as 0.75.
+    # Jump Height:
+    #  I could not jump as high as 4-LOM (0.37 jump height) and the only other characters that can jump worse are
+    #  Astromech Droids.
+    #  Geonosian can make it up the first two force steps in 3-3 (spawned by destroying the second explosives),
+    #  Astromech Droids are not even close. These steps have about 0.3 y distance between them.
+    return CharacterData(ap_id, name, character_id, abilities, 1.5, 0.3, 0.75)
 
 
 ITEM_DATA: list[GenericItemData] = [
     generic_jedi(177, "Obi-Wan Kenobi", 1),
     # There is a second, incorrect Zam Wesell at 305
-    _char(58, "Zam Wesell", 2, COMMON_BOUNTY_HUNTER | COMMON_MELEE_NON_DROID, 1.4, 0.4, Alignment.EVIL),
+    _char(58, "Zam Wesell", 2, COMMON_BOUNTY_HUNTER | COMMON_MELEE_NON_DROID, 1.4, 0.4, 1.112, Alignment.EVIL),
     generic_sith(112, "The Emperor", 6, True, True),
-    _char(109, "Boba Fett", 7, COMMON_JETPACK_BOUNTY_HUNTER, 1.2, 0.44, Alignment.EVIL),
+    _char(109, "Boba Fett", 7, COMMON_JETPACK_BOUNTY_HUNTER, 1.2, 0.44, 0.92, Alignment.EVIL),
     generic_astromech(6, "R2-D2", 8),
-    _char(87, "Tusken Raider", 9, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID, 1.2, 0.44, Alignment.EVIL),
+    _char(87, "Tusken Raider", 9, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID, 1.2, 0.44, 0.92, Alignment.EVIL),
     generic_yoda(15, "Yoda", 10),
     generic_protocol_droid(12, "C-3PO", 12),
     generic_rebel(84, "Rebel Trooper", 13),
     generic_officer(95, "Imperial Officer", 14, True),
     generic_wookie(20, "Chewbacca", 16),
-    _char(46, "Gonk Droid", 17, CAN_SELF_DESTRUCT, 0.12, 0.0, Alignment.PASSIVE),
+    _char(46, "Gonk Droid", 17, CAN_SELF_DESTRUCT, 0.12, 0.0, 0.0, Alignment.PASSIVE),
     generic_stormtrooper(85, "Stormtrooper", 20),
-    _char(88, "Jawa", 22, SHORTIE | COMMON_PACIFIST_NON_DROID | WEAPON_ZAPPER, 0.9, 0.44, Alignment.EVIL),
+    _char(88, "Jawa", 22, SHORTIE | COMMON_PACIFIST_NON_DROID | WEAPON_ZAPPER, 0.9, 0.44, 0.69, Alignment.EVIL),
     generic_leia(21, "Princess Leia", 23),
     generic_leia(30, "Princess Leia (Hoth)", 24),
     generic_jedi(33, "Luke Skywalker (Bespin)", 25),
@@ -609,16 +639,16 @@ ITEM_DATA: list[GenericItemData] = [
     # Has special hair that apparently counts as a hat.
     generic_leia(45, "Princess Leia (Bespin)", 57, True),
     generic_rebel(99, "Rebel Pilot", 58),
-    _char(66, "Jango Fett", 59, COMMON_JETPACK_BOUNTY_HUNTER, 1.2, 0.44, Alignment.EVIL),
+    _char(66, "Jango Fett", 59, COMMON_JETPACK_BOUNTY_HUNTER, 1.2, 0.44, 0.92, Alignment.EVIL),
     # Can build for some reason???
     _char(76, "General Grievous", 60,
           COMMON_HIGH_JUMP_SLAM | CAN_BUILD_BRICKS | CAN_TRIPLE_JUMP_GREAT_DISTANCE,
-          1.2, 0.65, Alignment.EVIL),
+          1.2, 0.65, 1.12, Alignment.EVIL),
     generic_sith(57, "Darth Maul", 61, True),
     generic_jedi(13, "Mace Windu", 62),
     generic_jedi(82, "Mace Windu (Episode 3)", 63),
-    _char(75, "Grievous' Bodyguard", 64, COMMON_HIGH_JUMP_SLAM, 1.4, 1.44, Alignment.EVIL),
-    _char(51, "Droideka", 65, BLASTER | CAN_SELF_DESTRUCT, 1.8, 0.0, Alignment.EVIL),
+    _char(75, "Grievous' Bodyguard", 64, COMMON_HIGH_JUMP_SLAM, 1.4, 1.44, 1.6, Alignment.EVIL),
+    _char(51, "Droideka", 65, BLASTER | CAN_SELF_DESTRUCT, 1.8, 0.0, 0.0, Alignment.EVIL),
     generic_astromech(9, "R4-P17", 66),
     generic_battle_droid(48, "Battle Droid", 67),
     generic_battle_droid(50, "Battle Droid (Commander)", 68),
@@ -626,15 +656,15 @@ ITEM_DATA: list[GenericItemData] = [
     generic_battle_droid(49, "Battle Droid (Security)", 70),
     generic_protocol_droid(178, "TC-14", 71),
     generic_wookie(77, "Wookiee", 72),
-    _char(18, "Chancellor Palpatine", 73, COMMON_HATLES_PACIFIST_NON_DROID, 1.2, 0.37, Alignment.GOOD),
-    generic_jedi(16, "Obi-Wan Kenobi (Episode 3)", 74),
+    _char(18, "Chancellor Palpatine", 73, COMMON_HATLES_PACIFIST_NON_DROID, 1.2, 0.37, 0.84, Alignment.GOOD),
+    generic_jedi(16, "Obi-Wan Kenobi (Episode III)", 74),
     generic_jedi(8, "Obi-Wan Kenobi (Jedi Master)", 75),
     generic_padme(120, "Padmé", 76),
     generic_padme(5, "Padmé (Battle)", 77),
     generic_padme(14, "Padmé (Clawed)", 78),
     generic_padme(11, "Padmé (Geonosis)", 79),
-    _char(3, "Queen Amidala", 80, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID, 1.2, 0.37, Alignment.GOOD),
-    _char(65, "Super Battle Droid", 81, BLASTER | CAN_SELF_DESTRUCT, 1.07, 0.0, Alignment.EVIL),
+    _char(3, "Queen Amidala", 80, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID, 1.2, 0.37, 0.84, Alignment.GOOD),
+    _char(65, "Super Battle Droid", 81, BLASTER | CAN_SELF_DESTRUCT, 1.07, 0.0, 0.0, Alignment.EVIL),
     generic_jedi(69, "Ki-Adi Mundi", 82, True),
     generic_jedi(70, "Kit Fisto", 83, True),
     generic_jedi(68, "Luminara", 84, True),
@@ -646,23 +676,18 @@ ITEM_DATA: list[GenericItemData] = [
     generic_clone(80, "Clone (Episode 3, Swamp)", 90),
     generic_clone(81, "Clone (Episode 3, Walker)", 91),
     generic_clone(83, "Disguised Clone", 92),
-    _char(7, "Anakin Skywalker (Boy)", 93, SHORTIE | COMMON_HATLES_PACIFIST_NON_DROID, 1.2, 0.37, Alignment.GOOD),
-    _char(67, "Boba Fett (Boy)", 94, COMMON_SHORT_SLOW, 0.8, 0.37, Alignment.EVIL),
+    _char(7, "Anakin Skywalker (Boy)", 93, SHORTIE | COMMON_HATLES_PACIFIST_NON_DROID, 1.2, 0.37, 0.84, Alignment.GOOD),
+    _char(67, "Boba Fett (Boy)", 94, COMMON_SHORT_SLOW, 0.8, 0.37, 0.56, Alignment.EVIL),
     # Cannot build.
     # Like Watto, they cannot jump normally, but fly instead, with similar jump distance to Ewok.
     # TODO: Find something that another 0.4 height user can just barely get onto, or otherwise figure out the effective
     #  jump height for Geonosian.
-    _char(63, "Geonosian", 95,
-          CAN_PULL_LEVERS
-          | CAN_PUSH_OBJECTS
-          | CAN_RIDE_VEHICLES
-          | BLASTER
-          | CAN_JUMP_NORMAL_HEIGHT,
-          # The game has the jump height set as 0.4, which appears to be the default when not set explicitly.
-          1.5, 0.15, Alignment.EVIL),
+    generic_geonosian(63, "Geonosian", 95,
+                      CAN_PULL_LEVERS | CAN_PUSH_OBJECTS | CAN_RIDE_VEHICLES | BLASTER | CAN_JUMP_HEIGHT_0_37,
+                      Alignment.EVIL),
     generic_jedi(17, "Anakin Skywalker (Jedi)", 96),
     generic_jedi(10, "Anakin Skywalker (Padawan)", 97),
-    _char(4, "Captain Panaka", 98, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID, 1.2, 0.37, Alignment.GOOD),
+    _char(4, "Captain Panaka", 98, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID, 1.2, 0.37, 0.84, Alignment.GOOD),
     # Jar Jar has a vanilla bug where there is a typo in the lever pulling animation, which prevents Jar Jar, and
     # Gungans based on him, from being able to pull levers.
     _char(2, "Jar Jar Binks", 99,
@@ -671,11 +696,11 @@ ITEM_DATA: list[GenericItemData] = [
           | CAN_PUSH_OBJECTS
           | CAN_RIDE_VEHICLES
           | CAN_AGGRAVATE_ENEMIES,
-          1.32, 0.41, Alignment.GOOD),
-    _char(47, "PK Droid", 100, CAN_SELF_DESTRUCT, 0.8285375, 0.0, Alignment.PASSIVE),
-    _char(54, "Royal Guard", 101, COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.2, 0.37, Alignment.GOOD),
+          1.32, 0.41, 0.905, Alignment.GOOD),
+    _char(47, "PK Droid", 100, CAN_SELF_DESTRUCT, 0.8285375, 0.0, 0.0, Alignment.PASSIVE),
+    _char(54, "Royal Guard", 101, COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.2, 0.37, 0.84, Alignment.GOOD),
     # Crazy jump height on such an unassuming character!
-    _char(104, "Gamorrean Guard", 102, COMMON_MELEE_NON_DROID | CAN_DEFLECT_BOLTS, 0.75, 0.53, Alignment.EVIL),
+    _char(104, "Gamorrean Guard", 102, COMMON_MELEE_NON_DROID | CAN_DEFLECT_BOLTS, 0.75, 0.53, 0.69, Alignment.EVIL),
     generic_sith(74, "Count Dooku", 103, False, False),
     generic_jedi(176, "Qui-Gon Jinn", 104),
     generic_rebel(98, "Rebel Trooper (Hoth)", 107),
@@ -688,23 +713,25 @@ ITEM_DATA: list[GenericItemData] = [
     # TODO: From the extracted data, Luke Skywalker (Pilot) does not already have a hat?
     generic_luke(31, "Luke Skywalker (Pilot)", 156, True),
     generic_jedi(32, "Luke Skywalker (Dagobah)", 157),
-    _char(102, "Ugnaught", 158, COMMON_SHORT_SLOW | WEAPON_ZAPPER, 0.9, 0.44, Alignment.EVIL),
+    _char(102, "Ugnaught", 158, COMMON_SHORT_SLOW | WEAPON_ZAPPER, 0.9, 0.44, 0.69, Alignment.EVIL),
     generic_leia(38, "Princess Leia (Slave)", 161),
     generic_leia(40, "Princess Leia (Endor)", 162, True),
     # Custom characters can only use unlocked character equipment, besides some blasters. They do not get access to
     # lightsabers/force unless Jedi are unlocked.
-    _char(188, "STRANGER 1", 168, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID, 1.2, 0.44, Alignment.GOOD),
-    _char(189, "STRANGER 2", 169, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID, 1.2, 0.44, Alignment.GOOD),
+    _char(188, "STRANGER 1", 168, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID, 1.2, 0.44, 0.92, Alignment.GOOD),
+    _char(189, "STRANGER 2", 169, COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID, 1.2, 0.44, 0.92, Alignment.GOOD),
     generic_greedo(90, "Greedo", 171),
     # GOOD alignment for some reason.
-    _char(91, "Imperial Spy", 172, COMMON_PACIFIST_NON_DROID, 1.2, 0.44, Alignment.GOOD),
+    _char(91, "Imperial Spy", 172, COMMON_PACIFIST_NON_DROID, 1.2, 0.44, 0.92, Alignment.GOOD),
     # GOOD alignment for some reason.
-    _char(105, "Bib Fortuna", 185, COMMON_MELEE_NON_DROID, 1.2, 0.44, Alignment.GOOD),
+    _char(105, "Bib Fortuna", 185, COMMON_MELEE_NON_DROID, 1.2, 0.44, 0.92, Alignment.GOOD),
     generic_skiff_guard(108, "Skiff Guard", 186),
     generic_rebel(23, "Rebel Friend", 190),
-    _char(101, "Lobot", 192, COMMON_HATLESS_MELEE_NON_DROID, 1.2, 0.44, Alignment.GOOD),
-    _char(103, "Bespin Guard", 193, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID, 1.2, 0.44, Alignment.GOOD),
-    _char(111, "Imperial Guard", 194, IMPERIAL | COMMON_MELEE_NON_DROID | CAN_DEFLECT_BOLTS, 1.2, 0.44, Alignment.EVIL),
+    _char(101, "Lobot", 192, COMMON_HATLESS_MELEE_NON_DROID, 1.2, 0.44, 0.92, Alignment.GOOD),
+    _char(103, "Bespin Guard", 193, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID, 1.2, 0.44, 0.92, Alignment.GOOD),
+    _char(111, "Imperial Guard", 194,
+          IMPERIAL | COMMON_MELEE_NON_DROID | CAN_DEFLECT_BOLTS,
+          1.2, 0.44, 0.92, Alignment.EVIL),
     generic_jedi(117, "Ben Kenobi (Ghost)", 195, False, True),
     # TODO: Check if Palace Guard can actually Melee, I suspect not.
     generic_skiff_guard(106, "Palace Guard", 196, True),
@@ -713,17 +740,17 @@ ITEM_DATA: list[GenericItemData] = [
           | ASTROMECH_PANEL
           | PROTOCOL_PANEL
           | CAN_PUSH_OBJECTS
-          | CAN_JUMP_NORMAL_HEIGHT
+          | CAN_JUMP_HEIGHT_0_37
           | CAN_RIDE_VEHICLES
           | CAN_MELEE,
-          1.2, 0.44, Alignment.EVIL),
+          1.2, 0.44, 0.92, Alignment.EVIL),
     generic_ewok(110, "Ewok", 199),
     generic_lando(37, "Lando Calrissian (Palace Guard)", 201, True),
     generic_luke(121, "Luke Skywalker (Hoth)", 204, True),
     generic_leia(163, "Princess Leia (Prisoner)", 205),
     generic_solo(41, "Han Solo (Endor)", 206),
     generic_rebel(22, "Captain Antilles", 207),
-    _char(113, "Admiral Ackbar", 211, COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.2, 0.44, Alignment.GOOD),
+    _char(113, "Admiral Ackbar", 211, COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.2, 0.44, 0.92, Alignment.GOOD),
     generic_greedo(107, "Bossk", 212),
     generic_greedo(115, "Dengar", 213),
     generic_ewok(42, "Wicket", 223),
@@ -733,26 +760,18 @@ ITEM_DATA: list[GenericItemData] = [
           | ASTROMECH_PANEL
           | PROTOCOL_PANEL
           | CAN_PUSH_OBJECTS
-          | CAN_JUMP_NORMAL_HEIGHT
+          | CAN_JUMP_HEIGHT_0_37
           | CAN_RIDE_VEHICLES
           | CAN_MELEE,
-          1.2, 0.37, Alignment.EVIL),
+          1.2, 0.37, 0.84, Alignment.EVIL),
     generic_jedi(161, "Anakin Skywalker (Ghost)", 226, False, True),
     generic_yoda(118, "Yoda (Ghost)", 227, True),
-    _char(53, "Boss Nass", 254, COMMON_PACIFIST_NON_DROID, 1.0, 0.37, Alignment.GOOD),
-    _char(56, "Pit Droid", 268, CAN_SELF_DESTRUCT, 0.8, 0.0, Alignment.PASSIVE),
+    _char(53, "Boss Nass", 254, COMMON_PACIFIST_NON_DROID, 1.0, 0.37, 0.7, Alignment.GOOD),
+    _char(56, "Pit Droid", 268, CAN_SELF_DESTRUCT, 0.8, 0.0, 0.0, Alignment.PASSIVE),
     # Cannot build.
-    # I am unsure if he should be considered able to jump normally because he flies around instead, but does not hover
-    # over gaps. His jump distance generally ends up about the same as Ewok.
-    # TODO: Find something that another 0.4 height user can just barely get onto, or otherwise figure out the effective
-    #  jump height for Watto/Geonosian.
-    _char(55, "Watto", 269,
-          CAN_PULL_LEVERS
-          | CAN_PUSH_OBJECTS
-          | CAN_RIDE_VEHICLES
-          | WEAPON_ZAPPER
-          | CAN_JUMP_NORMAL_HEIGHT,
-          1.5, 0.15, Alignment.GOOD),
+    generic_geonosian(55, "Watto", 269,
+                      CAN_PULL_LEVERS | CAN_PUSH_OBJECTS | CAN_RIDE_VEHICLES | WEAPON_ZAPPER | CAN_JUMP_HEIGHT_0_37,
+                      Alignment.GOOD),
     # Due to being based on Jar Jar, he cannot pull levers.
     _char(52, "Captain Tarpals", 276,
           COMMON_HIGH_JUMP
@@ -761,10 +780,10 @@ ITEM_DATA: list[GenericItemData] = [
           | CAN_RIDE_VEHICLES
           | CAN_MELEE
           | CAN_DEFLECT_BOLTS,
-          1.32, 0.41, Alignment.GOOD),
+          1.32, 0.41, 0.905, Alignment.GOOD),
     generic_kaminoan(61, "Lama Su", 280),
     generic_kaminoan(62, "Taun We", 281),
-    _char(59, "Dexter Jettster", 304, COMMON_PACIFIST_NON_DROID, 1.0, 0.44, Alignment.GOOD),
+    _char(59, "Dexter Jettster", 304, COMMON_PACIFIST_NON_DROID, 1.0, 0.44, 0.76666, Alignment.GOOD),
     generic_astromech(119, "R2-Q5", 314),
     generic_jedi(72, "Aayla Secura", 315, True),
     generic_jedi(73, "Plo Koon", 316, True),
@@ -866,36 +885,35 @@ ITEM_DATA: list[GenericItemData] = [
     _generic(175, "Purple Stud"),
 
     # "Extra Toggle" characters.
-    # Floats above the ground, preventing the last safe position from updating.
+    # Floats above the ground, with hover_height=0.25, which prevents the last safe position from updating.
     # Shoots short range blaster bolts that deal no damage to enemies, but can destroy objects and are affected by
     # Exploding Blaster Bolts (allowing dealing damage to enemies). The 0-damage blaster bolts will also aggro enemies.
-    # TODO: Find out what height of obstacle it can float over, guessing at least 0.15 for now.
-    _char(-1, "Training Remote", 19, CAN_SELF_DESTRUCT | CAN_AGGRAVATE_ENEMIES, 1.05, 0.15),
+    # todo: Find out what height of obstacle it can float over, guessing at least 0.15 for now.
+    # TODO: Find out what distance it can 'jump'. Since it cannot actually jump, and instead floats
+    _char(-1, "Training Remote", 19, CAN_SELF_DESTRUCT | CAN_AGGRAVATE_ENEMIES, 1.05, 0.25, 0.0, Alignment.NEUTRAL),
     generic_stormtrooper(-1, "Scout Trooper", 52),
-    # TODO: Check alignment and ability to jump
-    _char(-1, "Han Solo (frozen in carbonite)", 105, CharacterAbility.NONE, 0.75, 0.0, Alignment.GOOD),
-    _char(-1, "Womp Rat", 165, CharacterAbility.NONE, 1.8, 0.0, Alignment.PASSIVE),
-    _char(-1, "Droid 1", 174, BLASTER | CAN_SELF_DESTRUCT, 0.6, 0.0, Alignment.PASSIVE),
-    _char(-1, "Droid 2", 175, BLASTER | CAN_SELF_DESTRUCT, 0.6, 0.0, Alignment.PASSIVE),
-    _char(-1, "Droid 3", 176, BLASTER | CAN_SELF_DESTRUCT, 0.4, 0.0, Alignment.PASSIVE),
-    _char(-1, "Droid 4", 177, BLASTER | CAN_SELF_DESTRUCT, 0.6, 0.0, Alignment.PASSIVE),
-    _char(-1, "Mouse Droid", 44, CAN_SELF_DESTRUCT, 2.4, 0.0, Alignment.PASSIVE),
+    _char(-1, "Han Solo (frozen in carbonite)", 105, CharacterAbility.NONE, 0.75, 0.0, 0.0, Alignment.GOOD),
+    _char(-1, "Womp Rat", 165, CharacterAbility.NONE, 1.8, 0.0, 0.0, Alignment.PASSIVE),
+    _char(-1, "Droid 1", 174, BLASTER | CAN_SELF_DESTRUCT, 0.6, 0.0, 0.0, Alignment.PASSIVE),
+    _char(-1, "Droid 2", 175, BLASTER | CAN_SELF_DESTRUCT, 0.6, 0.0, 0.0, Alignment.PASSIVE),
+    _char(-1, "Droid 3", 176, BLASTER | CAN_SELF_DESTRUCT, 0.4, 0.0, 0.0, Alignment.PASSIVE),
+    _char(-1, "Droid 4", 177, BLASTER | CAN_SELF_DESTRUCT, 0.6, 0.0, 0.0, Alignment.PASSIVE),
+    _char(-1, "Mouse Droid", 44, CAN_SELF_DESTRUCT, 2.4, 0.0, 0.0, Alignment.PASSIVE),
     generic_rebel(-1, "Rebel Engineer", 224),
     generic_stormtrooper(-1, "AT-AT Driver", 228),
     # Explicitly marked as being able to jump with 0.44 height, but cannot actually jump in-game.
-    _char(-1, "Skeleton", 231, CAN_MELEE, 1.2, 0.0, Alignment.GOOD),
+    _char(-1, "Skeleton", 231, CAN_MELEE, 1.2, 0.0, 0.0, Alignment.GOOD),
     generic_stormtrooper(-1, "Imperial Engineer", 233),
-    # TODO: Check alignment
-    # TODO: Check jump height
-    _char(-1, "Buzz Droid", 294, CAN_SELF_DESTRUCT | CAN_MELEE, 1.2, 0.33, Alignment.GOOD),
+    # Note: It's melee attack is a regular melee attack, not a combo melee attack.
+    _char(-1, "Buzz Droid", 294, CAN_SELF_DESTRUCT | CAN_MELEE, 1.2, 0.0, 0.0, Alignment.EVIL),
 
     # Miscellaneous vehicles.
     # This is the vehicle present in the outside area of the Cantina. 'map' is the internal name for the Cantina.
-    _char(-1, "mapcar", 303, CharacterAbility.NONE, 2.0, 0.0, Alignment.GOOD),
+    _char(-1, "mapcar", 303, CharacterAbility.NONE, 2.0, 0.0, 0.0, Alignment.GOOD),
 
     _char(-1, "Super Gonk Droid", -1,
-          CAN_SELF_DESTRUCT | COMMON_CAN_JUMP_SLIGHTLY_HIGHER | CAN_JUMP_NORMAL_DISTANCE,
-          1.44, 0.53, Alignment.PASSIVE),
+          CAN_SELF_DESTRUCT | COMMON_CAN_JUMP_SLIGHTLY_HIGHER | CAN_JUMP_DISTANCE_0_69,
+          1.44, 0.53, 1.325, Alignment.PASSIVE),
 ]
 
 
@@ -937,6 +955,11 @@ PURCHASABLE_NON_POWER_BRICK_EXTRAS: tuple[NonPowerBrickExtraData, ...] = tuple(
 )
 CHARACTERS_AND_VEHICLES_BY_NAME: Mapping[str, GenericCharacterData] = {data.name: data for data in ITEM_DATA
                                                                        if isinstance(data, GenericCharacterData)}
+LOGIC_CONSIDERED_CHARACTERS = {
+    name: character for name, character in CHARACTERS_AND_VEHICLES_BY_NAME.items()
+    # todo: Mark unsendable, but event characters instead of hardcoding Super Gonk Droid like this.
+    if character.is_sendable or character.name == "Super Gonk Droid"
+}
 GENERIC_BY_NAME: Mapping[str, GenericItemData] = {data.name: data for data in ITEM_DATA if data.item_type == "Generic"}
 MINIKITS_BY_NAME: Mapping[str, MinikitItemData] = {data.name: data for data in ITEM_DATA
                                                    if isinstance(data, MinikitItemData)}
@@ -956,3 +979,24 @@ SUPER_GONK_DROID_ABILITIES_VALUE: int = (
     # Abilities provided by non-super Gonk Droid can be skipped.
     & ~CHARACTERS_AND_VEHICLES_BY_NAME["Gonk Droid"].abilities
 ).value
+
+
+def _make_single_jump_distance_relevant_characters_by_jump_distance() -> dict[float, list[str]]:
+    jump_distance_to_characters: dict[float, list[str]] = {}
+    for c in LOGIC_CONSIDERED_CHARACTERS.values():
+        if (HOVER | CAN_DOUBLE_JUMP) & c.abilities != 0:
+            # Double jump and hover characters are always considered to have max jump distance.
+            # Any need for logic beyond how far non-double-jump and non-hover characters can jump is handle separately.
+            continue
+        distance = c.single_jump_distance
+        if distance in jump_distance_to_characters:
+            jump_distance_to_characters[distance].append(c.name)
+        else:
+            jump_distance_to_characters[distance] = [c.name]
+
+    # Sort by jump distance and then return.
+    return dict(sorted(jump_distance_to_characters.items(), key=lambda t: t[0]))
+
+
+SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTER_NAMES = _make_single_jump_distance_relevant_characters_by_jump_distance()
+del _make_single_jump_distance_relevant_characters_by_jump_distance
