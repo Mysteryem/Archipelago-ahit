@@ -1,14 +1,29 @@
 import dataclasses
+from functools import reduce
+from operator import or_
 from typing import ClassVar, Iterable, TYPE_CHECKING
 from typing_extensions import override
 
 from BaseClasses import CollectionState
-from rule_builder.rules import Rule, TWorld, True_, OptionFilter, Filtered, HasAny, Has, HasFromListUnique, HasAll
 from rule_builder.field_resolvers import FieldResolver, resolve_field
+from rule_builder.options import OptionFilter
+from rule_builder.rules import (
+    False_,
+    Filtered,
+    Has,
+    HasAll,
+    HasAny,
+    HasFromListUnique,
+    Rule,
+    True_,
+    TWorld,
+    And,
+    Or,
+)
 
 from ...character_ability import CharacterAbility
 from ...constants import GAME_NAME
-from ...items import CHARACTERS_AND_VEHICLES_BY_NAME
+from ...items import LOGIC_CONSIDERED_CHARACTERS
 from ...options import ChapterUnlockRequirement, EpisodeUnlockRequirement
 
 
@@ -150,42 +165,132 @@ class HasAnyAbilities(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
 
 @dataclasses.dataclass
 class HasAbilityCombination(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
-    """A rule that checks if the player has any character with all the given abilities.
+    """A rule that checks if the player has any character with any of the given combinations of abilities.
 
-    This is an expensive, but rarely used rule for cases where it is not worth defining a new ability just for this
-    case."""
-    abilities: CharacterAbility | FieldResolver
+    Typically only a single ability combination will be needed, but multiple can be provided.
+
+    This is often an expensive rule, but is rarely used rule for cases where it is not worth defining a new ability just
+    for a specific use case."""
+    ability_combinations: tuple[CharacterAbility, ...] | FieldResolver
+
+    def __init__(self,
+                 *ability_combinations: CharacterAbility | FieldResolver,
+                 options: Iterable[OptionFilter] = (),
+                 filtered_resolution: bool = False
+                 ):
+        super().__init__(options=options, filtered_resolution=filtered_resolution)
+        found_resolver = False
+        found_abilities = False
+        for v in ability_combinations:
+            if isinstance(v, FieldResolver):
+                if found_resolver:
+                    raise ValueError("Only specify at most one FieldResolver")
+                found_resolver = True
+            if isinstance(v, CharacterAbility):
+                found_abilities = True
+        if found_abilities and found_resolver:
+            raise ValueError("Cannot specify abilities and field resolvers simultaneously.")
+
+        if found_resolver:
+            self.ability_combinations = ability_combinations[0]
+        else:
+            self.ability_combinations = ability_combinations
 
     @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
-        abilities = resolve_field(self.abilities, world, CharacterAbility)
+        abilities = resolve_field(self.ability_combinations, world, CharacterAbility)
 
         return self._make_rule(abilities).resolve(world)
 
     @staticmethod
-    def _make_rule(abilities: CharacterAbility) -> Rule:
-        # Remove abilities implied by another ability that is requested.
+    def simplify_contained_combinations(combinations: list[CharacterAbility]):
+        """
+        HasAbilityCombination(HIGH_JUMP | JEDI, HIGH_JUMP | JEDI | SITH)
+        can be reduced to HasAbilityCombination(HIGH_JUMP | JEDI)
+        :param combinations:
+        :return:
+        """
+        if len(combinations) <= 1:
+            # Nothing to do.
+            return combinations
+        simplified_combinations = []
+        while combinations:
+            combination = combinations.pop()
+            for other_combinations in (simplified_combinations, combinations):
+                for other_combination in other_combinations:
+                    if other_combination in combination:
+                        break
+                else:
+                    continue
+                # Propagate the inner break.
+                break
+            else:
+                # No inner break, so no other combination is present in `combination`
+                simplified_combinations.append(combination)
+        return simplified_combinations
+
+    @staticmethod
+    def _make_rule(*combinations: CharacterAbility) -> Rule:
+        if not combinations:
+            return False_()
+
+        simplified_combinations = HasAbilityCombination.simplify_contained_combinations(list(combinations))
+
+        # Remove abilities implied by another ability that is requested in that combination.
         # e.g. (JEDI | CAN_MELEE) can be reduced to just (JEDI)
-        simplified = abilities.simplify_combination()
-        if simplified.bit_count() == 1:
-            return HasAbility(simplified)
+        simplified_combinations = [combination.simplify_combination() for combination in simplified_combinations]
 
-        common_abilities = ~CharacterAbility.NONE
-        matching_characters = []
-        for character in CHARACTERS_AND_VEHICLES_BY_NAME.values():
-            # "Super Gonk Droid" is a collect override when "Gonk Droid" and "Super Gonk" are both collected.
-            if ((not character.is_sendable and character.name != "Super Gonk Droid")
-                    or simplified not in character.abilities):
-                continue
-            matching_characters.append(character)
-            common_abilities &= character.abilities
+        # Simplify contained combinations again.
+        simplified_combinations = HasAbilityCombination.simplify_contained_combinations(simplified_combinations)
 
-        if len(matching_characters) >= 8:
-            # If there are lots of characters that match this, check for having all the required abilities first
+        reduced_to_single_bit = []
+        still_multiple_bits = []
+        for combination in simplified_combinations:
+            if combination.bit_count() > 1:
+                still_multiple_bits.append(combination)
+            else:
+                reduced_to_single_bit.append(combination)
+
+        any_rules = []
+
+        if reduced_to_single_bit:
+            if len(reduced_to_single_bit) == 1:
+                any_rules.append(HasAbility(reduced_to_single_bit[0]))
+            else:
+                any_rules.append(HasAnyAbilities(reduce(or_, reduced_to_single_bit)))
+
+        if still_multiple_bits:
+            all_matching_characters: set[str] = set()
+            common_abilities_for_each_combination: list[CharacterAbility] = []
+            for combination in still_multiple_bits:
+                common_abilities = ~CharacterAbility.NONE
+                # Find all characters with this ability combination.
+                for character in LOGIC_CONSIDERED_CHARACTERS.values():
+                    if combination in character.abilities:
+                        # If there are some single bits to check for, then all characters with those single bits can be
+                        # ignored because that single bit would match before needing to check for the character being in
+                        # the state.
+                        if not reduced_to_single_bit or not any(single_bit for single_bit in reduced_to_single_bit):
+                            all_matching_characters.add(character.name)
+                            common_abilities &= character.abilities
+                if common_abilities is not ~CharacterAbility.NONE:
+                    common_abilities_for_each_combination.append(common_abilities)
+
+            characters_rule = HasAny(*all_matching_characters)
+
+            # If there are lots of characters that match this, check for having any of the common abilities of each
+            # set of characters that have one of the combinations of abilities.
+            # characters
             # because that is a faster check.
-            return HasAllAbilities(common_abilities) & HasAny(*matching_characters)
-        else:
-            return HasAny(*matching_characters)
+            if len(all_matching_characters) >= 8 and common_abilities_for_each_combination:
+                abilities_rules = []
+                for common_abilities_for_combination in common_abilities_for_each_combination:
+                    abilities_rules.append(HasAllAbilities(common_abilities_for_combination))
+                if abilities_rules:
+                    characters_rule = And(Or(*abilities_rules), characters_rule)
+
+            any_rules.append(characters_rule)
+        return Or(*any_rules)
 
 
 @dataclasses.dataclass
