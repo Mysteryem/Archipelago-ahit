@@ -267,7 +267,7 @@ RETAKE_THEED_PALACE = Chapter(
                         Or(
                             HasAbility(BLASTER),
                             Has("Super Jedi Slam"),
-                            CAN_SELF_DESTRUCT,
+                            CAN_USE_SELF_DESTRUCT,
                             HasAbility(WEAPON_EWOK) & HasAny("Super Ewok Catapult", "Exploding Blaster Bolts")
                         )
                     )
