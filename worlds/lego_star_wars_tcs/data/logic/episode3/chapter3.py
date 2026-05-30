@@ -1,4 +1,4 @@
-from rule_builder.rules import True_, Or, False_, CanReachRegion, And, Has, HasAll
+from rule_builder.rules import True_, Or, False_, And, Has, HasAll
 
 from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS as BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS,
@@ -8,7 +8,7 @@ from ..macros import (
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
-from ..types import minikit_data, ExitData, Chapter, LocationData
+from ..types import minikit_data, ExitData, ChapterHelper, LocationData
 
 from ....character_ability import *
 
@@ -26,6 +26,23 @@ R_THIRD_EXPLOSIVES_CLIFF = "Third Explosives Cliff"
 R_BRIDGE_AND_MINES_BUILDING = "Bridge And Mines Building"
 R_BRICK_COVERED_MINIKIT_ALCOVE = "Brick Covered Minikit Alcove"
 
+_helper = ChapterHelper(
+    name=NAME,
+    episode_number=3,
+    chapter_number=3,
+    start_region=R_CIRCULAR_PLATFORM,
+    start_level="grievous_a",
+    story_characters=(
+        "Commander Cody",
+        "Obi-Wan Kenobi (Episode III)",
+    ),
+    purchase_characters={
+        "General Grievous": 70_000,
+    },
+    extra_toggle_characters=(
+        "Buzz Droid",
+    ),
+)
 
 # This could be optimised better, but I want to use the original BASE_CAN_USE_SELF_DESTRUCT in the rule.
 CAN_USE_SELF_DESTRUCT = BASE_CAN_USE_SELF_DESTRUCT | HasAll("Self Destruct", "Extra Toggle")
@@ -73,7 +90,7 @@ CAN_EXPLODE_FIRST_EXPLOSIVES = CAN_HURT_GRIEVOUS.and_rule(
         normal=Or(
             HasAllAbilities(JEDI | BLASTER),
             # If you walk up to Grievous, the explosives explode.
-            CanReachRegion("General Grievous - First Explosives Section"),
+            _helper.can_reach_region(R_FIRST_EXPLOSIVES_SECTION),
         )
     )
 )
@@ -87,17 +104,17 @@ CAN_EXPLODE_SECOND_EXPLOSIVES = logic_options(
         CAN_EXPLODE_FIRST_EXPLOSIVES,
         HasAbility(JEDI),
         HasAbilityCombination(BLASTER | CAN_JUMP_HEIGHT_0_37),
-        CanReachRegion("General Grievous - Shoot Second Explosives Section"),
+        _helper.can_reach_region(R_SHOOT_SECOND_EXPLOSIVES_SECTION),
     ),
     normal=(
         And(
             CAN_EXPLODE_FIRST_EXPLOSIVES,
             Or(
                 # If you walk up to Grievous the second explosives explode.
-                CanReachRegion("General Grievous - Force Third Explosives Section"),
+                _helper.can_reach_region(R_FORCE_THIRD_EXPLOSIVES_SECTION),
                 And(
                     HasAbilityCombination(BLASTER | CAN_JUMP_HEIGHT_0_37),
-                    CanReachRegion("General Grievous - Shoot Second Explosives Section"),
+                    _helper.can_reach_region(R_SHOOT_SECOND_EXPLOSIVES_SECTION),
                 ),
             ),
         ),
@@ -106,10 +123,10 @@ CAN_EXPLODE_SECOND_EXPLOSIVES = logic_options(
         # Walking up the second explosives makes them explode even if the first explosives have not been destroyed and
         # Grievous is not at the second explosives yet. I am considering this a glitch, so skipping the first explosives
         # is requiring moderate logic.
-        CanReachRegion("General Grievous - Force Third Explosives Section"),
+        _helper.can_reach_region(R_FORCE_THIRD_EXPLOSIVES_SECTION),
         And(
             HasAbilityCombination(BLASTER | CAN_JUMP_HEIGHT_0_37),
-            CanReachRegion("General Grievous - Shoot Second Explosives Section"),
+            _helper.can_reach_region(R_SHOOT_SECOND_EXPLOSIVES_SECTION),
         ),
     ),
 )
@@ -122,13 +139,13 @@ CAN_EXPLODE_FIRST_TWO_EXPLOSIVES = CAN_EXPLODE_SECOND_EXPLOSIVES.and_rule(
 # The last explosives are not active until the first and second explosives have been exploded.
 CAN_EXPLODE_LAST_EXPLOSIVES = logic_options(
     # Destroy the wall, force the explosive into position, then shoot it.
-    base=HasAllAbilities(JEDI | BLASTER) & CanReachRegion("General Grievous - Force Third Explosives Section"),
+    base=HasAllAbilities(JEDI | BLASTER) & _helper.can_reach_region(R_FORCE_THIRD_EXPLOSIVES_SECTION),
     normal=And(
-        HasAbility(JEDI) & CanReachRegion("General Grievous - Force Third Explosives Section"),
+        HasAbility(JEDI) & _helper.can_reach_region(R_FORCE_THIRD_EXPLOSIVES_SECTION),
         Or(
             HasAbility(BLASTER),
             # Walking up to Grievous also makes the explosives explode instead of needing to shoot them.
-            CanReachRegion("General Grievous - Third Explosives Cliff")
+            _helper.can_reach_region(R_THIRD_EXPLOSIVES_CLIFF),
         ),
     ),
 ).and_rule(
@@ -144,22 +161,7 @@ CAN_EXPLODE_LAST_EXPLOSIVES = logic_options(
 # )
 
 
-GENERAL_GRIEVOUS = Chapter(
-    name=NAME,
-    episode_number=3,
-    chapter_number=3,
-    start_region=R_CIRCULAR_PLATFORM,
-    start_level="grievous_a",
-    story_characters=(
-        "Commander Cody",
-        "Obi-Wan Kenobi (Episode III)",
-    ),
-    purchase_characters={
-        "General Grievous": 70_000,
-    },
-    extra_toggle_characters=(
-        "Buzz Droid",
-    ),
+GENERAL_GRIEVOUS = _helper.make_chapter(
     regions={
         R_CIRCULAR_PLATFORM: (
             ExitData(
@@ -531,7 +533,7 @@ GENERAL_GRIEVOUS = Chapter(
                     And(
                         # R_FORCE_THIRD_EXPLOSIVES_SECTION also works for slam/explode, but if the player can reach
                         # there, they can also reach Third Explosives Section Gap Area
-                        CanReachRegion("General Grievous - Third Explosives Section Gap Area"),
+                        _helper.can_reach_region(R_THIRD_EXPLOSIVES_SECTION_GAP_AREA),
                         Or(
                             # Slam next to the bricks.
                             HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
@@ -545,7 +547,7 @@ GENERAL_GRIEVOUS = Chapter(
                     # Exploding also works from "General Grievous - Shoot Second Explosives Section".
                     CAN_USE_SELF_DESTRUCT,
                     And(
-                        CanReachRegion("General Grievous - Third Explosives Section Gap Area"),
+                        _helper.can_reach_region(R_THIRD_EXPLOSIVES_SECTION_GAP_AREA),
                         HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                     ),
                 ),
