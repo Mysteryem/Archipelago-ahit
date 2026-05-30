@@ -12,64 +12,83 @@ from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
 from ....character_ability import *
 
+NAME = "Secret Plans"
+
+R_SPAWN = "Spawn"
+R_FIRST_HALLWAY = "First Hallway"
+R_SECOND_HALLWAY = "Second Hallway"
+R_SITH_DOUBLE_SCORE_ZONE = "Sith Double Score Zone"
+R_GRAPPLE_ROOM = "Grapple Room"
+R_GRAPPLE_ROOM_TOP = "Grapple Room Top"
+R_VADER_EXPLOSIVES_HALLWAY = "Vader Explosives Hallway"
+R_SECOND_STORMTROOPER_BATTLE = "Second Stormtrooper Battle"
+R_SIDE_ACCESS_CORRIDOR = "Side Access Corridor"
+R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD = "Side Access Corridor Behind Force Field"
+R_SLIDING_BLOCKS_ROOM = "Sliding Blocks Room"
+R_ACCESS_CORRIDOR_BEFORE_R2_D2_AND_LEIA = "Access Corridor Before R2-D2 And Leia"
+R_R2_D2_AND_LEIA_ACCESS_CORRIDOR = "R2-D2 And Leia Access Corridor"
+R_CRANE_ROOM = "Crane Room"
+R_CAPTIVE_REBELS_HALLWAY = "Captive Rebels Hallway"
+R_ESCAPE_POD_CORRIDOR = "Escape Pod Corridor"
+
 
 SECRET_PLANS = Chapter(
-    name="Secret Plans",
+    name=NAME,
     episode_number=4,
     chapter_number=1,
-    start_region="Spawn",
+    start_region=R_SPAWN,
     start_level="blockade_runner_a",
     regions={
-        "Spawn": (
-            ExitData("First Hallway", HasAbility(CAN_BUILD_BRICKS), name="Build bricks to restore power"),
+        R_SPAWN: (
+            ExitData(R_FIRST_HALLWAY, HasAbility(CAN_BUILD_BRICKS), name="Build bricks to restore power"),
         ),
-        "First Hallway": (
-            ExitData("Second Hallway", HasAbility(CAN_PULL_LEVERS), name="Open lever door"),
+        R_FIRST_HALLWAY: (
+            ExitData(R_SECOND_HALLWAY, HasAbility(CAN_PULL_LEVERS), name="Open lever door"),
         ),
-        "Second Hallway": (
-            ExitData("Sith Double Score Zone", CAN_SITH_FORCE),
-            ExitData("Grapple Room", CAN_DAMAGE_AT_CLOSE_RANGE, new_level="blockade_runner_b"),
+        R_SECOND_HALLWAY: (
+            ExitData(R_SITH_DOUBLE_SCORE_ZONE, CAN_SITH_FORCE),
+            ExitData(R_GRAPPLE_ROOM, CAN_DAMAGE_AT_CLOSE_RANGE, new_level="blockade_runner_b"),
         ),
-        "Sith Double Score Zone": (),
-        "Grapple Room": (
+        R_SITH_DOUBLE_SCORE_ZONE: (),
+        R_GRAPPLE_ROOM: (
             # todo: triple jump logic
-            ExitData("Grapple Room Top", HasAnyAbilities(GRAPPLE | ASTROMECH_PANEL) | CAN_ORIGINAL_TRILOGY_HIGH_JUMP),
+            ExitData(R_GRAPPLE_ROOM_TOP, HasAnyAbilities(GRAPPLE | ASTROMECH_PANEL) | CAN_ORIGINAL_TRILOGY_HIGH_JUMP),
         ),
-        "Grapple Room Top": (
-            ExitData("Vader Explosives Hallway", HasAnyAbilities(CAN_BUILD_BRICKS | HOVER)),
+        R_GRAPPLE_ROOM_TOP: (
+            ExitData(R_VADER_EXPLOSIVES_HALLWAY, HasAnyAbilities(CAN_BUILD_BRICKS | HOVER)),
         ),
-        "Vader Explosives Hallway": (
-            ExitData("Second Stormtrooper Battle", HasAllAbilities(CAN_PULL_LEVERS | BLASTER)),
+        R_VADER_EXPLOSIVES_HALLWAY: (
+            ExitData(R_SECOND_STORMTROOPER_BATTLE, HasAllAbilities(CAN_PULL_LEVERS | BLASTER)),
         ),
-        "Second Stormtrooper Battle": (
-            ExitData("Side Access Corridor", HasAnyAbilities(IMPERIAL | BOUNTY_HUNTER)),
-            ExitData("Sliding Blocks Room", CAN_DAMAGE_AT_CLOSE_RANGE, new_level="blockade_runner_c"),
+        R_SECOND_STORMTROOPER_BATTLE: (
+            ExitData(R_SIDE_ACCESS_CORRIDOR, HasAnyAbilities(IMPERIAL | BOUNTY_HUNTER)),
+            ExitData(R_SLIDING_BLOCKS_ROOM, CAN_DAMAGE_AT_CLOSE_RANGE, new_level="blockade_runner_c"),
         ),
-        "Side Access Corridor": (
-            ExitData("Side Access Corridor Behind Force Field", HasAbility(PROTOCOL_PANEL)),
+        R_SIDE_ACCESS_CORRIDOR: (
+            ExitData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, HasAbility(PROTOCOL_PANEL)),
         ),
-        "Side Access Corridor Behind Force Field": (),
-        "Sliding Blocks Room": (
-            ExitData("Access Corridor Before R2-D2 And Leia", HasAbility(CAN_PUSH_OBJECTS) & CAN_DAMAGE_AT_CLOSE_RANGE),
+        R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD: (),
+        R_SLIDING_BLOCKS_ROOM: (
+            ExitData(R_ACCESS_CORRIDOR_BEFORE_R2_D2_AND_LEIA, HasAbility(CAN_PUSH_OBJECTS) & CAN_DAMAGE_AT_CLOSE_RANGE),
         ),
-        "Access Corridor Before R2-D2 And Leia": (
-            ExitData("R2-D2 And Leia Access Corridor", HasAbility(PROTOCOL_PANEL)),
+        R_ACCESS_CORRIDOR_BEFORE_R2_D2_AND_LEIA: (
+            ExitData(R_R2_D2_AND_LEIA_ACCESS_CORRIDOR, HasAbility(PROTOCOL_PANEL)),
         ),
-        "R2-D2 And Leia Access Corridor": (
-            ExitData("Crane Room", HasAbility(ASTROMECH_PANEL)),
+        R_R2_D2_AND_LEIA_ACCESS_CORRIDOR: (
+            ExitData(R_CRANE_ROOM, HasAbility(ASTROMECH_PANEL)),
         ),
-        "Crane Room": (
+        R_CRANE_ROOM: (
             # todo: There are lots of alternative rules for this entrance.
             ExitData(
-                "Captive Rebels Hallway",
+                R_CAPTIVE_REBELS_HALLWAY,
                 HasAllAbilities(CAN_RIDE_VEHICLES | PROTOCOL_PANEL),
                 new_level="blockaderunner_d"
             ),
         ),
-        "Captive Rebels Hallway": (
-            ExitData("Escape Pod Corridor", CAN_DAMAGE_AT_CLOSE_RANGE),
+        R_CAPTIVE_REBELS_HALLWAY: (
+            ExitData(R_ESCAPE_POD_CORRIDOR, CAN_DAMAGE_AT_CLOSE_RANGE),
         ),
-        "Escape Pod Corridor": (
+        R_ESCAPE_POD_CORRIDOR: (
             # No locations defined currently.
             # ExitData("Vent Imperials Into Space Room", HasAbility(IMPERIAL)),
             ExitData(
@@ -81,11 +100,11 @@ SECRET_PLANS = Chapter(
     },
     minikits={
         "Dark Side Double Score Zone Minikit": minikit_data(
-            "Sith Double Score Zone",
+            R_SITH_DOUBLE_SCORE_ZONE,
             pickup_name="m_pup1",
         ),
         "Grapple Room Beneath Floor Minikit": minikit_data(
-            "Grapple Room",
+            R_GRAPPLE_ROOM,
             logic_options(
                 # Expect getting back out.
                 # todo: If the elevator is active, does it go down here?
@@ -95,12 +114,12 @@ SECRET_PLANS = Chapter(
             pickup_name="mk_0",
         ),
         "Grapple Room High Minikit": minikit_data(
-            "Grapple Room Top",
+            R_GRAPPLE_ROOM_TOP,
             HasAbility(JEDI),
             pickup_name="m_pup2",
         ),
         "Build Door Minikit": minikit_data(
-            "Side Access Corridor",
+            R_SIDE_ACCESS_CORRIDOR,
             HasAbility(CAN_BUILD_BRICKS),
             pickup_name="mk_1",
         ),
@@ -108,7 +127,7 @@ SECRET_PLANS = Chapter(
             # Physically, this minikit spawns in Side Access Corridor.
             # Logically this is behind the force field because one of the tiles is there, and to access that tile means
             # you have access to where the minikit spawns.
-            "Side Access Corridor Behind Force Field",
+            R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD,
             CAN_DAMAGE_AT_CLOSE_RANGE,
             pickup_names=(
                 "m_pup1",
@@ -117,17 +136,17 @@ SECRET_PLANS = Chapter(
             ),
         ),
         "Sliding Blocks Room Minikit": minikit_data(
-            "Sliding Blocks Room",
+            R_SLIDING_BLOCKS_ROOM,
             HasAbility(JEDI),
             pickup_name="mk_0",
         ),
         "Secret Wall Compartment Minikit": minikit_data(
-            "R2-D2 And Leia Access Corridor",
+            R_R2_D2_AND_LEIA_ACCESS_CORRIDOR,
             HasAbility(JEDI),
             pickup_name="pup1",
         ),
         "Crane Room Minikit": minikit_data(
-            "Crane Room",
+            R_CRANE_ROOM,
             # The ridesanity entrances won't exist unless Ridesanity is enabled, so the access rules from them are
             # copied here.
             And(
@@ -141,7 +160,7 @@ SECRET_PLANS = Chapter(
             pickup_name="m_pup1",
         ),
         "Three Flowers Minikit": MinikitData(
-            "Escape Pod Corridor",
+            R_ESCAPE_POD_CORRIDOR,
             And(
                 CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 # CanReachRegion("Secret Plans - Vent Imperials Into Space Room"),
@@ -154,15 +173,15 @@ SECRET_PLANS = Chapter(
             ),
         ),
         "Pull The Plug Minikit": minikit_data(
-            "Escape Pod Corridor",
+            R_ESCAPE_POD_CORRIDOR,
             CAN_SITH_FORCE & HasAbility(ASTROMECH_PANEL),
             pickup_name="m_pup1",
         ),
     },
-    power_brick=LocationData("Side Access Corridor Behind Force Field", HasAbility(JEDI)),
+    power_brick=LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, HasAbility(JEDI)),
     ridables={
-        "Moon Car": LocationData("Side Access Corridor",
+        "Moon Car": LocationData(R_SIDE_ACCESS_CORRIDOR,
                                  HasAbility(CAN_BUILD_BRICKS) & CAN_DESTROY_CLOSE_SILVER_BRICKS),
-        "Town Car": LocationData("Side Access Corridor Behind Force Field", HasAbility(JEDI)),
+        "Town Car": LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, HasAbility(JEDI)),
     },
 )

@@ -12,6 +12,21 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 from ....character_ability import *
 from ....items import LOGIC_CONSIDERED_CHARACTERS, VehicleData
 
+NAME = "Darth Vader"
+
+R_COLLAPSING_LAVA_HALLWAY = "Collapsing Lava Hallway"
+R_END_OF_COLLAPSING_LAVA_HALLWAY = "End Of Collapsing Lava Hallway"
+R_TIMED_ROOM = "Timed Room"
+R_POWER_BRICK_CONFERENCE_ROOM = "Power Brick Conference Room"
+R_COLLAPSING_EXTERIOR_SPAWN = "Collapsing Exterior Spawn"
+R_COLLAPSING_EXTERIOR_REVOLVING_PLATFORM = "Collapsing Exterior Revolving Platform"
+R_COLLAPSING_EXTERIOR_AFTER_REVOLVING_PLATFORM = "Collapsing Exterior After Revolving Platform"
+R_COLLAPSING_EXTERIOR_END = "Collapsing Exterior End"
+R_LAVA_PLATFORMING_START = "Lava Platforming Start"
+R_LAVA_PLATFORMING_SINKING_PLATFORMS_SECTION = "Lava Platforming Sinking Platforms Section"
+R_LAVA_PLATFORMING_FINAL_PLATFORM_VERSUS_OTHER_PLAYER = "Lava Platforming Final Platform Versus Other Player"
+R_LAVA_PLATFORMING_FAR_MINIKIT_PLATFORM = "Lava Platforming Far Minikit Platform"
+
 ANY_DOUBLE_JUMP_EXCEPT_YODA = HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | HIGH_JUMP)
 # More expensive and makes fewer assumptions but should be identical.
 ANY_DOUBLE_JUMP_EXCEPT_YODA_ER = HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, "Yoda", "Yoda (Ghost)")
@@ -49,15 +64,15 @@ del _make_any_character_except_force_ghost
 
 
 DARTH_VADER = Chapter(
-    name="Darth Vader",
+    name=NAME,
     episode_number=3,
     chapter_number=6,
-    start_region="Collapsing Lava Hallway",
+    start_region=R_COLLAPSING_LAVA_HALLWAY,
     start_level="vader_a",
     regions={
-        "Collapsing Lava Hallway": (
+        R_COLLAPSING_LAVA_HALLWAY: (
             ExitData(
-                "End Of Collapsing Lava Hallway",
+                R_END_OF_COLLAPSING_LAVA_HALLWAY,
                 logic_options(
                     base=ANY_DOUBLE_JUMP_EXCEPT_YODA,
                     # Optimised out the RUN_SPEED_1_18_OR_HIGHER because all characters that have jump_distance>=0.84
@@ -99,24 +114,24 @@ DARTH_VADER = Chapter(
                 ),
             ),
         ),
-        "End Of Collapsing Lava Hallway": (
-            ExitData("Timed Room"),
+        R_END_OF_COLLAPSING_LAVA_HALLWAY: (
+            ExitData(R_TIMED_ROOM),
         ),
-        "Timed Room": (
+        R_TIMED_ROOM: (
             ExitData(
-                "Power Brick Conference Room",
+                R_POWER_BRICK_CONFERENCE_ROOM,
                 HasAbility(ASTROMECH_PANEL),
             ),
             ExitData(
-                "Collapsing Exterior Spawn",
+                R_COLLAPSING_EXTERIOR_SPAWN,
                 HasAbility(JEDI),
                 new_level="vader_b",
             ),
         ),
-        "Power Brick Conference Room": (),
-        "Collapsing Exterior Spawn": (
+        R_POWER_BRICK_CONFERENCE_ROOM: (),
+        R_COLLAPSING_EXTERIOR_SPAWN: (
             ExitData(
-                "Collapsing Exterior Revolving Platform",
+                R_COLLAPSING_EXTERIOR_REVOLVING_PLATFORM,
                 # Jedi is needed to reach here.
                 True_(),
                 er_rule=logic_options(
@@ -133,7 +148,7 @@ DARTH_VADER = Chapter(
                 ),
             ),
             ExitData(
-                "Collapsing Exterior After Revolving Platform",
+                R_COLLAPSING_EXTERIOR_AFTER_REVOLVING_PLATFORM,
                 # Logically irrelevant since a Jedi is required to reach here.
                 False_(),
                 er_rule=logic_options(
@@ -144,7 +159,7 @@ DARTH_VADER = Chapter(
                 ),
             ),
             ExitData(
-                "Collapsing Exterior End",
+                R_COLLAPSING_EXTERIOR_END,
                 # Logically irrelevant since a Jedi is required to reach here.
                 False_(),
                 er_rule=logic_options(
@@ -156,9 +171,9 @@ DARTH_VADER = Chapter(
                 ),
             ),
         ),
-        "Collapsing Exterior Revolving Platform": (
+        R_COLLAPSING_EXTERIOR_REVOLVING_PLATFORM: (
             ExitData(
-                "Collapsing Exterior After Revolving Platform",
+                R_COLLAPSING_EXTERIOR_AFTER_REVOLVING_PLATFORM,
                 # Jedi is needed to reach here.
                 True_(),
                 er_rule=logic_options(
@@ -169,9 +184,9 @@ DARTH_VADER = Chapter(
                 ),
             ),
         ),
-        "Collapsing Exterior After Revolving Platform": (
+        R_COLLAPSING_EXTERIOR_AFTER_REVOLVING_PLATFORM: (
             ExitData(
-                "Collapsing Exterior End",
+                R_COLLAPSING_EXTERIOR_END,
                 # Jedi is needed to reach here.
                 True_(),
                 # todo: The DROID and GAS_IMMUNE abilities are not implemented currently because they are not currently
@@ -186,33 +201,33 @@ DARTH_VADER = Chapter(
                 # )
             ),
         ),
-        "Collapsing Exterior End": (
+        R_COLLAPSING_EXTERIOR_END: (
             ExitData(
-                "Lava Platforming Start",
+                R_LAVA_PLATFORMING_START,
                 True_(),
                 # Strictly required, otherwise the trigger to load the next level does not happen.
                 er_rule=HasAbility(JEDI),
                 new_level="vader_c",
             ),
         ),
-        "Lava Platforming Start": (
+        R_LAVA_PLATFORMING_START: (
             ExitData(
-                "Lava Platforming Sinking Platforms Section",
+                R_LAVA_PLATFORMING_SINKING_PLATFORMS_SECTION,
                 True_(),
                 er_rule=HasAbility(CAN_BARELY_JUMP),
             ),
         ),
-        "Lava Platforming Sinking Platforms Section": (
+        R_LAVA_PLATFORMING_SINKING_PLATFORMS_SECTION: (
             ExitData(
-                "Lava Platforming Final Platform Versus Other Player",
+                R_LAVA_PLATFORMING_FINAL_PLATFORM_VERSUS_OTHER_PLAYER,
                 True_(),
                 # The jump from the last platform to the tower is quite high.
                 # todo: Maybe Gamorrean guard can make this jump?
                 er_rule=HasAbility(CAN_DOUBLE_JUMP),
             ),
             ExitData(
-                "Lava Platforming Far Minikit Platform",
-                # Not logically relevant because getting to "Lava Platforming Far Minikit Platform" from the final
+                R_LAVA_PLATFORMING_FAR_MINIKIT_PLATFORM,
+                # Not logically relevant because getting to R_LAVA_PLATFORMING_FAR_MINIKIT_PLATFORM from the final
                 # area is easier (can use HOVER instead of JETPACK), and the final area is always accessible because a
                 # Jedi is needed to reach the start of the Lava Platforming.
                 False_(),
@@ -225,7 +240,7 @@ DARTH_VADER = Chapter(
                 ),
             ),
         ),
-        "Lava Platforming Final Platform Versus Other Player": (
+        R_LAVA_PLATFORMING_FINAL_PLATFORM_VERSUS_OTHER_PLAYER: (
             ExitData(
                 "Chapter Completion",
                 # A Jedi is needed to reach this point and the AI exclusively swaps to Jedi, but Ghost Jedi are
@@ -256,7 +271,7 @@ DARTH_VADER = Chapter(
                 new_level="vader_status",
             ),
             ExitData(
-                "Lava Platforming Far Minikit Platform",
+                R_LAVA_PLATFORMING_FAR_MINIKIT_PLATFORM,
                 logic_options(
                     base=HasAbility(HOVER),
                     normal=Or(
@@ -283,24 +298,24 @@ DARTH_VADER = Chapter(
                 ),
             ),
         ),
-        "Lava Platforming Far Minikit Platform": (),
+        R_LAVA_PLATFORMING_FAR_MINIKIT_PLATFORM: (),
     },
     minikits={
         "Collapsing Hallway Minikit": minikit_data(
-            "End Of Collapsing Lava Hallway",
+            R_END_OF_COLLAPSING_LAVA_HALLWAY,
             pickup_name="mk_0",
         ),
         "Timed Room Left Screen Minikit": minikit_data(
-            "Timed Room",
+            R_TIMED_ROOM,
             HasAbility(JEDI),
             pickup_name="m_pup1",
         ),
         "Timed Room Far Minikit": minikit_data(
-            "Timed Room",
+            R_TIMED_ROOM,
             pickup_name="mk_2",
         ),
         "Timed Room Sealed Minikit": minikit_data(
-            "Timed Room",
+            R_TIMED_ROOM,
             # TODO: Check is Self Destruct is allowed here (I suspect not)
             # Non-combo type attacks work fine here.
             CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT,
@@ -308,7 +323,7 @@ DARTH_VADER = Chapter(
             pickup_name="mk_3",
         ),
         "Timed Room Grate Minikit": minikit_data(
-            "Timed Room",
+            R_TIMED_ROOM,
             logic_options(
                 base=HasAbility(JEDI),
                 # A character that can jump, even if just barely, is required to reach here, so
@@ -331,15 +346,15 @@ DARTH_VADER = Chapter(
             pickup_name="mk_1",
         ),
         "Collapsing Exterior Spawn Minikit": minikit_data(
-            "Collapsing Exterior Spawn",
+            R_COLLAPSING_EXTERIOR_SPAWN,
             pickup_name="mk_0",
         ),
         "Collapsing Exterior Revolving Platform Minikit": minikit_data(
-            "Collapsing Exterior Revolving Platform",
+            R_COLLAPSING_EXTERIOR_REVOLVING_PLATFORM,
             pickup_name="mk_1",
         ),
         "Lava Platforming Right Minikit": minikit_data(
-            "Lava Platforming Sinking Platforms Section",
+            R_LAVA_PLATFORMING_SINKING_PLATFORMS_SECTION,
             True_(),
             er_rule=logic_options(
                 base=HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
@@ -352,7 +367,7 @@ DARTH_VADER = Chapter(
             pickup_name="mk_0",
         ),
         "Lava Platforming Left Minikit": minikit_data(
-            "Lava Platforming Sinking Platforms Section",
+            R_LAVA_PLATFORMING_SINKING_PLATFORMS_SECTION,
             True_(),
             er_rule=logic_options(
                 base=HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
@@ -365,12 +380,12 @@ DARTH_VADER = Chapter(
             pickup_name="mk_2",
         ),
         "Lava Platforming Isolated Minikit": minikit_data(
-            "Lava Platforming Far Minikit Platform",
+            R_LAVA_PLATFORMING_FAR_MINIKIT_PLATFORM,
             pickup_name="mk_1",
         ),
     },
     power_brick=LocationData(
-        "Power Brick Conference Room",
+        R_POWER_BRICK_CONFERENCE_ROOM,
         True_(),
         er_rule=CAN_BARELY_JUMP,
     )

@@ -13,6 +13,14 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Ruin Of The Jedi"
+
+R_OUTSIDE_TEMPLE = "Outside Temple"
+R_INSIDE_TEMPLE_SPAWN = "Inside Temple Spawn"
+R_CLONE_PIZZA_PARTY = "Clone Pizza Party"
+R_ARCHIVES = "Archives"
+R_HOLOGRAM_ROOM = "Hologram Room"
+
 
 CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
     # Use the Training Remote, to either Self Destruct, or shoot exploding bolts.
@@ -22,10 +30,10 @@ CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
 
 
 RUIN_OF_THE_JEDI = Chapter(
-    name="Ruin Of The Jedi",
+    name=NAME,
     episode_number=3,
     chapter_number=5,
-    start_region="Outside Temple",
+    start_region=R_OUTSIDE_TEMPLE,
     start_level="temple_a",
     # There are enemies at the start, so have the base logic expect fighting them.
     extra_chapter_entrance_rules=logic_options(
@@ -45,16 +53,16 @@ RUIN_OF_THE_JEDI = Chapter(
         "Training Remote",
     ),
     regions={
-        "Outside Temple": (
+        R_OUTSIDE_TEMPLE: (
             ExitData(
-                "Inside Temple Spawn",
+                R_INSIDE_TEMPLE_SPAWN,
                 HasAbility(JEDI),
                 new_level="temple_b",
             ),
         ),
-        "Inside Temple Spawn": (
+        R_INSIDE_TEMPLE_SPAWN: (
             ExitData(
-                "Clone Pizza Party",
+                R_CLONE_PIZZA_PARTY,
                 HasAbility(IMPERIAL),
                 er_rule=logic_options(
                     # Force the red bricks into stairs.
@@ -64,23 +72,23 @@ RUIN_OF_THE_JEDI = Chapter(
                 ).and_rule(HasAbility(IMPERIAL)),
             ),
             ExitData(
-                "Archives",
+                R_ARCHIVES,
                 True_(),
                 er_rule=HasAbility(JEDI),
                 new_level="temple_c",
             ),
         ),
-        "Clone Pizza Party": (),
-        "Archives": (
+        R_CLONE_PIZZA_PARTY: (),
+        R_ARCHIVES: (
             ExitData(
-                "Hologram Room",
+                R_HOLOGRAM_ROOM,
                 True_(),
                 # Activating all 3 switches on the right only needs a Jedi.
                 # There is also a drop-in warp to get behind the arm blocking the door, that hard logic could do.
                 er_rule=HasAbility(JEDI),
             ),
         ),
-        "Hologram Room": (
+        R_HOLOGRAM_ROOM: (
             ExitData(
                 "Chapter Completion",
                 True_(),
@@ -92,11 +100,11 @@ RUIN_OF_THE_JEDI = Chapter(
     },
     minikits={
         "Outside Temple Minikit On Ground": minikit_data(
-            "Outside Temple",
+            R_OUTSIDE_TEMPLE,
             pickup_name="mk_0",
         ),
         "Outside Temple High Minikit": minikit_data(
-            "Outside Temple",
+            R_OUTSIDE_TEMPLE,
             logic_options(
                 # Force the platforms, then high jump up.
                 base=HasAllAbilities(JEDI | HIGH_JUMP),
@@ -107,7 +115,7 @@ RUIN_OF_THE_JEDI = Chapter(
             pickup_name="mk_1",
         ),
         "Minikit Above Temple Entrance": minikit_data(
-            "Outside Temple",
+            R_OUTSIDE_TEMPLE,
             logic_options(
                 base=HasAllAbilities(BOUNTY_HUNTER | SITH),
                 normal=And(
@@ -129,19 +137,19 @@ RUIN_OF_THE_JEDI = Chapter(
             pickup_name="m_pup1"
         ),
         "Pizza Party Minikit": minikit_data(
-            "Clone Pizza Party",
+            R_CLONE_PIZZA_PARTY,
             True_(),
             er_rule=HasAbility(CAN_BARELY_JUMP),
             pickup_name="mk_2",
         ),
         "Council Chamber Minikit": minikit_data(
-            "Inside Temple Spawn",
+            R_INSIDE_TEMPLE_SPAWN,
             # Stack the chairs and then double jump up to the minikit.
             HasAbility(JEDI),
             pickup_name="mk_1",
         ),
         "Minikit Floating Near Council Chamber": minikit_data(
-            "Inside Temple Spawn",
+            R_INSIDE_TEMPLE_SPAWN,
             logic_options(
                 base=HasAbility(HOVER),
                 normal=True_(),
@@ -168,7 +176,7 @@ RUIN_OF_THE_JEDI = Chapter(
             pickup_name="mk_0",
         ),
         "Archives Right Side Right Lever Minikit": minikit_data(
-            "Archives",
+            R_ARCHIVES,
             logic_options(
                 base=HasAbility(HIGH_JUMP),
                 moderate=True_(),
@@ -180,13 +188,13 @@ RUIN_OF_THE_JEDI = Chapter(
             pickup_name="mk_1",
         ),
         "Archives Right Side Left Lever Minikit": minikit_data(
-            "Archives",
+            R_ARCHIVES,
             True_(),
             er_rule=HasAbility(JEDI),
             pickup_name="mk_0"
         ),
         "Archives Left Side Behind Force Field Minikit": minikit_data(
-            "Archives",
+            R_ARCHIVES,
             logic_options(
                 base=HasAllAbilities(HIGH_JUMP | PROTOCOL_PANEL),
                 normal=HasAbility(HIGH_JUMP),
@@ -208,7 +216,7 @@ RUIN_OF_THE_JEDI = Chapter(
             pickup_name="mk_2"
         ),
         "Hologram Room Minikit": minikit_data(
-            "Hologram Room",
+            R_HOLOGRAM_ROOM,
             logic_options(
                 base=CAN_DESTROY_CLOSE_SILVER_BRICKS & CAN_SITH_FORCE,
                 normal=And(
@@ -229,7 +237,7 @@ RUIN_OF_THE_JEDI = Chapter(
         )
     },
     power_brick=LocationData(
-        "Archives",
+        R_ARCHIVES,
         logic_options(
             base=HasAllAbilities(HIGH_JUMP | PROTOCOL_PANEL),
             normal=HasAbility(HIGH_JUMP),

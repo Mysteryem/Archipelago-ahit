@@ -9,8 +9,15 @@ from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
 from ....character_ability import *
 
+NAME = "Bounty Hunter Pursuit"
+
+R_SPAWN = "Spawn"
+R_FIRST_FORCEFIELD_TRAP = "First Forcefield Trap"
+R_AFTER_FIRST_FORCEFIELD_TRAP = "After First Forcefield Trap"
+R_SECOND_FORCEFIELD_TRAP = "Second Forcefield Trap"
+
 BOUNTY_HUNTER_PURSUIT = Chapter(
-    name="Bounty Hunter Pursuit",
+    name=NAME,
     episode_number=2,
     chapter_number=1,
     story_characters=(
@@ -20,20 +27,20 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
         "Zam Wesell": 27_500,
         "Dexter Jettster": 10_000,
     },
-    start_region="Spawn",
+    start_region=R_SPAWN,
     start_level="pursuit_a",
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
-        "Spawn": (
-            ExitData("First Forcefield Trap", new_level="pursuit_b"),
+        R_SPAWN: (
+            ExitData(R_FIRST_FORCEFIELD_TRAP, new_level="pursuit_b"),
         ),
-        "First Forcefield Trap": (
-            ExitData("After First Forcefield Trap", new_level="pursuit_c"),
+        R_FIRST_FORCEFIELD_TRAP: (
+            ExitData(R_AFTER_FIRST_FORCEFIELD_TRAP, new_level="pursuit_c"),
         ),
-        "After First Forcefield Trap": (
-            ExitData("Second Forcefield Trap", new_level="pursuit_d"),
+        R_AFTER_FIRST_FORCEFIELD_TRAP: (
+            ExitData(R_SECOND_FORCEFIELD_TRAP, new_level="pursuit_d"),
         ),
-        "Second Forcefield Trap": (
+        R_SECOND_FORCEFIELD_TRAP: (
             # Logically, pursuit_e is skipped because that is just the boss battle itself.
             ExitData(
                 "Chapter Completion",
@@ -44,7 +51,7 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
     },
     minikits={
         "Destroy First Turrets Minikit": MinikitData(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=HasAbility(VEHICLE_BLASTER),
                 normal=CAN_SHOOT_ALLOW_TORPEDOES,
@@ -52,13 +59,13 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
             pickup_names=("TKIT1", "TKIT2", "TKIT3", "TKIT4", "TKIT5")
         ),
         "Torpedo Spires Minikit": MinikitData(
-            "Spawn",
+            R_SPAWN,
             # These are awful to target. It would be nice to require Infinite Torpedos [sic] on the lowest logic
             # difficulty, but the lowest logic difficulty specifically avoids including Extras in logic.
             pickup_names=("SPIRES1", "SPIRES2", "SPIRES3", "SPIRES4", "SPIRES5")
         ),
         "Traffic Light Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=HasAbility(VEHICLE_BLASTER),
                 normal=CAN_SHOOT_ALLOW_TORPEDOES,
@@ -66,12 +73,12 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
             pickup_name="JJ_KIT",
         ),
         "First TIE Gate Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             HasAbility(VEHICLE_TIE),
             pickup_name="MINTIE"
         ),
         "Cylinder Advertisements Minikit": MinikitData(
-            "After First Forcefield Trap",
+            R_AFTER_FIRST_FORCEFIELD_TRAP,
             # Some of these objects are particularly difficult to target with torpedoes, potentially needing a direct
             # shot in one case, so normal logic does not consider using torpedoes, and moderate logic always expects
             # Infinite Torpedos [sic] if using torpedoes.
@@ -82,14 +89,14 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
                 hard=CAN_SHOOT_ALLOW_TORPEDOES,
             ),
             pickup_names=(
-                # In "Spawn".
+                # In R_SPAWN.
                 "m_1A",
                 "m_1",
                 "m_2",
                 "m_3",
                 "m_4",
                 "m_5",
-                # In "After First Forcefield Trap".
+                # In R_AFTER_FIRST_FORCEFIELD_TRAP.
                 "m_15",
                 "m_14",
                 "m_13",
@@ -97,23 +104,23 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
             )
         ),
         "First Forcefield Trap Minikit": minikit_data(
-            "First Forcefield Trap",
+            R_FIRST_FORCEFIELD_TRAP,
             HasAbility(VEHICLE_BLASTER),
             pickup_name="mK",
         ),
         "Second TIE Gate Minikit": minikit_data(
-            "After First Forcefield Trap",
+            R_AFTER_FIRST_FORCEFIELD_TRAP,
             HasAbility(VEHICLE_TIE),
             pickup_name="TIEMIN",
         ),
         "Triple Triangle Sign Minikit": minikit_data(
-            "After First Forcefield Trap",
+            R_AFTER_FIRST_FORCEFIELD_TRAP,
             # Cannot be hit with torpedoes.
             HasAbility(VEHICLE_BLASTER),
             pickup_name="TRI_KIT",
         ),
         "Destroy Second Turrets Minikit": MinikitData(
-            "After First Forcefield Trap",
+            R_AFTER_FIRST_FORCEFIELD_TRAP,
             logic_options(
                 base=HasAbility(VEHICLE_BLASTER),
                 normal=CAN_SHOOT_ALLOW_TORPEDOES,
@@ -121,12 +128,12 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
             pickup_names=("TKIT1", "TKIT2", "TKIT3", "TKIT4", "TKIT5")
         ),
         "Second Forcefield Trap Minikit": minikit_data(
-            "Second Forcefield Trap",
+            R_SECOND_FORCEFIELD_TRAP,
             HasAbility(VEHICLE_BLASTER),
             pickup_name="mK1",
         )
     },
-    power_brick=LocationData("After First Forcefield Trap", HasAbility(VEHICLE_BLASTER))
+    power_brick=LocationData(R_AFTER_FIRST_FORCEFIELD_TRAP, HasAbility(VEHICLE_BLASTER))
 )
 
 # This is the only Minikit in the entire game that is split across multiple levels.

@@ -3,8 +3,14 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 from ..option_filters import logic_options
 from ....character_ability import IS_A_VEHICLE, VEHICLE_BLASTER
 
+NAME = "Battle Over Coruscant"
+
+R_SPACE_BATTLE_SPAWN = "Space Battle Spawn"
+R_AFTER_FIRST_DESTROYABLE_SHIP = "After First Destroyable Ship"
+R_AFTER_SECOND_DESTROYABLE_SHIP = "After Second Destroyable Ship"
+
 BATTLE_OVER_CORUSCANT = Chapter(
-    name="Battle Over Coruscant",
+    name=NAME,
     episode_number=3,
     chapter_number=1,
     story_characters=(
@@ -22,7 +28,7 @@ BATTLE_OVER_CORUSCANT = Chapter(
         # Interestingly, it can use the Self Destruct extra, but I could not find a use for this.
         "Buzz Droid",
     ),
-    start_region="Space Battle Spawn",
+    start_region=R_SPACE_BATTLE_SPAWN,
     start_level="dogfight_a",
     extra_chapter_entrance_rules=logic_options(
         # In base logic, expect a blaster vehicle to fight back at the start.
@@ -31,12 +37,12 @@ BATTLE_OVER_CORUSCANT = Chapter(
         normal=HasAbility(IS_A_VEHICLE),
     ),
     regions={
-        "Space Battle Spawn": (
-            ExitData("After First Destroyable Ship", HasAbility(VEHICLE_BLASTER)),
+        R_SPACE_BATTLE_SPAWN: (
+            ExitData(R_AFTER_FIRST_DESTROYABLE_SHIP, HasAbility(VEHICLE_BLASTER)),
         ),
-        "After First Destroyable Ship": (
+        R_AFTER_FIRST_DESTROYABLE_SHIP: (
             ExitData(
-                "After Second Destroyable Ship",
+                R_AFTER_SECOND_DESTROYABLE_SHIP,
                 logic_options(
                     # Slave 1 just barely fits through the ship later in the level. To reduce confusion with newer
                     # players, and to potentially help with achieving True Jedi, any vehicle other than Slave 1 is
@@ -46,51 +52,51 @@ BATTLE_OVER_CORUSCANT = Chapter(
                 ),
             ),
         ),
-        "After Second Destroyable Ship": (
+        R_AFTER_SECOND_DESTROYABLE_SHIP: (
             ExitData("Chapter Completion", new_level="dogfight_status"),
         ),
     },
     minikits={
         "Minikit 1": minikit_data(
-            "Space Battle Spawn",
+            R_SPACE_BATTLE_SPAWN,
             pickup_name="m_pup1"
         ),
         "Minikit 2": minikit_data(
-            "Space Battle Spawn",
+            R_SPACE_BATTLE_SPAWN,
             pickup_name="m_pup2"
         ),
         "Minikit 3": minikit_data(
-            "After First Destroyable Ship",
+            R_AFTER_FIRST_DESTROYABLE_SHIP,
             pickup_name="m_pup3"
         ),
         "Minikit 4": minikit_data(
-            "After First Destroyable Ship",
+            R_AFTER_FIRST_DESTROYABLE_SHIP,
             pickup_name="m_pup4"
         ),
         "Minikit 5": minikit_data(
-            "After First Destroyable Ship",
+            R_AFTER_FIRST_DESTROYABLE_SHIP,
             pickup_name="m_pup5"
         ),
         "Minikit 6": minikit_data(
-            "After First Destroyable Ship",
+            R_AFTER_FIRST_DESTROYABLE_SHIP,
             pickup_name="m_pup6"
         ),
         "Minikit 7": minikit_data(
-            "After First Destroyable Ship",
+            R_AFTER_FIRST_DESTROYABLE_SHIP,
             pickup_name="m_pup7"
         ),
         "Minikit 8": minikit_data(
-            "After Second Destroyable Ship",
+            R_AFTER_SECOND_DESTROYABLE_SHIP,
             pickup_name="m_pup8"
         ),
         "Minikit 9": minikit_data(
-            "After Second Destroyable Ship",
+            R_AFTER_SECOND_DESTROYABLE_SHIP,
             pickup_name="m_pup9"
         ),
         "Minikit 10": minikit_data(
-            "After Second Destroyable Ship",
+            R_AFTER_SECOND_DESTROYABLE_SHIP,
             pickup_name="m_pup10"
         ),
     },
-    power_brick=LocationData("After Second Destroyable Ship")
+    power_brick=LocationData(R_AFTER_SECOND_DESTROYABLE_SHIP)
 )

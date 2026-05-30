@@ -11,8 +11,12 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Jedi Battle"
+
+R_ARENA = "Arena"
+
 JEDI_BATTLE = Chapter(
-    name="Jedi Battle",
+    name=NAME,
     episode_number=2,
     chapter_number=4,
     story_characters=(
@@ -38,16 +42,16 @@ JEDI_BATTLE = Chapter(
         # progress.
         "Skeleton",
     ),
-    start_region="Arena",
+    start_region=R_ARENA,
     start_level="jedi_b",
     regions={
-        "Arena": (
+        R_ARENA: (
             ExitData("Chapter Completion", HasAbility(JEDI), new_level="jedi_status"),
         ),
     },
     minikits={
         "Padmé Pillar Lower Minikit": minikit_data(
-            "Arena",
+            R_ARENA,
             logic_options(
                 base=HasAbility(HIGH_JUMP) & CAN_DAMAGE_SHIELDED_DROIDEKA,
                 normal=HasAbility(HIGH_JUMP),
@@ -56,7 +60,7 @@ JEDI_BATTLE = Chapter(
             pickup_name="m_pup7",
         ),
         "Padmé Pillar Upper Minikit": minikit_data(
-            "Arena",
+            R_ARENA,
             logic_options(
                 base=HasAbility(HIGH_JUMP) & CAN_DAMAGE_SHIELDED_DROIDEKA,
                 normal=HasAbility(HIGH_JUMP),
@@ -65,12 +69,12 @@ JEDI_BATTLE = Chapter(
             pickup_name="m_pup8",
         ),
         "Two Player Force Gate Minikit": minikit_data(
-            "Arena",
+            R_ARENA,
             HasAbility(JEDI),
             pickup_name="m_pup9",
         ),
         "Anakin Pillar Lower Minikit": minikit_data(
-            "Arena",
+            R_ARENA,
             logic_options(
                 base=HasAnyAbilities(GRAPPLE | HIGH_JUMP) & CAN_DAMAGE_SHIELDED_DROIDEKA,
                 normal=HasAbility(HIGH_JUMP) | CAN_GRAPPLE,
@@ -79,7 +83,7 @@ JEDI_BATTLE = Chapter(
             pickup_name="m_pup4",
         ),
         "Anakin Pillar Upper Minikit": minikit_data(
-            "Arena",
+            R_ARENA,
             logic_options(
                 base=HasAnyAbilities(GRAPPLE | HIGH_JUMP) & CAN_DAMAGE_SHIELDED_DROIDEKA,
                 normal=HasAbility(HIGH_JUMP) | CAN_GRAPPLE,
@@ -88,7 +92,7 @@ JEDI_BATTLE = Chapter(
             pickup_name="m_pup5",
         ),
         "Obi-Wan Pillar Lower Minikit": minikit_data(
-            "Arena",
+            R_ARENA,
             logic_options(
                 # High jump ignores the need to grapple/imperial.
                 # Grapple up and activate the Imperial panel to make the platform move.
@@ -102,7 +106,7 @@ JEDI_BATTLE = Chapter(
             pickup_name="m_pup2",
         ),
         "Obi-Wan Pillar Upper Minikit": minikit_data(
-            "Arena",
+            R_ARENA,
             # Same as the lower minikit, but use force to rebuild the second platform to go from the lower minikit
             # platform to the upper minikit platform.
             logic_options(
@@ -116,12 +120,12 @@ JEDI_BATTLE = Chapter(
             pickup_name="m_pup3",
         ),
         "Access Hatch Minikit": minikit_data(
-            "Arena",
+            R_ARENA,
             HasAllAbilities(JEDI | SHORTIE),
             pickup_name="m_pup1",
         ),
         "Rebuild Destroyed Pillar Minikit": minikit_data(
-            "Arena",
+            R_ARENA,
             logic_options(
                 # Force to rebuild the pillar. Sith force to make platforms. High jump to get up to the first platform.
                 base=HasAllAbilities(SITH | HIGH_JUMP),
@@ -132,12 +136,12 @@ JEDI_BATTLE = Chapter(
             pickup_name="m_pup6",
         ),
         "Minikit Hiding Behind Pillar": minikit_data(
-            "Arena",
+            R_ARENA,
             pickup_name="m_pup10",
         )
     },
     power_brick=LocationData(
-        "Arena",
+        R_ARENA,
         logic_options(
             base=HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
             normal=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),

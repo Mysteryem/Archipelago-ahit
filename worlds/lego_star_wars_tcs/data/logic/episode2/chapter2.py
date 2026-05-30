@@ -7,8 +7,19 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Discovery On Kamino"
+
+R_LANDING_PAD = "Landing Pad"
+R_CLONE_VIEWING_AREA = "Clone Viewing Area"
+R_BOUNTY_HUNTER_AREA = "Bounty Hunter Area"
+R_LIVING_QUARTERS = "Living Quarters"
+R_LIVING_QUARTERS_BEHIND_FORCE_FIELD = "Living Quarters Behind Force Field"
+R_OUTSIDE_JANGO_CHASE = "Outside Jango Chase"
+R_END_OF_OUTSIDE_JANGO_CHASE = "End Of Outside Jango Chase"
+R_INTERIOR_BEFORE_JANGO_FIGHT = "Interior Before Jango Fight"
+
 DISCOVERY_ON_KAMINO = Chapter(
-    name="Discovery On Kamino",
+    name=NAME,
     episode_number=2,
     chapter_number=2,
     story_characters=(
@@ -20,12 +31,12 @@ DISCOVERY_ON_KAMINO = Chapter(
         "Lama Su": 9000,
         "Taun We": 9000,
     },
-    start_region="Landing Pad",
+    start_region=R_LANDING_PAD,
     start_level="kamino_a",
     regions={
-        "Landing Pad": (
+        R_LANDING_PAD: (
             ExitData(
-                "Clone Viewing Area",
+                R_CLONE_VIEWING_AREA,
                 logic_options(
                     # Force to fix the pylon thing and extend the bridge.
                     base=HasAbility(JEDI),
@@ -38,23 +49,23 @@ DISCOVERY_ON_KAMINO = Chapter(
                 new_level="kamino_d",
             ),
         ),
-        "Clone Viewing Area": (
+        R_CLONE_VIEWING_AREA: (
             ExitData(
-                "Bounty Hunter Area",
+                R_BOUNTY_HUNTER_AREA,
                 HasAllAbilities(JEDI | BOUNTY_HUNTER),
             ),
             ExitData(
-                "Living Quarters",
+                R_LIVING_QUARTERS,
                 # Notably, clipping past the door does not allow you to enter kamino_c, the trigger does not load until
                 # the astromech panel has been used.
                 HasAllAbilities(JEDI | ASTROMECH_PANEL),
                 new_level="kamino_c",
             ),
         ),
-        "Bounty Hunter Area": (),
-        "Living Quarters": (
+        R_BOUNTY_HUNTER_AREA: (),
+        R_LIVING_QUARTERS: (
             ExitData(
-                "Living Quarters Behind Force Field",
+                R_LIVING_QUARTERS_BEHIND_FORCE_FIELD,
                 logic_options(
                     # Meet Jango, then destroy the robots to leave the room and the two ceiling turrets to lower the
                     # force field.
@@ -68,19 +79,19 @@ DISCOVERY_ON_KAMINO = Chapter(
                 ),
             ),
         ),
-        "Living Quarters Behind Force Field": (
+        R_LIVING_QUARTERS_BEHIND_FORCE_FIELD: (
             # The levels are out-of-order again.
-            ExitData("Outside Jango Chase", new_level="kamino_f"),
+            ExitData(R_OUTSIDE_JANGO_CHASE, new_level="kamino_f"),
         ),
-        "Outside Jango Chase": (
+        R_OUTSIDE_JANGO_CHASE: (
             ExitData(
-                "End Of Outside Jango Chase",
+                R_END_OF_OUTSIDE_JANGO_CHASE,
                 HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
             ),
         ),
-        "End Of Outside Jango Chase": (
+        R_END_OF_OUTSIDE_JANGO_CHASE: (
             ExitData(
-                "Interior Before Jango Fight",
+                R_INTERIOR_BEFORE_JANGO_FIGHT,
                 logic_options(
                     base=HasAllAbilities(JEDI | HOVER | ASTROMECH_PANEL),
                     moderate=And(
@@ -93,14 +104,14 @@ DISCOVERY_ON_KAMINO = Chapter(
                 new_level="kamino_f",
             ),
         ),
-        "Interior Before Jango Fight": (
+        R_INTERIOR_BEFORE_JANGO_FIGHT: (
             # Force the bricks out of the way, use the panel and then defeat Jango Fett.
             ExitData("Chapter Completion", HasAllAbilities(JEDI | ASTROMECH_PANEL), new_level="kamino_status"),
         )
     },
     minikits={
         "Minikit Above Landing Pad Platform": minikit_data(
-            "Landing Pad",
+            R_LANDING_PAD,
             logic_options(
                 # Force the gears, then high jump to reach the minikit.
                 base=HasAllAbilities(JEDI | HIGH_JUMP),
@@ -111,7 +122,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="MINI01",
         ),
         "Floating Platform Minikit": minikit_data(
-            "Landing Pad",
+            R_LANDING_PAD,
             logic_options(
                 base=HasAbility(HOVER),
                 # Triple jump across the gap.
@@ -122,12 +133,12 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="MINI02",
         ),
         "Six Walkway Lights Minikit": minikit_data(
-            "Clone Viewing Area",
+            R_CLONE_VIEWING_AREA,
             HasAbility(JEDI),
             pickup_name="MINI3",
         ),
         "Four Updrafts Platform Minikit": minikit_data(
-            "Bounty Hunter Area",
+            R_BOUNTY_HUNTER_AREA,
             logic_options(
                 # Double jump across the platforms and then force the small platform out, to use to reach the minikit.
                 # HOVER/CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS/CAN_DOUBLE_JUMP can jump across the circular platforms, but
@@ -143,7 +154,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="MINI05",
         ),
         "Five Access Hatches Minikit": minikit_data(
-            "Bounty Hunter Area",
+            R_BOUNTY_HUNTER_AREA,
             logic_options(
                 base=HasAnyAbilities(CAN_DOUBLE_JUMP | ASTROMECH_DROID) & HasAllAbilities(BLASTER | SHORTIE),
                 moderate=And(
@@ -186,7 +197,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="MINI04",
         ),
         "Mosaic Vending Machine Minikit": minikit_data(
-            "Living Quarters",
+            R_LIVING_QUARTERS,
             logic_options(
                 base=HasAbility(JEDI),
                 # Swap to Droideka while as close to the Minikit as possible. Stud Magnet isn't even needed.
@@ -198,7 +209,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="mkvend",
         ),
         "Two Player Triple Buttons Minikit": minikit_data(
-            "Living Quarters Behind Force Field",
+            R_LIVING_QUARTERS_BEHIND_FORCE_FIELD,
             logic_options(
                 # A higher than normal jump is required to get into the alcove that the minikit is in.
                 base=HasAbility(CAN_DOUBLE_JUMP),
@@ -215,7 +226,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="mk3way",
         ),
         "Jango Chase Hover Platform Minikit": minikit_data(
-            "Outside Jango Chase",
+            R_OUTSIDE_JANGO_CHASE,
             logic_options(
                 # Hover across to the platform.
                 base=HasAbility(HOVER),
@@ -225,7 +236,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="mk_1",
         ),
         "Blaster Targets Reward Minikit": minikit_data(
-            "End Of Outside Jango Chase",
+            R_END_OF_OUTSIDE_JANGO_CHASE,
             logic_options(
                 base=HasAllAbilities(GRAPPLE | PROTOCOL_PANEL),
                 moderate=And(
@@ -246,7 +257,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="mk_0",
         ),
         "Dark Side Droid Room Minikit": minikit_data(
-            "Interior Before Jango Fight",
+            R_INTERIOR_BEFORE_JANGO_FIGHT,
             logic_options(
                 base=HasAbility(SITH),
                 # Note: AI P2 will only use Sith Force as a SITH, ignoring Dark Side, so using Dark Side here requires
@@ -256,5 +267,5 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="m_pup1",
         )
     },
-    power_brick=LocationData("Living Quarters", HasAbility(IMPERIAL)),
+    power_brick=LocationData(R_LIVING_QUARTERS, HasAbility(IMPERIAL)),
 )

@@ -13,8 +13,13 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Count Dooku"
+
+R_LANDING_PAD = "Landing Pad"
+R_DOOKU_FIGHT = "Dooku Fight"
+
 COUNT_DOOKU = Chapter(
-    name="Count Dooku",
+    name=NAME,
     episode_number=2,
     chapter_number=6,
     story_characters=(
@@ -22,17 +27,17 @@ COUNT_DOOKU = Chapter(
         "Obi-Wan Kenobi (Jedi Master)",
         "Yoda",
     ),
-    start_region="Landing Pad",
+    start_region=R_LANDING_PAD,
     start_level="dooku_b",
     regions={
-        "Landing Pad": (
+        R_LANDING_PAD: (
             ExitData(
-                "Dooku Fight",
+                R_DOOKU_FIGHT,
                 HasAbility(JEDI),
                 new_level="dooku_c",
             ),
         ),
-        "Dooku Fight": (
+        R_DOOKU_FIGHT: (
             ExitData(
                 "Chapter Completion",
                 HasAbility(JEDI),
@@ -42,7 +47,7 @@ COUNT_DOOKU = Chapter(
     },
     minikits={
         "Floating Minikit Before Landing Pad": minikit_data(
-            "Landing Pad",
+            R_LANDING_PAD,
             logic_options(
                 # Expect an astromech droid specifically so that the minikit can be grabbed without dying.
                 base=HasAbility(ASTROMECH_DROID),
@@ -64,7 +69,7 @@ COUNT_DOOKU = Chapter(
             pickup_name="mk_4",
         ),
         "Grapple Up Cliff Minikit": minikit_data(
-            "Landing Pad",
+            R_LANDING_PAD,
             logic_options(
                 base=CAN_GRAPPLE,
                 # Allow Triple Jump.
@@ -73,12 +78,12 @@ COUNT_DOOKU = Chapter(
             pickup_name="mk_0",
         ),
         "Force Two Explosives Minikit": minikit_data(
-            "Landing Pad",
+            R_LANDING_PAD,
             HasAbility(JEDI),
             pickup_name="MK2",
         ),
         "Geonosians Battle Room Right Minikit": minikit_data(
-            "Landing Pad",
+            R_LANDING_PAD,
             logic_options(
                 # Expect defeating the enemies.
                 base=HasAbility(HIGH_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -99,7 +104,7 @@ COUNT_DOOKU = Chapter(
             pickup_name="mk_3",
         ),
         "Geonosians Battle Room Left Lower Minikit": minikit_data(
-            "Landing Pad",
+            R_LANDING_PAD,
             logic_options(
                 # Expect defeating the enemies.
                 base=HasAbility(CAN_DOUBLE_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -111,7 +116,7 @@ COUNT_DOOKU = Chapter(
             pickup_name="mk_1",
         ),
         "Geonosians Battle Room Left Upper Minikit": minikit_data(
-            "Landing Pad",
+            R_LANDING_PAD,
             logic_options(
                 # Expect defeating enemies.
                 base=HasAbility(HIGH_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -131,7 +136,7 @@ COUNT_DOOKU = Chapter(
             pickup_name="mk_2",
         ),
         "Shoot Targets Minikit": minikit_data(
-            "Dooku Fight",
+            R_DOOKU_FIGHT,
             logic_options(
                 # These targets do not seem to respond to Self Destruct, and instead only work with projectiles.
                 base=HasAbility(BLASTER),
@@ -142,7 +147,7 @@ COUNT_DOOKU = Chapter(
             pickup_name="MK_2TAR",
         ),
         "Platform Minikit Above Collapsed Tower": minikit_data(
-            "Dooku Fight",
+            R_DOOKU_FIGHT,
             logic_options(
                 # The jump from the tower looks more like it is intended for a high jump.
                 base=HasAllAbilities(JEDI | HIGH_JUMP),
@@ -164,7 +169,7 @@ COUNT_DOOKU = Chapter(
             pickup_name="mk_0",
         ),
         "Obscured Minikit Above Collapsed Tower": minikit_data(
-            "Dooku Fight",
+            R_DOOKU_FIGHT,
             # Same as the non-obscured minikit to start with.
             logic_options(
                 # Once up to the platform minikit, blast the obstacles obscuring the minikit, and then hover across to
@@ -188,7 +193,7 @@ COUNT_DOOKU = Chapter(
             pickup_name="mk_2",
         ),
         "Minikit Above Solar Sailor": minikit_data(
-            "Dooku Fight",
+            R_DOOKU_FIGHT,
             logic_options(
                 base=HasAbility(HIGH_JUMP),
                 # Triple jump can replace high jump.
@@ -198,7 +203,7 @@ COUNT_DOOKU = Chapter(
         ),
     },
     power_brick=LocationData(
-        "Dooku Fight",
+        R_DOOKU_FIGHT,
         logic_options(
             # Destroy the silver brick object blocking the access hatch, use the hatch, then grapple to the Power Brick.
             base=HasAllAbilities(BOUNTY_HUNTER | SHORTIE | GRAPPLE),

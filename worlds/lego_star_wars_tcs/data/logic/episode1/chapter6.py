@@ -11,8 +11,18 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Darth Maul"
+
+R_SPAWN = "Spawn"
+R_HANGAR = "Hangar"
+R_IMPERIAL_ROOM = "Imperial Room"
+R_TOWER_ROOM = "Tower Room"
+R_TOWER_ROOM_TOP = "Tower Room Top"
+R_ENERGY_COLUMNS_ROOM = "Energy Columns Room"
+R_MAUL_BOSS_ROOM = "Maul Boss Room"
+
 DARTH_MAUL = Chapter(
-    name="Darth Maul",
+    name=NAME,
     episode_number=1,
     chapter_number=6,
     story_characters=(
@@ -22,12 +32,12 @@ DARTH_MAUL = Chapter(
     purchase_characters={
         "Darth Maul": 60_000,
     },
-    start_region="Spawn",
+    start_region=R_SPAWN,
     start_level="maul_a",
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "Hangar",
+                R_HANGAR,
                 logic_options(
                     # Fight Maul from across the gap, then force the bridge.
                     base=HasAbility(IS_NON_GHOST_JEDI),
@@ -41,9 +51,9 @@ DARTH_MAUL = Chapter(
                 )
             ),
         ),
-        "Hangar": (
+        R_HANGAR: (
             ExitData(
-                "Imperial Room",
+                R_IMPERIAL_ROOM,
                 logic_options(
                     # IS_NON_GHOST_JEDI implies JEDI.
                     base=HasAbility(IMPERIAL),
@@ -59,14 +69,14 @@ DARTH_MAUL = Chapter(
                 new_level="maul_b",
             ),
             ExitData(
-                "Tower Room",
+                R_TOWER_ROOM,
                 new_level="maul_b",
             ),
         ),
-        "Imperial Room": (),
-        "Tower Room": (
+        R_IMPERIAL_ROOM: (),
+        R_TOWER_ROOM: (
             ExitData(
-                "Tower Room Top",
+                R_TOWER_ROOM_TOP,
                 logic_options(
                     # IS_NON_GHOST_JEDI implies JEDI.
                     base=HasAbility(GRAPPLE),
@@ -92,11 +102,11 @@ DARTH_MAUL = Chapter(
                 ),
             ),
             ExitData(
-                "Energy Columns Room",
+                R_ENERGY_COLUMNS_ROOM,
                 logic_options(
                     base=True_(),
                     normal=HasAbility(JEDI),
-                    # This entrance is now useless to include in logic because the "Tower Room Top" path can be taken.
+                    # This entrance is now useless to include in logic because the R_TOWER_ROOM_TOP path can be taken.
                     moderate=False_(),
                 ),
                 er_rule=HasAbility(JEDI),
@@ -104,17 +114,17 @@ DARTH_MAUL = Chapter(
                 new_level="maul_d",
             ),
         ),
-        "Tower Room Top": (
+        R_TOWER_ROOM_TOP: (
             # Just drop down.
             # maul_c does not exist.
-            ExitData("Energy Columns Room", new_level="maul_d"),
+            ExitData(R_ENERGY_COLUMNS_ROOM, new_level="maul_d"),
         ),
-        "Energy Columns Room": (
+        R_ENERGY_COLUMNS_ROOM: (
             # Logically, fighting the Droideka and going through the force doors corridor (maul_e), is skipped and the
             # logic goes straight to the boss fight (maul_f).
             # Note: In higher logic, Blasters can skip fighting the Droidekas by shooting Maul into the pit.
             ExitData(
-                "Maul Boss Room",
+                R_MAUL_BOSS_ROOM,
                 logic_options(
                     # IS_NON_GHOST_JEDI implies JEDI.
                     base=True_(),
@@ -124,7 +134,7 @@ DARTH_MAUL = Chapter(
                 new_level="maul_f",
             ),
         ),
-        "Maul Boss Room": (
+        R_MAUL_BOSS_ROOM: (
             ExitData(
                 "Chapter Completion",
                 # ER Note: Would be more complicated, but for now, assume JEDI was needed to reach here.
@@ -135,17 +145,17 @@ DARTH_MAUL = Chapter(
     },
     minikits={
         "Left Starfighter Minikit": minikit_data(
-            "Hangar",
+            R_HANGAR,
             er_rule=HasAnyAbilities(JEDI | HIGH_JUMP),
             pickup_name="m_pup2",
         ),
         "Right Starfighter Minikit": minikit_data(
-            "Hangar",
+            R_HANGAR,
             er_rule=HasAnyAbilities(JEDI | HIGH_JUMP),
             pickup_name="m_pup1",
         ),
         "Imperial Room Minikit": minikit_data(
-            "Imperial Room",
+            R_IMPERIAL_ROOM,
             logic_options(
                 # Base: IS_NON_GHOST_JEDI implies JEDI.
                 # Normal: HasAllAbilities(JEDI | IMPERIAL) is required.
@@ -156,7 +166,7 @@ DARTH_MAUL = Chapter(
             pickup_name="m_pup3",
         ),
         "Top Of Tower Minikit": minikit_data(
-            "Tower Room Top",
+            R_TOWER_ROOM_TOP,
             logic_options(
                 # IS_NON_GHOST_JEDI implies JEDI.
                 base=True_(),
@@ -171,7 +181,7 @@ DARTH_MAUL = Chapter(
             pickup_name="m_pup2",
         ),
         "Behind Silver Bricks Minikit": minikit_data(
-            "Tower Room",
+            R_TOWER_ROOM,
             # IS_NON_GHOST_JEDI implies CAN_JUMP_DISTANCE_0_69.
             # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_DISTANCE_0_69.
             # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_DISTANCE_0_69.
@@ -190,12 +200,12 @@ DARTH_MAUL = Chapter(
             pickup_name="m_pup1",
         ),
         "Imperial Platform Minikit": minikit_data(
-            "Energy Columns Room",
+            R_ENERGY_COLUMNS_ROOM,
             HasAbility(IMPERIAL),
             pickup_name="m_pup1",
         ),
         "Energy Column Minikit": minikit_data(
-            "Energy Columns Room",
+            R_ENERGY_COLUMNS_ROOM,
             # Base: IS_NON_GHOST_JEDI implies CAN_JUMP_DISTANCE_0_69.
             # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_DISTANCE_0_69.
             # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_DISTANCE_0_69.
@@ -215,7 +225,7 @@ DARTH_MAUL = Chapter(
             pickup_name="mk_1",  # "mk_1" + "\x00" + "2"
         ),
         "Maul Fight Minikit 1": minikit_data(
-            "Maul Boss Room",
+            R_MAUL_BOSS_ROOM,
             logic_options(
                 # ER Note: Currently assuming JEDI is required to reach this room.
                 # High jump up on the platform and then jump to the minikit.
@@ -229,7 +239,7 @@ DARTH_MAUL = Chapter(
             pickup_name="m_pup1",
         ),
         "Maul Fight Minikit 2": minikit_data(
-            "Maul Boss Room",
+            R_MAUL_BOSS_ROOM,
             logic_options(
                 # ER Note: Currently assuming JEDI is required to reach this room.
                 # High jump up on the platform and then jump to the minikit.
@@ -243,7 +253,7 @@ DARTH_MAUL = Chapter(
             pickup_name="m_pup2",
         ),
         "Maul Fight Minikit 3": minikit_data(
-            "Maul Boss Room",
+            R_MAUL_BOSS_ROOM,
             logic_options(
                 # ER Note: Currently assuming JEDI is required to reach this room.
                 # High jump up on the platform and then jump to the minikit.
@@ -257,8 +267,8 @@ DARTH_MAUL = Chapter(
             pickup_name="m_pup3",
         ),
     },
-    power_brick=LocationData("Imperial Room"),
+    power_brick=LocationData(R_IMPERIAL_ROOM),
     ridables={
-        "Service Car": LocationData("Hangar"),
+        "Service Car": LocationData(R_HANGAR),
     },
 )

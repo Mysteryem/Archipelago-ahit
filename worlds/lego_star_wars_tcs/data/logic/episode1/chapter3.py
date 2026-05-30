@@ -15,8 +15,16 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Escape From Naboo"
+
+R_ROOFTOPS_SPAWN = "Rooftops Spawn"
+R_ROOFTOPS_CLIMB = "Rooftops Climb"
+R_TOWER = "Tower"
+R_ROOFTOPS_AFTER_SMALL_BLASTER_TARGET_GATE = "Rooftops After Small Blaster Target Gate"
+R_FINAL_ROOFTOP = "Final Rooftop"
+
 ESCAPE_FROM_NABOO = Chapter(
-    name="Escape From Naboo",
+    name=NAME,
     episode_number=1,
     chapter_number=3,
     story_characters=(
@@ -29,24 +37,24 @@ ESCAPE_FROM_NABOO = Chapter(
         "Royal Guard": 10_000,
         "Padmé": 20_000,
     },
-    start_region="Rooftops Spawn",
+    start_region=R_ROOFTOPS_SPAWN,
     start_level="rescue_a",
     regions={
-        "Rooftops Spawn": (
+        R_ROOFTOPS_SPAWN: (
             ExitData(
-                "Rooftops Climb",
+                R_ROOFTOPS_CLIMB,
                 logic_options(
                     base=CAN_GRAPPLE,
                     moderate=CAN_GRAPPLE | HasAbility(CAN_HIGH_JUMP_SLAM),
                 )
             ),
         ),
-        "Rooftops Climb": (
-            ExitData("Tower", new_level="rescue_b"),
+        R_ROOFTOPS_CLIMB: (
+            ExitData(R_TOWER, new_level="rescue_b"),
         ),
-        "Tower": (
+        R_TOWER: (
             ExitData(
-                "Rooftops After Small Blaster Target Gate",
+                R_ROOFTOPS_AFTER_SMALL_BLASTER_TARGET_GATE,
                 logic_options(
                     base=True_(),
                     normal=CAN_ACTIVATE_CLOSE_TARGET,
@@ -55,9 +63,9 @@ ESCAPE_FROM_NABOO = Chapter(
                 new_level="rescue_c",
             ),
         ),
-        "Rooftops After Small Blaster Target Gate": (
+        R_ROOFTOPS_AFTER_SMALL_BLASTER_TARGET_GATE: (
             ExitData(
-                "Final Rooftop",
+                R_FINAL_ROOFTOP,
                 logic_options(
                     base=True_(),
                     moderate=Or(
@@ -81,7 +89,7 @@ ESCAPE_FROM_NABOO = Chapter(
                 new_level="rescue_e",
             ),
         ),
-        "Final Rooftop": (
+        R_FINAL_ROOFTOP: (
             ExitData(
                 "Chapter Completion",
                 er_rule=logic_options(
@@ -99,7 +107,7 @@ ESCAPE_FROM_NABOO = Chapter(
     },
     minikits={
         "Stack Boxes Minikit": minikit_data(
-            "Rooftops Spawn",
+            R_ROOFTOPS_SPAWN,
             logic_options(
                 # Destroy the doors, force the columns into boxes, stack the boxes and then high jump up.
                 base=HasAllAbilities(JEDI | HIGH_JUMP),
@@ -109,7 +117,7 @@ ESCAPE_FROM_NABOO = Chapter(
             pickup_name="mk_0",
         ),
         "Minikit Hidden In Climbing Plants": minikit_data(
-            "Rooftops Climb",
+            R_ROOFTOPS_CLIMB,
             logic_options(
                 # Force the wall platforms, high jump up and then hover across.
                 base=HasAllAbilities(JEDI | HOVER | HIGH_JUMP),
@@ -120,11 +128,11 @@ ESCAPE_FROM_NABOO = Chapter(
             pickup_name="mk_1",
         ),
         "Minikit Behind Camera At Roof Tower Spawn": minikit_data(
-            "Tower",
+            R_TOWER,
             pickup_name="mk_1",
         ),
         "Roof Tower Lower Ledge Minikit": minikit_data(
-            "Tower",
+            R_TOWER,
             er_rule=logic_options(
                 # Destroy the windows to get into the outside area.
                 # If the player jumps down without being able to grapple back up, they have to restart the level, so
@@ -146,7 +154,7 @@ ESCAPE_FROM_NABOO = Chapter(
             pickup_name="mk_0",
         ),
         "Sith Force Flowerbeds Minikit": minikit_data(
-            "Tower",
+            R_TOWER,
             logic_options(
                 base=HasAllAbilities(SITH | HOVER),
                 normal=HasAbility(HOVER) & CAN_SITH_FORCE,
@@ -165,7 +173,7 @@ ESCAPE_FROM_NABOO = Chapter(
             pickup_name="m_pup1",
         ),
         "Minikit After Access Hatch": minikit_data(
-            "Rooftops After Small Blaster Target Gate",
+            R_ROOFTOPS_AFTER_SMALL_BLASTER_TARGET_GATE,
             logic_options(
                 base=HasAllAbilities(SHORTIE | HIGH_JUMP),
                 # Jedi can triple jump up instead of using high jump, so Force Grapple Leap is irrelevant.
@@ -179,7 +187,7 @@ ESCAPE_FROM_NABOO = Chapter(
             pickup_name="mk_0",
         ),
         "Force All Fences Minikit": minikit_data(
-            "Rooftops After Small Blaster Target Gate",
+            R_ROOFTOPS_AFTER_SMALL_BLASTER_TARGET_GATE,
             HasAbility(JEDI),
             er_rule=logic_options(
                 # Jedi alone cannot get here, so Grapple or High Jump are needed.
@@ -195,7 +203,7 @@ ESCAPE_FROM_NABOO = Chapter(
             pickup_name="MINI_1",
         ),
         "Force Mural Minikit": minikit_data(
-            "Rooftops After Small Blaster Target Gate",
+            R_ROOFTOPS_AFTER_SMALL_BLASTER_TARGET_GATE,
             logic_options(
                 # All Bounty Hunters can grapple.
                 base=HasAllAbilities(BOUNTY_HUNTER | JEDI),
@@ -215,7 +223,7 @@ ESCAPE_FROM_NABOO = Chapter(
             pickup_name="m_pup1",
         ),
         "Minikit Under Silver Cover": minikit_data(
-            "Final Rooftop",
+            R_FINAL_ROOFTOP,
             CAN_DESTROY_CLOSE_SILVER_BRICKS,
             er_rule=logic_options(
                 # (all bounty hunters can jump normal height)
@@ -228,7 +236,7 @@ ESCAPE_FROM_NABOO = Chapter(
             pickup_name="mk_1",
         ),
         "Stack Plant Pots High Minikit": minikit_data(
-            "Final Rooftop",
+            R_FINAL_ROOFTOP,
             logic_options(
                 base=HasAbility(JEDI),
                 moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
@@ -243,7 +251,7 @@ ESCAPE_FROM_NABOO = Chapter(
         ),
     },
     power_brick=LocationData(
-        "Rooftops Climb",
+        R_ROOFTOPS_CLIMB,
         logic_options(
             base=HasAllAbilities(SITH | BOUNTY_HUNTER),
             normal=And(

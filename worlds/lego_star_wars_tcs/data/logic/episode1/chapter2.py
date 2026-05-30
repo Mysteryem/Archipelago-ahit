@@ -7,8 +7,22 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Invasion of Naboo"
+
+R_FOREST_SPAWN = "Forest Spawn"
+R_AFTER_FIRST_FALLEN_TREE = "After First Fallen Tree"
+R_AFTER_CRASHED_MTT = "After Crashed MTT"
+R_CLIFF_FACE_RUINS_ENTRANCE = "Cliff Face Ruins Entrance"
+R_CLIFF_FACE_RUINS_COLLAPSING_DEBRIS_SECTION = "Cliff Face Ruins Collapsing Debris Section"
+R_CLIFF_FACE_RUINS_PAST_COLLAPSING_DEBRIS = "Cliff Face Ruins Past Collapsing Debris"
+R_CLIFF_FACE_RUINS_RAISED_SQUARE = "Cliff Face Ruins Raised Square"
+R_CLIFF_FACE_RUINS_END_PLATFORM = "Cliff Face Ruins End Platform"
+R_SWAMP_RUINS_ENTRANCE = "Swamp Ruins Entrance"
+R_SWAMP_RUINS = "Swamp Ruins"
+R_SWAMP_BEFORE_WATER = "Swamp Before Water"
+
 INVASION_OF_NABOO = Chapter(
-    name="Invasion of Naboo",
+    name=NAME,
     episode_number=1,
     chapter_number=2,
     story_characters=(
@@ -20,16 +34,16 @@ INVASION_OF_NABOO = Chapter(
         "Captain Tarpals": 17_500,
         "Boss Nass": 15_000,
     },
-    start_region="Forest Spawn",
+    start_region=R_FOREST_SPAWN,
     start_level="gungan_a",
     regions={
-        "Forest Spawn": (
+        R_FOREST_SPAWN: (
             # Expert logic could get past the tree without a jedi.
-            ExitData("After First Fallen Tree", HasAbility(JEDI)),
+            ExitData(R_AFTER_FIRST_FALLEN_TREE, HasAbility(JEDI)),
         ),
-        "After First Fallen Tree": (
+        R_AFTER_FIRST_FALLEN_TREE: (
             ExitData(
-                "After Crashed MTT",
+                R_AFTER_CRASHED_MTT,
                 er_rule=logic_options(
                     base=HasAbility(JEDI),
                     moderate=HasAnyAbilities(JEDI | HIGH_JUMP)
@@ -37,16 +51,16 @@ INVASION_OF_NABOO = Chapter(
                 new_level="gungan_b",
             ),
         ),
-        "After Crashed MTT": (
-            ExitData("Cliff Face Ruins Entrance", new_level="gungan_b"),
+        R_AFTER_CRASHED_MTT: (
+            ExitData(R_CLIFF_FACE_RUINS_ENTRANCE, new_level="gungan_b"),
         ),
-        "Cliff Face Ruins Entrance": (
+        R_CLIFF_FACE_RUINS_ENTRANCE: (
             # Hover across the gap or force down the mosaic.
-            ExitData("Cliff Face Ruins Collapsing Debris Section", er_rule=HasAnyAbilities(JEDI | HOVER)),
+            ExitData(R_CLIFF_FACE_RUINS_COLLAPSING_DEBRIS_SECTION, er_rule=HasAnyAbilities(JEDI | HOVER)),
         ),
-        "Cliff Face Ruins Collapsing Debris Section": (
+        R_CLIFF_FACE_RUINS_COLLAPSING_DEBRIS_SECTION: (
             ExitData(
-                "Cliff Face Ruins Past Collapsing Debris",
+                R_CLIFF_FACE_RUINS_PAST_COLLAPSING_DEBRIS,
                 logic_options(
                     base=HasAbility(HIGH_JUMP),
                     moderate=True_(),
@@ -66,13 +80,13 @@ INVASION_OF_NABOO = Chapter(
                 ),
             ),
             ExitData(
-                "Cliff Face Ruins Raised Square",
+                R_CLIFF_FACE_RUINS_RAISED_SQUARE,
                 logic_options(
                     base=False_(),
                     hard=HasAbility(JETPACK),
                 ),
                 er_rule=logic_options(
-                    # Not expected, use the exit from "Cliff Face Ruins Past Collapsing Debris" instead.
+                    # Not expected, use the exit from R_CLIFF_FACE_RUINS_PAST_COLLAPSING_DEBRIS instead.
                     base=False_(),
                     # Triple or high jump up to the first collapsing platform, then jumping from each collapsing
                     # platform and then hovering to the next, it is possible to get to the top of the raised square.
@@ -82,9 +96,9 @@ INVASION_OF_NABOO = Chapter(
             ),
         ),
         # This is the lower area around the Raised Square platform.
-        "Cliff Face Ruins Past Collapsing Debris": (
+        R_CLIFF_FACE_RUINS_PAST_COLLAPSING_DEBRIS: (
             ExitData(
-                "Cliff Face Ruins End Platform",
+                R_CLIFF_FACE_RUINS_END_PLATFORM,
                 er_rule=logic_options(
                     # Force down the blocks from on top of the square to make a platform, then jump up.
                     base=HasAbility(JEDI),
@@ -93,7 +107,7 @@ INVASION_OF_NABOO = Chapter(
                 ),
             ),
             ExitData(
-                "Cliff Face Ruins Raised Square",
+                R_CLIFF_FACE_RUINS_RAISED_SQUARE,
                 er_rule=logic_options(
                     # Force down the blocks on the top of the square and then high jump up.
                     base=HasAllAbilities(JEDI | HIGH_JUMP),
@@ -102,16 +116,16 @@ INVASION_OF_NABOO = Chapter(
                 ),
             ),
         ),
-        "Cliff Face Ruins Raised Square": (
+        R_CLIFF_FACE_RUINS_RAISED_SQUARE: (
             ExitData(
-                "Cliff Face Ruins End Platform",
+                R_CLIFF_FACE_RUINS_END_PLATFORM,
                 logic_options(
                     base=False_(),
                     normal=HasAbility(JETPACK),
                     moderate=True_(),
                 ),
                 er_rule=logic_options(
-                    # Not expected, use the exit from "Cliff Face Ruins Past Collapsing Debris" instead.
+                    # Not expected, use the exit from R_CLIFF_FACE_RUINS_PAST_COLLAPSING_DEBRIS instead.
                     base=False_(),
                     # Jump and jetpack hover across.
                     normal=HasAbility(JETPACK),
@@ -126,12 +140,12 @@ INVASION_OF_NABOO = Chapter(
             # This exit might not be needed, but including it won't really hurt.
             ExitData(
                 # Just drop down.
-                "Cliff Face Ruins Past Collapsing Debris",
+                R_CLIFF_FACE_RUINS_PAST_COLLAPSING_DEBRIS,
             ),
         ),
-        "Cliff Face Ruins End Platform": (
+        R_CLIFF_FACE_RUINS_END_PLATFORM: (
             ExitData(
-                "Cliff Face Ruins Raised Square",
+                R_CLIFF_FACE_RUINS_RAISED_SQUARE,
                 logic_options(
                     base=False_(),
                     normal=HasAbility(HOVER),
@@ -145,13 +159,13 @@ INVASION_OF_NABOO = Chapter(
                 ),
             ),
             ExitData(
-                "Swamp Ruins Entrance",
+                R_SWAMP_RUINS_ENTRANCE,
                 new_level="gungan_c"
             ),
         ),
-        "Swamp Ruins Entrance": (
+        R_SWAMP_RUINS_ENTRANCE: (
             ExitData(
-                "Swamp Ruins",
+                R_SWAMP_RUINS,
                 er_rule=logic_options(
                     # Move the blocks out of the way to collapse the log.
                     base=HasAbility(JEDI),
@@ -160,7 +174,7 @@ INVASION_OF_NABOO = Chapter(
                 ),
             ),
         ),
-        "Swamp Ruins": (
+        R_SWAMP_RUINS: (
             # ExitData(
             #     "Swamp Behind MTT",
             #     # The collision for the MTT is enormous, though there's probably ways to get out-of-bounds to get
@@ -168,7 +182,7 @@ INVASION_OF_NABOO = Chapter(
             #     can_destroy_close_silver_bricks,
             # ),
             ExitData(
-                "Swamp Before Water",
+                R_SWAMP_BEFORE_WATER,
                 er_rule=logic_options(
                     # High jump up to get on top of the collapsing debris.
                     base=HasAbility(HIGH_JUMP),
@@ -185,7 +199,7 @@ INVASION_OF_NABOO = Chapter(
         ),
         # There is nothing of logical relevance here yet, so this region is disabled for now.
         # "Swamp Behind MTT": (),
-        "Swamp Before Water": (
+        R_SWAMP_BEFORE_WATER: (
             ExitData(
                 # Just walk.
                 "Chapter Completion",
@@ -195,7 +209,7 @@ INVASION_OF_NABOO = Chapter(
     },
     minikits={
         "Shoot Target Minikit": minikit_data(
-            "Forest Spawn",
+            R_FOREST_SPAWN,
             logic_options(
                 # Shoot the target, then force the boulders and jump up to the minikit.
                 base=HasAllAbilities(JEDI | BLASTER),
@@ -224,12 +238,12 @@ INVASION_OF_NABOO = Chapter(
             pickup_name="m_pup2",
         ),
         "Destroy Fallen Tree Minikit": minikit_data(
-            "After First Fallen Tree",
+            R_AFTER_FIRST_FALLEN_TREE,
             er_rule=HasAbility(JEDI),
             pickup_name="m_pup1",
         ),
         "Minikit Above Crashed MTT": minikit_data(
-            "After First Fallen Tree",
+            R_AFTER_FIRST_FALLEN_TREE,
             er_rule=logic_options(
                 # Destroy the MTT using the force.
                 base=HasAbility(JEDI),
@@ -239,12 +253,12 @@ INVASION_OF_NABOO = Chapter(
             pickup_name="m_pOOP1",
         ),
         "Minikit Under Crashed MTT": minikit_data(
-            "After First Fallen Tree",
+            R_AFTER_FIRST_FALLEN_TREE,
             er_rule=HasAbility(JEDI),
             pickup_name="m_pOOP3",
         ),
         "High Minikit Above Steps": minikit_data(
-            "After Crashed MTT",
+            R_AFTER_CRASHED_MTT,
             logic_options(
                 base=HasAbility(HIGH_JUMP),
                 moderate=True_(),
@@ -256,21 +270,21 @@ INVASION_OF_NABOO = Chapter(
             pickup_name="m_pOOP2",
         ),
         "Minikit On Top Of Raised Square": minikit_data(
-            "Cliff Face Ruins Raised Square",
+            R_CLIFF_FACE_RUINS_RAISED_SQUARE,
             pickup_name="m_pup1",
         ),
         "Minikit In Ruins Alcove": minikit_data(
-            "Swamp Ruins Entrance",
+            R_SWAMP_RUINS_ENTRANCE,
             er_rule=HasAbility(JEDI),
             pickup_name="mk_2",
         ),
         "Minikit After Access Hatch": minikit_data(
-            "Swamp Ruins",
+            R_SWAMP_RUINS,
             HasAbility(SHORTIE),
             pickup_name="mk_1",
         ),
         "Minikit In Boarded Up Room": minikit_data(
-            "Swamp Ruins",
+            R_SWAMP_RUINS,
             er_rule=logic_options(
                 # Force the boards out of the way.
                 base=HasAbility(JEDI),
@@ -280,10 +294,10 @@ INVASION_OF_NABOO = Chapter(
             pickup_name="mk_01",
         ),
         "Statue Puzzle Minikit": minikit_data(
-            "Swamp Before Water",
+            R_SWAMP_BEFORE_WATER,
             er_rule=HasAbility(JEDI),
             pickup_name="m_pup1",
         ),
     },
-    power_brick=LocationData("Cliff Face Ruins Past Collapsing Debris", HasAbility(BOUNTY_HUNTER)),
+    power_brick=LocationData(R_CLIFF_FACE_RUINS_PAST_COLLAPSING_DEBRIS, HasAbility(BOUNTY_HUNTER)),
 )

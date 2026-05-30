@@ -14,8 +14,19 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Retake Theed Palace"
+
+R_SPAWN = "Spawn"
+R_INSIDE_PALACE = "Inside Palace"
+R_AFTER_COLLAPSED_FLOOR_IN_PALACE = "After Collapsed Floor In Palace"
+R_COURTYARD = "Courtyard"
+R_COURTYARD_AFTER_DESTROYED_BRIDGE = "Courtyard After Destroyed Bridge"
+R_ROOFTOPS = "Rooftops"
+R_DINING_HALL = "Dining Hall"
+R_HANGAR = "Hangar"
+
 RETAKE_THEED_PALACE = Chapter(
-    name="Retake Theed Palace",
+    name=NAME,
     episode_number=1,
     chapter_number=5,
     story_characters=(
@@ -26,12 +37,12 @@ RETAKE_THEED_PALACE = Chapter(
         "Padmé (Battle)",
         "R2-D2",
     ),
-    start_region="Spawn",
+    start_region=R_SPAWN,
     start_level="retake_a",
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "Inside Palace",
+                R_INSIDE_PALACE,
                 logic_options(
                     base=And(
                         # Use the panel.
@@ -51,9 +62,9 @@ RETAKE_THEED_PALACE = Chapter(
                 new_level="retake_b",
             ),
         ),
-        "Inside Palace": (
+        R_INSIDE_PALACE: (
             ExitData(
-                "After Collapsed Floor In Palace",
+                R_AFTER_COLLAPSED_FLOOR_IN_PALACE,
                 logic_options(
                     # Force the platform and double jump across, or use the chute, or hover across.
                     base=HasAnyAbilities(JEDI | SHORTIE | HOVER),
@@ -63,9 +74,9 @@ RETAKE_THEED_PALACE = Chapter(
                 )
             ),
         ),
-        "After Collapsed Floor In Palace": (
+        R_AFTER_COLLAPSED_FLOOR_IN_PALACE: (
             ExitData(
-                "Courtyard",
+                R_COURTYARD,
                 logic_options(
                     base=HasAbility(CAN_BUILD_BRICKS),
                     normal=HasAbility(CAN_BUILD_BRICKS) & CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -91,9 +102,9 @@ RETAKE_THEED_PALACE = Chapter(
                 new_level="retake_d",
             ),
         ),
-        "Courtyard": (
+        R_COURTYARD: (
             ExitData(
-                "Courtyard After Destroyed Bridge",
+                R_COURTYARD_AFTER_DESTROYED_BRIDGE,
                 logic_options(
                     # Hover from the rising platform, or jump up the stairs and force the bridge.
                     base=HasAnyAbilities(JEDI | HOVER),
@@ -103,9 +114,9 @@ RETAKE_THEED_PALACE = Chapter(
                 )
             ),
         ),
-        "Courtyard After Destroyed Bridge": (
+        R_COURTYARD_AFTER_DESTROYED_BRIDGE: (
             ExitData(
-                "Rooftops",
+                R_ROOFTOPS,
                 logic_options(
                     base=HasAbility(SHORTIE),
                     normal=HasAnyAbilities(HIGH_JUMP | SHORTIE),
@@ -132,9 +143,9 @@ RETAKE_THEED_PALACE = Chapter(
                 new_level="retake_e",
             ),
         ),
-        "Rooftops": (
+        R_ROOFTOPS: (
             ExitData(
-                "Dining Hall",
+                R_DINING_HALL,
                 logic_options(
                     base=True_(),
                     # Triple high jump can stand on one of the taller bushes and triple high jump up.
@@ -151,9 +162,9 @@ RETAKE_THEED_PALACE = Chapter(
                 new_level="retake_f",
             ),
         ),
-        "Dining Hall": (
+        R_DINING_HALL: (
             ExitData(
-                "Hangar",
+                R_HANGAR,
                 # Base:
                 #  HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP) implies CAN_BARELY_JUMP
                 #  can_damage_shielded_droideka.base is
@@ -192,7 +203,7 @@ RETAKE_THEED_PALACE = Chapter(
                 new_level="retake_g",
             ),
         ),
-        "Hangar": (
+        R_HANGAR: (
             ExitData(
                 "Chapter Completion",
                 logic_options(
@@ -243,7 +254,7 @@ RETAKE_THEED_PALACE = Chapter(
     },
     minikits={
         "Circular Window Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=HasAbility(JEDI),
                 # Grapple characters can shoot the window, but the basic jump height (jump_speed=2.1) is not enough to
@@ -276,12 +287,12 @@ RETAKE_THEED_PALACE = Chapter(
             pickup_name="mk_0",
         ),
         "Window Behind Grapple Point Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             HasAnyAbilities(JEDI | GRAPPLE),
             pickup_name="mk_1",
         ),
         "Minikit In Hidden Panel Behind Statue": minikit_data(
-            "After Collapsed Floor In Palace",
+            R_AFTER_COLLAPSED_FLOOR_IN_PALACE,
             logic_options(
                 # can_damage_shielded_droideka.base implies can_damage_at_close_range.base
                 base=True_(),
@@ -300,12 +311,12 @@ RETAKE_THEED_PALACE = Chapter(
             pickup_name="mk_0",
         ),
         "Minikit Behind Dark Side Barrier": minikit_data(
-            "After Collapsed Floor In Palace",
+            R_AFTER_COLLAPSED_FLOOR_IN_PALACE,
             CAN_SITH_FORCE,
             pickup_name="mk_1",
         ),
         "Minikit On Courtyard Far Ledge": minikit_data(
-            "Courtyard",
+            R_COURTYARD,
             # Base/Normal:
             #  HasAnyAbilities(JEDI | SHORTIE | HOVER) is already needed at
             #  "Inside Palace -> After Collapsed Floor In Palace"
@@ -318,7 +329,7 @@ RETAKE_THEED_PALACE = Chapter(
             pickup_name="m_pup2",
         ),
         "Courtyard High Minikit": minikit_data(
-            "Courtyard After Destroyed Bridge",
+            R_COURTYARD_AFTER_DESTROYED_BRIDGE,
             logic_options(
                 base=HasAbility(JEDI),
                 moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
@@ -326,14 +337,14 @@ RETAKE_THEED_PALACE = Chapter(
             pickup_name="m_pup1",
         ),
         "Build And Destroy Silver Bricks In Boxes Minikit": minikit_data(
-            "Rooftops",
+            R_ROOFTOPS,
             # All: CAN_BUILD_BRICKS is needed at "After Collapsed Floor In Palace -> Courtyard".
             CAN_DESTROY_CLOSE_SILVER_BRICKS,
             er_rule=HasAbility(CAN_BUILD_BRICKS) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
             pickup_name="m_pup1",
         ),
         "Minikit On Dining Hall Ledge": minikit_data(
-            "Dining Hall",
+            R_DINING_HALL,
             logic_options(
                 # High jump up.
                 # Or force the tables, double jump up and then grapple the last part.
@@ -361,7 +372,7 @@ RETAKE_THEED_PALACE = Chapter(
             pickup_name="m_pup1",
         ),
         "Hangar Far Right Minikit": minikit_data(
-            "Hangar",
+            R_HANGAR,
             logic_options(
                 # Jump up the far left side, then hover across.
                 # Or use the jedi blocks to get up to the high up Battle Droid in the middle with two captives, then
@@ -382,7 +393,7 @@ RETAKE_THEED_PALACE = Chapter(
             pickup_name="m_pup2",
         ),
         "Hangar Far Left Minikit": minikit_data(
-            "Hangar",
+            R_HANGAR,
             logic_options(
                 base=HasAllAbilities(SITH | BOUNTY_HUNTER),
                 normal=Or(
@@ -409,10 +420,10 @@ RETAKE_THEED_PALACE = Chapter(
         )
     },
     power_brick=LocationData(
-        "Dining Hall",
+        R_DINING_HALL,
         HasAbility(JEDI),
     ),
     ridables={
-        "Service Car": LocationData("Hangar"),
+        "Service Car": LocationData(R_HANGAR),
     }
 )

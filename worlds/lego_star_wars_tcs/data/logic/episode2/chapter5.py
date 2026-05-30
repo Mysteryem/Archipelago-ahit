@@ -6,28 +6,34 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Gunship Cavalry"
+
+R_SPAWN = "Spawn"
+R_BEHIND_FIRST_FORCE_FIELD = "Behind First Force Field"
+R_CONTROL_SHIP_BATTLE = "Control Ship Battle"
+
 GUNSHIP_CAVALRY = Chapter(
-    name="Gunship Cavalry",
+    name=NAME,
     episode_number=2,
     chapter_number=5,
     story_characters=(
         "Republic Gunship",
     ),
-    start_region="Spawn",
+    start_region=R_SPAWN,
     start_level="gunship_a",
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
-        "Spawn": (
-            ExitData("Behind First Force Field", HasAbility(VEHICLE_TOW)),
+        R_SPAWN: (
+            ExitData(R_BEHIND_FIRST_FORCE_FIELD, HasAbility(VEHICLE_TOW)),
         ),
-        "Behind First Force Field": (
+        R_BEHIND_FIRST_FORCE_FIELD: (
             ExitData(
-                "Control Ship Battle",
+                R_CONTROL_SHIP_BATTLE,
                 HasAbility(VEHICLE_TOW),
                 new_level="gunship_b",
             ),
         ),
-        "Control Ship Battle": (
+        R_CONTROL_SHIP_BATTLE: (
             ExitData(
                 "Chapter Completion",
                 HasAbility(VEHICLE_TOW),
@@ -37,15 +43,15 @@ GUNSHIP_CAVALRY = Chapter(
     },
     minikits={
         "Freestanding Minikit Before Lasers": minikit_data(
-            "Spawn",
+            R_SPAWN,
             pickup_name="m_pup1",
         ),
         "Freestanding Minikit After Fourth Laser": minikit_data(
-            "Spawn",
+            R_SPAWN,
             pickup_name="m_pup2",
         ),
         "TIE Area Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=HasAbility(VEHICLE_TIE),
                 # TIE vehicles can access as normal.
@@ -95,33 +101,33 @@ GUNSHIP_CAVALRY = Chapter(
             pickup_name="m_pup3",
         ),
         "Freestanding Minikit After First Force Field": minikit_data(
-            "Behind First Force Field",
+            R_BEHIND_FIRST_FORCE_FIELD,
             pickup_name="m_pup4",
         ),
         "Minikit Behind Yellow Wall": minikit_data(
-            "Behind First Force Field",
+            R_BEHIND_FIRST_FORCE_FIELD,
             pickup_name="m_pup5",
         ),
         "Control Ship Battle Minikit 1": minikit_data(
-            "Control Ship Battle",
+            R_CONTROL_SHIP_BATTLE,
             pickup_name="m_pup3",
         ),
         "Control Ship Battle Minikit 2": minikit_data(
-            "Control Ship Battle",
+            R_CONTROL_SHIP_BATTLE,
             pickup_name="m_pup4",
         ),
         "Control Ship Battle Minikit 3": minikit_data(
-            "Control Ship Battle",
+            R_CONTROL_SHIP_BATTLE,
             pickup_name="m_pup1",
         ),
         "Control Ship Battle Minikit 4": minikit_data(
-            "Control Ship Battle",
+            R_CONTROL_SHIP_BATTLE,
             pickup_name="m_pup2",
         ),
         "Control Ship Battle Minikit 5": minikit_data(
-            "Control Ship Battle",
+            R_CONTROL_SHIP_BATTLE,
             pickup_name="m_pup5",
         ),
     },
-    power_brick=LocationData("Behind First Force Field"),
+    power_brick=LocationData(R_BEHIND_FIRST_FORCE_FIELD),
 )

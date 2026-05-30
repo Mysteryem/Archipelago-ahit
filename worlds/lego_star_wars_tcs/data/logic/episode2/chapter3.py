@@ -14,9 +14,25 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Droid Factory"
+
+R_ENTRANCE_CORRIDOR = "Entrance Corridor"
+R_FACTORY_CONVEYOR = "Factory Conveyor"
+R_AFTER_FACTORY_CONVEYOR = "After Factory Conveyor"
+R_COLOR_MIXING_ROOM = "Color Mixing Room"
+R_FURNACE_START = "Furnace Start"
+R_AFTER_FIRST_CRUCIBLE_PUZZLE = "After First Crucible Puzzle"
+R_ROLLING_PLATFORMS_ROOM = "Rolling Platforms Room"
+R_LAVA_ROOM = "Lava Room"
+R_GEONOSIAN_HIVE = "Geonosian Hive"
+R_FORCE_FIELDS_MAZE_ROOM = "Force Fields Maze Room"
+R_GEONOSIAN_HIVE_ACROSS_LAVA = "Geonosian Hive Across Lava"
+R_TWIN_CONVEYOR_ROOM = "Twin Conveyor Room"
+R_OBI_WAN_HOLDING_CELL_ROOM = "Obi-Wan Holding Cell Room"
+
 
 DROID_FACTORY = Chapter(
-    name="Droid Factory",
+    name=NAME,
     episode_number=2,
     chapter_number=3,
     story_characters=(
@@ -29,12 +45,12 @@ DROID_FACTORY = Chapter(
         "Geonosian": 20_000,
         "Battle Droid (Geonosis)": 8500,
     },
-    start_region="Entrance Corridor",
+    start_region=R_ENTRANCE_CORRIDOR,
     start_level="factory_a",
     regions={
-        "Entrance Corridor": (
+        R_ENTRANCE_CORRIDOR: (
             ExitData(
-                "Factory Conveyor",
+                R_FACTORY_CONVEYOR,
                 logic_options(
                     # The Geonosians must be killed to proceed.
                     base=CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -44,9 +60,9 @@ DROID_FACTORY = Chapter(
                 new_level="factory_b",
             ),
         ),
-        "Factory Conveyor": (
+        R_FACTORY_CONVEYOR: (
             ExitData(
-                "After Factory Conveyor",
+                R_AFTER_FACTORY_CONVEYOR,
                 logic_options(
                     # No fancy tricks, just outrun the conveyor enough to pass under the crusher.
                     # There is a Droideka in the middle that base logic is expected to be able to defeat.
@@ -81,9 +97,9 @@ DROID_FACTORY = Chapter(
                 ),
             ),
         ),
-        "After Factory Conveyor": (
+        R_AFTER_FACTORY_CONVEYOR: (
             ExitData(
-                "Color Mixing Room",
+                R_COLOR_MIXING_ROOM,
                 logic_options(
                     # JEDI is definitely not needed, but I can't imagine it not being intended.
                     # GRAPPLE implies BLASTER.
@@ -97,7 +113,7 @@ DROID_FACTORY = Chapter(
                 ),
             ),
             ExitData(
-                "Furnace Start",
+                R_FURNACE_START,
                 logic_options(
                     # Force a fan and then float up.
                     base=HasAbility(JEDI),
@@ -114,10 +130,10 @@ DROID_FACTORY = Chapter(
                 new_level="factory_d",
             ),
         ),
-        "Color Mixing Room": (),
-        "Furnace Start": (
+        R_COLOR_MIXING_ROOM: (),
+        R_FURNACE_START: (
             ExitData(
-                "After First Crucible Puzzle",
+                R_AFTER_FIRST_CRUCIBLE_PUZZLE,
                 logic_options(
                     base=Or(
                         # Activate the first two targets by grappling up to them and shooting the targets, then jump off
@@ -161,13 +177,13 @@ DROID_FACTORY = Chapter(
                 ),
             ),
         ),
-        "After First Crucible Puzzle": (
+        R_AFTER_FIRST_CRUCIBLE_PUZZLE: (
             ExitData(
-                "Rolling Platforms Room",
+                R_ROLLING_PLATFORMS_ROOM,
                 HasAbility(ASTROMECH_PANEL),
             ),
             ExitData(
-                "Lava Room",
+                R_LAVA_ROOM,
                 logic_options(
                     base=And(
                         HasAnyAbilities(HOVER | GRAPPLE | CAN_DOUBLE_JUMP),
@@ -182,10 +198,10 @@ DROID_FACTORY = Chapter(
                 new_level="factory_e",
             ),
         ),
-        "Rolling Platforms Room": (),
-        "Lava Room": (
+        R_ROLLING_PLATFORMS_ROOM: (),
+        R_LAVA_ROOM: (
             ExitData(
-                "Geonosian Hive",
+                R_GEONOSIAN_HIVE,
                 logic_options(
                     # The door has a protocol panel.
                     # Jedi can use the spinning platforms in the centre of the room.
@@ -200,13 +216,13 @@ DROID_FACTORY = Chapter(
                 new_level="factory_f",
             ),
         ),
-        "Geonosian Hive": (
+        R_GEONOSIAN_HIVE: (
             ExitData(
-                "Force Fields Maze Room",
+                R_FORCE_FIELDS_MAZE_ROOM,
                 CAN_DAMAGE_AT_CLOSE_RANGE,
             ),
             ExitData(
-                "Geonosian Hive Across Lava",
+                R_GEONOSIAN_HIVE_ACROSS_LAVA,
                 logic_options(
                     # Grapple up to the cave support thing and destroy it, force the platform and then jump across.
                     base=HasAllAbilities(GRAPPLE | JEDI),
@@ -241,21 +257,21 @@ DROID_FACTORY = Chapter(
                 ),
             ),
         ),
-        "Force Fields Maze Room": (),
-        "Geonosian Hive Across Lava": (
+        R_FORCE_FIELDS_MAZE_ROOM: (),
+        R_GEONOSIAN_HIVE_ACROSS_LAVA: (
             ExitData(
-                "Twin Conveyor Room",
+                R_TWIN_CONVEYOR_ROOM,
                 HasAbility(PROTOCOL_PANEL),
                 new_level="factory_g",
             ),
         ),
-        "Twin Conveyor Room": (
+        R_TWIN_CONVEYOR_ROOM: (
             ExitData(
-                "Obi-Wan Holding Cell Room",
+                R_OBI_WAN_HOLDING_CELL_ROOM,
                 HasAllAbilities(JEDI | ASTROMECH_PANEL),
             ),
         ),
-        "Obi-Wan Holding Cell Room": (
+        R_OBI_WAN_HOLDING_CELL_ROOM: (
             ExitData(
                 "Chapter Completion",
                 # Impossible to get in here without JEDI.
@@ -266,11 +282,11 @@ DROID_FACTORY = Chapter(
     },
     minikits={
         "Minikit Behind Spawn Camera": minikit_data(
-            "Entrance Corridor",
+            R_ENTRANCE_CORRIDOR,
             pickup_name="m_pup1",
         ),
         "Entrance Corridor Right Alcove Minikit": minikit_data(
-            "Entrance Corridor",
+            R_ENTRANCE_CORRIDOR,
             logic_options(
                 base=HasAbility(CAN_JUMP_HEIGHT_0_37),
                 normal=HasAbility(CAN_BARELY_JUMP),
@@ -278,7 +294,7 @@ DROID_FACTORY = Chapter(
             pickup_name="m_pup2",
         ),
         "Conveyor Start Access Hatch Minikit": minikit_data(
-            "Factory Conveyor",
+            R_FACTORY_CONVEYOR,
             logic_options(
                 # While it may become missable without restarting the chapter if the platform retracts before grabbing
                 # this minikit, it is right towards the start of the chapter, and this is probably the developer
@@ -301,20 +317,20 @@ DROID_FACTORY = Chapter(
             pickup_name="mk_0",
         ),
         "Color Mixing Minikit": minikit_data(
-            "Color Mixing Room",
+            R_COLOR_MIXING_ROOM,
             HasAbility(ASTROMECH_PANEL),
             pickup_name="mk_1",
         ),
         "Minikit After First Crucibles": minikit_data(
-            "After First Crucible Puzzle",
+            R_AFTER_FIRST_CRUCIBLE_PUZZLE,
             pickup_name="mk_0",
         ),
         "Rolling Platforms Minikit": minikit_data(
-            "Rolling Platforms Room",
+            R_ROLLING_PLATFORMS_ROOM,
             pickup_name="mk_1",
         ),
         "Lava Room Minikit": minikit_data(
-            "Lava Room",
+            R_LAVA_ROOM,
             logic_options(
                 base=CAN_GRAPPLE,
                 # JEDI/HIGH_JUMP can jump from the corner of a spinning platform.
@@ -323,7 +339,7 @@ DROID_FACTORY = Chapter(
             pickup_name="m_pup1",
         ),
         "High Minikit Inside Hive Wall": minikit_data(
-            "Geonosian Hive",
+            R_GEONOSIAN_HIVE,
             logic_options(
                 # The jump is pretty tight, but seems to be intended.
                 base=HasAllAbilities(JEDI | HIGH_JUMP),
@@ -333,11 +349,11 @@ DROID_FACTORY = Chapter(
             pickup_name="mk_1",
         ),
         "Minikit Behind Droidekas Across Lava": minikit_data(
-            "Geonosian Hive Across Lava",
+            R_GEONOSIAN_HIVE_ACROSS_LAVA,
             pickup_name="mk_0",
         ),
         "High Minikit In Twin Conveyor Room": minikit_data(
-            "Twin Conveyor Room",
+            R_TWIN_CONVEYOR_ROOM,
             logic_options(
                 # Activate the left conveyor, force to build the platform, then high jump from the top after P2 has used
                 # force to extend the platform.
@@ -362,7 +378,7 @@ DROID_FACTORY = Chapter(
         )
     },
     power_brick=LocationData(
-        "Force Fields Maze Room",
+        R_FORCE_FIELDS_MAZE_ROOM,
         logic_options(
             # Complete the maze the intended way.
             base=HasAbility(ASTROMECH_PANEL),

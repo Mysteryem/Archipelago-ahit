@@ -10,6 +10,17 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Chancellor In Peril"
+
+R_HANGAR = "Hangar"
+R_GENERATOR_ROOM = "Generator Room"
+R_DROID_DOORS_AND_DROID_ENEMIES_ROOM = "Droid Doors And Droid Enemies Room"
+R_TOWER_CLIMB = "Tower Climb"
+R_DOOKU_FIGHT = "Dooku Fight"
+R_HORIZONTAL_ELEVATOR_SHAFT = "Horizontal Elevator Shaft"
+R_ROTATED_PATH_TO_THE_BRIDGE = "Rotated Path To The Bridge"
+R_SHIPS_BRIDGE = "Ship's Bridge"
+
 CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
     # The Extra Toggle character Buzz Droid can explode.
     HasAll("Extra Toggle", "Self Destruct"),
@@ -24,10 +35,10 @@ CAN_MELEE_MACRO = logic_options(
 
 
 CHANCELLOR_IN_PERIL = Chapter(
-    name="Chancellor In Peril",
+    name=NAME,
     episode_number=3,
     chapter_number=2,
-    start_region="Hangar",
+    start_region=R_HANGAR,
     start_level="cruiser_a",
     story_characters=(
         "Anakin Skywalker (Jedi)",
@@ -43,14 +54,14 @@ CHANCELLOR_IN_PERIL = Chapter(
         "Buzz Droid",
     ),
     regions={
-        "Hangar": (
+        R_HANGAR: (
             ExitData(
-                "Generator Room",
+                R_GENERATOR_ROOM,
                 HasAbility(JEDI),
                 new_level="cruiser_g",
             ),
         ),
-        "Generator Room": (
+        R_GENERATOR_ROOM: (
             # ExitData(
             #     "Generator Room (Upper)",
             #     # Getting here implies Jedi.
@@ -62,15 +73,15 @@ CHANCELLOR_IN_PERIL = Chapter(
             #     ),
             # ),
             ExitData(
-                "Droid Doors And Droid Enemies Room",
+                R_DROID_DOORS_AND_DROID_ENEMIES_ROOM,
                 # Force the platformsForce off the grates to the next area.
                 # HasAbility(JEDI),
                 new_level="cruiser_b",
             ),
         ),
-        "Droid Doors And Droid Enemies Room": (
+        R_DROID_DOORS_AND_DROID_ENEMIES_ROOM: (
             ExitData(
-                "Tower Climb",
+                R_TOWER_CLIMB,
                 # logic_options(
                 #     # Use the panel to open the door, force the explosive into position, and then force the explosive
                 #     # again to explode it and open the way forward.
@@ -86,9 +97,9 @@ CHANCELLOR_IN_PERIL = Chapter(
                 ),
             ),
         ),
-        "Tower Climb": (
+        R_TOWER_CLIMB: (
             ExitData(
-                "Dooku Fight",
+                R_DOOKU_FIGHT,
                 # logic_options(
                 #     # Jump up, force to activate the updraft, defeat the Droideka and use the panel to open the door.
                 #     base=HasAllAbilities(JEDI | ASTROMECH_PANEL),
@@ -103,9 +114,9 @@ CHANCELLOR_IN_PERIL = Chapter(
                 new_level="cruiser_c",
             ),
         ),
-        "Dooku Fight": (
+        R_DOOKU_FIGHT: (
             ExitData(
-                "Horizontal Elevator Shaft",
+                R_HORIZONTAL_ELEVATOR_SHAFT,
                 # Fully covered without ER.
                 # Being able to reach here provides everything necessary to defeat Dooku.
                 # logic_options(
@@ -116,9 +127,9 @@ CHANCELLOR_IN_PERIL = Chapter(
                 new_level="cruiser_d",
             ),
         ),
-        "Horizontal Elevator Shaft": (
+        R_HORIZONTAL_ELEVATOR_SHAFT: (
             ExitData(
-                "Rotated Path To The Bridge",
+                R_ROTATED_PATH_TO_THE_BRIDGE,
                 # Fully covered without ER.
                 # All astromech panel characters can move fast enough to outrun the falling lift/elevator.
                 # logic_options(
@@ -130,9 +141,9 @@ CHANCELLOR_IN_PERIL = Chapter(
                 new_level="cruiser_e",
             ),
         ),
-        "Rotated Path To The Bridge": (
+        R_ROTATED_PATH_TO_THE_BRIDGE: (
             ExitData(
-                "Ship's Bridge",
+                R_SHIPS_BRIDGE,
                 # Fully covered without ER.
                 # All Astromech Panel users can walk through the gas, then all that is needed is a jump to get up a
                 # later part.
@@ -145,7 +156,7 @@ CHANCELLOR_IN_PERIL = Chapter(
                 new_level="cruiser_f",
             ),
         ),
-        "Ship's Bridge": (
+        R_SHIPS_BRIDGE: (
             ExitData(
                 "Chapter Completion",
                 # Fully covered without ER.
@@ -158,7 +169,7 @@ CHANCELLOR_IN_PERIL = Chapter(
     },
     minikits={
         "Hangar Minikit": minikit_data(
-            "Hangar",
+            R_HANGAR,
             logic_options(
                 base=CAN_GRAPPLE,
                 # Triple jump from the red starfighter
@@ -167,7 +178,7 @@ CHANCELLOR_IN_PERIL = Chapter(
             pickup_name="m_pup1",
         ),
         "Generator Room Grapple Minikit": minikit_data(
-            "Generator Room",
+            R_GENERATOR_ROOM,
             logic_options(
                 base=CAN_GRAPPLE,
                 normal=CAN_GRAPPLE | HasAbility(HIGH_JUMP),
@@ -176,23 +187,23 @@ CHANCELLOR_IN_PERIL = Chapter(
             pickup_name="m_pup1",
         ),
         "Minikit Behind Astromech Droid Door": minikit_data(
-            "Droid Doors And Droid Enemies Room",
+            R_DROID_DOORS_AND_DROID_ENEMIES_ROOM,
             HasAbility(ASTROMECH_PANEL),
             pickup_name="mk_0",
         ),
         "Minikit Behind Protocol Droid Door": minikit_data(
-            "Droid Doors And Droid Enemies Room",
+            R_DROID_DOORS_AND_DROID_ENEMIES_ROOM,
             HasAbility(ASTROMECH_PANEL),
             pickup_name="mk_1",
         ),
         "Tower Far Left Minikit": minikit_data(
-            "Tower Climb",
+            R_TOWER_CLIMB,
             # Fully covered without ER.
             # HasAbility(CAN_JUMP_HEIGHT_0_37),
             pickup_name="mk_3",
         ),
         "Tower Access Hatch Minikit": minikit_data(
-            "Tower Climb",
+            R_TOWER_CLIMB,
             # logic_options(
             #     base=HasAbility(SHORTIE),
             #     # High jump to the minikit.
@@ -209,7 +220,7 @@ CHANCELLOR_IN_PERIL = Chapter(
             pickup_name="mk_2",
         ),
         "Minikit Behind Door After Dooku Fight": minikit_data(
-            "Dooku Fight",
+            R_DOOKU_FIGHT,
             # Fully covered without ER.
             # logic_options(
             #     base=HasAbility(JEDI),
@@ -219,7 +230,7 @@ CHANCELLOR_IN_PERIL = Chapter(
             pickup_name="m_pup1",
         ),
         "Minikit Behind Orange Piping": minikit_data(
-            "Rotated Path To The Bridge",
+            R_ROTATED_PATH_TO_THE_BRIDGE,
             # Already covered without ER.
             # logic_options(
             #     base=HasAllAbilities(ASTROMECH_PANEL | JEDI),
@@ -231,20 +242,20 @@ CHANCELLOR_IN_PERIL = Chapter(
             pickup_name="m_pup1",
         ),
         "Bridge Left Minikit": minikit_data(
-            "Ship's Bridge",
+            R_SHIPS_BRIDGE,
             # With ER, base logic would need to consider defeating the Bodyguards, a melee attack or explosion are
             # required, as they seem to always deflect blasters.
             # er_rule=HasAbility(CAN_JUMP_HEIGHT_0_37) & (CAN_MELEE_MACRO | CAN_DESTROY_CLOSE_SILVER_BRICKS),
             pickup_name="mk_0",
         ),
         "Bridge Right Minikit": minikit_data(
-            "Ship's Bridge",
+            R_SHIPS_BRIDGE,
             # Same logic as the left minikit
             pickup_name="mk_1",
         ),
     },
     power_brick=LocationData(
-        "Horizontal Elevator Shaft",
+        R_HORIZONTAL_ELEVATOR_SHAFT,
         CAN_DESTROY_CLOSE_SILVER_BRICKS,
         # With ER, base logic would expect reversing the elevator to get the Power Brick.
         er_rule=logic_options(

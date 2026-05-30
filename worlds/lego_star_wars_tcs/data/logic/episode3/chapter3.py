@@ -12,6 +12,20 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "General Grievous"
+
+R_CIRCULAR_PLATFORM = "Circular Platform"
+R_FAR_LEFT_SILVER_BRICK_SECTION = "Far Left Silver Brick Section"
+R_FIRST_EXPLOSIVES_SECTION = "First Explosives Section"
+R_LOW_PLATFORM_WITH_POWER_UP = "Low Platform With Power Up"
+R_THIRD_EXPLOSIVES_SECTION_GAP_AREA = "Third Explosives Section Gap Area"
+R_FAR_RIGHT_LOW_PLATFORM = "Far Right Low Platform"
+R_SHOOT_SECOND_EXPLOSIVES_SECTION = "Shoot Second Explosives Section"
+R_FORCE_THIRD_EXPLOSIVES_SECTION = "Force Third Explosives Section"
+R_THIRD_EXPLOSIVES_CLIFF = "Third Explosives Cliff"
+R_BRIDGE_AND_MINES_BUILDING = "Bridge And Mines Building"
+R_BRICK_COVERED_MINIKIT_ALCOVE = "Brick Covered Minikit Alcove"
+
 
 # This could be optimised better, but I want to use the original BASE_CAN_USE_SELF_DESTRUCT in the rule.
 CAN_USE_SELF_DESTRUCT = BASE_CAN_USE_SELF_DESTRUCT | HasAll("Self Destruct", "Extra Toggle")
@@ -64,7 +78,7 @@ CAN_EXPLODE_FIRST_EXPLOSIVES = CAN_HURT_GRIEVOUS.and_rule(
     )
 )
 
-# To shoot the first explosives from "Shoot Second Explosives Section" requires shooting the first explosives so that a
+# To shoot the first explosives from R_SHOOT_SECOND_EXPLOSIVES_SECTION requires shooting the first explosives so that a
 # force platform spawns that a blaster character can stand on and jump to be able to shoot the second explosives.
 # The second explosive do NOT require the first explosives to be destroyed.
 CAN_EXPLODE_SECOND_EXPLOSIVES = logic_options(
@@ -131,10 +145,10 @@ CAN_EXPLODE_LAST_EXPLOSIVES = logic_options(
 
 
 GENERAL_GRIEVOUS = Chapter(
-    name="General Grievous",
+    name=NAME,
     episode_number=3,
     chapter_number=3,
-    start_region="Circular Platform",
+    start_region=R_CIRCULAR_PLATFORM,
     start_level="grievous_a",
     story_characters=(
         "Commander Cody",
@@ -147,9 +161,9 @@ GENERAL_GRIEVOUS = Chapter(
         "Buzz Droid",
     ),
     regions={
-        "Circular Platform": (
+        R_CIRCULAR_PLATFORM: (
             ExitData(
-                "Far Left Silver Brick Section",
+                R_FAR_LEFT_SILVER_BRICK_SECTION,
                 logic_options(
                     base=HasAbility(HOVER),
                     # Yoda cannot make it, but Grievous' Bodyguard can.
@@ -157,7 +171,7 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
             ExitData(
-                "First Explosives Section",
+                R_FIRST_EXPLOSIVES_SECTION,
                 logic_options(
                     base=Or(
                         HasAbility(HOVER),
@@ -168,7 +182,7 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
             ExitData(
-                "Low Platform With Power Up",
+                R_LOW_PLATFORM_WITH_POWER_UP,
                 logic_options(
                     base=HasAbility(CAN_JUMP_DISTANCE_0_69),
                     moderate=HasAbility(CAN_BARELY_JUMP),
@@ -184,7 +198,7 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
             ExitData(
-                "Third Explosives Section Gap Area",
+                R_THIRD_EXPLOSIVES_SECTION_GAP_AREA,
                 logic_options(
                     base=False_(),
                     # The collision on the plants by the wall is weird, you can jump on them and then double jump again.
@@ -192,7 +206,7 @@ GENERAL_GRIEVOUS = Chapter(
                 )
             ),
             ExitData(
-                "Far Right Low Platform",
+                R_FAR_RIGHT_LOW_PLATFORM,
                 # Moderate logic can double jump to the middle platform and drop down to here instead, so the triple
                 # jump across the gap is logically irrelevant.
                 HasAbility(HOVER),
@@ -209,12 +223,12 @@ GENERAL_GRIEVOUS = Chapter(
                 new_level="grievous_status",
             )
         ),
-        "Far Left Silver Brick Section": (
+        R_FAR_LEFT_SILVER_BRICK_SECTION: (
             # The rule from "Circular Platform -> First Explosives Section" is the same as
             # "Circular Platform -> Far Left Silver Brick Section", so if you can get to
-            # "Far Left Silver Brick Section", you can also get to "First Explosives Section".
+            # R_FAR_LEFT_SILVER_BRICK_SECTION, you can also get to R_FIRST_EXPLOSIVES_SECTION.
             # ExitData(
-            #     "First Explosives Section",
+            #     R_FIRST_EXPLOSIVES_SECTION,
             #     logic_options(
             #         base=HasAbility(HOVER),
             #         # Yoda cannot make the jump with a triple jump, but can make the jump with a double jump instead.
@@ -222,9 +236,9 @@ GENERAL_GRIEVOUS = Chapter(
             #     ),
             # ),
         ),
-        "First Explosives Section": (
+        R_FIRST_EXPLOSIVES_SECTION: (
             ExitData(
-                "Shoot Second Explosives Section",
+                R_SHOOT_SECOND_EXPLOSIVES_SECTION,
                 logic_options(
                     base=HasAnyAbilities(GRAPPLE | CAN_DOUBLE_JUMP),
                     normal=HasAnyAbilities(GRAPPLE | CAN_DOUBLE_JUMP | CAN_JUMP_0_44),
@@ -244,7 +258,7 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
             ExitData(
-                "Far Left Silver Brick Section",
+                R_FAR_LEFT_SILVER_BRICK_SECTION,
                 logic_options(
                     base=HasAbility(HOVER),
                     # Yoda cannot make the jump with a triple jump, but can make the jump with a double jump instead.
@@ -252,7 +266,7 @@ GENERAL_GRIEVOUS = Chapter(
                 )
             ),
         ),
-        "Low Platform With Power Up": (
+        R_LOW_PLATFORM_WITH_POWER_UP: (
             ExitData(
                 "Chapter Completion",
                 logic_options(
@@ -266,7 +280,7 @@ GENERAL_GRIEVOUS = Chapter(
             # requires high jump height, and then
             # "Third Explosives Section Gap Area -> Shoot Second Explosives Section" only requires CAN_DOUBLE_JUMP.
             # ExitData(
-            #     "Shoot Second Explosives Section",
+            #     R_SHOOT_SECOND_EXPLOSIVES_SECTION,
             #     logic_options(
             #         base=False_(),
             #         # Near max height triple jump needed.
@@ -274,7 +288,7 @@ GENERAL_GRIEVOUS = Chapter(
             #     ),
             # ),
             ExitData(
-                "Third Explosives Section Gap Area",
+                R_THIRD_EXPLOSIVES_SECTION_GAP_AREA,
                 logic_options(
                     base=HasAbility(HIGH_JUMP),
                     # Logically irrelevant because "Circular Platform -> Third Explosives Section Gap Area" with
@@ -288,9 +302,9 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
         ),
-        "Third Explosives Section Gap Area": (
+        R_THIRD_EXPLOSIVES_SECTION_GAP_AREA: (
             ExitData(
-                "Shoot Second Explosives Section",
+                R_SHOOT_SECOND_EXPLOSIVES_SECTION,
                 logic_options(
                     # Expect going around the top instead.
                     base=False_(),
@@ -298,16 +312,16 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
             ExitData(
-                "Third Explosives Cliff",
+                R_THIRD_EXPLOSIVES_CLIFF,
                 logic_options(
-                    # Expect hovering across from "Shoot Second Explosives Section"
+                    # Expect hovering across from R_SHOOT_SECOND_EXPLOSIVES_SECTION
                     base=False_(),
                     normal=HasAbility(HIGH_JUMP),
                     moderate=HasAnyAbilities(JEDI | HIGH_JUMP),
                 ),
             ),
             ExitData(
-                "Force Third Explosives Section",
+                R_FORCE_THIRD_EXPLOSIVES_SECTION,
                 logic_options(
                     base=HasAbility(GRAPPLE),
                     # You can get under the cliff a little bit for some extra height, enough to high jump up.
@@ -316,14 +330,14 @@ GENERAL_GRIEVOUS = Chapter(
                 )
             ),
             ExitData(
-                "Bridge And Mines Building",
+                R_BRIDGE_AND_MINES_BUILDING,
                 logic_options(
                     base=HasAbility(HIGH_JUMP),
                     moderate=HasAnyAbilities(HIGH_JUMP | JEDI),
                 )
             ),
             ExitData(
-                "Brick Covered Minikit Alcove",
+                R_BRICK_COVERED_MINIKIT_ALCOVE,
                 logic_options(
                     base=HasAbility(CAN_DOUBLE_JUMP),
                     normal=HasAnyAbilities(CAN_DOUBLE_JUMP | JETPACK),
@@ -331,21 +345,21 @@ GENERAL_GRIEVOUS = Chapter(
                 )
             )
         ),
-        "Far Right Low Platform": (
+        R_FAR_RIGHT_LOW_PLATFORM: (
             ExitData(
-                "Third Explosives Section Gap Area",
+                R_THIRD_EXPLOSIVES_SECTION_GAP_AREA,
                 # Jetpack Hover can also get here on moderate logic, but all JETPACK can GRAPPLE.
                 HasAnyAbilities(GRAPPLE | CAN_DOUBLE_JUMP),
             ),
         ),
-        "Shoot Second Explosives Section": (
-            # Dropping down to "Low Platform With Power Up" is logically useless because being able to reach any upper
+        R_SHOOT_SECOND_EXPLOSIVES_SECTION: (
+            # Dropping down to R_LOW_PLATFORM_WITH_POWER_UP is logically useless because being able to reach any upper
             # area to drop down from, can also use "Circular Platform -> Low Platform With Power Up".
             # ExitData(
-            #     "Low Platform With Power Up"
+            #     R_LOW_PLATFORM_WITH_POWER_UP
             # ),
             ExitData(
-                "Third Explosives Section Gap Area",
+                R_THIRD_EXPLOSIVES_SECTION_GAP_AREA,
                 logic_options(
                     # Expect going around the top or far right instead.
                     base=False_(),
@@ -353,7 +367,7 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
             ExitData(
-                "Force Third Explosives Section",
+                R_FORCE_THIRD_EXPLOSIVES_SECTION,
                 # Exploding the second explosives spawns bricks that can be forced into stairs.
                 logic_options(
                     base=HasAbility(JEDI) & CAN_EXPLODE_SECOND_EXPLOSIVES,
@@ -366,11 +380,11 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
             ExitData(
-                "Brick Covered Minikit Alcove",
+                R_BRICK_COVERED_MINIKIT_ALCOVE,
                 # Only covers getting to the alcove. Destroying the bricks in the way is covered by the minikit
                 # location itself.
                 logic_options(
-                    # Only expect access from "Third Explosives Section Gap Area".
+                    # Only expect access from R_THIRD_EXPLOSIVES_SECTION_GAP_AREA.
                     base=False_(),
                     normal=Or(
                         HasAnyAbilities(CAN_DOUBLE_JUMP | JETPACK),
@@ -381,11 +395,11 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
         ),
-        "Force Third Explosives Section": (
+        R_FORCE_THIRD_EXPLOSIVES_SECTION: (
             # The base logic can be expected to drop down here instead of double jumping across the gap between
-            # "Shoot Second Explosives Section" and "Third Explosives Section Gap Area".
+            # R_SHOOT_SECOND_EXPLOSIVES_SECTION and R_THIRD_EXPLOSIVES_SECTION_GAP_AREA.
             ExitData(
-                "Third Explosives Section Gap Area",
+                R_THIRD_EXPLOSIVES_SECTION_GAP_AREA,
                 logic_options(
                     base=True_(),
                     # Entrance is logically irrelevant, so don't create it.
@@ -394,28 +408,28 @@ GENERAL_GRIEVOUS = Chapter(
                 er_rule=True_(),
             ),
             ExitData(
-                "Third Explosives Cliff",
+                R_THIRD_EXPLOSIVES_CLIFF,
                 logic_options(
                     base=HasAbility(HOVER),
                     moderate=HasAnyAbilities(HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE),
                 )
             ),
             ExitData(
-                "Brick Covered Minikit Alcove",
+                R_BRICK_COVERED_MINIKIT_ALCOVE,
                 logic_options(
-                    # Expect double jump from "Third Explosives Section Gap Area".
+                    # Expect double jump from R_THIRD_EXPLOSIVES_SECTION_GAP_AREA.
                     base=False_(),
                     # Getting into the alcove can be a pain/luck with some characters.
                     # While Gonk Droid might not be able to fall down into here (slides out due to low movement speed),
-                    # I'm pretty sure all characters that can reach "Force Third Explosives Section" can get into the
+                    # I'm pretty sure all characters that can reach R_FORCE_THIRD_EXPLOSIVES_SECTION can get into the
                     # alcove.
                     moderate=True_(),
                 )
             ),
         ),
-        "Third Explosives Cliff": (
+        R_THIRD_EXPLOSIVES_CLIFF: (
             ExitData(
-                "Bridge And Mines Building",
+                R_BRIDGE_AND_MINES_BUILDING,
                 logic_options(
                     # Only expect hover because the cliff gets very thin and is technically not walkable; you slide off
                     # rather slowly.
@@ -426,10 +440,10 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
         ),
-        "Bridge And Mines Building": (
+        R_BRIDGE_AND_MINES_BUILDING: (
             ExitData(
-                "Third Explosives Cliff",
-                # If the player can get to "Bridge And Mines Building" without going through "Third Explosives Cliff",
+                R_THIRD_EXPLOSIVES_CLIFF,
+                # If the player can get to R_BRIDGE_AND_MINES_BUILDING without going through R_THIRD_EXPLOSIVES_CLIFF,
                 # then they already have the necessary jump height to go from the bridge to the slightly higher cliff
                 # section.
                 logic_options(
@@ -445,11 +459,11 @@ GENERAL_GRIEVOUS = Chapter(
                 ),
             ),
         ),
-        "Brick Covered Minikit Alcove": (),
+        R_BRICK_COVERED_MINIKIT_ALCOVE: (),
     },
     minikits={
         "Minikit Behind Silver Brick Wall": minikit_data(
-            "Far Left Silver Brick Section",
+            R_FAR_LEFT_SILVER_BRICK_SECTION,
             logic_options(
                 base=HasAbility(BOUNTY_HUNTER),
                 normal=And(
@@ -491,7 +505,7 @@ GENERAL_GRIEVOUS = Chapter(
             pickup_name="m_pup3",
         ),
         "Force Platforms High Minikit": minikit_data(
-            "First Explosives Section",
+            R_FIRST_EXPLOSIVES_SECTION,
             logic_options(
                 # Fight Grievous and explode the first explosives, then force the platforms and double jump up.
                 base=HasAbility(JEDI),
@@ -501,11 +515,11 @@ GENERAL_GRIEVOUS = Chapter(
             pickup_name="m_pup4",
         ),
         "Minikit On Platform With Power Up": minikit_data(
-            "Low Platform With Power Up",
+            R_LOW_PLATFORM_WITH_POWER_UP,
             pickup_name="mk_1",
         ),
-        "Brick Covered Minikit Alcove": minikit_data(
-            "Brick Covered Minikit Alcove",
+        R_BRICK_COVERED_MINIKIT_ALCOVE: minikit_data(
+            R_BRICK_COVERED_MINIKIT_ALCOVE,
             # The logic for destroying the bricks is defined here.
             # BLASTER works from all regions that can reach here.
             # Self Destruct also works from all regions that can reach here, but is not always expected.
@@ -515,7 +529,7 @@ GENERAL_GRIEVOUS = Chapter(
                     # Ewoks work too.
                     HasAnyAbilities(BLASTER | WEAPON_EWOK),
                     And(
-                        # "Force Third Explosives Section" also works for slam/explode, but if the player can reach
+                        # R_FORCE_THIRD_EXPLOSIVES_SECTION also works for slam/explode, but if the player can reach
                         # there, they can also reach Third Explosives Section Gap Area
                         CanReachRegion("General Grievous - Third Explosives Section Gap Area"),
                         Or(
@@ -539,17 +553,17 @@ GENERAL_GRIEVOUS = Chapter(
             pickup_name="mk_0"
         ),
         "Force Third Explosives Minikit": minikit_data(
-            "Force Third Explosives Section",
+            R_FORCE_THIRD_EXPLOSIVES_SECTION,
             # The minikit spawns when the explosives are forced into position.
             # The explosives cannot be forced until the first and second explosives have been destroyed and Grievous has
-            # jumped up to "Third Explosives Cliff".
+            # jumped up to R_THIRD_EXPLOSIVES_CLIFF.
             # Mostly copied from CAN_EXPLODE_LAST_EXPLOSIVES, but BLASTER is not needed because the explosives do not
             # need to be destroyed to spawn the minikit.
             CAN_EXPLODE_FIRST_TWO_EXPLOSIVES.and_rule(HasAbility(JEDI)),
             pickup_name="m_pup6",
         ),
         "High Minikit Above Third Explosives": minikit_data(
-            "Force Third Explosives Section",
+            R_FORCE_THIRD_EXPLOSIVES_SECTION,
             logic_options(
                 base=HasAbility(HIGH_JUMP),
                 normal=Or(
@@ -571,19 +585,19 @@ GENERAL_GRIEVOUS = Chapter(
             pickup_name="m_pup5",
         ),
         "Grievous Last Cliff Minikit": minikit_data(
-            "Third Explosives Cliff",
+            R_THIRD_EXPLOSIVES_CLIFF,
             pickup_name="m_pup7",
         ),
         "Far Right Low Platform Minikit": minikit_data(
-            "Far Right Low Platform",
+            R_FAR_RIGHT_LOW_PLATFORM,
             pickup_name="m_pup8",
         ),
         "Bridge Minikit": minikit_data(
-            "Bridge And Mines Building",
+            R_BRIDGE_AND_MINES_BUILDING,
             pickup_name="m_pup9",
         ),
         "Destroy All Mines Minikit": minikit_data(
-            "Bridge And Mines Building",
+            R_BRIDGE_AND_MINES_BUILDING,
             logic_options(
                 # Expect a ranged weapon.
                 base=HasAnyAbilities(BLASTER | WEAPON_EWOK),
@@ -595,7 +609,7 @@ GENERAL_GRIEVOUS = Chapter(
         ),
     },
     power_brick=LocationData(
-        "Bridge And Mines Building",
+        R_BRIDGE_AND_MINES_BUILDING,
         HasAbility(JEDI),
     )
 )

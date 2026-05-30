@@ -13,6 +13,15 @@ from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
 from ....character_ability import *
 
+NAME = "Defense Of Kashyyyk"
+
+R_SPAWN_PLATFORM = "Spawn Platform"
+R_ORDER_66_PLATFORMS = "Order 66 Platforms"
+R_RESCUE_WOOKIES_AREA = "Rescue Wookies Area"
+R_BEACH_INVASION = "Beach Invasion"
+R_SWAMP = "Swamp"
+R_FOREST = "Forest"
+
 CAN_BUILD_BEACH_CLONE_WALKER = logic_options(
     # Expect shooting the mines to reveal the brick.
     base=HasAllAbilities(BLASTER | CAN_BUILD_BRICKS),
@@ -21,10 +30,10 @@ CAN_BUILD_BEACH_CLONE_WALKER = logic_options(
 _CAN_BUILD_BEACHFRONT_CLONE_WALKER_ER = CAN_BUILD_BEACH_CLONE_WALKER.and_rule(HasAbility(JEDI))
 
 DEFENSE_OF_KASHYYYK = Chapter(
-    name="Defense Of Kashyyyk",
+    name=NAME,
     episode_number=3,
     chapter_number=4,
-    start_region="Spawn Platform",
+    start_region=R_SPAWN_PLATFORM,
     start_level="kashyyyk_a",
     story_characters=(
         "Chewbacca",
@@ -38,22 +47,22 @@ DEFENSE_OF_KASHYYYK = Chapter(
         "Clone (Episode III, Walker)": 12_000,
     },
     regions={
-        "Spawn Platform": (
+        R_SPAWN_PLATFORM: (
             ExitData(
-                "Order 66 Platforms",
+                R_ORDER_66_PLATFORMS,
                 HasAbility(JEDI),
             ),
         ),
-        "Order 66 Platforms": (
+        R_ORDER_66_PLATFORMS: (
             ExitData(
-                "Rescue Wookies Area",
+                R_RESCUE_WOOKIES_AREA,
                 True_(),
                 er_rule=HasAbility(JEDI),
             ),
         ),
-        "Rescue Wookies Area": (
+        R_RESCUE_WOOKIES_AREA: (
             ExitData(
-                "Beach Invasion",
+                R_BEACH_INVASION,
                 # Optimised out the HasAbility(JEDI) that is needed to reach here.
                 logic_options(
                     base=CAN_GRAPPLE,
@@ -92,9 +101,9 @@ DEFENSE_OF_KASHYYYK = Chapter(
                 new_level="kashyyyk_b",
             ),
         ),
-        "Beach Invasion": (
+        R_BEACH_INVASION: (
             ExitData(
-                "Swamp",
+                R_SWAMP,
                 logic_options(
                     base=True_(),
                     normal=Or(
@@ -187,9 +196,9 @@ DEFENSE_OF_KASHYYYK = Chapter(
                 new_level="kashyyyk_c",
             ),
         ),
-        "Swamp": (
+        R_SWAMP: (
             ExitData(
-                "Forest",
+                R_FOREST,
                 True_(),
                 er_rule=logic_options(
                     # Expect fighting the spawned droids to get through, but not killing the commander battle droids.
@@ -199,7 +208,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                 new_level="kashyyyk_d",
             ),
         ),
-        "Forest": (
+        R_FOREST: (
             ExitData(
                 "Chapter Completion",
                 # All that's needed is a JEDI, which was needed at the very start of the chapter.
@@ -222,7 +231,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
     },
     minikits={
         "Tall Tree High Platforms Minikit": minikit_data(
-            "Rescue Wookies Area",
+            R_RESCUE_WOOKIES_AREA,
             # Optimised out the HasAbility(JEDI) that is needed to reach here.
             logic_options(
                 base=HasAllAbilities(GRAPPLE | JETPACK | HIGH_JUMP),
@@ -245,7 +254,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             pickup_name="m_pup2"
         ),
         "Tall Tree Grapple Platform Minikit": minikit_data(
-            "Rescue Wookies Area",
+            R_RESCUE_WOOKIES_AREA,
             # Optimised out the HasAbility(JEDI) that is needed to reach here.
             logic_options(
                 base=HasAbility(JEDI),
@@ -261,7 +270,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             pickup_name="m_pup1",
         ),
         "Beach Rock Minikit": minikit_data(
-            "Beach Invasion",
+            R_BEACH_INVASION,
             logic_options(
                 base=HasAbility(HIGH_JUMP),
                 # All Jedi can build and ride the Clone Walker.
@@ -280,7 +289,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             pickup_name="mk_0"
         ),
         "Beach High Platform Minikit": minikit_data(
-            "Beach Invasion",
+            R_BEACH_INVASION,
             # Optimised out the HasAbility(JEDI) (+GRAPPLE on base logic) that is needed to reach here.
             logic_options(
                 base=HasAllAbilities(HIGH_JUMP | HOVER),
@@ -302,7 +311,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             pickup_name="m_pup2",
         ),
         "Beach Force Three Carrots Miniki": MinikitData(
-            "Beach Invasion",
+            R_BEACH_INVASION,
             # Base/Normal requires JEDI + can_grapple to get here.
             # Moderate+ requires JEDI to get here, and all Jedi can build the Clone Walker, ride it, and then double
             # jump to the minikit.
@@ -324,7 +333,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             ),
         ),
         "Minikit Above Crashed Clone Arcfighter": minikit_data(
-            "Swamp",
+            R_SWAMP,
             logic_options(
                 base=HasAbility(HIGH_JUMP),
                 normal=True_(),
@@ -339,7 +348,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             pickup_name="m_pup1",
         ),
         "Minikit By Right Commander Battle Droid": minikit_data(
-            "Swamp",
+            R_SWAMP,
             logic_options(
                 base=HasAbility(HIGH_JUMP),
                 normal=True_(),
@@ -355,7 +364,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             pickup_name="m_pup2",
         ),
         "Minikit Above Sith Force Bush": minikit_data(
-            "Forest",
+            R_FOREST,
             logic_options(
                 # JEDI and can_grapple are required to reach here.
                 base=HasAllAbilities(SITH | HOVER),
@@ -395,7 +404,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             pickup_name="m_pup2",
         ),
         "Minikit Above Rolling Boulders": minikit_data(
-            "Forest",
+            R_FOREST,
             logic_options(
                 # Base and normal need JEDI and can_grapple to get here.
                 base=True_(),
@@ -433,7 +442,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             pickup_name="m_pup1",
         ),
         "Minikit Above Escape Pod": minikit_data(
-            "Forest",
+            R_FOREST,
             logic_options(
                 base=HasAbility(HIGH_JUMP),
                 # Ride the Clone Walker and double jump out, or force the escape pod most of the way up and then jump to
@@ -444,7 +453,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
         )
     },
     power_brick=LocationData(
-        "Order 66 Platforms",
+        R_ORDER_66_PLATFORMS,
         # JEDI is needed to reach here, so the normal+ rules can be slightly optimised.
         logic_options(
             base=HasAllAbilities(SITH | BOUNTY_HUNTER),
@@ -454,7 +463,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
     ),
     ridables={
         "Clone Walker": LocationData(
-            "Beach Invasion",
+            R_BEACH_INVASION,
             # If you could somehow get to the forest without being able to build the one on the beach, there is also a
             # walker being piloted by an enemy in the forest, requiring only the ability to damage/force it to be able
             # to ride it yourself.

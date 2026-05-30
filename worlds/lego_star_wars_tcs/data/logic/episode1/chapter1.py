@@ -6,8 +6,21 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Negotiations"
+
+R_MEETING_ROOM = "Meeting Room"
+R_MAIN_CORRIDOR = "Main Corridor"
+R_SINGLE_FORCE_FIELD_ROOM = "Single Force Field Room"
+R_HIGH_FORCE_FIELDS_ROOM = "High Force Fields Room"
+R_VULTURE_DROID_ROOM = "Vulture Droid Room"
+R_SMALL_ROOM_BETWEEN_MAIN_CORRIDOR_AND_ROOM_BEFORE_HANGAR = "Small Room Between Main Corridor and Room Before Hangar"
+R_ROOM_BEFORE_HANGAR = "Room Before Hangar"
+R_MAIN_HANGAR = "Main Hangar"
+R_POWER_BRICK_ROOM = "Power Brick Room"
+R_MTT_HANGAR = "MTT Hangar"
+
 NEGOTIATIONS = Chapter(
-    name="Negotiations",
+    name=NAME,
     episode_number=1,
     chapter_number=1,
     story_characters=(
@@ -21,50 +34,50 @@ NEGOTIATIONS = Chapter(
         "Battle Droid (Commander)": 10_000,
         "Droideka": 40_000,
     },
-    start_region="Meeting Room",
+    start_region=R_MEETING_ROOM,
     start_level="negotiations_a",
     regions={
-        "Meeting Room": (
-            ExitData("Main Corridor", HasAbility(JEDI)),
+        R_MEETING_ROOM: (
+            ExitData(R_MAIN_CORRIDOR, HasAbility(JEDI)),
         ),
-        "Main Corridor": (
+        R_MAIN_CORRIDOR: (
             ExitData(
-                "Single Force Field Room",
+                R_SINGLE_FORCE_FIELD_ROOM,
                 HasAbility(PROTOCOL_PANEL),
             ),
             ExitData(
-                "High Force Fields Room",
+                R_HIGH_FORCE_FIELDS_ROOM,
                 HasAbility(PROTOCOL_PANEL),
             ),
             ExitData(
-                "Vulture Droid Room",
+                R_VULTURE_DROID_ROOM,
                 HasAbility(ASTROMECH_PANEL),
                 new_level="negotiations_b",
             ),
             ExitData(
-                "Small Room Between Main Corridor and Room Before Hangar",
+                R_SMALL_ROOM_BETWEEN_MAIN_CORRIDOR_AND_ROOM_BEFORE_HANGAR,
                 HasAbility(PROTOCOL_PANEL),
             ),
         ),
-        "Single Force Field Room": (),
-        "High Force Fields Room": (),
-        "Vulture Droid Room": (),
-        "Small Room Between Main Corridor and Room Before Hangar": (
+        R_SINGLE_FORCE_FIELD_ROOM: (),
+        R_HIGH_FORCE_FIELDS_ROOM: (),
+        R_VULTURE_DROID_ROOM: (),
+        R_SMALL_ROOM_BETWEEN_MAIN_CORRIDOR_AND_ROOM_BEFORE_HANGAR: (
             ExitData(
-                "Room Before Hangar",
+                R_ROOM_BEFORE_HANGAR,
                 er_rule=HasAllAbilities(JEDI | CAN_BUILD_BRICKS | PROTOCOL_PANEL),
             ),
         ),
-        "Room Before Hangar": (
+        R_ROOM_BEFORE_HANGAR: (
             ExitData(
-                "Main Hangar",
+                R_MAIN_HANGAR,
                 er_rule=HasAbility(JEDI),
                 new_level="negotiations_c",
             ),
         ),
-        "Main Hangar": (
+        R_MAIN_HANGAR: (
             ExitData(
-                "Power Brick Room",
+                R_POWER_BRICK_ROOM,
                 HasAbility(ASTROMECH_PANEL),
                 er_rule=And(
                     HasAbility(ASTROMECH_PANEL),
@@ -77,7 +90,7 @@ NEGOTIATIONS = Chapter(
                 ),
             ),
             ExitData(
-                "MTT Hangar",
+                R_MTT_HANGAR,
                 er_rule=logic_options(
                     # Defeat the Droideka and force the platforms to jump over the fence.
                     base=HasAbility(JEDI),
@@ -88,8 +101,8 @@ NEGOTIATIONS = Chapter(
                 )
             ),
         ),
-        "Power Brick Room": (),
-        "MTT Hangar": (
+        R_POWER_BRICK_ROOM: (),
+        R_MTT_HANGAR: (
             ExitData(
                 "Chapter Completion",
                 er_rule=HasAbility(PROTOCOL_PANEL),
@@ -99,26 +112,26 @@ NEGOTIATIONS = Chapter(
     },
     minikits={
         "Blue Levers Minikit": minikit_data(
-            "Main Corridor",
+            R_MAIN_CORRIDOR,
             er_rule=HasAbility(JEDI),
             pickup_name="m_pup4",
         ),
         "Purple Levers Minikit": minikit_data(
-            "Main Corridor",
+            R_MAIN_CORRIDOR,
             er_rule=HasAbility(JEDI),
             pickup_name="m_pup1",
         ),
         "Force Field With Battle Droids Minikit": minikit_data(
-            "Single Force Field Room",
+            R_SINGLE_FORCE_FIELD_ROOM,
             pickup_name="m_pup3",
         ),
         "Minikit Behind Left High Force Field": minikit_data(
-            "High Force Fields Room",
+            R_HIGH_FORCE_FIELDS_ROOM,
             HasAbility(SHORTIE),
             pickup_name="m_pup5",
         ),
         "Minikit Behind Right High Force Field": minikit_data(
-            "High Force Fields Room",
+            R_HIGH_FORCE_FIELDS_ROOM,
             HasAbility(SHORTIE),
             er_rule=And(
                 # Needed to disable the force fields.
@@ -135,7 +148,7 @@ NEGOTIATIONS = Chapter(
             pickup_name="pup2",
         ),
         "High Minikit In Vulture Droid Room": minikit_data(
-            "Vulture Droid Room",
+            R_VULTURE_DROID_ROOM,
             logic_options(
                 base=HasAbility(HIGH_JUMP),
                 moderate=True_(),
@@ -153,7 +166,7 @@ NEGOTIATIONS = Chapter(
             pickup_name="m_pup1",
         ),
         "Minikit Above Repaired Vulture Droid": minikit_data(
-            "Vulture Droid Room",
+            R_VULTURE_DROID_ROOM,
             logic_options(
                 base=HasAllAbilities(HIGH_JUMP | HOVER),
                 normal=HasAllAbilities(HOVER),
@@ -177,7 +190,7 @@ NEGOTIATIONS = Chapter(
             pickup_name="pup2",
         ),
         "High Minikit In Room Before Hangar": minikit_data(
-            "Room Before Hangar",
+            R_ROOM_BEFORE_HANGAR,
             logic_options(
                 base=HasAbility(HIGH_JUMP),
                 normal=True_(),
@@ -194,7 +207,7 @@ NEGOTIATIONS = Chapter(
             pickup_name="m_pup2",
         ),
         "Minikit Left of Hangar Entrance": minikit_data(
-            "Main Hangar",
+            R_MAIN_HANGAR,
             er_rule=logic_options(
                 # If the jump from the entrance with to where the minikit is, is missed, the force can be used on boxes
                 # to build a tower back up to the entrance.
@@ -206,7 +219,7 @@ NEGOTIATIONS = Chapter(
             pickup_name="m_pup1",
         ),
         "Moving Platform Minikit": minikit_data(
-            "Main Hangar",
+            R_MAIN_HANGAR,
             er_rule=logic_options(
                 # Stack the boxes and force the lever to activate the platform.
                 base=HasAbility(JEDI),
@@ -217,7 +230,7 @@ NEGOTIATIONS = Chapter(
         ),
     },
     power_brick=LocationData(
-        "Power Brick Room",
+        R_POWER_BRICK_ROOM,
         er_rule=logic_options(
             base=HasAbility(JEDI),
             normal=HasAnyAbilities(JEDI | HIGH_JUMP),
@@ -225,7 +238,7 @@ NEGOTIATIONS = Chapter(
     ),
     ridables={
         "STAP": LocationData(
-            "Main Hangar",
+            R_MAIN_HANGAR,
             er_rule=HasAbility(CAN_BUILD_BRICKS),
         )
     },
