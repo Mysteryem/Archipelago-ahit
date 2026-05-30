@@ -97,6 +97,7 @@ CAN_DAMAGE_AT_CLOSE_RANGE = logic_options(
         CAN_USE_SELF_DESTRUCT,
     ),
 )
+CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT = CAN_DAMAGE_AT_CLOSE_RANGE.base
 # can_fight_close_droids = logic_options(
 #     base=CAN_DAMAGE_AT_CLOSE_RANGE,
 #     normal=Or(
