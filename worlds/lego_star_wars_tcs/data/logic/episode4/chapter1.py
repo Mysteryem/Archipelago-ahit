@@ -59,6 +59,23 @@ _helper = ChapterHelper(
     ),
 )
 
+# The ridables logic is also used in a Minikit location that requires riding a vehicle, so the individual logic is
+# created here, and referenced in both that Minikit location's logic and the individual ridables' logic.
+MOON_CAR_LOGIC = logic_options(
+    base=HasAbility(CAN_BUILD_BRICKS) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    hard=And(
+        HasAbility(CAN_BUILD_BRICKS),
+        Or(
+            CAN_DESTROY_CLOSE_SILVER_BRICKS,
+            # You can push a stormtrooper all the way into the corridor and deflect one of their bolts into
+            # near the silver bricks.
+            # Only relevant to Darth Vader/The Emperor while there is no panel randomizer.
+            Has("Exploding Blaster Bolts") & CAN_USE_DEFLECT_BOLTS,
+        ),
+    ),
+)
+TOWN_CAR_LOGIC = HasAbility(JEDI)
+
 SECRET_PLANS = _helper.make_chapter(
     regions={
         _helper.start_region: (
@@ -254,16 +271,17 @@ SECRET_PLANS = _helper.make_chapter(
             HasAbility(JEDI),
             pickup_name="pup1",
         ),
-        "Crane Room Minikit": minikit_data(
+        "Crane Room Ride A Car Minikit": minikit_data(
             R_CRANE_ROOM,
             # The ridesanity entrances won't exist unless Ridesanity is enabled, so the access rules from them are
             # copied here.
             And(
+                # HasAbility(CAN_RIDE_VEHICLES) is only automatically added to ridable rules, so, in this minikit rule,
+                # HasAbility(CAN_RIDE_VEHICLES) must be explicitly checked.
                 HasAbility(CAN_RIDE_VEHICLES),
-                _helper.can_reach_region(R_SIDE_ACCESS_CORRIDOR),
                 Or(
-                    HasAbility(CAN_BUILD_BRICKS) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
-                    _helper.can_reach_region(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD) & HasAbility(JEDI),
+                    _helper.can_reach_region(R_SIDE_ACCESS_CORRIDOR) & MOON_CAR_LOGIC,
+                    _helper.can_reach_region(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD) & TOWN_CAR_LOGIC,
                 ),
             ),
             pickup_name="m_pup1",
@@ -299,22 +317,7 @@ SECRET_PLANS = _helper.make_chapter(
     },
     power_brick=LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, HasAbility(JEDI)),
     ridables={
-        "Moon Car": LocationData(
-            R_SIDE_ACCESS_CORRIDOR,
-            logic_options(
-                base=HasAbility(CAN_BUILD_BRICKS) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
-                hard=And(
-                    HasAbility(CAN_BUILD_BRICKS),
-                    Or(
-                        CAN_DESTROY_CLOSE_SILVER_BRICKS,
-                        # You can push a stormtrooper all the way into the corridor and deflect one of their bolts into
-                        # near the silver bricks.
-                        # Only relevant to Darth Vader/The Emperor while there is no panel randomizer.
-                        Has("Exploding Blaster Bolts") & CAN_USE_DEFLECT_BOLTS,
-                    ),
-                ),
-            ),
-        ),
-        "Town Car": LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, HasAbility(JEDI)),
+        "Moon Car": LocationData(R_SIDE_ACCESS_CORRIDOR, MOON_CAR_LOGIC),
+        "Town Car": LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, TOWN_CAR_LOGIC),
     },
 )
