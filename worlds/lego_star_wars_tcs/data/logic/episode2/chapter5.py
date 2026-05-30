@@ -1,10 +1,10 @@
 from rule_builder.rules import True_
 
-from ...option_filters import logic_options
-from ...rules import HasAbility
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ..rules import HasAbility
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 GUNSHIP_CAVALRY = Chapter(
     name="Gunship Cavalry",

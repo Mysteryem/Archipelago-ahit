@@ -1,10 +1,10 @@
 from rule_builder.rules import And, True_
 
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 NEGOTIATIONS = Chapter(
     name="Negotiations",

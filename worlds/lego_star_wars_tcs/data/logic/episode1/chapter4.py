@@ -1,7 +1,7 @@
-from ...rules import HasAbility
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..rules import HasAbility
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import VEHICLE_TIE, IS_A_VEHICLE
+from ....character_ability import VEHICLE_TIE, IS_A_VEHICLE
 
 MOS_ESPA_POD_RACE = Chapter(
     name="Mos Espa Pod Race",

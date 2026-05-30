@@ -1,14 +1,14 @@
 from rule_builder.rules import HasAny, True_, HasAll, Has
 
-from ...macros import (
+from ..macros import (
     CAN_GRAPPLE,
     CAN_DESTROY_CLOSE_SILVER_BRICKS as BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS,
 )
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAnyAbilities
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAnyAbilities
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
     # The Extra Toggle character Buzz Droid can explode.

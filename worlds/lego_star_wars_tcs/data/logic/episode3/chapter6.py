@@ -1,16 +1,16 @@
 from rule_builder.rules import True_, And, Has, Or, HasAny, False_, Rule
 
-from ...macros import (
+from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT,
     CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
 )
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAnyAbilities, HasAbilityCombination, HasAbilityExceptCharacters
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAnyAbilities, HasAbilityCombination, HasAbilityExceptCharacters
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
-from .....items import LOGIC_CONSIDERED_CHARACTERS, VehicleData
+from ....character_ability import *
+from ....items import LOGIC_CONSIDERED_CHARACTERS, VehicleData
 
 ANY_DOUBLE_JUMP_EXCEPT_YODA = HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | HIGH_JUMP)
 # More expensive and makes fewer assumptions but should be identical.

@@ -1,17 +1,17 @@
 from rule_builder.rules import True_, And, Has, Or, HasAny
 
-from ...macros import (
+from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_GRAPPLE,
     CAN_SITH_FORCE,
     CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_USE_SELF_DESTRUCT,
 )
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
-from ...types import minikit_data, ExitData, Chapter, LocationData, MinikitData
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
+from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
-from .....character_ability import *
+from ....character_ability import *
 
 CAN_BUILD_BEACH_CLONE_WALKER = logic_options(
     # Expect shooting the mines to reveal the brick.

@@ -1,11 +1,11 @@
 from rule_builder.rules import And, Or, HasAny, False_, True_
 
-from ...macros import CAN_USE_SELF_DESTRUCT
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..macros import CAN_USE_SELF_DESTRUCT
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 INVASION_OF_NABOO = Chapter(
     name="Invasion of Naboo",

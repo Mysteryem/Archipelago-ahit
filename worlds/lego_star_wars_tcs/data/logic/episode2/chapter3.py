@@ -1,6 +1,6 @@
 from rule_builder.rules import And, Or, Has, HasAny
 
-from ...macros import (
+from ..macros import (
     CAN_GRAPPLE,
     CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_USE_DEFLECT_BOLTS,
@@ -8,11 +8,11 @@ from ...macros import (
     CAN_ACTIVATE_CLOSE_TARGET,
     HAS_FLUTTER_CHARACTER,
 )
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 
 DROID_FACTORY = Chapter(

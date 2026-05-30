@@ -1,13 +1,13 @@
 from rule_builder.rules import Has
 
-from ...macros import (
+from ..macros import (
     CAN_SHOOT_ALLOW_TORPEDOES,
 )
-from ...option_filters import logic_options
-from ...rules import HasAbility
-from ...types import minikit_data, ExitData, Chapter, LocationData, MinikitData
+from ..option_filters import logic_options
+from ..rules import HasAbility
+from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
-from .....character_ability import *
+from ....character_ability import *
 
 BOUNTY_HUNTER_PURSUIT = Chapter(
     name="Bounty Hunter Pursuit",

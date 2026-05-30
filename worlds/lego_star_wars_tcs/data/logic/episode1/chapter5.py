@@ -1,6 +1,6 @@
 from rule_builder.rules import And, Or, Has, HasAny, True_
 
-from ...macros import (
+from ..macros import (
     CAN_USE_SELF_DESTRUCT,
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -8,11 +8,11 @@ from ...macros import (
     CAN_DAMAGE_SHIELDED_DROIDEKA,
     CAN_USE_DEFLECT_BOLTS,
 )
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 RETAKE_THEED_PALACE = Chapter(
     name="Retake Theed Palace",

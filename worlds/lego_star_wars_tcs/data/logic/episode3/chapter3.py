@@ -1,16 +1,16 @@
 from rule_builder.rules import True_, Or, False_, CanReachRegion, And, Has, HasAll
 
-from ...macros import (
+from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS as BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_DAMAGE_AT_CLOSE_RANGE as BASE_CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_USE_SELF_DESTRUCT as BASE_CAN_USE_SELF_DESTRUCT,
     can_jump_distance_rule,
 )
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 
 # This could be optimised better, but I want to use the original BASE_CAN_USE_SELF_DESTRUCT in the rule.

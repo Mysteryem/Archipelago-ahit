@@ -1,17 +1,17 @@
 from rule_builder.rules import Or, And, HasAny
 
-from ...macros import (
+from ..macros import (
     CAN_GRAPPLE,
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_JUMP_DISTANCE_0_7_CLONE_PLUS,
     CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
 )
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 COUNT_DOOKU = Chapter(
     name="Count Dooku",

@@ -1,15 +1,15 @@
 from rule_builder.rules import Or, Has, True_, False_
 
-from ...macros import (
+from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     can_jump_distance_rule,
     CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
 )
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 DARTH_MAUL = Chapter(
     name="Darth Maul",

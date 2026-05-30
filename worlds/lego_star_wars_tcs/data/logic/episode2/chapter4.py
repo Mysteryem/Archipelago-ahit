@@ -1,15 +1,15 @@
 from rule_builder.rules import Or
 
-from ...macros import (
+from ..macros import (
     CAN_GRAPPLE,
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_DAMAGE_SHIELDED_DROIDEKA,
 )
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 JEDI_BATTLE = Chapter(
     name="Jedi Battle",

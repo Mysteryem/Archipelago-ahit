@@ -1,11 +1,11 @@
 from rule_builder.rules import And, Or, Has, HasAny
 
-from ...macros import CAN_SITH_FORCE, CAN_USE_DEFLECT_BOLTS, CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS
-from ...option_filters import logic_options
-from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
-from ...types import minikit_data, ExitData, Chapter, LocationData
+from ..macros import CAN_SITH_FORCE, CAN_USE_DEFLECT_BOLTS, CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS
+from ..option_filters import logic_options
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
-from .....character_ability import *
+from ....character_ability import *
 
 DISCOVERY_ON_KAMINO = Chapter(
     name="Discovery On Kamino",

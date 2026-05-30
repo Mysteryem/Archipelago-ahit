@@ -1,7 +1,7 @@
-from ...rules import HasAbility, HasAbilityExceptCharacters, True_
-from ...types import minikit_data, ExitData, Chapter, LocationData
-from ...option_filters import logic_options
-from .....character_ability import IS_A_VEHICLE, VEHICLE_BLASTER
+from ..rules import HasAbility, HasAbilityExceptCharacters, True_
+from ..types import minikit_data, ExitData, Chapter, LocationData
+from ..option_filters import logic_options
+from ....character_ability import IS_A_VEHICLE, VEHICLE_BLASTER
 
 BATTLE_OVER_CORUSCANT = Chapter(
     name="Battle Over Coruscant",
