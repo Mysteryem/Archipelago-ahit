@@ -3,6 +3,7 @@ from .chapter2 import CHANCELLOR_IN_PERIL
 from .chapter3 import GENERAL_GRIEVOUS
 from .chapter4 import DEFENSE_OF_KASHYYYK
 from .chapter5 import RUIN_OF_THE_JEDI
+from .chapter6 import DARTH_VADER
 
 __all__ = [
     "CHAPTERS",
@@ -14,4 +15,5 @@ CHAPTERS = (
     GENERAL_GRIEVOUS,
     DEFENSE_OF_KASHYYYK,
     RUIN_OF_THE_JEDI,
+    DARTH_VADER,
 )

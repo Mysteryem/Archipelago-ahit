@@ -139,6 +139,8 @@ class CharacterAbility(IntFlag):
     VEHICLE_TOW = auto()
     VEHICLE_BLASTER = auto()
 
+    ALL_VEHICLE_ABILITIES = IS_A_VEHICLE | VEHICLE_TIE | VEHICLE_TOW | VEHICLE_BLASTER
+
     # def __matmul__(self, other):
     #     """(A | B | C) @ D -> (A in D) or (B in D) or (C in D)"""
     #     if isinstance(other, CharacterAbility):
