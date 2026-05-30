@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, CanReachRegion, HasAll, Has, HasAny, True_
+from rule_builder.rules import And, Or, HasAll, Has, HasAny, True_
 
 from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -260,10 +260,10 @@ SECRET_PLANS = _helper.make_chapter(
             # copied here.
             And(
                 HasAbility(CAN_RIDE_VEHICLES),
-                CanReachRegion("Secret Plans - Side Access Corridor"),
+                _helper.can_reach_region(R_SIDE_ACCESS_CORRIDOR),
                 Or(
                     HasAbility(CAN_BUILD_BRICKS) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
-                    CanReachRegion("Secret Plans - Side Access Corridor Behind Force Field") & HasAbility(JEDI),
+                    _helper.can_reach_region(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD) & HasAbility(JEDI),
                 ),
             ),
             pickup_name="m_pup1",
