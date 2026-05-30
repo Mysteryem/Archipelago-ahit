@@ -196,7 +196,8 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
 
 
 def _recursively_replace_logic_options(rule: Rule, difficulty_attribute: Literal["base", "normal", "moderate", "hard"]):
-    if isinstance(rule, LogicOptions):
+    rule_class = type(rule)
+    if rule_class is LogicOptions:
         if rule.options:
             # OptionFilters would probably be annoying to combine correctly, especially if filtered_resolution
             # differs between the LogicOptions and the rule being getattr-ed.
@@ -210,9 +211,9 @@ def _recursively_replace_logic_options(rule: Rule, difficulty_attribute: Literal
                 # A rule that could need replacing has been found.
 
                 # Find which NestedRule type we are.
-                if isinstance(rule, And):
+                if rule_class is And:
                     cls = And
-                elif isinstance(rule, Or):
+                elif rule_class is Or:
                     cls = Or
                 else:
                     raise Exception(f"Cannot handle unknown type NestedRule: {rule}")
@@ -233,6 +234,15 @@ def _recursively_replace_logic_options(rule: Rule, difficulty_attribute: Literal
                     )
                 # No rules have changed, so fall through to returning the input rule.
         # No rules could need replacement, so fall through to returning the input rule.
+    if isinstance(rule, WrapperRule):
+        if rule_class is Filtered or rule_class is WrapperRule:
+            replacement_child = _recursively_replace_logic_options(rule.child, difficulty_attribute)
+            if replacement_child is not rule.child:
+                return cast(type[Filtered] | type[WrapperRule], rule_class)(
+                    replacement_child,
+                    options=rule.options,
+                    filtered_resolution=rule.filtered_resolution
+                )
     return rule
 
 
