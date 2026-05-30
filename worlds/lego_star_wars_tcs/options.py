@@ -1408,8 +1408,6 @@ class UncapOriginalTrilogyHighJump(Toggle):
 
     Enabling this option will remove the cap, restoring High Jump height to the same as seen in Prequel Trilogy
     Chapters.
-
-    The logic does not currently account for this option being enabled.
     """
     display_name = "Uncap Original Trilogy High Jump"
     rich_text_doc = True
@@ -1627,7 +1625,6 @@ class AutoCollectSpawnedPickups(ChoiceFromStringExtension):
 
 
 class LogicDifficulty(ChoiceFromStringExtension):
-    # todo: Maybe just remove Extras (other than score multipliers) logic from None difficulty?
     """
     - None:
       - Tries to match developer intended strategies.
@@ -1637,25 +1634,37 @@ class LogicDifficulty(ChoiceFromStringExtension):
       - No glitches expected.
       - Players that have played most of the vanilla game should be able to play with this difficulty.
       - Expects more platforming that probably wasn't developer intended, but it generally quite obvious and simple.
-      - Logic expects the use of Extras:
+      - Logic expects the use of Extras, for example:
         - Self Destruct, Exploding Blaster Bolts, and Super Ewok Catapult can be expected for destroying Silver Brick
         objects.
         - Force Grapple Leap can be expected to use Grapple points.
-        - Dark Side can be expected to use Sith Force. There are a few, rare cases where P1 and P2 are expected to use
-        Sith Force simultaneously. The CPU co-op partner will only use Sith Force with Sith characters, so these cases
-        can require a small amount of controlling both characters simultaneously if the only access to Sith Force is
-        through Dark Side.
-      - (incomplete, most levels will use None difficulty logic)
+        - Dark Side can be expected to use Sith Force.
+      - 1P2C (1 Player, 2 Controllers) usage is limited to pressing only a single button on each controller
+      simultaneously for 2-player Sith Force puzzles when Dark Side is unlocked, but no Sith are unlocked (e.g. the last
+      Minikit in 2-2).
     - Moderate:
       - Simpler glitches expected.
       - Players that play the AP randomizer often should be able to perform all tricks in this difficulty efficiency,
       after some practice and/or learning.
       - Slam-jumps, e.g. Jedi-Triple-Jump included in logic.
-      - Expects more platforming off of terrain
-      - (incomplete, most levels will use None difficulty logic)
+      - Expects more platforming off of terrain.
+      - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling only one character at a time,
+      taking turns between controlling each character (e.g. button platforms in 2-2 and 2-6)
+      - 1P2C usage additionally includes simpler use of controlling both characters simultaneously, e.g. completing the
+      collapsing hallway at the start of 3-6 by holding the down key/button on both controllers and pressing the jump
+      button/key at the correct times for each character.
     - Hard:
       - More difficult jumps and tricks.
-      - (incomplete, most levels will use None difficulty logic)
+      - Some out-of-bounds tricks may be in logic.
+      - Drop-in warps.
+      - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling both characters simultaneously
+      - (incomplete, most levels will use Moderate difficulty logic)
+    - Expert (not implemented):
+      - This difficulty, if implemented, will probably try to match Expert difficulty in ViolaGuy's standalone TCS
+      randomizer.
+    - Super Expert (not implemented):
+      - This difficulty, if implemented, will probably try to match Super Expert difficulty in ViolaGuy's standalone TCS
+      randomizer.
     """
     display_name = "Logic Difficulty"
     rich_text_doc = True
@@ -1799,7 +1808,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     ridesanity: Ridesanity
 
     # Logic and Difficulty.
-    # logic_difficulty: LogicDifficulty
+    logic_difficulty: LogicDifficulty
     episode_unlock_requirement: EpisodeUnlockRequirement
     chapter_unlock_requirement: ChapterUnlockRequirement
     #   Chapters locked by Characters.
@@ -1904,6 +1913,8 @@ OPTION_GROUPS: list[OptionGroup] = [
         AllEpisodesCharacterPurchaseRequirements,
     ]),
     OptionGroup("Logic and Difficulty", [
+        LogicDifficulty,
+        UncapOriginalTrilogyHighJump,
         EasierTrueJedi,
         ScaleTrueJediWithScoreMultipliers,
         MostExpensivePurchaseWithNoScoreMultiplier,
@@ -1939,7 +1950,6 @@ OPTION_GROUPS: list[OptionGroup] = [
     OptionGroup("Client", [
         ReceivedItemMessages,
         CheckedLocationMessages,
-        UncapOriginalTrilogyHighJump,
         AutoCollectSpawnedPickups,
         ShopTrapAsFakeProgressionChance,
         ProgressionUsefulItemColor,

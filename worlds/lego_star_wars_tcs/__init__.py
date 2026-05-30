@@ -921,6 +921,7 @@ class LegoStarWarsTCSWorld(World):
                 "chapter_unlock_story_characters_not_required",
                 "shop_fake_trap_chance",
                 "auto_collect_spawned_pickups",
+                "logic_difficulty",
             )
         }
 
