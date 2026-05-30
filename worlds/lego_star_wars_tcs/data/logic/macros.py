@@ -12,6 +12,8 @@ from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
 CAN_USE_SELF_DESTRUCT = HasAbility(CAN_SELF_DESTRUCT) & Has("Self Destruct")
 CAN_SUPER_EWOK_CATAPULT = HasAbility(WEAPON_EWOK) & Has("Super Ewok Catapult")
 
+HAS_FLUTTER_CHARACTER = HasAny("Geonosian", "Watto")
+
 
 def can_jump_distance_rule(distance_or_character: float | str) -> Rule:
     distance: float

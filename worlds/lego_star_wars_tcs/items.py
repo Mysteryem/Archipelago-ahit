@@ -588,19 +588,24 @@ def generic_geonosian(ap_id: int, name: str, character_id: int, abilities: Chara
     # Calculated jump distance is 1.2, but it's more like 0.75 or so.
     # Geonosian gets a jump, and then hovers slightly above the ground, which grants extra height.
     # Jump Distance:
-    #  I could get across larger gaps than
+    #  I could get across larger gaps, without elevation changes, than
     #  - run_speed=1.0, jump_speed=2.1, air_gravity=-6.0 -> jump_distance=0.7 (Clone).
-    #  I could not get across as large gaps as
+    #  I could not get across as large gaps, without elevation changes, as
     #  - run_speed=1.32, jump_speed=2.4, air_gravity=-7.0 -> jump_distance=0.9 (Captain Tarpals)
     #  - run_speed=1.2, jump_speed=2.1, air_gravity=-6.0 -> jump_distance=0.84 (Padmé)
     #  - run_speed=1.0, jump_speed=2.3, air_gravity=-6.0 -> jump_distance=0.77777 (Dexter Jettster)
-    #  I'm guessing the Geonosian jump_distance as 0.75.
+    #  Without elevation changes, I'm guessing the Geonosian jump_distance is around 0.75.
+    #  There is an issue with gaps that have elevation changes however, since the flutter effect can quickly fall
+    #  downwards. For example, on 3-6, in the lava platforming section, there is a jump from rib-like platforms to
+    #  individual sinking platforms, and while Ewok (jump_distance=0.69) can barely make it to the first platform,
+    #  Geonosian cannot. Geonosian does not seem far off from being able to make this jump, however, so I have given
+    #  Geonosian a jump_distance of 0.65.
     # Jump Height:
     #  I could not jump as high as 4-LOM (0.37 jump height) and the only other characters that can jump worse are
     #  Astromech Droids.
     #  Geonosian can make it up the first two force steps in 3-3 (spawned by destroying the second explosives),
     #  Astromech Droids are not even close. These steps have about 0.3 y distance between them.
-    return CharacterData(ap_id, name, character_id, abilities, 1.5, 0.3, 0.75)
+    return CharacterData(ap_id, name, character_id, abilities, 1.5, 0.3, 0.65)
 
 
 ITEM_DATA: list[GenericItemData] = [

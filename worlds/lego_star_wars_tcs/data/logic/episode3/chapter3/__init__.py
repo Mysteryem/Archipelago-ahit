@@ -234,7 +234,7 @@ GENERAL_GRIEVOUS = Chapter(
                         # Boba Fett (Boy) I don't think can make the second or third jumps (0.8/0.37/0.56)
                         #   Not enough movement speed to slide up the second jump that he doesn't have enough height for
                         #   and not enough movement speed to make it across the third jump.
-                        # Geonosian cannot make any of the jumps (height) (1.5/0.3/0.75)
+                        # Geonosian cannot make any of the jumps (height) (1.5/0.3/'0.65')
                         # Clone struggles with all the jumps (distance and height) (1.0/0.37/0.7)
                         # Captain Panaka struggles with the second jump (getting height) (1.2/0.37/0.84)
                         # Ewok/Ugnaught struggle with the last jump (getting distance) (0.9/0.44/0.69)

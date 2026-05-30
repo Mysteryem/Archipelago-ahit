@@ -6,6 +6,7 @@ from ...macros import (
     CAN_USE_DEFLECT_BOLTS,
     CAN_DAMAGE_SHIELDED_DROIDEKA,
     CAN_ACTIVATE_CLOSE_TARGET,
+    HAS_FLUTTER_CHARACTER,
 )
 from ...option_filters import logic_options
 from ...rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -175,7 +176,7 @@ DROID_FACTORY = Chapter(
                     ),
                     moderate=Or(
                         HasAnyAbilities(HOVER | GRAPPLE | CAN_DOUBLE_JUMP),
-                        HasAny("Geonosian", "Watto"),
+                        HAS_FLUTTER_CHARACTER,
                     )
                 ),
                 new_level="factory_e",
