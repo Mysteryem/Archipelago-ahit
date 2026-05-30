@@ -1,14 +1,16 @@
-from rule_builder.rules import And, Or, CanReachRegion
+from rule_builder.rules import And, Or, CanReachRegion, HasAll, Has, HasAny, True_
 
 from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_SITH_FORCE,
     CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    CAN_GRAPPLE,
+    CAN_USE_DEFLECT_BOLTS,
 )
-from ..option_filters import logic_options
-from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities
-from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
+from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, OT_HIGH_JUMP_DISABLED
+from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExceptCharacters
+from ..types import minikit_data, ExitData, ChapterHelper, LocationData, MinikitData
 
 from ....character_ability import *
 
@@ -28,18 +30,38 @@ R_SLIDING_BLOCKS_ROOM = "Sliding Blocks Room"
 R_ACCESS_CORRIDOR_BEFORE_R2_D2_AND_LEIA = "Access Corridor Before R2-D2 And Leia"
 R_R2_D2_AND_LEIA_ACCESS_CORRIDOR = "R2-D2 And Leia Access Corridor"
 R_CRANE_ROOM = "Crane Room"
+R_CRANE_ROOM_ACROSS_GAP = "Crane Room Across Gap"
 R_CAPTIVE_REBELS_HALLWAY = "Captive Rebels Hallway"
+R_VENT_IMPERIALS_INTO_SPACE = "Vent Imperials Into Space Room"
 R_ESCAPE_POD_CORRIDOR = "Escape Pod Corridor"
 
 
-SECRET_PLANS = Chapter(
+_helper = ChapterHelper(
     name=NAME,
     episode_number=4,
     chapter_number=1,
     start_region=R_SPAWN,
     start_level="blockade_runner_a",
+    story_characters=(
+        "Captain Antilles",
+        "C-3PO",
+        "Princess Leia",
+        "R2-D2",
+        "Rebel Friend",
+    ),
+    purchase_characters={
+        "Rebel Trooper": 10_000,
+        "Stormtrooper": 10_000,
+        "Imperial Shuttle Pilot": 25_000,
+    },
+    extra_toggle_characters=(
+        "Rebel Engineer",
+    ),
+)
+
+SECRET_PLANS = _helper.make_chapter(
     regions={
-        R_SPAWN: (
+        _helper.start_region: (
             ExitData(R_FIRST_HALLWAY, HasAbility(CAN_BUILD_BRICKS), name="Build bricks to restore power"),
         ),
         R_FIRST_HALLWAY: (
@@ -47,22 +69,80 @@ SECRET_PLANS = Chapter(
         ),
         R_SECOND_HALLWAY: (
             ExitData(R_SITH_DOUBLE_SCORE_ZONE, CAN_SITH_FORCE),
+            # The Stormtroopers must be defeated to continue.
             ExitData(R_GRAPPLE_ROOM, CAN_DAMAGE_AT_CLOSE_RANGE, new_level="blockade_runner_b"),
         ),
         R_SITH_DOUBLE_SCORE_ZONE: (),
         R_GRAPPLE_ROOM: (
-            # todo: triple jump logic
-            ExitData(R_GRAPPLE_ROOM_TOP, HasAnyAbilities(GRAPPLE | ASTROMECH_PANEL) | CAN_ORIGINAL_TRILOGY_HIGH_JUMP),
+            ExitData(
+                R_GRAPPLE_ROOM_TOP,
+                # The astromech panel is useless because the elevator can only go to the top once the bridge has been
+                # extended, which requires reacing the top.
+                logic_options(
+                    base=CAN_GRAPPLE | CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
+                    # Triple jump up.
+                    moderate=CAN_GRAPPLE | CAN_ORIGINAL_TRILOGY_HIGH_JUMP | HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
+                ),
+            ),
         ),
         R_GRAPPLE_ROOM_TOP: (
-            ExitData(R_VADER_EXPLOSIVES_HALLWAY, HasAnyAbilities(CAN_BUILD_BRICKS | HOVER)),
+            ExitData(
+                R_VADER_EXPLOSIVES_HALLWAY,
+                logic_options(
+                    # High jumpers, except Bodyguard can high jump across the gap.
+                    # All Jedi can build, so the triple jump great distance includes General Grievous for no logic cost.
+                    base=Or(
+                        HasAnyAbilities(CAN_BUILD_BRICKS | HOVER),
+                        HasAbilityExceptCharacters(HIGH_JUMP, "Grievous' Bodyguard") & OT_HIGH_JUMP_ENABLED,
+                    ),
+                    # Bodyguard has to go one floor down, and jump from there instead.
+                    # Yoda can double jump across the gap without building the bridge, though that has no logic
+                    # relevance.
+                    normal=HasAnyAbilities(CAN_BUILD_BRICKS | HOVER) | CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
+                ),
+            ),
         ),
         R_VADER_EXPLOSIVES_HALLWAY: (
-            ExitData(R_SECOND_STORMTROOPER_BATTLE, HasAllAbilities(CAN_PULL_LEVERS | BLASTER)),
+            ExitData(
+                R_SECOND_STORMTROOPER_BATTLE,
+                # Ewok weapons do not work on the explosives.
+                # Super Jedi Slam cannot reach.
+                logic_options(
+                    base=HasAllAbilities(CAN_PULL_LEVERS | BLASTER),
+                    normal=And(
+                        HasAbility(CAN_PULL_LEVERS),
+                        Or(
+                            HasAbility(BLASTER),
+                            HasAbility(WEAPON_EWOK) & HasAny("Exploding Blaster Bolts", "Super Ewok Catapult"),
+                        ),
+                    ),
+                    # Adds deflecting bolts with Exploding Blaster Bolts active.
+                    moderate=And(
+                        HasAbility(CAN_PULL_LEVERS),
+                        Or(
+                            HasAbility(BLASTER),
+                            HasAbility(WEAPON_EWOK) & HasAny("Exploding Blaster Bolts", "Super Ewok Catapult"),
+                            # Exploding Blaster Bolts is technically not required, but it would be *extremely* slow
+                            # relying on random deflections to hit the explosives enough times.
+                            # The Stormtroopers can be aggro-ed with a melee-only character, by attacking one of the
+                            # boxes in the same area, so getting aggro with a melee character is fine.
+                            Has("Exploding Blaster Bolts") & CAN_USE_DEFLECT_BOLTS,
+                        ),
+                    ),
+                ),
+            ),
         ),
         R_SECOND_STORMTROOPER_BATTLE: (
             ExitData(R_SIDE_ACCESS_CORRIDOR, HasAnyAbilities(IMPERIAL | BOUNTY_HUNTER)),
-            ExitData(R_SLIDING_BLOCKS_ROOM, CAN_DAMAGE_AT_CLOSE_RANGE, new_level="blockade_runner_c"),
+            ExitData(
+                R_SLIDING_BLOCKS_ROOM,
+                logic_options(
+                    base=CAN_DAMAGE_AT_CLOSE_RANGE,
+                    # You can just ignore these Stormtroopers.
+                    normal=True_(),
+                ),
+                new_level="blockade_runner_c"
+            ),
         ),
         R_SIDE_ACCESS_CORRIDOR: (
             ExitData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, HasAbility(PROTOCOL_PANEL)),
@@ -78,25 +158,40 @@ SECRET_PLANS = Chapter(
             ExitData(R_CRANE_ROOM, HasAbility(ASTROMECH_PANEL)),
         ),
         R_CRANE_ROOM: (
-            # todo: There are lots of alternative rules for this entrance.
+            ExitData(
+                R_CRANE_ROOM_ACROSS_GAP,
+                logic_options(
+                    base=HasAbility(CAN_RIDE_VEHICLES),
+                    # Grievous and Bodyguard cannot ride vehicles, but can jump on the silver brick object, and then
+                    # jump onto the raise platforms to walk across without using the crane.
+                    normal=HasAnyAbilities(CAN_RIDE_VEHICLES | CAN_DOUBLE_JUMP),
+                    # Astromech droids can hover onto the side of the platform the minikit spawns above, hover across to
+                    # one of the fences around the gap, and then hover across to the other side.
+                    moderate=HasAnyAbilities(CAN_RIDE_VEHICLES | CAN_DOUBLE_JUMP | HOVER),
+                )
+            ),
+        ),
+        R_CRANE_ROOM_ACROSS_GAP: (
             ExitData(
                 R_CAPTIVE_REBELS_HALLWAY,
-                HasAllAbilities(CAN_RIDE_VEHICLES | PROTOCOL_PANEL),
+                # Alternatively, use the crane to pick up P2 and carry them to the panel, but all characters that
+                # can use the crane have at jump that can cross the gap...
+                # moderate=HasAbility(PROTOCOL_PANEL) & HasAnyAbilities(CAN_BARELY_JUMP | CAN_RIDE_VEHICLES),
+                HasAllAbilities(PROTOCOL_PANEL | CAN_BARELY_JUMP),
                 new_level="blockaderunner_d"
-            ),
+            )
         ),
         R_CAPTIVE_REBELS_HALLWAY: (
             ExitData(R_ESCAPE_POD_CORRIDOR, CAN_DAMAGE_AT_CLOSE_RANGE),
         ),
         R_ESCAPE_POD_CORRIDOR: (
-            # No locations defined currently.
-            # ExitData("Vent Imperials Into Space Room", HasAbility(IMPERIAL)),
+            ExitData(R_VENT_IMPERIALS_INTO_SPACE, HasAbility(IMPERIAL)),
             ExitData(
                 "Chapter Completion",
                 HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL | CAN_PULL_LEVERS),
                 new_level="blockade_runner_status"),
         ),
-        # "Vent Imperials Into Space Room": (),
+        R_VENT_IMPERIALS_INTO_SPACE: (),
     },
     minikits={
         "Dark Side Double Score Zone Minikit": minikit_data(
@@ -106,8 +201,9 @@ SECRET_PLANS = Chapter(
         "Grapple Room Beneath Floor Minikit": minikit_data(
             R_GRAPPLE_ROOM,
             logic_options(
-                # Expect getting back out.
-                # todo: If the elevator is active, does it go down here?
+                # General Grievous is too big to walk around under here, though that is fortunately not logically
+                # relevant.
+                # Expect getting back out, so that the level does not need to be restarted.
                 base=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CAN_DOUBLE_JUMP),
                 normal=CAN_DESTROY_CLOSE_SILVER_BRICKS,
             ),
@@ -115,7 +211,16 @@ SECRET_PLANS = Chapter(
         ),
         "Grapple Room High Minikit": minikit_data(
             R_GRAPPLE_ROOM_TOP,
-            HasAbility(JEDI),
+            logic_options(
+                base=HasAbility(JEDI),
+                moderate=Or(
+                    HasAbility(JEDI),
+                    # Triple jump. With High Jump disabled, General Grievous can only just get this minikit by using
+                    # Stud Magnet.
+                    HasAll("Stud Magnet", "General Grievous") & OT_HIGH_JUMP_DISABLED,
+                    HasAbility(CAN_HIGH_JUMP_SLAM) & OT_HIGH_JUMP_ENABLED,
+                )
+            ),
             pickup_name="m_pup2",
         ),
         "Build Door Minikit": minikit_data(
@@ -137,7 +242,11 @@ SECRET_PLANS = Chapter(
         ),
         "Sliding Blocks Room Minikit": minikit_data(
             R_SLIDING_BLOCKS_ROOM,
-            HasAbility(JEDI),
+            logic_options(
+                base=HasAbility(JEDI),
+                # You can jump onto the curved terrain, and then jump to the minikit.
+                normal=HasAbility(CAN_DOUBLE_JUMP),
+            ),
             pickup_name="mk_0",
         ),
         "Secret Wall Compartment Minikit": minikit_data(
@@ -161,10 +270,20 @@ SECRET_PLANS = Chapter(
         ),
         "Three Flowers Minikit": MinikitData(
             R_ESCAPE_POD_CORRIDOR,
-            And(
-                CAN_DESTROY_CLOSE_SILVER_BRICKS,
-                # CanReachRegion("Secret Plans - Vent Imperials Into Space Room"),
-                HasAbility(IMPERIAL),
+            logic_options(
+                base=And(
+                    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+                    _helper.can_reach_region(R_VENT_IMPERIALS_INTO_SPACE),
+                ),
+                moderate=And(
+                    Or(
+                        CAN_DESTROY_CLOSE_SILVER_BRICKS,
+                        # Darth Vader and The Emperor can deflect bolts fired by stormtroopers into near the silver
+                        # bricks, exploding them.
+                        Has("Exploding Blaster Bolts") & CAN_USE_DEFLECT_BOLTS,
+                    ),
+                    _helper.can_reach_region(R_VENT_IMPERIALS_INTO_SPACE),
+                ),
             ),
             pickup_names=(
                 "m_pup3",
@@ -180,8 +299,22 @@ SECRET_PLANS = Chapter(
     },
     power_brick=LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, HasAbility(JEDI)),
     ridables={
-        "Moon Car": LocationData(R_SIDE_ACCESS_CORRIDOR,
-                                 HasAbility(CAN_BUILD_BRICKS) & CAN_DESTROY_CLOSE_SILVER_BRICKS),
+        "Moon Car": LocationData(
+            R_SIDE_ACCESS_CORRIDOR,
+            logic_options(
+                base=HasAbility(CAN_BUILD_BRICKS) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
+                hard=And(
+                    HasAbility(CAN_BUILD_BRICKS),
+                    Or(
+                        CAN_DESTROY_CLOSE_SILVER_BRICKS,
+                        # You can push a stormtrooper all the way into the corridor and deflect one of their bolts into
+                        # near the silver bricks.
+                        # Only relevant to Darth Vader/The Emperor while there is no panel randomizer.
+                        Has("Exploding Blaster Bolts") & CAN_USE_DEFLECT_BOLTS,
+                    ),
+                ),
+            ),
+        ),
         "Town Car": LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, HasAbility(JEDI)),
     },
 )

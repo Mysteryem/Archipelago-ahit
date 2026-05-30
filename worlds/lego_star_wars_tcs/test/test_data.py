@@ -86,10 +86,12 @@ class TestEpisodes(TestCase):
             seen_chapters.add(chapter.chapter_number)
 
     @chapters_test
-    def test_regions_have_exits_or_locations(self, chapter: Chapter):
-        """Test that each region contains at least one exit, or at least one location."""
+    def test_regions_are_used(self, chapter: Chapter):
+        """Test that each region contains at least one exit, or at least one location, or is used in a
+        CanReachRegion rule."""
         unused_region_names = {name for name, exits in chapter.regions.items() if not exits}
         unused_region_names.discard("Chapter Completion")
+        unused_region_names.difference_update(chapter.regions_in_can_reach)
         if not unused_region_names:
             return
         for location_data in chapter.all_in_level_location_data:

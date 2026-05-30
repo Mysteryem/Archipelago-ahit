@@ -1,7 +1,7 @@
 from rule_builder.rules import Has, HasAny, True_, Or, Rule
 from rule_builder.options import OptionFilter
 
-from .option_filters import normal_logic, logic_options
+from .option_filters import normal_logic, logic_options, OT_HIGH_JUMP_ENABLED
 from .rules import HasAbility, HasAnyAbilities, HasAbilityExceptCharacters
 from ...character_ability import *
 from ...items import LOGIC_CONSIDERED_CHARACTERS, SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTER_NAMES
@@ -142,10 +142,13 @@ CAN_DAMAGE_SHIELDED_DROIDEKA = logic_options(
         )
     ),
 )
-CAN_DESTROY_FAR_SILVER_BRICKS = Or(
-    HasAbility(BOUNTY_HUNTER),
-    HasAbility(BLASTER) & Has("Exploding Blaster Bolts"),
-)
+CAN_DESTROY_FAR_SILVER_BRICKS = logic_options(
+    base=HasAbility(BOUNTY_HUNTER),
+    normal=Or(
+        HasAbility(BOUNTY_HUNTER),
+        HasAbility(BLASTER) & Has("Exploding Blaster Bolts"),
+    ),
+),
 CAN_GRAPPLE = logic_options(
     base=HasAbility(GRAPPLE),
     normal=Or(
@@ -197,3 +200,5 @@ CAN_ATTACK_UP_CLOSE_EXCEPT_TARPALS = (
         ),
     )
 ),
+
+CAN_ORIGINAL_TRILOGY_HIGH_JUMP = HasAbility(HIGH_JUMP) & OT_HIGH_JUMP_ENABLED

@@ -1,20 +1,24 @@
 from dataclasses import dataclass
 from operator import and_, or_
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 from Options import CommonOptions
 from rule_builder.field_resolvers import FromWorldAttr
-from rule_builder.rules import Rule, TWorld, True_, Has, Or, And, NestedRule
+from rule_builder.rules import Rule, TWorld, True_, Has, Or, And, NestedRule, Filtered, WrapperRule
 from rule_builder.options import OptionFilter
 
 from ...constants import GAME_NAME
-from ...options import LogicDifficulty, EntranceRandomizer
+from ...options import LogicDifficulty, EntranceRandomizer, UncapOriginalTrilogyHighJump
 
 
 if TYPE_CHECKING:
     from ... import LegoStarWarsTCSWorld
 else:
     LegoStarWarsTCSWorld = TWorld
+
+
+OT_HIGH_JUMP_ENABLED = OptionFilter(UncapOriginalTrilogyHighJump, True)
+OT_HIGH_JUMP_DISABLED = OptionFilter(UncapOriginalTrilogyHighJump, False)
 
 
 normal_logic = (OptionFilter(LogicDifficulty, LogicDifficulty.option_normal, "ge"),)
@@ -36,6 +40,13 @@ extras_in_logic = normal_logic
 # Entrance Rando does not exist currently, but this can be used to mark rules as only being relevant to entrance rando,
 # and then filtering them out (replacing them with False_()).
 entrance_rando = (OptionFilter(LogicDifficulty, float("nan"), "eq"),)
+
+
+def original_trilogy_high_jump_ternary(capped_rule: Rule, uncapped_rule: Rule) -> Rule:
+    return Or(
+        capped_rule & OT_HIGH_JUMP_DISABLED,
+        uncapped_rule & OT_HIGH_JUMP_ENABLED,
+    )
 
 
 DifficultySpecifier = Literal[

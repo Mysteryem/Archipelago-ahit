@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from rule_builder.rules import Rule, True_, False_
+from rule_builder.rules import Rule, True_, Or, CanReachRegion, CanReachLocation, CanReachEntrance
 
 
 @dataclass(frozen=True)
@@ -69,6 +69,59 @@ class RegionData:
         object.__setattr__(self, "exits", tuple(exits))
 
 
+@dataclass
+class ChapterHelper:
+    name: str
+    episode_number: int
+    chapter_number: int
+    start_region: str
+    start_level: str
+    story_characters: tuple[str, ...] = ()
+    purchase_characters: dict[str, int] = field(default_factory=dict)
+    extra_toggle_characters: tuple[str, ...] = ()
+    _regions_used_in_can_reach: set[str] = field(default_factory=set)
+
+    def can_reach_region(self, region_name: str):
+        self._regions_used_in_can_reach.add(region_name)
+        return CanReachRegion(f"{self.name} - {region_name}")
+
+    def can_reach_location(self, location_name: str):
+        return CanReachLocation(f"{self.name} - {location_name}")
+
+    def can_reach_entrance(self, entrance_name: str):
+        return CanReachEntrance(f"{self.name} - {entrance_name}")
+
+    def make_chapter(
+            self,
+            regions: dict[str, tuple[ExitData, ...]],
+            minikits: dict[str, MinikitData],
+            power_brick: LocationData,
+            # TODO: Add wip_true_jedi_rule
+            ridables: dict[str, LocationData] = None,
+            extra_chapter_entrance_rules: Rule = None,
+    ):
+        if ridables is None:
+            ridables = {}
+        if extra_chapter_entrance_rules is None:
+            extra_chapter_entrance_rules = True_()
+        return Chapter(
+            name=self.name,
+            episode_number=self.episode_number,
+            chapter_number=self.chapter_number,
+            start_region=self.start_region,
+            start_level=self.start_level,
+            regions=regions,
+            minikits=minikits,
+            power_brick=power_brick,
+            ridables=ridables,
+            extra_chapter_entrance_rules=extra_chapter_entrance_rules,
+            story_characters=self.story_characters,
+            purchase_characters=self.purchase_characters,
+            extra_toggle_characters=self.extra_toggle_characters,
+            regions_in_can_reach=self._regions_used_in_can_reach,
+        )
+
+
 @dataclass(frozen=True)
 class Chapter:
     name: str
@@ -79,14 +132,13 @@ class Chapter:
     regions: dict[str, tuple[ExitData, ...]]
     minikits: dict[str, MinikitData]
     power_brick: LocationData
-    # todo: It's probably better to keep the characters data separate.
-    # story_characters: tuple[str, ...] = ()
-    # purchase_characters: tuple[str, ...] = ()
+    # TODO: Add wip_true_jedi_rule
     ridables: dict[str, LocationData] = field(default_factory=dict)
     extra_chapter_entrance_rules: Rule = field(default_factory=True_)
     story_characters: tuple[str, ...] = ()
     purchase_characters: dict[str, int] = field(default_factory=dict)
     extra_toggle_characters: tuple[str, ...] = ()
+    regions_in_can_reach: Iterable[str] = ()
     level_minikits: dict[str, dict[str, MinikitData]] = field(init=False, default_factory=dict)
     level_names: frozenset[str] = field(init=False)
     region_to_level: dict[str, str] = field(init=False, default_factory=dict)
