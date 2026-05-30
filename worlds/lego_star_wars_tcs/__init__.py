@@ -136,6 +136,8 @@ class LegoStarWarsTCSWorld(World):
     # Requires Universal Tracker 0.2.12 or newer because the game name contains a colon.
     ut_can_gen_without_yaml = True  # Used by Universal Tracker to allow generation without player yaml.
     glitches_item_name: str = "UT_GLITCHED"
+    # Custom item name for use in UT with `/manually_collect` to adjust glitched logic to show all higher difficulties.
+    glitches_all_item_name: str = "UT_GLITCHED_ALL"
 
     PROG_USEFUL_LEVEL_ACCESS_THRESHOLD_PERCENT: ClassVar[float] = 1/6
     prog_useful_level_access_threshold_count: int = 6
@@ -316,7 +318,7 @@ class LegoStarWarsTCSWorld(World):
 
     def create_item(self, name: str) -> LegoStarWarsTCSItem:
         if self.is_universal_tracker():
-            if name == self.glitches_item_name:
+            if name == self.glitches_item_name or name == self.glitches_all_item_name:
                 return LegoStarWarsTCSItem(name, ItemClassification.progression, None, self.player)
             if name not in self.item_name_to_id and name in REVERSE_READABLE_ABILITY_TO_ABILITY:
                 return LegoStarWarsTCSItem(name, ItemClassification.progression, None, self.player,

@@ -74,11 +74,41 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
     def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
         logic_difficulty = world.options.logic_difficulty
         if logic_difficulty == LogicDifficulty.option_none:
-            rule = self.base
+            if world.is_universal_tracker():
+                rule = Or(
+                    self.base,
+                    And(
+                        Has(world.glitches_item_name),
+                        Or(
+                            self.normal,
+                            Has(world.glitches_all_item_name) & (self.moderate | self.hard),
+                        ),
+                    ),
+                )
+            else:
+                rule = self.base
         elif logic_difficulty == LogicDifficulty.option_normal:
-            rule = self.normal
+            if world.is_universal_tracker():
+                rule = Or(
+                    self.normal,
+                    And(
+                        Has(world.glitches_item_name),
+                        Or(
+                            self.moderate,
+                            Has(world.glitches_all_item_name) & self.hard,
+                        ),
+                    ),
+                )
+            else:
+                rule = self.normal
         elif logic_difficulty == LogicDifficulty.option_moderate:
-            rule = self.moderate
+            if world.is_universal_tracker():
+                rule = Or(
+                    self.moderate,
+                    Has(world.glitches_item_name) & self.hard,
+                )
+            else:
+                rule = self.moderate
         elif logic_difficulty == LogicDifficulty.option_hard:
             rule = self.hard
         else:
