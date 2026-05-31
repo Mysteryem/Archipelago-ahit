@@ -42,10 +42,10 @@ extras_in_logic = normal_logic
 entrance_rando = (OptionFilter(LogicDifficulty, float("nan"), "eq"),)
 
 
-def original_trilogy_high_jump_ternary(capped_rule: Rule, uncapped_rule: Rule) -> Rule:
+def ot_high_jump_ternary(uncapped: Rule, capped: Rule) -> Rule:
     return Or(
-        capped_rule & OT_HIGH_JUMP_DISABLED,
-        uncapped_rule & OT_HIGH_JUMP_ENABLED,
+        uncapped & OT_HIGH_JUMP_ENABLED,
+        capped & OT_HIGH_JUMP_DISABLED,
     )
 
 
