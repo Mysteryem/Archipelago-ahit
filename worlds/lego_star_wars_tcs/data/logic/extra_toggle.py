@@ -1,7 +1,6 @@
 import dataclasses
 
-from typing import TYPE_CHECKING, ClassVar, Any, Protocol, TypeVar
-from typing_extensions import override
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 from rule_builder.rules import (
     And,
@@ -55,6 +54,7 @@ CHILD_RULES_TO_CHECK = (
     HasAnyAbilities,
     HasAllAbilities,
     HasAbilityExceptCharacters,
+    LogicOptions,
 )
 ALLOWED_OTHER_RULES = (
     True_,
@@ -228,27 +228,23 @@ class ExtraToggleRuleReplacer:
 
         rule_class = type(rule)
 
-        # Currently, we expect not to come across LogicOptions because all nested instances should be replaced.
-        # If this changes and a LogicOptions instance is used by more than one logic difficulty, then either there needs
-        # to be a memodict per difficulty, or LogicOptions needs to be handled specially (use a key other than just
-        # `id(rule)`).
-        # if rule_class is LogicOptions:
-        #     assert isinstance(rule, LogicOptions)
-        #     potential_replacement = LogicOptions(
-        #         base=rule.base,  # Base rules never consider Extras.
-        #         normal=self._recursively_replace_rules(rule.normal),
-        #         moderate=self._recursively_replace_rules(rule.moderate),
-        #         hard=self._recursively_replace_rules(rule.hard),
-        #         options=rule.options,
-        #         filtered_resolution=rule.filtered_resolution,
-        #     )
-        #     if (rule.normal is not potential_replacement.normal
-        #             or rule.moderate is not potential_replacement.moderate
-        #             or rule.hard is not potential_replacement.hard):
-        #         replacement = potential_replacement
-        #     else:
-        #         replacement = rule
-        if isinstance(rule, NestedRule):
+        if rule_class is LogicOptions:
+            assert isinstance(rule, LogicOptions)
+            potential_replacement = LogicOptions(
+                base=rule.base,  # Base rules never consider Extras.
+                normal=self._recursively_replace_rules(rule.normal),
+                moderate=self._recursively_replace_rules(rule.moderate),
+                hard=self._recursively_replace_rules(rule.hard),
+                options=rule.options,
+                filtered_resolution=rule.filtered_resolution,
+            )
+            if (rule.normal is not potential_replacement.normal
+                    or rule.moderate is not potential_replacement.moderate
+                    or rule.hard is not potential_replacement.hard):
+                replacement = potential_replacement
+            else:
+                replacement = rule
+        elif isinstance(rule, NestedRule):
             new_children = []
             changed = False
             for child in rule.children:

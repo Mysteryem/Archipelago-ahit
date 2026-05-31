@@ -4,6 +4,7 @@ from typing import Callable, Iterable
 from rule_builder.rules import Rule, NestedRule, WrapperRule
 
 from ..data.logic import EPISODES
+from ..data.logic.extraction import un_nest_logic_options
 from ..data.logic.option_filters import LogicOptions
 from ..data.logic.types import Chapter
 
@@ -160,10 +161,11 @@ class TestEpisodes(TestCase):
                 self._check_top_level_rule(child, False)
 
     @chapters_test
-    def test_no_nested_logic_options(self, chapter: Chapter):
+    def test_extraction_un_nesting(self, chapter: Chapter):
         for owner_name, rule in self.chapter_rule_gen(chapter):
             with self.subTest(name=owner_name):
-                self._check_top_level_rule(rule)
+                un_nested = un_nest_logic_options(rule)
+                self._check_top_level_rule(un_nested)
 
 
 

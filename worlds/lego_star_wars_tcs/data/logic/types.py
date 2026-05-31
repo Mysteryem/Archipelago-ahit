@@ -11,33 +11,6 @@ from rule_builder.rules import (
 )
 
 from .extra_toggle import ExtraToggleRuleReplacer
-from .option_filters import LogicOptions, logic_options
-
-
-def _un_nest_nested_logic_options(rule: Rule) -> Rule:
-    if isinstance(rule, LogicOptions):
-        return logic_options(
-            base=rule.base,
-            normal=rule.normal,
-            moderate=rule.moderate,
-            hard=rule.hard,
-            un_nest_logic_options=True,
-        )
-
-    options = logic_options(
-        base=rule,
-        normal=rule,
-        moderate=rule,
-        hard=rule,
-        un_nest_logic_options=True,
-        allow_all_same=True,
-    )
-
-    if options.base is options.normal and options.base is options.moderate and options.base is options.hard:
-        # If each is the same, then the original rule can be used.
-        return rule
-    else:
-        return options
 
 
 @dataclass(frozen=True)
@@ -49,21 +22,12 @@ class LocationData:
     identify issues in the logic if their two sets of rules don't produce identical results.
     If `er_rule` is None, use `rule` instead."""
 
-    def __post_init__(self):
-        rule = _un_nest_nested_logic_options(self.rule)
-        object.__setattr__(self, "rule", rule)
-
-        if self.er_rule is not None:
-            er_rule = _un_nest_nested_logic_options(self.er_rule)
-            object.__setattr__(self, "er_rule", er_rule)
-
 
 @dataclass(frozen=True)
 class StudsEventData(LocationData):
     stud_total: int = 0
 
     def __post_init__(self):
-        super().__post_init__()
         if self.stud_total < 0:
             raise Exception(f"Invalid stud_total {self.stud_total}. stud_total must be greater than zero.")
 
@@ -77,7 +41,6 @@ class MinikitData(LocationData):
     pickup_names: tuple[str, ...] = ()
 
     def __post_init__(self):
-        super().__post_init__()
         if not self.pickup_names:
             raise Exception("No pickup names provided")
         for name in self.pickup_names:
@@ -103,14 +66,6 @@ class ExitData:
     er_rule: Rule | None = None
     name: str | None = None
     new_level: str | None = None
-
-    def __post_init__(self):
-        rule = _un_nest_nested_logic_options(self.rule)
-        object.__setattr__(self, "rule", rule)
-
-        if self.er_rule is not None:
-            er_rule = _un_nest_nested_logic_options(self.er_rule)
-            object.__setattr__(self, "er_rule", er_rule)
 
 
 @dataclass(frozen=True)
@@ -198,10 +153,6 @@ class Chapter:
     region_to_level: dict[str, str] = field(init=False, default_factory=dict)
 
     def __post_init__(self):
-        if not isinstance(self.extra_chapter_entrance_rules, True_):
-            un_nested = _un_nest_nested_logic_options(self.extra_chapter_entrance_rules)
-            object.__setattr__(self, "extra_chapter_entrance_rules", un_nested)
-
         if self.extra_toggle_characters:
             extra_toggle_replacer = ExtraToggleRuleReplacer(self)
             for region_name, exits in self.regions.items():
