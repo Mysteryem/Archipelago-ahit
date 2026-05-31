@@ -196,7 +196,7 @@ SECRET_PLANS = _helper.make_chapter(
                 # moderate=HasAbility(PROTOCOL_PANEL) & HasAnyAbilities(CAN_BARELY_JUMP | CAN_RIDE_VEHICLES),
                 HasAllAbilities(PROTOCOL_PANEL | CAN_BARELY_JUMP),
                 new_level="blockaderunner_d"
-            )
+            ),
         ),
         R_CAPTIVE_REBELS_HALLWAY: (
             ExitData(R_ESCAPE_POD_CORRIDOR, CAN_DAMAGE_AT_CLOSE_RANGE),
@@ -206,7 +206,8 @@ SECRET_PLANS = _helper.make_chapter(
             ExitData(
                 "Chapter Completion",
                 HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL | CAN_PULL_LEVERS),
-                new_level="blockade_runner_status"),
+                new_level="blockade_runner_status"
+            ),
         ),
         R_VENT_IMPERIALS_INTO_SPACE: (),
     },

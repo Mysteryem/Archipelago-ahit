@@ -387,6 +387,6 @@ DARTH_VADER = Chapter(
     power_brick=LocationData(
         R_POWER_BRICK_CONFERENCE_ROOM,
         True_(),
-        er_rule=CAN_BARELY_JUMP,
+        er_rule=HasAbility(CAN_BARELY_JUMP),
     )
 )

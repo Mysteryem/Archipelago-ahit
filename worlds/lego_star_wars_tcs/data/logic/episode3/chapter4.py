@@ -70,33 +70,31 @@ DEFENSE_OF_KASHYYYK = Chapter(
                     moderate=True_(),
                 ),
                 # In hard/moderate logic using Invincibility to make clones walk onto the buttons could also work.
-                er_rule=(
+                er_rule=logic_options(
                     # First Wookie.
+                    base=CAN_GRAPPLE,
+                    # Triple jump is just enough to make it up to the first platforms.
+                    # You can also triple jump from the hat machine, but the jump doesn't seem any easier.
+                    moderate=HasAnyAbilities(GRAPPLE | JEDI | CAN_HIGH_JUMP_SLAM),
+                ).and_rule(
+                    # Second Wookie.
+                    # To spawn the grapple point, the boxes need to be destroyed and then the other object can be
+                    # forced to spawn the grapple point.
                     logic_options(
-                        base=CAN_GRAPPLE,
-                        # Triple jump is just enough to make it up to the first platforms.
-                        # You can also triple jump from the hat machine, but the jump doesn't seem any easier.
-                        moderate=HasAnyAbilities(GRAPPLE | JEDI | CAN_HIGH_JUMP_SLAM),
-                    ).and_rule(
-                        # Second Wookie.
-                        # To spawn the grapple point, the boxes need to be destroyed and then the other object can be
-                        # forced to spawn the grapple point.
-                        logic_options(
-                            base=HasAllAbilities(GRAPPLE | JEDI),
-                            # Allow Force Grapple Leap.
-                            normal=HasAbility(JEDI) & (HasAbility(GRAPPLE) | Has("Force Grapple Leap")),
-                            # Allow triple high jump.
-                            # Allow triple jump. A near max height triple jump from one of the boxes or the forceable
-                            # object is required, and Yoda is pretty difficult because he tends to slide off after just
-                            # barely making the jump, due to his low walking speed and the edge of the platform being
-                            # sloped. If Yoda makes it up to the platform, activate your lightsaber after landing to
-                            # increase his walking speed and prevent him from sliding off.
-                            moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM)
-                        ),
-                    ).and_rule(
-                        # Third Wookie.
-                        CAN_DAMAGE_AT_CLOSE_RANGE,
+                        base=HasAllAbilities(GRAPPLE | JEDI),
+                        # Allow Force Grapple Leap.
+                        normal=HasAbility(JEDI) & (HasAbility(GRAPPLE) | Has("Force Grapple Leap")),
+                        # Allow triple high jump.
+                        # Allow triple jump. A near max height triple jump from one of the boxes or the forceable
+                        # object is required, and Yoda is pretty difficult because he tends to slide off after just
+                        # barely making the jump, due to his low walking speed and the edge of the platform being
+                        # sloped. If Yoda makes it up to the platform, activate your lightsaber after landing to
+                        # increase his walking speed and prevent him from sliding off.
+                        moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM)
                     ),
+                ).and_rule(
+                    # Third Wookie.
+                    CAN_DAMAGE_AT_CLOSE_RANGE,
                 ),
                 new_level="kashyyyk_b",
             ),
