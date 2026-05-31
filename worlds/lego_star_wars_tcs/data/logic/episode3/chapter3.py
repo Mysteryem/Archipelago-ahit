@@ -106,16 +106,14 @@ CAN_EXPLODE_SECOND_EXPLOSIVES = logic_options(
         HasAbilityCombination(BLASTER | CAN_JUMP_HEIGHT_0_37),
         _helper.can_reach_region(R_SHOOT_SECOND_EXPLOSIVES_SECTION),
     ),
-    normal=(
-        And(
-            CAN_EXPLODE_FIRST_EXPLOSIVES,
-            Or(
-                # If you walk up to Grievous the second explosives explode.
-                _helper.can_reach_region(R_FORCE_THIRD_EXPLOSIVES_SECTION),
-                And(
-                    HasAbilityCombination(BLASTER | CAN_JUMP_HEIGHT_0_37),
-                    _helper.can_reach_region(R_SHOOT_SECOND_EXPLOSIVES_SECTION),
-                ),
+    normal=And(
+        CAN_EXPLODE_FIRST_EXPLOSIVES,
+        Or(
+            # If you walk up to Grievous the second explosives explode.
+            _helper.can_reach_region(R_FORCE_THIRD_EXPLOSIVES_SECTION),
+            And(
+                HasAbilityCombination(BLASTER | CAN_JUMP_HEIGHT_0_37),
+                _helper.can_reach_region(R_SHOOT_SECOND_EXPLOSIVES_SECTION),
             ),
         ),
     ),
