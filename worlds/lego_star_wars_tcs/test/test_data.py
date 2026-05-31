@@ -1,7 +1,10 @@
 from unittest import TestCase
 from typing import Callable, Iterable
 
+from rule_builder.rules import Rule, NestedRule, WrapperRule
+
 from ..data.logic import EPISODES
+from ..data.logic.option_filters import LogicOptions
 from ..data.logic.types import Chapter
 
 from ..items import CHARACTERS_AND_VEHICLES_BY_NAME
@@ -119,6 +122,48 @@ class TestEpisodes(TestCase):
                 self.assertNotIn(character, seen_characters, f"{character} from {chapter.short_name} already found.")
             seen_characters.update(chapter.purchase_characters)
 
+    @staticmethod
+    def chapter_rule_gen(chapter: Chapter) -> Iterable[tuple[str, Rule]]:
+        for region_name, exits in chapter.regions.items():
+            for exit_ in exits:
+                exit_name = exit_.name
+                if not exit_name:
+                    exit_name = f"{region_name} -> {exit_.to_region}"
+                yield exit_name, exit_.rule
+                if exit_.er_rule is not None:
+                    yield exit_name, exit_.er_rule
+
+        for minikit_name, minikit_data in chapter.minikits.items():
+            yield minikit_name, minikit_data.rule
+            if minikit_data.er_rule is not None:
+                yield minikit_name, minikit_data.er_rule
+
+        for ridable_name, ridable_data in chapter.ridables.items():
+            yield ridable_name, ridable_data.rule
+            if ridable_data.er_rule is not None:
+                yield ridable_name, ridable_data.er_rule
+
+        yield "Power Brick", chapter.power_brick.rule
+        if chapter.power_brick.er_rule is not None:
+            yield "Power Brick", chapter.power_brick.er_rule
+
+        yield "Extra Chapter Entrance Rules", chapter.extra_chapter_entrance_rules
+
+    def _check_top_level_rule(self, rule: Rule, logic_options_allowed: bool = True):
+        if isinstance(rule, LogicOptions):
+            self.assertTrue(logic_options_allowed,
+                            "Found a LogicOptions not nested within another LogicOptions or at the top level")
+        if isinstance(rule, WrapperRule):
+            self._check_top_level_rule(rule.child, False)
+        elif isinstance(rule, NestedRule):
+            for child in rule.children:
+                self._check_top_level_rule(child, False)
+
+    @chapters_test
+    def test_no_nested_logic_options(self, chapter: Chapter):
+        for owner_name, rule in self.chapter_rule_gen(chapter):
+            with self.subTest(name=owner_name):
+                self._check_top_level_rule(rule)
 
 
 

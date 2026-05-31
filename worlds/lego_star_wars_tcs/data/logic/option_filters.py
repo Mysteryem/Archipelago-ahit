@@ -277,10 +277,16 @@ def logic_options(
         normal: Rule[TWorld] | None = None,
         moderate: Rule[TWorld] | None = None,
         hard: Rule[TWorld] | None = None,
+        # todo: Try setting this to False by default and see how performance varies.
+        un_nest_logic_options: bool = True,
+        allow_all_same: bool = False,
 ) -> LogicOptions[TWorld]:
     # If any of base/normal/moderate/hard contain a LogicOptions rule, replace that with the base/normal/moderate/hard
     # rule.
-    base_rule = _recursively_replace_logic_options(base, "base")
+    if un_nest_logic_options:
+        base_rule = _recursively_replace_logic_options(base, "base")
+    else:
+        base_rule = base
 
     if normal is None:
         normal = base
@@ -288,9 +294,15 @@ def logic_options(
             # No replacement occurred.
             normal_rule = base
         else:
-            normal_rule = _recursively_replace_logic_options(base, "normal")
+            if un_nest_logic_options:
+                normal_rule = _recursively_replace_logic_options(base, "normal")
+            else:
+                normal_rule = base
     else:
-        normal_rule = _recursively_replace_logic_options(normal, "normal")
+        if un_nest_logic_options:
+            normal_rule = _recursively_replace_logic_options(normal, "normal")
+        else:
+            normal_rule = normal
 
     if moderate is None:
         moderate = normal
@@ -298,9 +310,15 @@ def logic_options(
             # No replacement occurred.
             moderate_rule = normal
         else:
-            moderate_rule = _recursively_replace_logic_options(normal, "moderate")
+            if un_nest_logic_options:
+                moderate_rule = _recursively_replace_logic_options(normal, "moderate")
+            else:
+                moderate_rule = normal
     else:
-        moderate_rule = _recursively_replace_logic_options(moderate, "moderate")
+        if un_nest_logic_options:
+            moderate_rule = _recursively_replace_logic_options(moderate, "moderate")
+        else:
+            moderate_rule = moderate
 
     if hard is None:
         # hard = moderate
@@ -308,13 +326,24 @@ def logic_options(
             # No replacement occurred.
             hard_rule = moderate
         else:
-            hard_rule = _recursively_replace_logic_options(moderate, "hard")
+            if un_nest_logic_options:
+                hard_rule = _recursively_replace_logic_options(moderate, "hard")
+            else:
+                hard_rule = moderate
     else:
-        hard_rule = _recursively_replace_logic_options(hard, "hard")
+        if un_nest_logic_options:
+            hard_rule = _recursively_replace_logic_options(hard, "hard")
+        else:
+            hard_rule = hard
 
-    if hard_rule is moderate_rule and hard_rule is normal_rule and hard_rule is base_rule:
+    if not allow_all_same and (hard_rule is moderate_rule and hard_rule is normal_rule and hard_rule is base_rule):
         # This is not really a problem, but it could indicate an issue elsewhere if all the provided rules are the same.
         raise Exception("All rules are the same. Maybe don't use logic_options.")
+
+    assert isinstance(base_rule, Rule)
+    assert isinstance(normal_rule, Rule)
+    assert isinstance(moderate_rule, Rule)
+    assert isinstance(hard_rule, Rule)
 
     return LogicOptions(base_rule, normal_rule, moderate_rule, hard_rule)
 
