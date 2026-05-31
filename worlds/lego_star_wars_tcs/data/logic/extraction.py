@@ -58,43 +58,16 @@ def _recursively_replace_logic_options(rule: Rule, difficulty_attribute: Literal
 
 def logic_options_un_nested(
         base: Rule[TWorld],
-        normal: Rule[TWorld] | None = None,
-        moderate: Rule[TWorld] | None = None,
-        hard: Rule[TWorld] | None = None,
-) -> Rule:
+        normal: Rule[TWorld],
+        moderate: Rule[TWorld],
+        hard: Rule[TWorld],
+) -> Rule | None:
     # If any of base/normal/moderate/hard contain a LogicOptions rule, replace that with the base/normal/moderate/hard
     # rule.
     base_rule = _recursively_replace_logic_options(base, "base")
-
-    if normal is None:
-        normal = base
-        if base_rule is base:
-            # No replacement occurred.
-            normal_rule = base
-        else:
-            normal_rule = _recursively_replace_logic_options(base, "normal")
-    else:
-        normal_rule = _recursively_replace_logic_options(normal, "normal")
-
-    if moderate is None:
-        moderate = normal
-        if normal_rule is normal:
-            # No replacement occurred.
-            moderate_rule = normal
-        else:
-            moderate_rule = _recursively_replace_logic_options(normal, "moderate")
-    else:
-        moderate_rule = _recursively_replace_logic_options(moderate, "moderate")
-
-    if hard is None:
-        # hard = moderate
-        if moderate_rule is moderate:
-            # No replacement occurred.
-            hard_rule = moderate
-        else:
-            hard_rule = _recursively_replace_logic_options(moderate, "hard")
-    else:
-        hard_rule = _recursively_replace_logic_options(hard, "hard")
+    normal_rule = _recursively_replace_logic_options(normal, "normal")
+    moderate_rule = _recursively_replace_logic_options(moderate, "moderate")
+    hard_rule = _recursively_replace_logic_options(hard, "hard")
 
     assert isinstance(base_rule, Rule)
     if hard_rule is moderate_rule and hard_rule is normal_rule and hard_rule is base_rule:
@@ -105,23 +78,29 @@ def logic_options_un_nested(
         assert isinstance(moderate_rule, Rule)
         assert isinstance(hard_rule, Rule)
 
+        if base_rule is base and normal_rule is normal and moderate_rule is moderate and hard_rule is hard:
+            # No changes.
+            return None
+
         return LogicOptions(base_rule, normal_rule, moderate_rule, hard_rule)
 
 
 def un_nest_logic_options(rule: Rule) -> Rule:
     if isinstance(rule, LogicOptions):
-        return logic_options_un_nested(
+        un_nested = logic_options_un_nested(
             base=rule.base,
             normal=rule.normal,
             moderate=rule.moderate,
             hard=rule.hard,
         )
-
-    rule = logic_options_un_nested(
-        base=rule,
-        normal=rule,
-        moderate=rule,
-        hard=rule,
-    )
-
-    return rule
+    else:
+        un_nested = logic_options_un_nested(
+            base=rule,
+            normal=rule,
+            moderate=rule,
+            hard=rule,
+        )
+    if un_nested is not None:
+        return un_nested
+    else:
+        return rule
