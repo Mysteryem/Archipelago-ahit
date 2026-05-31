@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from operator import and_, or_
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Any
+from typing_extensions import override
 
 from Options import CommonOptions
 from rule_builder.field_resolvers import FromWorldAttr
@@ -82,6 +83,7 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
     moderate: Rule[TWorld]
     hard: Rule[TWorld]
 
+    @override
     def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
         logic_difficulty = world.options.logic_difficulty
         if logic_difficulty == LogicDifficulty.option_none:
@@ -125,6 +127,16 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         else:
             raise Exception(f"Unrecognised logic difficulty {logic_difficulty}")
         return rule.resolve(world)
+
+    @override
+    def to_dict(self) -> dict[str, Any]:
+        data = super().to_dict()
+        del data["args"]
+        data["base"] = self.base.to_dict()
+        data["normal"] = self.normal.to_dict()
+        data["moderate"] = self.moderate.to_dict()
+        data["hard"] = self.hard.to_dict()
+        return data
 
     def _apply_rule_op(self,
                        rule: Rule,
