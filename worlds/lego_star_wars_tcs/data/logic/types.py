@@ -42,7 +42,7 @@ class MinikitData(LocationData):
                 raise Exception(f"Invalid pickup name {name} encodes to {byte_size} bytes, but the max is 7.")
 
 
-def minikit_data(region: str, rule: Rule | None = None, *, er_rule: Rule = True_(), pickup_name: str) -> MinikitData:
+def minikit_data(region: str, rule: Rule | None = None, *, er_rule: Rule | None = None, pickup_name: str) -> MinikitData:
     """Helper for defining minikit data with a single pickup name."""
     if rule is None:
         return MinikitData(region, er_rule=er_rule, pickup_names=(pickup_name,))
