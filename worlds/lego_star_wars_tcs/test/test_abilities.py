@@ -201,3 +201,13 @@ class TestAbilities(TestCase):
             expected_str_lines.append("}")
             expected_str = "\n".join(expected_str_lines)
             self.fail(f"Combination ability reductions did not match. Was expecting:\n{expected_str}")
+
+    def test_pair_reductions_bits(self):
+        """The keys in ABILITY_REDUCTIONS need to be sorted by most bits first because they are iterated in order. If a
+        reduction that is contained by another reduction were to be run first, additional .simplify_or() steps would be
+        needed following the pair reductions, which could then additionally have more pair reductions, which could then
+        have more .simplify_or() steps etc."""
+        last_bits = 999_999_999
+        for ability in ABILITY_REDUCTIONS.keys():
+            self.assertLessEqual(ability.bit_count(), last_bits)
+            last_bits = ability.bit_count()
