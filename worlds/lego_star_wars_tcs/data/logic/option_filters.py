@@ -129,16 +129,25 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
     def _apply_rule_op(self,
                        rule: Rule,
                        op: Literal[and_, or_],
-                       apply_to: DifficultySpecifier | None = None) -> "LogicOptions":
+                       apply_to: DifficultySpecifier | None = None,
+                       reverse_order: bool = False) -> "LogicOptions":
         if apply_to is None:
             # Not a necessary optimisation, but saves having to create extra intermediary LogicOptions instances.
             if isinstance(rule, LogicOptions):
-                return LogicOptions(
-                    op(self.base, rule.base),
-                    op(self.normal, rule.normal),
-                    op(self.moderate, rule.moderate),
-                    op(self.hard, rule.hard),
-                )
+                if reverse_order:
+                    return LogicOptions(
+                        op(rule.base, self.base),
+                        op(rule.normal, self.normal),
+                        op(rule.moderate, self.moderate),
+                        op(rule.hard, self.hard),
+                    )
+                else:
+                    return LogicOptions(
+                        op(self.base, rule.base),
+                        op(self.normal, rule.normal),
+                        op(self.moderate, rule.moderate),
+                        op(self.hard, rule.hard),
+                    )
             else:
                 # Apply to all.
                 apply_to = "base+"
@@ -148,7 +157,7 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
             difficulty_names = _DIFFICULTIES[slice_to_use]
             logic = self
             for difficulty_name in difficulty_names:
-                logic = logic._apply_rule_op(rule, op, difficulty_name)
+                logic = logic._apply_rule_op(rule, op, difficulty_name, reverse_order)
             return logic
 
         if isinstance(rule, LogicOptions):
@@ -156,7 +165,7 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
 
         if apply_to == "base":
             return LogicOptions(
-                op(self.base, rule),
+                op(rule, self.base) if reverse_order else op(self.base, rule),
                 self.normal,
                 self.moderate,
                 self.hard,
@@ -164,7 +173,7 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         elif apply_to == "normal":
             return LogicOptions(
                 self.base,
-                op(self.normal, rule),
+                op(rule, self.normal) if reverse_order else op(self.normal, rule),
                 self.moderate,
                 self.hard,
             )
@@ -172,7 +181,7 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
             return LogicOptions(
                 self.base,
                 self.normal,
-                op(self.moderate, rule),
+                op(rule, self.moderate) if reverse_order else op(self.moderate, rule),
                 self.hard,
             )
         elif apply_to == "hard":
@@ -180,7 +189,7 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
                 self.base,
                 self.normal,
                 self.moderate,
-                op(self.hard, rule),
+                op(rule, self.hard) if reverse_order else op(self.hard, rule),
             )
         raise ValueError(f"Unexpected apply_to {apply_to}")
 
@@ -189,10 +198,27 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
                  apply_to: DifficultySpecifier | None = None) -> "LogicOptions":
         return self._apply_rule_op(rule, and_, apply_to)
 
+    def rand_rule(self,
+                  rule: Rule,
+                  apply_to: DifficultySpecifier | None = None) -> "LogicOptions":
+        return self._apply_rule_op(rule, and_, apply_to, reverse_order=True)
+
     def or_rule(self,
                 rule: Rule,
                 apply_to: DifficultySpecifier | None = None) -> "LogicOptions":
         return self._apply_rule_op(rule, or_, apply_to)
+
+    def ror_rule(self,
+                 rule: Rule,
+                 apply_to: DifficultySpecifier | None = None) -> "LogicOptions":
+        return self._apply_rule_op(rule, or_, apply_to, reverse_order=True)
+
+    # I'm not sure if pre-applying __and__/__or__ like this helps with performance when initialising rules.
+    # def __and__(self, other):
+    #     return self.and_rule(other)
+    #
+    # def __or__(self, other):
+    #     return self.or_rule(other)
 
 
 def _recursively_replace_logic_options(rule: Rule, difficulty_attribute: Literal["base", "normal", "moderate", "hard"]):
