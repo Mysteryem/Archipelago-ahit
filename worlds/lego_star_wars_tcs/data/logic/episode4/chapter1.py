@@ -69,7 +69,7 @@ MOON_CAR_LOGIC = logic_options(
             CAN_DESTROY_CLOSE_SILVER_BRICKS,
             # You can push a stormtrooper all the way into the corridor and deflect one of their bolts into
             # near the silver bricks.
-            # Only relevant to Darth Vader/The Emperor while there is no panel randomizer.
+            # Only relevant to Darth Vader/The Emperor/Imperial Guard while there is no panel randomizer.
             Has("Exploding Blaster Bolts") & CAN_USE_DEFLECT_BOLTS,
         ),
     ),
@@ -296,8 +296,8 @@ SECRET_PLANS = _helper.make_chapter(
                 moderate=And(
                     Or(
                         CAN_DESTROY_CLOSE_SILVER_BRICKS,
-                        # Darth Vader and The Emperor can deflect bolts fired by stormtroopers into near the silver
-                        # bricks, exploding them.
+                        # Darth Vader, The Emperor and Imperial Guard can deflect bolts fired by stormtroopers into near
+                        # the silver bricks, exploding them.
                         Has("Exploding Blaster Bolts") & CAN_USE_DEFLECT_BOLTS,
                     ),
                     _helper.can_reach_region(R_VENT_IMPERIALS_INTO_SPACE),
