@@ -1,10 +1,8 @@
 from collections import defaultdict
 from unittest import TestCase
 
-from ..items import CHARACTERS_AND_VEHICLES_BY_NAME
+from ..items import LOGIC_CONSIDERED_CHARACTERS
 from ..character_ability import CharacterAbility, IMPLIED_ABILITIES, ABILITY_REDUCTIONS, COMBINATION_ABILITY_REDUCTIONS
-
-CHARACTERS = [c for c in CHARACTERS_AND_VEHICLES_BY_NAME.values() if c.is_sendable or c.name == "Super Gonk Droid"]
 
 
 class TestAbilities(TestCase):
@@ -19,7 +17,7 @@ class TestAbilities(TestCase):
 
         ability_to_used_by: dict[CharacterAbility, set[CharacterAbility]] = defaultdict(set)
         used_abilities = CharacterAbility.NONE
-        for character in CHARACTERS:
+        for character in LOGIC_CONSIDERED_CHARACTERS.values():
             for ability in character.abilities:
                 implied_dict[ability] &= character.abilities
                 used_abilities |= character.abilities

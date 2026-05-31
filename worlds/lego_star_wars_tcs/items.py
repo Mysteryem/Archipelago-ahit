@@ -97,12 +97,16 @@ class CharacterData(GenericCharacterData):
         abilities = self.abilities
 
         if self.single_jump_height >= 0.44:
-            abilities |= CAN_JUMP_0_44 | CAN_JUMP_HEIGHT_0_37
-        elif self.single_jump_height >= 0.37:
+            abilities |= CAN_JUMP_0_44
+        if self.single_jump_height >= 0.37:
             abilities |= CAN_JUMP_HEIGHT_0_37
 
-        if self.single_jump_distance >= 0.7:
+        if self.single_jump_distance >= 0.69:
             abilities |= CAN_JUMP_DISTANCE_0_69
+        if self.single_jump_distance >= 0.84:
+            abilities |= CAN_JUMP_DISTANCE_0_84
+        if self.single_jump_distance >= 0.92:
+            abilities |= CAN_JUMP_DISTANCE_0_92
 
         # All Sith are Jedi.
         if SITH in abilities:
@@ -127,25 +131,28 @@ class CharacterData(GenericCharacterData):
         assert BOUNTY_HUNTER not in abilities or self.alignment is Alignment.EVIL, \
             f"{self.name} is a Bounty Hunter, but is not EVIL alignment."
 
+        # Double jump implies all the jump height and jump distance abilities.
         if (HIGH_JUMP | JEDI) & abilities != 0:
-            abilities |= CAN_JUMP_0_44
             abilities |= CAN_DOUBLE_JUMP
+            abilities |= CAN_JUMP_DISTANCE_0_92
+            abilities |= CAN_JUMP_DISTANCE_0_84
             abilities |= CAN_JUMP_DISTANCE_0_69
-        if CAN_JUMP_0_44 in abilities:
             abilities |= CAN_FLOP_JUMP
         if CAN_FLOP_JUMP in abilities:
+            abilities |= CAN_JUMP_0_44
+        if CAN_JUMP_0_44 in abilities:
             abilities |= CAN_JUMP_HEIGHT_0_37
         if CAN_JUMP_HEIGHT_0_37 in abilities:
             # Normal jump distance is not guaranteed.
             abilities |= CAN_BARELY_JUMP
-            if self.run_speed >= 1.2:
-                abilities |= CAN_JUMP_DISTANCE_0_69
 
         # Jetpacks are a superior version of Astromech hovering.
         if JETPACK in abilities:
             abilities |= HOVER
         # Hovering is the superior version of jump distance.
         if HOVER in abilities:
+            abilities |= CAN_JUMP_DISTANCE_0_92
+            abilities |= CAN_JUMP_DISTANCE_0_84
             abilities |= CAN_JUMP_DISTANCE_0_69
 
         # Automatically set special Hat Machine abilities that are not set explicitly.
@@ -166,8 +173,11 @@ class CharacterData(GenericCharacterData):
             if JEDI in abilities:
                 abilities |= CAN_DEFLECT_BOLTS
 
-        if self.run_speed >= 0.9 and IS_A_VEHICLE not in abilities:
-            abilities |= RUN_SPEED_0_9_OR_HIGHER
+        if IS_A_VEHICLE not in abilities:
+            if self.run_speed >= 0.9:
+                abilities |= RUN_SPEED_0_9_OR_HIGHER
+            if self.run_speed >= 1.18:
+                abilities |= RUN_SPEED_1_18_OR_HIGHER
 
         if abilities is not self.abilities:
             # print(f"Updated abilities for {self.name}. Added:\n\t{abilities & ~self.abilities!r}")
