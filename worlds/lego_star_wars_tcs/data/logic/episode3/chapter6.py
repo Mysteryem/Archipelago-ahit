@@ -251,7 +251,7 @@ DARTH_VADER = Chapter(
                 # todo: The DROID ability is not currently implemented because it is not logically needed.
                 er_rule=Or(
                     HasAbility(IS_NON_GHOST_JEDI),
-                    HasAbility(CAN_DAMAGE_AT_CLOSE_RANGE) & ANY_CHARACTER_EXCEPT_FORCE_GHOST,
+                    CAN_DAMAGE_AT_CLOSE_RANGE & ANY_CHARACTER_EXCEPT_FORCE_GHOST,
                 ),
                 # er_rule=logic_options(
                 #     base=Or(

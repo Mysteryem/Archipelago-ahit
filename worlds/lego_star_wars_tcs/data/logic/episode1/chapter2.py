@@ -226,7 +226,7 @@ INVASION_OF_NABOO = Chapter(
                             HasAbility(BLASTER),
                             # The explosion allows Ewok to hit the target without needing a Jedi to move the boulders
                             # for extra height.
-                            WEAPON_EWOK & (HasAny("Super Ewok Catapult", "Exploding Blaster Bolts")),
+                            HasAbility(WEAPON_EWOK) & (HasAny("Super Ewok Catapult", "Exploding Blaster Bolts")),
                             # Self-destruct can also hit the target.
                             CAN_USE_SELF_DESTRUCT,
                         )
