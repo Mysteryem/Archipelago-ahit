@@ -582,5 +582,6 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 normal=True_(),
             ),
         ),
+        "Landspeeder": LocationData(R_BEFORE_SEA_OF_QUICKSAND, HasAbility(CAN_BUILD_BRICKS)),
     },
 )
