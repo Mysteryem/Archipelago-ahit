@@ -14,6 +14,7 @@ from ..data.logic.rules import (
     HasAbilityExceptCharacters,
     HasAnyAbilities,
     HasAnyCharacterExcept,
+    HasAbilityCombination,
 )
 from ..items import LOGIC_CONSIDERED_CHARACTERS
 from ..options import LogicDifficulty
@@ -235,3 +236,68 @@ class TestAbilityExceptCharacters(TestCase):
                         finally:
                             for item in items:
                                 test_state.remove(item)
+
+
+class TestAbilityCombinations(TestCase):
+    def test_ride_vehicles_and_high_jump(self):
+        rule = HasAbilityCombination.make_rule(CharacterAbility.CAN_RIDE_VEHICLES | CharacterAbility.HIGH_JUMP)
+        self.assertIsInstance(rule, HasAny)
+        self.assertEqual(set(rule.item_names), {"Jar Jar Binks", "Captain Tarpals"})
+
+    def test_ride_vehicles_and_double_jump(self):
+        rule = HasAbilityCombination.make_rule(CharacterAbility.CAN_RIDE_VEHICLES | CharacterAbility.CAN_DOUBLE_JUMP)
+        self.assertIsInstance(rule, Or)
+        self.assertEqual(len(rule.children), 2)
+
+        r1 = rule.children[0]
+        self.assertIsInstance(r1, HasAbility)
+        self.assertEqual(r1.ability, CharacterAbility.JEDI)
+
+        r2 = rule.children[1]
+        self.assertIsInstance(r2, HasAny)
+        self.assertEqual(set(r2.item_names), {"Jar Jar Binks", "Captain Tarpals"})
+
+    def test_imperial_and_jedi(self):
+        rule = HasAbilityCombination.make_rule(CharacterAbility.IMPERIAL | CharacterAbility.JEDI)
+        self.assertIsInstance(rule, HasAny)
+        self.assertEqual(set(rule.item_names), {"Darth Vader", "The Emperor"})
+
+    def test_imperial_and_jedi_or_ride_vehicles_and_high_jump(self):
+        rule = HasAbilityCombination.make_rule(
+            CharacterAbility.IMPERIAL | CharacterAbility.JEDI,
+            CharacterAbility.CAN_RIDE_VEHICLES | CharacterAbility.HIGH_JUMP,
+        )
+        self.assertIsInstance(rule, Or)
+        self.assertEqual(len(rule.children), 2)
+
+        r1 = rule.children[0]
+        self.assertIsInstance(r1, HasAny)
+        self.assertEqual(set(r1.item_names), {"Darth Vader", "The Emperor"})
+
+        r2 = rule.children[1]
+        self.assertIsInstance(r2, HasAny)
+        self.assertEqual(set(r2.item_names), {"Jar Jar Binks", "Captain Tarpals"})
+
+    def test_bounty_hunter_and_can_build_bricks(self):
+        rule = HasAbilityCombination.make_rule(CharacterAbility.BOUNTY_HUNTER | CharacterAbility.CAN_BUILD_BRICKS)
+        self.assertIsInstance(rule, Or)
+        self.assertEqual(len(rule.children), 2)
+
+        r1 = rule.children[0]
+        self.assertIsInstance(r1, HasAbility)
+        self.assertEqual(r1.ability, CharacterAbility.JETPACK)
+
+        r2 = rule.children[1]
+        self.assertIsInstance(r2, HasAny)
+        self.assertEqual(set(r2.item_names), {"Bossk", "Dengar", "Greedo", "Zam Wesell"})
+
+    def test_bounty_hunter_and_astromech_panel(self):
+        rule = HasAbilityCombination.make_rule(CharacterAbility.BOUNTY_HUNTER | CharacterAbility.ASTROMECH_PANEL)
+        self.assertIsInstance(rule, HasAny)
+        self.assertEqual(set(rule.item_names), {"4-LOM", "IG-88"})
+
+    def test_bounty_hunter_and_double_jump(self):
+        rule = HasAbilityCombination.make_rule(CharacterAbility.BOUNTY_HUNTER | CharacterAbility.CAN_DOUBLE_JUMP)
+        self.assertIsInstance(rule, HasAny)
+        self.assertEqual(set(rule.item_names), set())
+
