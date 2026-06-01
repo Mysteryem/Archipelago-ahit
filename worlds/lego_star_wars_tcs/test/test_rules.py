@@ -1,11 +1,22 @@
 from unittest import TestCase
 
+from BaseClasses import CollectionState
 from rule_builder.rules import Has, Rule, And, Or, HasAny
+from test.general import setup_multiworld
+from worlds import AutoWorldRegister
 
+from ..character_ability import CharacterAbility
+from ..constants import GAME_NAME
 from ..data.logic.option_filters import logic_options
 from ..data.logic.macros import can_jump_distance_rule
-from ..data.logic.rules import HasAbility, HasAbilityExceptCharacters, HasAnyAbilities
-from ..character_ability import CharacterAbility
+from ..data.logic.rules import (
+    HasAbility,
+    HasAbilityExceptCharacters,
+    HasAnyAbilities,
+    HasAnyCharacterExcept,
+)
+from ..items import LOGIC_CONSIDERED_CHARACTERS
+from ..options import LogicDifficulty
 
 BASE_ITEM = "BASE_ITEM"
 NORMAL_ITEM = "NORMAL_ITEM"
@@ -152,7 +163,7 @@ class TestAbilityExceptCharacters(TestCase):
     def test_jedi_except_yoda(self):
         """Test a fairly common case of needing any Jedi, except Yoda/Yoda (Ghost)"""
         rule = HasAbilityExceptCharacters(CharacterAbility.JEDI, "Yoda", "Yoda (Ghost)")
-        made = rule._make_rule(rule.ability, rule.except_characters)
+        made = rule.make_rule(rule.ability, rule.except_characters)
 
         self.assertIsInstance(made, Or)
         self.assertEqual(len(made.children), 2)
@@ -176,7 +187,51 @@ class TestAbilityExceptCharacters(TestCase):
     def test_double_jump_except_yoda(self):
         """Test a fairly common case of needing any Double Jumper character, except Yoda/Yoda (Ghost)"""
         rule = HasAbilityExceptCharacters(CharacterAbility.CAN_DOUBLE_JUMP, "Yoda", "Yoda (Ghost)")
-        made = rule._make_rule(rule.ability, rule.except_characters)
+        made = rule.make_rule(rule.ability, rule.except_characters)
 
         self.assertIsInstance(made, HasAnyAbilities)
         self.assertEqual(made.abilities, CharacterAbility.CAN_TRIPLE_JUMP_GREAT_DISTANCE | CharacterAbility.HIGH_JUMP)
+
+    def test_has_any_character_except(self):
+        """Test HasAnyCharacterExcept with random assortments of characters."""
+        world_type = AutoWorldRegister.world_types[GAME_NAME]
+        # Extras are not in logic in the lowest logic difficulty.
+        options = [{"logic_difficulty": LogicDifficulty.option_normal}]
+        mw = setup_multiworld([world_type], steps=(), options=options)
+        world = mw.worlds[1]
+        test_state = CollectionState(mw)
+        vehicle_characters: list[str] = []
+        normal_characters: list[str] = []
+        for character_data in LOGIC_CONSIDERED_CHARACTERS.values():
+            if CharacterAbility.IS_A_VEHICLE in character_data.abilities:
+                vehicle_characters.append(character_data.name)
+            else:
+                normal_characters.append(character_data.name)
+        for characters in (vehicle_characters, normal_characters):
+            for _ in range(len(characters)):
+                # Pick some character to exclude.
+                except_characters = set(mw.random.sample(characters, k=mw.random.choice(range(1, 6))))
+                with self.subTest(except_characters=except_characters):
+                    rule = HasAnyCharacterExcept(*except_characters)
+                    collection_rule = rule.resolve(world)
+                    for character in characters:
+                        expect_true = character not in except_characters
+                        if character == "Super Gonk Droid":
+                            # Super Gonk Droid is only available via a collect() override.
+                            items = [world.create_item("Gonk Droid"), world.create_item("Super Gonk")]
+                            # The collect override includes "Gonk Droid", so if "Gonk Droid" is not also excluded, the
+                            # rule should pass.
+                            if "Gonk Droid" not in except_characters:
+                                expect_true = True
+                        else:
+                            items = [world.create_item(character)]
+                        for item in items:
+                            test_state.collect(item, True)
+                        try:
+                            if expect_true:
+                                self.assertTrue(collection_rule(test_state), f"Failed for {character}")
+                            else:
+                                self.assertFalse(collection_rule(test_state), f"Failed for {character}")
+                        finally:
+                            for item in items:
+                                test_state.remove(item)

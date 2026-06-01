@@ -1,7 +1,7 @@
 import dataclasses
 from functools import reduce
 from operator import or_
-from typing import ClassVar, Iterable, TYPE_CHECKING, Any, Self
+from typing import ClassVar, Iterable, TYPE_CHECKING, Any, Self, AbstractSet
 from typing_extensions import override
 
 from BaseClasses import CollectionState
@@ -359,7 +359,7 @@ class HasAbilityExceptCharacters(InLevelRule, game=GAME_NAME):
     ability: CharacterAbility | FieldResolver
     """The ability to check for. CharacterAbility.NONE is allowed."""
 
-    except_characters: Iterable[str] | FieldResolver
+    except_characters: AbstractSet[str] | FieldResolver
     """The characters excluded from this rule."""
 
     def __init__(
@@ -402,7 +402,7 @@ class HasAbilityExceptCharacters(InLevelRule, game=GAME_NAME):
         # return data
 
     @staticmethod
-    def make_rule(required_ability: CharacterAbility, except_characters: set[str]) -> Rule:
+    def make_rule(required_ability: CharacterAbility, except_characters: AbstractSet[str]) -> Rule:
         if not except_characters:
             return HasAbility(required_ability)
 

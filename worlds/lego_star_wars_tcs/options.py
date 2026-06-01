@@ -1679,6 +1679,18 @@ class LogicDifficulty(ChoiceFromStringExtension):
     # option_expert = 4
     # option_super_expert = 5
 
+    @property
+    def normal_plus(self) -> bool:
+        return self.value >= self.option_normal
+
+    @property
+    def moderate_plus(self) -> bool:
+        return self.value >= self.option_moderate
+
+    @property
+    def hard_plus(self) -> bool:
+        return self.value >= self.option_hard
+
 
 # Not using DeathLinkMixin currently because the docstring needs to be different.
 class LegoStarWarsTCSDeathLink(DeathLink):
