@@ -33,7 +33,7 @@ ANY_DOUBLE_JUMP_EXCEPT_YODA_ER = HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, "Yo
 
 
 def _make_any_character_except_force_ghost() -> Rule:
-    ghosts = ["Yoda (Ghost)", "Anakin Skywalker (Ghost)", "Ben Kenobi (Ghost)"]
+    ghosts = {"Yoda (Ghost)", "Anakin Skywalker (Ghost)", "Ben Kenobi (Ghost)"}
     abilities_union = CharacterAbility.NONE
     for ghost in ghosts:
         abilities_union |= LOGIC_CONSIDERED_CHARACTERS[ghost].abilities
@@ -42,7 +42,8 @@ def _make_any_character_except_force_ghost() -> Rule:
     abilities_union |= CharacterAbility.ALL_VEHICLE_ABILITIES
 
     # Having any of these abilities will mean having any character that is not a force ghost.
-    abilities_rule = HasAnyAbilities(~abilities_union)
+    any_abilities = ~abilities_union
+    abilities_rule = HasAnyAbilities(any_abilities)
 
     # Now find all non-ghost characters who don't share a single ability in common with `abilities_union`. Those
     # characters will need to be checked for individually.
@@ -50,8 +51,10 @@ def _make_any_character_except_force_ghost() -> Rule:
     for character in LOGIC_CONSIDERED_CHARACTERS.values():
         if isinstance(character, VehicleData):
             continue
-        if character.abilities & abilities_rule == 0:
-            individual_check_characters.append(character)
+        if character.name in ghosts:
+            continue
+        if character.abilities & any_abilities == 0:
+            individual_check_characters.append(character.name)
 
     if individual_check_characters:
         return abilities_rule | HasAny(*individual_check_characters)
@@ -248,22 +251,21 @@ DARTH_VADER = Chapter(
                 # Additionally, P2's AI seems to break here when P2 is a Ghost, refusing to attack for some reason.
                 # Even if P2's AI did work, allowing AI P2 to kill you forces the fight to restart.
                 HasAbility(IS_NON_GHOST_JEDI),
+                # Having no Jedi unlocked at all would send the AI into an infinite character swapping loop, which might
+                # prevent dealing damage to them. Either way, this sort of logic is not allowed in AP because going from
+                # not having a Jedi unlocked, to having a Ghost Jedi unlocked, would cause this entrance to go from
+                # in-logic to out-of-logic.
                 # todo: The DROID ability is not currently implemented because it is not logically needed.
-                er_rule=Or(
-                    HasAbility(IS_NON_GHOST_JEDI),
-                    CAN_DAMAGE_AT_CLOSE_RANGE & ANY_CHARACTER_EXCEPT_FORCE_GHOST,
-                ),
                 # er_rule=logic_options(
-                #     base=Or(
-                #         HasAbility(IS_NON_GHOST_JEDI),
-                #         HasAbility(CAN_DAMAGE_AT_CLOSE_RANGE) & ANY_CHARACTER_EXCEPT_FORCE_GHOST,
-                #     ),
+                #     base=HasAbility(IS_NON_GHOST_JEDI)
                 #     # Instead of instantly killing the character, when Super Zapper damages a player character, it
                 #     # deals 1 heart of damage, so that can be used to deal damage too.
                 #     # Self Destruct is not usable here because any respawn not directly caused by a player controlled
                 #     # character results in restarting the fight.
                 #     moderate=Or(
                 #         HasAbility(IS_NON_GHOST_JEDI),
+                #         # With no Jedi unlocked, or with only ghost Jedi unlocked, control both P1 and P2
+                #         # independently to complete the chapter.
                 #         HasAbility(CAN_DAMAGE_AT_CLOSE_RANGE) & ANY_CHARACTER_EXCEPT_FORCE_GHOST,
                 #         Has("Super Zapper") & HasAllAbilities(WEAPON_ZAPPER | DROID),
                 #     ),
