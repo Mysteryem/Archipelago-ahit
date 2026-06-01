@@ -1,3 +1,4 @@
+import json
 from unittest import TestCase
 from typing import Callable, Iterable
 
@@ -167,5 +168,14 @@ class TestEpisodes(TestCase):
                 un_nested = un_nest_logic_options(rule)
                 self._check_top_level_rule(un_nested)
 
+    @chapters_test
+    def test_rules_json_serializable(self, chapter: Chapter):
+        for owner_name, rule in self.chapter_rule_gen(chapter):
+            with self.subTest(name=owner_name):
+                un_nested = un_nest_logic_options(rule)
 
-
+                with self.subTest(un_nested=False):
+                    json.dumps(rule.to_dict())
+                if un_nested is not rule:
+                    with self.subTest(un_nested=True):
+                        json.dumps(un_nested.to_dict())
