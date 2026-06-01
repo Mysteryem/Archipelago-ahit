@@ -1,6 +1,6 @@
 from typing import Literal, cast
 
-from rule_builder.rules import Rule, NestedRule, And, Or, WrapperRule, Filtered, TWorld
+from rule_builder.rules import Rule, NestedRule, And, Or, WrapperRule, Filtered, TWorld, False_, True_
 
 from .option_filters import LogicOptions
 
@@ -14,6 +14,16 @@ def _recursively_replace_logic_options(rule: Rule, difficulty_attribute: Literal
             raise Exception("LogicOptions should not use OptionFilters, filter the individual rules instead.")
         return _recursively_replace_logic_options(getattr(rule, difficulty_attribute), difficulty_attribute)
     if isinstance(rule, NestedRule):
+        if len(rule.children) == 1:
+            return _recursively_replace_logic_options(rule.children[0], difficulty_attribute)
+        if len(rule.children) == 0:
+            if rule_class is Or:
+                return False_()
+            elif rule_class is And:
+                # Note: Rule Builder is currently bugged, and will resolve And(*[]) to False_()!
+                return True_()
+            else:
+                raise Exception(f"Cannot handle unknown type NestedRule: {rule}")
         # Recursively iterate through children and replace rules as necessary.
         # Scan for a rule that could need replacement.
         for child in rule.children:
