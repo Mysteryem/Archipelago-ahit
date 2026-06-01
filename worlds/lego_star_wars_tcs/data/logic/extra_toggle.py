@@ -27,6 +27,7 @@ from rule_builder.rules import (
 from rule_builder.field_resolvers import FieldResolver
 
 from .rules import (
+    InLevelRule,
     HasAbility,
     HasAbilityCombination,
     HasAnyAbilities,
@@ -150,25 +151,33 @@ class ExtraToggleRuleReplacer:
     chapter: Chapter
     extra_toggle_abilities_union: CharacterAbility
     extra_toggle_abilities_unique_combinations: set[CharacterAbility]
+    extra_toggle_name_to_abilities: dict[str, CharacterAbility]
     replaced_rules_memodict: dict[int, Rule]
 
     def __init__(self, chapter: Chapter):
         extra_toggle_abilities_union = CharacterAbility.NONE
         extra_toggle_abilities_unique_combinations: set[CharacterAbility] = set()
+        extra_toggle_name_to_abilities: dict[str, CharacterAbility] = {}
         if chapter.extra_toggle_characters:
             for character_name in chapter.extra_toggle_characters:
                 character = CHARACTERS_AND_VEHICLES_BY_NAME[character_name]
                 extra_toggle_abilities_union |= character.abilities
                 extra_toggle_abilities_unique_combinations.add(character.abilities)
+                extra_toggle_name_to_abilities[character_name] = character.abilities
         self.extra_toggle_abilities_union = extra_toggle_abilities_union
         self.extra_toggle_abilities_unique_combinations = extra_toggle_abilities_unique_combinations
         self.replaced_rules_memodict = {}
+        self.extra_toggle_name_to_abilities = extra_toggle_name_to_abilities
 
     @staticmethod
     def or_extra_toggle(rule: Rule, extra_and_rule: Rule | None = None) -> Or:
+        if isinstance(rule, InLevelRule):
+            replacement = rule.prepare_for_or_extra_toggle()
+        else:
+            replacement = dataclasses.replace(rule, options=(), filtered_resolution=False)
         if extra_and_rule is None:
             return Or(
-                dataclasses.replace(rule, options=(), filtered_resolution=False),
+                replacement,
                 Has("Extra Toggle"),
                 options=rule.options, filtered_resolution=rule.filtered_resolution
             )
@@ -178,7 +187,7 @@ class ExtraToggleRuleReplacer:
             # )
         else:
             return Or(
-                dataclasses.replace(rule, options=(), filtered_resolution=False),
+                replacement,
                 extra_and_rule & Has("Extra Toggle"),
                 options=rule.options, filtered_resolution=rule.filtered_resolution)
             # return Or(
@@ -332,10 +341,17 @@ class ExtraToggleRuleReplacer:
             else:
                 raise Exception("FieldResolver support is not implemented.")
         elif isinstance(rule, HasAbilityExceptCharacters):
-            if isinstance(rule.ability, CharacterAbility):
-                if rule.ability in self.extra_toggle_abilities_union:
-                    replacement = self.or_extra_toggle(rule)
+            if isinstance(rule.ability, CharacterAbility) and not isinstance(rule.except_characters, FieldResolver):
+                for extra_toggle_character, character_abilities in self.extra_toggle_name_to_abilities.items():
+                    if (
+                            (rule.ability is CharacterAbility.NONE or rule.ability in character_abilities)
+                            and extra_toggle_character not in rule.except_characters
+                    ):
+                        # There is a character with the required ability that is not excluded.
+                        replacement = self.or_extra_toggle(rule)
+                        break
                 else:
+                    # No break, so no extra toggle character could satisfy the rule.
                     replacement = rule
             else:
                 raise Exception("FieldResolver support is not implemented.")

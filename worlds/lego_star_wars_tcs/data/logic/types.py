@@ -88,7 +88,7 @@ class ChapterHelper:
     story_characters: tuple[str, ...] = ()
     purchase_characters: dict[str, int] = field(default_factory=dict)
     extra_toggle_characters: tuple[str, ...] = ()
-    _regions_used_in_can_reach: set[str] = field(default_factory=set)
+    _regions_used_in_can_reach: set[str] = field(default_factory=set, init=False)
 
     def can_reach_region(self, region_name: str):
         self._regions_used_in_can_reach.add(region_name)

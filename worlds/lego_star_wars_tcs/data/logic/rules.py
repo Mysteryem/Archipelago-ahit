@@ -1,7 +1,7 @@
 import dataclasses
 from functools import reduce
 from operator import or_
-from typing import ClassVar, Iterable, TYPE_CHECKING, Any
+from typing import ClassVar, Iterable, TYPE_CHECKING, Any, Self
 from typing_extensions import override
 
 from BaseClasses import CollectionState
@@ -23,7 +23,7 @@ from rule_builder.rules import (
 
 from ...character_ability import CharacterAbility, IMPLIED_BY_ABILITIES
 from ...constants import GAME_NAME
-from ...items import LOGIC_CONSIDERED_CHARACTERS
+from ...items import LOGIC_CONSIDERED_CHARACTERS, CHARACTERS_AND_VEHICLES_BY_NAME
 from ...options import ChapterUnlockRequirement, EpisodeUnlockRequirement
 
 
@@ -46,7 +46,18 @@ def _common_rule_args(world: LegoStarWarsTCSWorld):
 
 
 @dataclasses.dataclass
-class HasAbility(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+class InLevelRule(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+    """Denotes that a rule can be used within a level, so may need combining with Extra Toggle rules."""
+    def prepare_for_or_extra_toggle(self) -> Self:
+        """
+        Prepare this rule for OR-ing with and Extra Toggle rule, by creating a copy with default options and default
+        filtered_resolution.
+        """
+        return dataclasses.replace(self, options=(), filtered_resolution=False)
+
+
+@dataclasses.dataclass
+class HasAbility(InLevelRule, game=GAME_NAME):
     """A rule that checks if the player has a given character ability."""
 
     ability: CharacterAbility | FieldResolver
@@ -80,7 +91,7 @@ class HasAbility(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
 
 
 @dataclasses.dataclass
-class HasAllAbilities(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+class HasAllAbilities(InLevelRule, game=GAME_NAME):
     """A rule that checks if the player has all the given character abilities."""
 
     abilities: CharacterAbility | FieldResolver
@@ -133,7 +144,7 @@ class HasAllAbilities(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
 
 
 @dataclasses.dataclass
-class HasAnyAbilities(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+class HasAnyAbilities(InLevelRule, game=GAME_NAME):
     """A rule that checks if the player has any of the given character abilities."""
 
     abilities: CharacterAbility | FieldResolver
@@ -164,7 +175,7 @@ class HasAnyAbilities(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
 
 
 @dataclasses.dataclass
-class HasAbilityCombination(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+class HasAbilityCombination(InLevelRule, game=GAME_NAME):
     """A rule that checks if the player has any character with any of the given combinations of abilities.
 
     Typically only a single ability combination will be needed, but multiple can be provided.
@@ -200,7 +211,7 @@ class HasAbilityCombination(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         abilities = resolve_field(self.ability_combinations, world, CharacterAbility)
 
-        return self._make_rule(abilities).resolve(world)
+        return self.make_rule(abilities).resolve(world)
 
     @staticmethod
     def simplify_contained_combinations(combinations: list[CharacterAbility]):
@@ -230,7 +241,7 @@ class HasAbilityCombination(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         return simplified_combinations
 
     @staticmethod
-    def _make_rule(*combinations: CharacterAbility) -> Rule:
+    def make_rule(*combinations: CharacterAbility) -> Rule:
         if not combinations:
             return False_()
 
@@ -260,6 +271,48 @@ class HasAbilityCombination(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
                 any_rules.append(HasAnyAbilities(reduce(or_, reduced_to_single_bit)))
 
         if still_multiple_bits:
+            def get_rough_rule_cost(rule: Rule) -> float:
+                if isinstance(rule, HasAny):
+                    return len(rule.item_names) * 0.5
+                elif isinstance(rule, HasAll):
+                    return len(rule.item_names) * 0.75
+                elif isinstance(rule, Or):
+                    return sum(map(get_rough_rule_cost, rule.children)) * 0.5
+                elif isinstance(rule, And):
+                    return sum(map(get_rough_rule_cost, rule.children)) * 0.75
+                else:
+                    return 1
+
+            # First try rules based on HasAbilityExceptCharacters
+            best_ability_except_rules = []
+            for combination in still_multiple_bits:
+                ability_except_rule_attemps: list[Rule] = []
+                for main_ability in combination:
+                    other_abilities = combination & ~main_ability
+                    excluded_characters: set[str] = set()
+                    for character in LOGIC_CONSIDERED_CHARACTERS.values():
+                        if main_ability in character.abilities and other_abilities not in character.abilities:
+                            excluded_characters.add(character.name)
+                    ability_except_rule = HasAbilityExceptCharacters.make_rule(main_ability, excluded_characters)
+                    ability_except_rule_attemps.append(ability_except_rule)
+
+                # todo: I think these rules might always be the same due to optimisations HasAbilityExceptCharacters
+                #  already does..
+                best_rule = ability_except_rule_attemps[0]
+                best_rule_cost = get_rough_rule_cost(best_rule)
+                for rule in ability_except_rule_attemps[1:]:
+                    rule_cost = get_rough_rule_cost(rule)
+                    if rule_cost < best_rule_cost:
+                        best_rule = rule
+                        best_rule_cost = rule_cost
+                best_ability_except_rules.append(best_rule)
+
+            if len(best_ability_except_rules) == 1:
+                best_ability_except_rule = best_ability_except_rules[0]
+            else:
+                best_ability_except_rule = Or(*best_ability_except_rules)
+
+            # Try a different kind of rule that can encompass all supplied combinations.
             all_matching_characters: set[str] = set()
             common_abilities_for_each_combination: list[CharacterAbility] = []
             for combination in still_multiple_bits:
@@ -289,19 +342,22 @@ class HasAbilityCombination(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
                 if abilities_rules:
                     characters_rule = And(Or(*abilities_rules), characters_rule)
 
-            any_rules.append(characters_rule)
-        return Or(*any_rules)
+            if get_rough_rule_cost(best_ability_except_rule) < get_rough_rule_cost(characters_rule):
+                any_rules.append(best_ability_except_rule)
+            else:
+                any_rules.append(characters_rule)
+        return Or(*any_rules) if len(any_rules) != 1 else any_rules[0]
 
 
 @dataclasses.dataclass
-class HasAbilityExceptCharacters(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
+class HasAbilityExceptCharacters(InLevelRule, game=GAME_NAME):
     """A rule that checks if the player has any character with the given ability, except the given characters.
 
     This is an expensive, but rarely used rule for cases where specific characters cannot use their abilities in
     specific cases, where adding a new CharacterAbility to represent this difference in ability is not worth it.
     """
     ability: CharacterAbility | FieldResolver
-    """The ability to check for."""
+    """The ability to check for. CharacterAbility.NONE is allowed."""
 
     except_characters: Iterable[str] | FieldResolver
     """The characters excluded from this rule."""
@@ -321,6 +377,10 @@ class HasAbilityExceptCharacters(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         self.except_characters = set(except_characters)
 
     @override
+    def prepare_for_or_extra_toggle(self) -> Self:
+        return HasAbilityExceptCharacters(self.ability, *self.except_characters)
+
+    @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         required_ability = resolve_field(self.ability, world, CharacterAbility)
         if required_ability.bit_count() == 0:
@@ -331,33 +391,74 @@ class HasAbilityExceptCharacters(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
 
         except_characters = set(resolve_field(self.except_characters, world, Iterable))
 
-        return self._make_rule(required_ability, except_characters).resolve(world)
+        return self.make_rule(required_ability, except_characters).resolve(world)
+
+    @override
+    def to_dict(self) -> dict[str, Any]:
+        return self.make_rule(self.ability, self.except_characters).to_dict()
+        # data = super().to_dict()
+        # # sets are not allowed.
+        # data["args"]["except_characters"] = list(data["args"]["except_characters"])
+        # return data
 
     @staticmethod
-    def _make_rule(required_ability: CharacterAbility, except_characters: set[str]) -> Rule:
+    def make_rule(required_ability: CharacterAbility, except_characters: set[str]) -> Rule:
         if not except_characters:
             return HasAbility(required_ability)
 
         except_characters_abilities = CharacterAbility.NONE
         for character_name in except_characters:
-            except_characters_abilities |= LOGIC_CONSIDERED_CHARACTERS[character_name].abilities
+            # Extra Toggle characters are allowed in the exclusions to make sure they cannot be allowed due to their
+            # abilities when automatically adding Extra Toggle rules, but they otherwise do not need to be considered by
+            # the rule.
+            if character_name in LOGIC_CONSIDERED_CHARACTERS:
+                except_characters_abilities |= LOGIC_CONSIDERED_CHARACTERS[character_name].abilities
+            elif character_name not in CHARACTERS_AND_VEHICLES_BY_NAME:
+                raise KeyError(f"No character named '{character_name}' found.")
 
-        usable_implied_by_abilities = CharacterAbility.NONE
-        for ability in IMPLIED_BY_ABILITIES.get(required_ability, ()):
-            if ability not in except_characters_abilities:
-                usable_implied_by_abilities |= ability
-
-        usable_implied_by_abilities_to_characters: dict[CharacterAbility, set[str]] = {
-            ability: set() for ability in usable_implied_by_abilities
-        }
-        include_characters_abilities = ~CharacterAbility.NONE
         include_characters = set()
-        for character in LOGIC_CONSIDERED_CHARACTERS.values():
-            if required_ability in character.abilities and character.name not in except_characters:
-                include_characters_abilities &= character.abilities
-                include_characters.add(character.name)
-                for ability in (character.abilities & usable_implied_by_abilities):
-                    usable_implied_by_abilities_to_characters[ability].add(character.name)
+        if required_ability is CharacterAbility.NONE:
+            if CharacterAbility.IS_A_VEHICLE in except_characters_abilities:
+                all_abilities = CharacterAbility.ALL_VEHICLE_ABILITIES
+                vehicles = True
+            else:
+                all_abilities = ~CharacterAbility.ALL_VEHICLE_ABILITIES
+                vehicles = False
+
+            usable_abilities = ~except_characters_abilities & all_abilities
+
+            usable_implied_by_abilities_to_characters: dict[CharacterAbility, set[str]] = {
+                ability: set() for ability in usable_abilities
+            }
+            include_characters_abilities = ~CharacterAbility.NONE
+            for character in LOGIC_CONSIDERED_CHARACTERS.values():
+                if vehicles:
+                    if CharacterAbility.IS_A_VEHICLE not in character.abilities:
+                        continue
+                else:
+                    if CharacterAbility.IS_A_VEHICLE in character.abilities:
+                        continue
+                if character.name not in except_characters:
+                    include_characters_abilities &= character.abilities
+                    include_characters.add(character.name)
+                    for ability in (character.abilities & usable_abilities):
+                        usable_implied_by_abilities_to_characters[ability].add(character.name)
+        else:
+            usable_implied_by_abilities = CharacterAbility.NONE
+            for ability in IMPLIED_BY_ABILITIES.get(required_ability, ()):
+                if ability not in except_characters_abilities:
+                    usable_implied_by_abilities |= ability
+
+            usable_implied_by_abilities_to_characters: dict[CharacterAbility, set[str]] = {
+                ability: set() for ability in usable_implied_by_abilities
+            }
+            include_characters_abilities = ~CharacterAbility.NONE
+            for character in LOGIC_CONSIDERED_CHARACTERS.values():
+                if required_ability in character.abilities and character.name not in except_characters:
+                    include_characters_abilities &= character.abilities
+                    include_characters.add(character.name)
+                    for ability in (character.abilities & usable_implied_by_abilities):
+                        usable_implied_by_abilities_to_characters[ability].add(character.name)
 
         if not include_characters:
             return False_()
@@ -414,14 +515,45 @@ class HasAbilityExceptCharacters(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
                 # have.
                 return any_abilities_rule
             else:
-                if len(include_characters) >= 8:
+                if len(include_characters) >= 8 and required_ability is not CharacterAbility.NONE:
                     return HasAbility(required_ability) & (any_abilities_rule | HasAny(*include_characters))
                 else:
                     return any_abilities_rule | HasAny(*include_characters)
         else:
-            if len(include_characters) >= 8:
+            if len(include_characters) >= 8 and required_ability is not CharacterAbility.NONE:
                 # If there are lots of characters that match this, check for having all the required abilities first
                 # because that is a faster check.
                 return HasAbility(required_ability) & HasAny(*include_characters)
             else:
                 return HasAny(*include_characters)
+
+
+@dataclasses.dataclass
+class HasAnyCharacterExcept(HasAbilityExceptCharacters, game=GAME_NAME):
+    def __init__(
+            self,
+            *except_characters: str,
+            options: Iterable[OptionFilter] = (),
+            filtered_resolution: bool = False,
+    ):
+        super().__init__(
+            CharacterAbility.NONE,
+            *except_characters,
+            options=options,
+            filtered_resolution=filtered_resolution
+        )
+
+    @override
+    def prepare_for_or_extra_toggle(self) -> Self:
+        return HasAnyCharacterExcept(*self.except_characters)
+
+    @override
+    def _instantiate(self, world: TWorld) -> Rule.Resolved:
+        if self.ability is not CharacterAbility.NONE:
+            raise Exception(f"Ability should always be CharacterAbility.NONE, but got {self.ability!r}")
+
+        except_characters = set(resolve_field(self.except_characters, world, Iterable))
+
+        return self.make_rule(CharacterAbility.NONE, except_characters).resolve(world)
+
+

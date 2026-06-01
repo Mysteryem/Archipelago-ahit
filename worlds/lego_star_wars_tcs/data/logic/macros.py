@@ -99,15 +99,15 @@ CAN_DAMAGE_AT_CLOSE_RANGE = logic_options(
 )
 CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT = CAN_DAMAGE_AT_CLOSE_RANGE.base
 
-# # Some objects can only be destroyed by melee attacks that count as 'combo' attacks.
-# CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE = logic_options(
-#     base=HasAnyAbilities(BLASTER | WEAPON_EWOK | JEDI | CAN_HIGH_JUMP_SLAM) | Has("Imperial Guard"),
-#     normal=Or(
-#         HasAnyAbilities(BLASTER | WEAPON_EWOK | JEDI | CAN_HIGH_JUMP_SLAM),
-#         Has("Imperial Guard"),
-#         CAN_USE_SELF_DESTRUCT,
-#     ),
-# )
+# Some objects can only be destroyed by melee attacks that count as 'combo' attacks.
+CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE = logic_options(
+    base=HasAnyAbilities(BLASTER | WEAPON_EWOK | JEDI | CAN_HIGH_JUMP_SLAM) | Has("Imperial Guard"),
+    normal=Or(
+        HasAnyAbilities(BLASTER | WEAPON_EWOK | JEDI | CAN_HIGH_JUMP_SLAM),
+        Has("Imperial Guard"),
+        CAN_USE_SELF_DESTRUCT,
+    ),
+)
 
 # can_fight_close_droids = logic_options(
 #     base=CAN_DAMAGE_AT_CLOSE_RANGE,
