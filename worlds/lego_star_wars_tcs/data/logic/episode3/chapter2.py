@@ -1,8 +1,8 @@
-from rule_builder.rules import HasAny, True_, HasAll, Has
+from rule_builder.rules import HasAny, True_
 
 from ..macros import (
     CAN_GRAPPLE,
-    CAN_DESTROY_CLOSE_SILVER_BRICKS as BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities
@@ -20,18 +20,6 @@ R_DOOKU_FIGHT = "Dooku Fight"
 R_HORIZONTAL_ELEVATOR_SHAFT = "Horizontal Elevator Shaft"
 R_ROTATED_PATH_TO_THE_BRIDGE = "Rotated Path To The Bridge"
 R_SHIPS_BRIDGE = "Ship's Bridge"
-
-CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
-    # The Extra Toggle character Buzz Droid can explode.
-    HasAll("Extra Toggle", "Self Destruct"),
-    apply_to="normal+",
-)
-
-CAN_MELEE_MACRO = logic_options(
-    base=HasAbility(CAN_MELEE),
-    # The Extra Toggle character Buzz Droid can melee.
-    normal=HasAbility(CAN_MELEE) | Has("Extra Toggle"),
-)
 
 
 CHANCELLOR_IN_PERIL = Chapter(
@@ -245,7 +233,7 @@ CHANCELLOR_IN_PERIL = Chapter(
             R_SHIPS_BRIDGE,
             # With ER, base logic would need to consider defeating the Bodyguards, a melee attack or explosion are
             # required, as they seem to always deflect blasters.
-            # er_rule=HasAbility(CAN_JUMP_HEIGHT_0_37) & (CAN_MELEE_MACRO | CAN_DESTROY_CLOSE_SILVER_BRICKS),
+            # er_rule=HasAbility(CAN_JUMP_HEIGHT_0_37) & (HasAbility(CAN_MELEE) | CAN_DESTROY_CLOSE_SILVER_BRICKS),
             pickup_name="mk_0",
         ),
         "Bridge Right Minikit": minikit_data(

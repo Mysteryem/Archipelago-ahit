@@ -22,9 +22,11 @@ R_ARCHIVES = "Archives"
 R_HOLOGRAM_ROOM = "Hologram Room"
 
 
+# Training Remote cannot be given the BLASTER ability because its BLASTER bolts deal no damage, so the automatic Extra
+# Toggle rules won't cover this case of CAN_DESTROY_CLOSE_SILVER_BRICKS.
 CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
     # Use the Training Remote, to either Self Destruct, or shoot exploding bolts.
-    Has("Extra Toggle") & HasAny("Self Destruct", "Exploding Blaster Bolts"),
+    Has("Extra Toggle") & Has("Self Destruct"),
     apply_to="normal+",
 )
 

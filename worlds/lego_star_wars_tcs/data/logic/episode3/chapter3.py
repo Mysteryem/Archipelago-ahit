@@ -1,9 +1,9 @@
-from rule_builder.rules import True_, Or, False_, And, Has, HasAll
+from rule_builder.rules import True_, Or, False_, And, Has
 
 from ..macros import (
-    CAN_DESTROY_CLOSE_SILVER_BRICKS as BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS,
-    CAN_DAMAGE_AT_CLOSE_RANGE as BASE_CAN_DAMAGE_AT_CLOSE_RANGE,
-    CAN_USE_SELF_DESTRUCT as BASE_CAN_USE_SELF_DESTRUCT,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    CAN_DAMAGE_AT_CLOSE_RANGE,
+    CAN_USE_SELF_DESTRUCT,
     can_jump_distance_rule,
 )
 from ..option_filters import logic_options
@@ -44,24 +44,6 @@ _helper = ChapterHelper(
     ),
 )
 
-# This could be optimised better, but I want to use the original BASE_CAN_USE_SELF_DESTRUCT in the rule.
-CAN_USE_SELF_DESTRUCT = BASE_CAN_USE_SELF_DESTRUCT | HasAll("Self Destruct", "Extra Toggle")
-
-CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
-    # Buzz Droid can explode.
-    HasAll("Extra Toggle", "Self Destruct"),
-    apply_to="normal+",
-)
-CAN_DAMAGE_AT_CLOSE_RANGE = BASE_CAN_DAMAGE_AT_CLOSE_RANGE.or_rule(
-    Has("Extra Toggle"), apply_to="normal+"
-)
-
-CAN_MELEE_MACRO = logic_options(
-    base=HasAbility(CAN_MELEE),
-    normal=HasAbility(CAN_MELEE) | Has("Extra Toggle"),
-)
-
-
 # To complete the chapter, 3 sets of explosives need to be destroyed in a row.
 # The logic for these explosives could be implemented using events, however, if 3-3 is the starting chapter, having a
 # chain of events at the start like this could cause progression balancing to apply too strongly, so the logic is
@@ -69,13 +51,13 @@ CAN_MELEE_MACRO = logic_options(
 
 CAN_HURT_GRIEVOUS = logic_options(
     # Only consider melee attackers because other attacks are awkward.
-    base=CAN_MELEE_MACRO,
+    base=HasAbility(CAN_MELEE),
     # Non-melee is awkward.
     # Grievous tends to bug out when using Exploding Blaster Bolts, so don't have the logic expect it.
     # todo: See if the client can fix this by either ending the level manually, or by giving Grievous +1 health when
     #  he's alive with zero health.
     # normal=Or(
-    #     CAN_MELEE_MACRO,
+    #     HasAbility(CAN_MELEE),
     #     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     # ),
     # Allow Blasters/Ewoks/Self Destruct.
