@@ -120,10 +120,18 @@ class TestJumpDistanceMacros(TestCase):
         self._test(0.56, CharacterAbility.CAN_BARELY_JUMP)
 
     def test_0_6(self):
-        self._test(0.6, CharacterAbility.CAN_JUMP_DISTANCE_0_69)
+        self._test(0.6, CharacterAbility.CAN_JUMP_DISTANCE_0_69,
+                   # 0.65
+                   "Geonosian",
+                   "Watto",
+                   )
 
     def test_0_65(self):
-        self._test(0.65, CharacterAbility.CAN_JUMP_DISTANCE_0_69)
+        self._test(0.65, CharacterAbility.CAN_JUMP_DISTANCE_0_69,
+                   # 0.65
+                   "Geonosian",
+                   "Watto",
+                   )
 
     def test_0_7(self):
         self._test(0.7, CharacterAbility.CAN_JUMP_DISTANCE_0_84,
@@ -136,9 +144,6 @@ class TestJumpDistanceMacros(TestCase):
                    "Clone (Episode III, Walker)",
                    "Disguised Clone",
                    "Boss Nass",
-                   # 0.75
-                   "Geonosian",
-                   "Watto",
                    # 0.766...
                    "Dexter Jettster",
                    )
