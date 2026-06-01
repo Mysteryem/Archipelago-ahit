@@ -7,18 +7,46 @@ from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_GRAPPLE,
 )
-from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, OT_HIGH_JUMP_DISABLED, ot_high_jump_ternary
-from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination, HasAbilityExceptCharacters
-from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
+from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, ot_high_jump_ternary
+from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExceptCharacters
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
+NAME = "Through The Jundland Wastes"
+
+R_SPAWN = "Spawn"
+R_ACROSS_GAP = "Across Gap"
+R_SILVER_BRICKS_SIDE_PATH_LOWER_BEFORE_SILVER_BRICKS = "Silver Bricks Side Path Lower Before Silver Bricks"
+R_BEHIND_SITH_FORCE_DOORS = "Behind Sith Force Doors"
+R_SILVER_BRICKS_SIDE_PATH_LOWER = "Silver Bricks Side Path Lower"
+R_SILVER_BRICKS_SIDE_PATH_UPPER = "Silver Bricks Side Path Upper"
+R_PLATFORM_ABOVE_TIN_CANS = "Platform Above Tin Cans"
+R_SANDCRAWLER_APPROACH_BEFORE_QUICKSAND = "Sandcrawler Approach Before Quicksand"
+R_SANDCRAWLER_GROUND_LEVEL = "Sandcrawler Ground Level"
+R_TOP_OF_SANDCRAWLER = "Top Of Sandcrawler"
+R_SANDCRAWLER_INTERIOR_START = "Sandcrawler Interior Start"
+R_SANDCRAWLER_ELEVATOR_ROOM = "Sandcrawler Elevator Room"
+R_SANDCRAWLER_TWIN_SWITCHES_ROOM = "Sandcrawler Twin Switches Room"
+R_SANDCRAWLER_CAGED_DROIDS_ROOM = "Sandcrawler Caged Droids Room"
+R_SANDCRAWLER_LAVA_FLOW = "Sandcrawler Lava Flow"
+R_SANDCRAWLER_ENCLOSED_AREA_AFTER_LAVA_FLOW = "Sandcrawler Enclosed Area After Lava Flow"
+R_SANDCRAWLER_EXIT_ROOM = "Sandcrawler Exit Room"
+R_POST_SANDCRAWLER_SPAWN = "Post-Sandcrawler Spawn"
+R_BANTHA_OASIS = "Bantha Oasis"
+R_POST_SANDCRAWLER_ELEVATED_GRAPPLE_AREA = "Post-Sandcrawler Elevated Grapple Area"
+R_AFTER_QUICKSAND_ARCH = "After Quicksand Arch"
+R_LARGE_QUICKSAND_POOL = "Large Quicksand Pool"
+R_AFTER_LARGE_QUICKSAND_POOL = "After Large Quicksand Pool"
+R_BEFORE_SEA_OF_QUICKSAND = "Before Sea Of Quicksand"
+R_ACROSS_SEA_OF_QUICKSAND = "Across Sea Of Quicksand"
+
 
 THROUGH_THE_JUNDLAND_WASTES = Chapter(
-    name="Through The Jundland Wastes",
+    name=NAME,
     episode_number=4,
     chapter_number=2,
-    start_region="Spawn",
+    start_region=R_SPAWN,
     start_level="tatooine_a",
     story_characters=(
         "Ben Kenobi",
@@ -39,9 +67,9 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
         "Skeleton",
     ),
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "Across Gap",
+                R_ACROSS_GAP,
                 # `HasAbility(CAN_HIGH_JUMP_SLAM) & OT_HIGH_JUMP_ENABLED` can cross the entire gap, but this is not
                 # logically relevant.
                 Or(
@@ -50,7 +78,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
             ExitData(
-                "Silver Bricks Side Path Lower Before Silver Bricks",
+                R_SILVER_BRICKS_SIDE_PATH_LOWER_BEFORE_SILVER_BRICKS,
                 logic_options(
                     base=HasAbility(HOVER),
                     # Even without high jump enabled, Grievous and Bodyguard can make it with a triple jump.
@@ -58,9 +86,9 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Across Gap": (
+        R_ACROSS_GAP: (
             ExitData(
-                "Behind Sith Force Doors",
+                R_BEHIND_SITH_FORCE_DOORS,
                 logic_options(
                     base=CAN_SITH_FORCE,
                     # Triple jump from the elevated area with the Access Hatch, and get over the top of the Sith Force
@@ -76,7 +104,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
             ExitData(
-                "Platform Above Tin Cans",
+                R_PLATFORM_ABOVE_TIN_CANS,
                 logic_options(
                     base=False_(),
                     # Stand on destroyable objects or where the tin cans go, and high jump up.
@@ -89,7 +117,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
             ExitData(
-                "Silver Bricks Side Path Upper",
+                R_SILVER_BRICKS_SIDE_PATH_UPPER,
                 logic_options(
                     # It's not immediately obvious that there is a slightly raised area on the right side, that can be
                     # used to high jump up to the upper area of the silver bricks side path, so using high jump here is
@@ -104,7 +132,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
             ExitData(
-                "Sandcrawler Approach Before Quicksand",
+                R_SANDCRAWLER_APPROACH_BEFORE_QUICKSAND,
                 logic_options(
                     base=HasAbility(JEDI),
                     # High jump up is easier on the right side.
@@ -118,9 +146,9 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 new_level="tatooine_d",
             ),
         ),
-        "Silver Bricks Side Path Lower Before Silver Bricks": (
+        R_SILVER_BRICKS_SIDE_PATH_LOWER_BEFORE_SILVER_BRICKS: (
             ExitData(
-                "Silver Bricks Side Path Lower",
+                R_SILVER_BRICKS_SIDE_PATH_LOWER,
                 logic_options(
                     base=CAN_DESTROY_CLOSE_SILVER_BRICKS,
                     # Allow triple jump, except yoda, as well as high jump when enabled.
@@ -145,10 +173,10 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Behind Sith Force Doors": (),
-        "Silver Bricks Side Path Lower": (
+        R_BEHIND_SITH_FORCE_DOORS: (),
+        R_SILVER_BRICKS_SIDE_PATH_LOWER: (
             ExitData(
-                "Silver Bricks Side Path Upper",
+                R_SILVER_BRICKS_SIDE_PATH_UPPER,
                 logic_options(
                     base=ot_high_jump_ternary(
                         uncapped=HasAnyAbilities(JEDI | HIGH_JUMP),
@@ -164,13 +192,13 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Silver Bricks Side Path Upper": (
+        R_SILVER_BRICKS_SIDE_PATH_UPPER: (
             # Drop down. I'm not sure if this is ever logically relevant.
-            ExitData("Across Gap"),
+            ExitData(R_ACROSS_GAP),
             # Drop down.
-            ExitData("Silver Bricks Side Path Lower"),
+            ExitData(R_SILVER_BRICKS_SIDE_PATH_LOWER),
             ExitData(
-                "Platform Above Tin Cans",
+                R_PLATFORM_ABOVE_TIN_CANS,
                 logic_options(
                     base=HasAbility(HOVER),
                     # Allow triple jump.
@@ -183,10 +211,10 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Platform Above Tin Cans": (),
-        "Sandcrawler Approach Before Quicksand": (
+        R_PLATFORM_ABOVE_TIN_CANS: (),
+        R_SANDCRAWLER_APPROACH_BEFORE_QUICKSAND: (
             ExitData(
-                "Sandcrawler Ground Level",
+                R_SANDCRAWLER_GROUND_LEVEL,
                 logic_options(
                     # Hover across the quicksand.
                     # Build the object, push it into position and double jump to the platforms over the quicksand.
@@ -213,9 +241,9 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Sandcrawler Ground Level": (
+        R_SANDCRAWLER_GROUND_LEVEL: (
             ExitData(
-                "Top Of Sandcrawler",
+                R_TOP_OF_SANDCRAWLER,
                 logic_options(
                     base=HasAllAbilities(JEDI | CAN_BUILD_BRICKS | CAN_PULL_LEVERS) & CAN_GRAPPLE,
                     # All forcing the first platform, stacking two boxes, then high jumping up to the first platform.
@@ -230,7 +258,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
             ExitData(
-                "Sandcrawler Interior Start",
+                R_SANDCRAWLER_INTERIOR_START,
                 logic_options(
                     base=False_(),
                     # Triple jump under the entrance, and you can hit the loading zone without needing to activate the
@@ -240,22 +268,22 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 new_level="tatooine_b",
             ),
         ),
-        "Top Of Sandcrawler": (
+        R_TOP_OF_SANDCRAWLER: (
             ExitData(
-                "Sandcrawler Interior Start",
+                R_SANDCRAWLER_INTERIOR_START,
                 HasAbility(CAN_PULL_LEVERS),
                 new_level="tatooine_b",
             ),
         ),
-        "Sandcrawler Interior Start": (
+        R_SANDCRAWLER_INTERIOR_START: (
             ExitData(
-                "Sandcrawler Elevator Room",
+                R_SANDCRAWLER_ELEVATOR_ROOM,
                 HasAbility(JEDI),
             ),
         ),
-        "Sandcrawler Elevator Room": (
+        R_SANDCRAWLER_ELEVATOR_ROOM: (
             ExitData(
-                "Sandcrawler Twin Switches Room",
+                R_SANDCRAWLER_TWIN_SWITCHES_ROOM,
                 logic_options(
                     base=HasAbility(ASTROMECH_PANEL),
                     # Ceiling clip and jump into the loading zone.
@@ -263,13 +291,13 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Sandcrawler Twin Switches Room": (
+        R_SANDCRAWLER_TWIN_SWITCHES_ROOM: (
             ExitData(
-                "Sandcrawler Caged Droids Room",
+                R_SANDCRAWLER_CAGED_DROIDS_ROOM,
                 HasAllAbilities(CAN_PULL_LEVERS | RUN_SPEED_0_9_OR_HIGHER),
             ),
             ExitData(
-                "Sandcrawler Lava Flow",
+                R_SANDCRAWLER_LAVA_FLOW,
                 logic_options(
                     base=CAN_SITH_FORCE & HasAbility(SHORTIE),
                     hard=Or(
@@ -280,9 +308,9 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Sandcrawler Caged Droids Room": (
+        R_SANDCRAWLER_CAGED_DROIDS_ROOM: (
             ExitData(
-                "Sandcrawler Enclosed Area After Lava Flow",
+                R_SANDCRAWLER_ENCLOSED_AREA_AFTER_LAVA_FLOW,
                 logic_options(
                     base=False_(),
                     # Jump up onto the fence in this room, then hover across to the minikit.
@@ -296,7 +324,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
             ExitData(
-                "Sandcrawler Exit Room",
+                R_SANDCRAWLER_EXIT_ROOM,
                 logic_options(
                     base=HasAbility(PROTOCOL_PANEL),
                     hard=Or(
@@ -307,24 +335,24 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Sandcrawler Lava Flow": (
+        R_SANDCRAWLER_LAVA_FLOW: (
             ExitData(
-                "Sandcrawler Enclosed Area After Lava Flow",
+                R_SANDCRAWLER_ENCLOSED_AREA_AFTER_LAVA_FLOW,
                 HasAllAbilities(JEDI | HOVER),
             ),
         ),
-        "Sandcrawler Enclosed Area After Lava Flow": (),
-        "Sandcrawler Exit Room": (
+        R_SANDCRAWLER_ENCLOSED_AREA_AFTER_LAVA_FLOW: (),
+        R_SANDCRAWLER_EXIT_ROOM: (
             ExitData(
-                "Post-Sandcrawler Spawn",
+                R_POST_SANDCRAWLER_SPAWN,
                 # Bizarrely, they can be shot, but not damaged by other sources.
                 HasAnyAbilities(JEDI | BLASTER | WEAPON_EWOK),
                 new_level="tatooine_c",
             ),
         ),
-        "Post-Sandcrawler Spawn": (
+        R_POST_SANDCRAWLER_SPAWN: (
             ExitData(
-                "Bantha Oasis",
+                R_BANTHA_OASIS,
                 logic_options(
                     base=Or(
                         CAN_SITH_FORCE,
@@ -346,7 +374,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
             ExitData(
-                "Post-Sandcrawler Elevated Grapple Area",
+                R_POST_SANDCRAWLER_ELEVATED_GRAPPLE_AREA,
                 logic_options(
                     base=Or(
                         # Build the grapple point, force the hook, then grapple up.
@@ -359,7 +387,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
             ExitData(
-                "After Quicksand Arch",
+                R_AFTER_QUICKSAND_ARCH,
                 # There is anti-hover triggers under the arch, preventing hovering over the quicksand.
                 logic_options(
                     base=HasAbility(PROTOCOL_PANEL),
@@ -368,10 +396,10 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Bantha Oasis": (),
-        "Post-Sandcrawler Elevated Grapple Area": (
+        R_BANTHA_OASIS: (),
+        R_POST_SANDCRAWLER_ELEVATED_GRAPPLE_AREA: (
             ExitData(
-                "After Quicksand Arch",
+                R_AFTER_QUICKSAND_ARCH,
                 logic_options(
                     base=False_(),
                     # Hover to the top right of the arch.
@@ -381,9 +409,9 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "After Quicksand Arch": (
+        R_AFTER_QUICKSAND_ARCH: (
             ExitData(
-                "Large Quicksand Pool",
+                R_LARGE_QUICKSAND_POOL,
                 logic_options(
                     # Force the bones to make a bridge.
                     base=HasAbility(JEDI),
@@ -394,9 +422,9 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Large Quicksand Pool": (
+        R_LARGE_QUICKSAND_POOL: (
             ExitData(
-                "After Large Quicksand Pool",
+                R_AFTER_LARGE_QUICKSAND_POOL,
                 logic_options(
                     base=HasAllAbilities(CAN_JUMP_0_44 | CAN_PUSH_OBJECTS | PROTOCOL_PANEL | JEDI),
                     # You can hug the right wall to avoid dying in the quicksand. There is one part midway through that
@@ -408,12 +436,12 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "After Large Quicksand Pool": (
-            ExitData("Before Sea Of Quicksand", new_level="tatooine_e"),
+        R_AFTER_LARGE_QUICKSAND_POOL: (
+            ExitData(R_BEFORE_SEA_OF_QUICKSAND, new_level="tatooine_e"),
         ),
-        "Before Sea Of Quicksand": (
+        R_BEFORE_SEA_OF_QUICKSAND: (
             ExitData(
-                "Across Sea Of Quicksand",
+                R_ACROSS_SEA_OF_QUICKSAND,
                 logic_options(
                     # Fix the landspeeder and ride it across.
                     base=HasAllAbilities(CAN_BUILD_BRICKS | CAN_RIDE_VEHICLES),
@@ -425,7 +453,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
             ),
         ),
-        "Across Sea Of Quicksand": (
+        R_ACROSS_SEA_OF_QUICKSAND: (
             ExitData(
                 "Chapter Completion",
                 HasAbility(CAN_PULL_LEVERS),
@@ -435,7 +463,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
     },
     minikits={
         "Sith Force Area Alcove Minikit": minikit_data(
-            "Behind Sith Force Doors",
+            R_BEHIND_SITH_FORCE_DOORS,
             logic_options(
                 base=HasAbility(JEDI),
                 # High jump can jump up on the right side where the minikit alcove is slightly lower.
@@ -451,7 +479,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
             pickup_name="mk_1",
         ),
         "Access Hatch Minikit": minikit_data(
-            "Across Gap",
+            R_ACROSS_GAP,
             logic_options(
                 base=Or(
                     HasAllAbilities(CAN_BUILD_BRICKS | HOVER) & CAN_GRAPPLE,
@@ -475,25 +503,25 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
             pickup_name="mk_0",
         ),
         "Above Tin Cans Minikit": minikit_data(
-            "Platform Above Tin Cans",
+            R_PLATFORM_ABOVE_TIN_CANS,
             pickup_name="mk_2",
         ),
         "Sandcrawler Exterior Access Hatch Minikit": minikit_data(
-            "Top Of Sandcrawler",
+            R_TOP_OF_SANDCRAWLER,
             HasAllAbilities(CAN_PULL_LEVERS | SHORTIE) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
             pickup_name="m_pup1",
         ),
         "Sandcrawler Elevator Room Minikit": minikit_data(
-            "Sandcrawler Elevator Room",
+            R_SANDCRAWLER_ELEVATOR_ROOM,
             HasAllAbilities(CAN_PULL_LEVERS | CAN_PUSH_OBJECTS),
             pickup_name="mk_1",
         ),
         "Sandcrawler Lava Platform Minikit": minikit_data(
-            "Sandcrawler Enclosed Area After Lava Flow",
+            R_SANDCRAWLER_ENCLOSED_AREA_AFTER_LAVA_FLOW,
             pickup_name="mk_0",
         ),
         "Bantha Oasis Minikit": minikit_data(
-            "Bantha Oasis",
+            R_BANTHA_OASIS,
             logic_options(
                 base=HasAbility(CAN_RIDE_VEHICLES),
                 # Yoda can also magically grab this through the wall without needing to activate the buttons.
@@ -506,11 +534,11 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
             pickup_name="mk_0",
         ),
         "Grapple And Fight Tusken Raiders Minikit": minikit_data(
-            "Post-Sandcrawler Elevated Grapple Area",
+            R_POST_SANDCRAWLER_ELEVATED_GRAPPLE_AREA,
             pickup_name="mk_1",
         ),
         "Collapse The Column Minikit": minikit_data(
-            "Large Quicksand Pool",
+            R_LARGE_QUICKSAND_POOL,
             logic_options(
                 base=HasAllAbilities(HOVER | CAN_JUMP_0_44) | CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
                 # Allow triple jump.
@@ -523,7 +551,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
             pickup_name="mk_2",
         ),
         "Minikit Far Out In Quicksand Sea": minikit_data(
-            "Before Sea Of Quicksand",
+            R_BEFORE_SEA_OF_QUICKSAND,
             And(
                 HasAllAbilities(CAN_BUILD_BRICKS | CAN_RIDE_VEHICLES),
                 HasAbility(CAN_DOUBLE_JUMP) | CAN_GRAPPLE
@@ -532,7 +560,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
         )
     },
     power_brick=LocationData(
-        "Silver Bricks Side Path Lower",
+        R_SILVER_BRICKS_SIDE_PATH_LOWER,
         logic_options(
             base=ot_high_jump_ternary(
                 uncapped=HasAllAbilities(JEDI | CAN_PUSH_OBJECTS) & HasAnyAbilities(HOVER | HIGH_JUMP),
@@ -545,9 +573,9 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
         ),
     ),
     ridables={
-        "Bantha": LocationData("Spawn"),
+        "Bantha": LocationData(R_SPAWN),
         "Dewback": LocationData(
-            "Across Sea Of Quicksand",
+            R_ACROSS_SEA_OF_QUICKSAND,
             logic_options(
                 # Expect fighting the Stormtroopers
                 base=CAN_DAMAGE_AT_CLOSE_RANGE,
