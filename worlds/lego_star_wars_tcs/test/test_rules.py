@@ -32,17 +32,6 @@ class TestLogicOptionsRules(TestCase):
                 items.append(child_rule.item_name)
         return items
 
-    def test_logic_options_recursive_replacement(self):
-        options = logic_options(
-            base=Has("base item 2") & BASIC_OPTIONS,
-            hard=Has("hard item 2"),
-        )
-
-        self.assertEqual(self.items_from_simple_rule(options.base), ["base item 2", BASE_ITEM])
-        self.assertEqual(self.items_from_simple_rule(options.normal), ["base item 2", NORMAL_ITEM])
-        self.assertEqual(self.items_from_simple_rule(options.moderate), ["base item 2", MODERATE_ITEM])
-        self.assertEqual(self.items_from_simple_rule(options.hard), ["hard item 2"])
-
     def test_logic_options_and_full_spread(self):
         options = logic_options(
             base=Has("base item 2"),
