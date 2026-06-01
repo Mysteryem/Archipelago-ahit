@@ -2,7 +2,7 @@ import json
 from unittest import TestCase
 from typing import Callable, Iterable
 
-from rule_builder.rules import Rule, NestedRule, WrapperRule
+from rule_builder.rules import Rule, NestedRule, WrapperRule, And
 
 from ..data.logic import EPISODES
 from ..data.logic.extraction import un_nest_logic_options
@@ -179,3 +179,23 @@ class TestEpisodes(TestCase):
                 if un_nested is not rule:
                     with self.subTest(un_nested=True):
                         json.dumps(un_nested.to_dict())
+
+    @chapters_test
+    def test_no_empty_and_in_rules(self, chapter: Chapter):
+        def scan_for_empty_and(rule: Rule):
+            if isinstance(rule, NestedRule):
+                if not rule.children and isinstance(rule, And):
+                    self.fail("Found an empty And() rule, this will incorrectly resolve to False_() due to a Rule"
+                              " Builder bug")
+                for child in rule.children:
+                    scan_for_empty_and(child)
+            elif isinstance(rule, WrapperRule):
+                scan_for_empty_and(rule.child)
+            elif isinstance(rule, LogicOptions):
+                scan_for_empty_and(rule.base)
+                scan_for_empty_and(rule.normal)
+                scan_for_empty_and(rule.moderate)
+                scan_for_empty_and(rule.hard)
+        for owner_name, rule in self.chapter_rule_gen(chapter):
+            with self.subTest(name=owner_name):
+                scan_for_empty_and(rule)
