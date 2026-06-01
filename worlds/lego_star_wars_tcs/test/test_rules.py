@@ -4,7 +4,7 @@ from rule_builder.rules import Has, Rule, And, Or, HasAny
 
 from ..data.logic.option_filters import logic_options
 from ..data.logic.macros import can_jump_distance_rule
-from ..data.logic.rules import HasAbility
+from ..data.logic.rules import HasAbility, HasAbilityExceptCharacters, HasAnyAbilities
 from ..character_ability import CharacterAbility
 
 BASE_ITEM = "BASE_ITEM"
@@ -152,3 +152,37 @@ class TestJumpDistanceMacros(TestCase):
     def test_1_0(self):
         with self.assertRaises(ValueError):
             can_jump_distance_rule(1.0)
+
+
+class TestAbilityExceptCharacters(TestCase):
+    def test_jedi_except_yoda(self):
+        """Test a fairly common case of needing any Jedi, except Yoda/Yoda (Ghost)"""
+        rule = HasAbilityExceptCharacters(CharacterAbility.JEDI, "Yoda", "Yoda (Ghost)")
+        made = rule._make_rule(rule.ability, rule.except_characters)
+
+        self.assertIsInstance(made, Or)
+        self.assertEqual(len(made.children), 2)
+
+        child0 = made.children[0]
+        self.assertIsInstance(child0, HasAnyAbilities)
+        self.assertEqual(child0.abilities, CharacterAbility.SITH | CharacterAbility.CAN_WEAR_HAT_AND_DOUBLE_JUMP)
+
+        child1 = made.children[1]
+        self.assertIsInstance(child1, HasAny)
+        self.assertEqual(set(child1.item_names), {
+            "Aayla Secura",
+            "Ki-Adi Mundi",
+            "Kit Fisto",
+            "Luke Skywalker (Endor)",
+            "Luminara",
+            "Plo Koon",
+            "Shaak Ti",
+        })
+
+    def test_double_jump_except_yoda(self):
+        """Test a fairly common case of needing any Double Jumper character, except Yoda/Yoda (Ghost)"""
+        rule = HasAbilityExceptCharacters(CharacterAbility.CAN_DOUBLE_JUMP, "Yoda", "Yoda (Ghost)")
+        made = rule._make_rule(rule.ability, rule.except_characters)
+
+        self.assertIsInstance(made, HasAnyAbilities)
+        self.assertEqual(made.abilities, CharacterAbility.CAN_TRIPLE_JUMP_GREAT_DISTANCE | CharacterAbility.HIGH_JUMP)

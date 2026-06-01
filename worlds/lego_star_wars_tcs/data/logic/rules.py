@@ -1,7 +1,7 @@
 import dataclasses
 from functools import reduce
 from operator import or_
-from typing import ClassVar, Iterable, TYPE_CHECKING
+from typing import ClassVar, Iterable, TYPE_CHECKING, Any
 from typing_extensions import override
 
 from BaseClasses import CollectionState
@@ -21,7 +21,7 @@ from rule_builder.rules import (
     Or,
 )
 
-from ...character_ability import CharacterAbility
+from ...character_ability import CharacterAbility, IMPLIED_BY_ABILITIES
 from ...constants import GAME_NAME
 from ...items import LOGIC_CONSIDERED_CHARACTERS
 from ...options import ChapterUnlockRequirement, EpisodeUnlockRequirement
@@ -342,37 +342,86 @@ class HasAbilityExceptCharacters(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         for character_name in except_characters:
             except_characters_abilities |= LOGIC_CONSIDERED_CHARACTERS[character_name].abilities
 
+        usable_implied_by_abilities = CharacterAbility.NONE
+        for ability in IMPLIED_BY_ABILITIES.get(required_ability, ()):
+            if ability not in except_characters_abilities:
+                usable_implied_by_abilities |= ability
+
+        usable_implied_by_abilities_to_characters: dict[CharacterAbility, set[str]] = {
+            ability: set() for ability in usable_implied_by_abilities
+        }
         include_characters_abilities = ~CharacterAbility.NONE
-        include_characters = []
+        include_characters = set()
         for character in LOGIC_CONSIDERED_CHARACTERS.values():
             if required_ability in character.abilities and character.name not in except_characters:
                 include_characters_abilities &= character.abilities
-                include_characters.append(character.name)
+                include_characters.add(character.name)
+                for ability in (character.abilities & usable_implied_by_abilities):
+                    usable_implied_by_abilities_to_characters[ability].add(character.name)
 
         if not include_characters:
             return False_()
 
-        abilities_included_characters_all_have_but_except_characters_do_not = (
-                include_characters_abilities & ~include_characters_abilities
-        )
+        if len(include_characters) == 1:
+            return Has(next(iter(include_characters)))
 
-        if abilities_included_characters_all_have_but_except_characters_do_not is not CharacterAbility.NONE:
-            all_shared_unique = abilities_included_characters_all_have_but_except_characters_do_not | required_ability
-            simplified = all_shared_unique.simplify_combination()
-            if simplified.bit_count() == 1:
-                return HasAbility(simplified)
+        # todo: I don't know if this is useful, it hasn't managed to do anything so far.
+        # abilities_included_characters_all_have_but_except_characters_do_not = (
+        #         include_characters_abilities & ~include_characters_abilities
+        # )
+        #
+        # if abilities_included_characters_all_have_but_except_characters_do_not is not CharacterAbility.NONE:
+        #     all_shared_unique = abilities_included_characters_all_have_but_except_characters_do_not | required_ability
+        #     simplified = all_shared_unique.simplify_combination()
+        #     if simplified.bit_count() == 1:
+        #         raise Exception("actually did something")
+        #         return HasAbility(simplified)
+        #
+        #     if abilities_included_characters_all_have_but_except_characters_do_not.bit_count() > 1:
+        #         # Try simplifying pairs of abilities.
+        #         for included_ability in abilities_included_characters_all_have_but_except_characters_do_not:
+        #             pair = included_ability | required_ability
+        #             simplified = pair.simplify_combination()
+        #             if simplified.bit_count() == 1:
+        #                 raise Exception("actually did something 2")
+        #                 return HasAbility(simplified)
 
-            if abilities_included_characters_all_have_but_except_characters_do_not.bit_count() > 1:
-                # Try simplifying pairs of abilities.
-                for included_ability in abilities_included_characters_all_have_but_except_characters_do_not:
-                    pair = included_ability | required_ability
-                    simplified = pair.simplify_combination()
-                    if simplified.bit_count() == 1:
-                        return HasAbility(simplified)
+        has_any_implied_by_abilities = CharacterAbility.NONE
+        if any(usable_implied_by_abilities_to_characters.values()):
+            # Some characters can be replaced with HasAnyAbilities instead of including them each in a HasAny.
+            most_common_last: list[tuple[CharacterAbility, set[str]]]
+            most_common_last = sorted(usable_implied_by_abilities_to_characters.items(), key=lambda t: len(t[1]))
+            while True:
+                most_common_ability, characters_with_ability = most_common_last.pop()
+                has_any_implied_by_abilities |= most_common_ability
+                # Remove these character from needing to be checked individually in a HasAny
+                include_characters.difference_update(characters_with_ability)
 
-        if len(include_characters) >= 8:
-            # If there are lots of characters that match this, check for having all the required abilities first
-            # because that is a faster check.
-            return HasAbility(required_ability) & HasAny(*include_characters)
+                # Remove characters that are now accounted for by an ability.
+                for t in most_common_last:
+                    t[1].difference_update(characters_with_ability)
+                most_common_last = sorted((t for t in most_common_last if t[1]), key=lambda t: len(t[1]))
+                if not most_common_last:
+                    break
+
+            if has_any_implied_by_abilities.bit_count() == 1:
+                any_abilities_rule = HasAbility(has_any_implied_by_abilities)
+            else:
+                any_abilities_rule = HasAnyAbilities(has_any_implied_by_abilities)
+
+            if not include_characters:
+                # All included characters could be specified using only abilities that the excluded characters don't
+                # have.
+                return any_abilities_rule
+            else:
+                if len(include_characters) >= 8:
+                    return HasAbility(required_ability) & (any_abilities_rule | HasAny(*include_characters))
+                else:
+                    return any_abilities_rule | HasAny(*include_characters)
         else:
-            return HasAny(*include_characters)
+            if len(include_characters) >= 8:
+                # If there are lots of characters that match this, check for having all the required abilities first
+                # because that is a faster check.
+                return HasAbility(required_ability) & HasAny(*include_characters)
+            else:
+                return HasAny(*include_characters)
