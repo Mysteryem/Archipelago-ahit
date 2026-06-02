@@ -26,7 +26,7 @@ R_HOLOGRAM_ROOM = "Hologram Room"
 # Toggle rules won't cover this case of CAN_DESTROY_CLOSE_SILVER_BRICKS.
 CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
     # Use the Training Remote, to either Self Destruct, or shoot exploding bolts.
-    Has("Extra Toggle") & Has("Self Destruct"),
+    Has("Extra Toggle") & Has("Exploding Blaster Bolts"),
     apply_to="normal+",
 )
 
