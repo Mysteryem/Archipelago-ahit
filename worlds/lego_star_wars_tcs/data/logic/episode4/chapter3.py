@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, HasAny, False_, Has, True_, Rule
+from rule_builder.rules import And, Or, HasAny, Has, Rule
 
 from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -21,6 +21,28 @@ from ..types import minikit_data, ExitData, ChapterHelper, LocationData, Minikit
 from ....character_ability import *
 from ....items import CHARACTERS_AND_VEHICLES_BY_NAME
 
+NAME = "Mos Eisley Spaceport"
+
+R_SPAWN = "Spawn"
+R_IMPERIAL_SHOWERS_AND_POOL = "Imperial Showers And Pool"
+R_ABOVE_FIRST_STORMTROOPER_GATE = "Above First Stormtrooper Gate"
+R_AFTER_STORMTROOPER_GATE_IMPERIAL_EXIT = "After Stormtrooper Gate (Imperial Exit)"
+R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT = "After Stormtrooper Gate (Protocol Exit)"
+R_WOMP_RAT_SHOOTING_RANGE = "Womp Rat Shooting Range"
+R_AFTER_BLOCKED_STREET = "After Blocked Street"
+R_CANTINA_ENTRANCE = "Cantina Entrance"
+R_INSIDE_CANTINA = "Inside Cantina"
+R_SPY_CHASE_START = "Spy Chase Start"
+R_SPY_CHASE_SPAWN_FIRST_STOREY = "Spy Chase Spawn First Storey"
+R_SPY_CHASE_SPAWN_SECOND_STOREY = "Spy Chase Spawn Second Storey"
+R_SPY_CHASE_BOMB_GROUND_LEVEL = "Spy Chase Bomb Ground Level"
+R_SPY_CHASE_BOMB_LEVER = "Spy Chase Bomb Lever"
+R_SPY_CHASE_RIGHT_PATH = "Spy Chase Right Path"
+R_TURNIPS_MINIKIT_LEDGE = "Turnips Minikit Ledge"
+R_STORMTROOPER_AND_DEWBACK_COURTYARD = "Stormtrooper And Dewback Courtyard"
+R_CINEMA = "Cinema"
+R_HANGAR = "Hangar"
+
 CAN_BUILD_FIRST_AT_ST = HasAllAbilities(PROTOCOL_PANEL | JEDI | ASTROMECH_PANEL)
 
 
@@ -30,7 +52,6 @@ def _make_can_pass_cantina_anti_droid_field() -> Rule:
         "C-3PO",
         "Gonk Droid",
         "Super Gonk Droid",
-        # "General Grievous" is unaffected by the anti-droid field for some reason.
         "Grievous' Bodyguard",
         "Droideka",
         "R4-P17",
@@ -50,7 +71,7 @@ def _make_can_pass_cantina_anti_droid_field() -> Rule:
         "Droid 2",
         "Droid 3",
         "Droid 4",
-        # While Mouse Droid and Buzz Droid might be affect, they are not available in this chapter.
+        # While Mouse Droid and Buzz Droid might be affected, they are not available in this chapter.
     }
     # Remove droids that can destroy the anti-droid field on their own.
     for character_name in tuple(affected_by_anti_droid_field):
@@ -73,10 +94,10 @@ del _make_can_pass_cantina_anti_droid_field
 
 
 helper = ChapterHelper(
-    name="Mos Eisley Spaceport",
+    name=NAME,
     episode_number=4,
     chapter_number=3,
-    start_region="Spawn",
+    start_region=R_SPAWN,
     start_level="moseisley_a",
     story_characters=(
         "Ben Kenobi",
@@ -103,14 +124,14 @@ helper = ChapterHelper(
 
 MOS_EISLEY_SPACEPORT = helper.make_chapter(
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "Imperial Showers And Pool",
+                R_IMPERIAL_SHOWERS_AND_POOL,
                 # Note: Grievous and Droideka are too big to fit through the door.
                 HasAbility(IMPERIAL),
             ),
             ExitData(
-                "Above First Stormtrooper Gate",
+                R_ABOVE_FIRST_STORMTROOPER_GATE,
                 logic_options(
                     base=And(
                         # Expect fighting the Stormtroopers.
@@ -125,22 +146,22 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                 )
             ),
         ),
-        "Imperial Showers And Pool": (),
-        "Above First Stormtrooper Gate": (
+        R_IMPERIAL_SHOWERS_AND_POOL: (),
+        R_ABOVE_FIRST_STORMTROOPER_GATE: (
             ExitData(
-                "After Stormtrooper Gate (Imperial Exit)",
+                R_AFTER_STORMTROOPER_GATE_IMPERIAL_EXIT,
                 HasAbility(IMPERIAL),
             ),
             ExitData(
-                "After Stormtrooper Gate (Protocol Exit)",
+                R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT,
                 HasAbility(PROTOCOL_PANEL),
             ),
         ),
-        "After Stormtrooper Gate (Imperial Exit)": (
+        R_AFTER_STORMTROOPER_GATE_IMPERIAL_EXIT: (
             # Drop down.
-            ExitData("After Stormtrooper Gate (Protocol Exit)"),
+            ExitData(R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT),
             ExitData(
-                "Womp Rat Shooting Range",
+                R_WOMP_RAT_SHOOTING_RANGE,
                 logic_options(
                     base=HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
                     # A good single-jump distance can cross the broken bridge.
@@ -148,9 +169,9 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                 ),
             ),
         ),
-        "After Stormtrooper Gate (Protocol Exit)": (
+        R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT: (
             ExitData(
-                "Womp Rat Shooting Range",
+                R_WOMP_RAT_SHOOTING_RANGE,
                 logic_options(
                     # Only expect high jumping.
                     base=CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
@@ -162,45 +183,45 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "After Blocked Street",
+                R_AFTER_BLOCKED_STREET,
                 Or(
                     CAN_BUILD_FIRST_AT_ST & HasAbility(CAN_RIDE_VEHICLES),
                     CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 ),
             ),
         ),
-        "Womp Rat Shooting Range": (),
-        "After Blocked Street": (
+        R_WOMP_RAT_SHOOTING_RANGE: (),
+        R_AFTER_BLOCKED_STREET: (
             ExitData(
-                "Cantina Entrance",
+                R_CANTINA_ENTRANCE,
                 CAN_DAMAGE_AT_CLOSE_RANGE,
                 new_level="moseisley_c",
             ),
         ),
-        "Cantina Entrance": (
+        R_CANTINA_ENTRANCE: (
             ExitData(
-                "Inside Cantina",
+                R_INSIDE_CANTINA,
                 CAN_PASS_CANTINA_ANTI_DROID_FIELD,
             ),
         ),
-        "Inside Cantina": (
+        R_INSIDE_CANTINA: (
             ExitData(
-                "Spy Chase Start",
+                R_SPY_CHASE_START,
                 new_level="moseisley_d",
             ),
         ),
-        "Spy Chase Start": (
+        R_SPY_CHASE_START: (
             ExitData(
-                "Spy Chase Spawn First Storey",
+                R_SPY_CHASE_SPAWN_FIRST_STOREY,
                 logic_options(
                     base=CAN_GRAPPLE,
                     normal=HasAbility(CAN_DOUBLE_JUMP) | CAN_GRAPPLE,
                 ),
             ),
         ),
-        "Spy Chase Spawn First Storey": (
+        R_SPY_CHASE_SPAWN_FIRST_STOREY: (
             ExitData(
-                "Spy Chase Spawn Second Storey",
+                R_SPY_CHASE_SPAWN_SECOND_STOREY,
                 logic_options(
                     base=CAN_GRAPPLE & HasAbility(CAN_BUILD_BRICKS),
                     normal=Or(
@@ -209,11 +230,11 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                     ),
                 ),
             ),
-            ExitData("Spy Chase Bomb Ground Level"),
+            ExitData(R_SPY_CHASE_BOMB_GROUND_LEVEL),
         ),
-        "Spy Chase Spawn Second Storey": (
+        R_SPY_CHASE_SPAWN_SECOND_STOREY: (
             ExitData(
-                "Spy Chase Right Path",
+                R_SPY_CHASE_RIGHT_PATH,
                 logic_options(
                     base=HasAbility(BOUNTY_HUNTER),
                     # Triple jump over the bounty hunter door.
@@ -228,17 +249,17 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Spy Chase Bomb Lever",
+                R_SPY_CHASE_BOMB_LEVER,
                 CAN_GRAPPLE | HasAnyAbilities(HOVER | CAN_DOUBLE_JUMP),
             ),
             ExitData(
-                "Turnips Minikit Ledge",
+                R_TURNIPS_MINIKIT_LEDGE,
                 HasAbility(HOVER),
             ),
         ),
-        "Spy Chase Bomb Ground Level": (
+        R_SPY_CHASE_BOMB_GROUND_LEVEL: (
             ExitData(
-                "Spy Chase Bomb Lever",
+                R_SPY_CHASE_BOMB_LEVER,
                 logic_options(
                     base=HasAbility(CAN_DOUBLE_JUMP),
                     # I don't think it will ever be relevant, but Gamorrean Guard can just jump straight up here.
@@ -246,10 +267,10 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Stormtrooper And Dewback Courtyard",
+                R_STORMTROOPER_AND_DEWBACK_COURTYARD,
                 logic_options(
                     base=And(
-                        helper.can_reach_region("Spy Chase Bomb Lever"),
+                        helper.can_reach_region(R_SPY_CHASE_BOMB_LEVER),
                         HasAbility(CAN_PULL_LEVERS),
                         CAN_DAMAGE_AT_CLOSE_RANGE,
                     ),
@@ -257,7 +278,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                     normal=Or(
                         CAN_DESTROY_CLOSE_SILVER_BRICKS,
                         And(
-                            helper.can_reach_region("Spy Chase Bomb Lever"),
+                            helper.can_reach_region(R_SPY_CHASE_BOMB_LEVER),
                             HasAbility(CAN_PULL_LEVERS),
                             CAN_DAMAGE_AT_CLOSE_RANGE,
                         )
@@ -265,34 +286,34 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Spy Chase Right Path",
+                R_SPY_CHASE_RIGHT_PATH,
                 HasAbility(PROTOCOL_PANEL),
             ),
         ),
-        "Spy Chase Bomb Lever": (
+        R_SPY_CHASE_BOMB_LEVER: (
             ExitData(
-                "Turnips Minikit Ledge",
+                R_TURNIPS_MINIKIT_LEDGE,
                 logic_options(
                     base=HasAbility(CAN_DOUBLE_JUMP),
                     normal=HasAbility(CAN_JUMP_0_44),
                 ),
             ),
         ),
-        "Spy Chase Right Path": (
+        R_SPY_CHASE_RIGHT_PATH: (
             ExitData(
-                "Stormtrooper And Dewback Courtyard",
+                R_STORMTROOPER_AND_DEWBACK_COURTYARD,
                 CAN_SITH_FORCE,
             ),
         ),
-        "Turnips Minikit Ledge": (),
-        "Stormtrooper And Dewback Courtyard": (
+        R_TURNIPS_MINIKIT_LEDGE: (),
+        R_STORMTROOPER_AND_DEWBACK_COURTYARD: (
             ExitData(
-                "Cinema",
+                R_CINEMA,
                 HasAbility(ASTROMECH_PANEL),
                 new_level="moseisley_e",
             ),
             ExitData(
-                "Hangar",
+                R_HANGAR,
                 logic_options(
                     base=HasAbility(CAN_RIDE_VEHICLES),
                     # Jump on the turnip, jump on the sloped bit of wall adjacent to the turnip, jump to where the hat
@@ -303,12 +324,12 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                 )
             ),
             ExitData(
-                "Spy Chase Right Path",
+                R_SPY_CHASE_RIGHT_PATH,
                 CAN_SITH_FORCE,
             ),
         ),
-        "Cinema": (),
-        "Hangar": (
+        R_CINEMA: (),
+        R_HANGAR: (
             ExitData(
                 "Chapter Completion",
                 logic_options(
@@ -327,12 +348,12 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
     },
     minikits={
         "Drain Imperial Pool Minikit": minikit_data(
-            "Imperial Showers And Pool",
+            R_IMPERIAL_SHOWERS_AND_POOL,
             HasAbility(JEDI),
             pickup_name="WATER_M",
         ),
         "Reveal Three Carrots Minikit": MinikitData(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=And(
                     # Basic melee attacks do not work on the barrels hiding the carrots.
@@ -376,17 +397,17 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             ),
         ),
         "Minikit Beneath Dark Side Roof": minikit_data(
-            "Spawn",
+            R_SPAWN,
             CAN_SITH_FORCE,
             pickup_name="m_pup1",
         ),
         "Womp Rat Shooting Range Minikit": minikit_data(
-            "Womp Rat Shooting Range",
+            R_WOMP_RAT_SHOOTING_RANGE,
             HasAllAbilities(CAN_BUILD_BRICKS | CAN_RIDE_VEHICLES),
             pickup_name="WOMPRAT",
         ),
         "Stack Boxes Near AT-ST Minikit": minikit_data(
-            "After Stormtrooper Gate (Protocol Exit)",
+            R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT,
             logic_options(
                 # Stack the boxes and double jump up.
                 base=HasAbility(JEDI),
@@ -407,7 +428,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             pickup_name="mk_1",
         ),
         "Tall Tower Minikit": minikit_data(
-            "After Stormtrooper Gate (Protocol Exit)",
+            R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT,
             logic_options(
                 base=And(
                     CAN_DESTROY_CLOSE_SILVER_BRICKS,
@@ -440,7 +461,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             pickup_name="mk_0",
         ),
         "Cantina Force Field Minikit": minikit_data(
-            "Inside Cantina",
+            R_INSIDE_CANTINA,
             logic_options(
                 base=HasAbility(SHORTIE),
                 hard=HasAbility(SHORTIE) | HasAny("Yoda", "Yoda (Ghost)")
@@ -448,18 +469,18 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             pickup_name="m_pup1",
         ),
         "Reveal Three Turnips Minikit": MinikitData(
-            "Turnips Minikit Ledge",
+            R_TURNIPS_MINIKIT_LEDGE,
             And(
                 # The barrels cannot be destroyed with basic melee attacks, only the lids of the barrels.
                 # The barrels are pretty weird in general, since the lids cannot be hit by lightsabers, but Bodyguard
                 # can hit the lids without issue.
                 CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE,
                 # Third turnip.
-                helper.can_reach_region("Stormtrooper And Dewback Courtyard"),
+                helper.can_reach_region(R_STORMTROOPER_AND_DEWBACK_COURTYARD),
                 # Second turnip.
-                helper.can_reach_region("Spy Chase Right Path"),
+                helper.can_reach_region(R_SPY_CHASE_RIGHT_PATH),
                 # First turnip.
-                helper.can_reach_region("Spy Chase Start"),
+                helper.can_reach_region(R_SPY_CHASE_START),
             ),
             pickup_names=(
                 "M_T1",
@@ -468,7 +489,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             ),
         ),
         "Two Player Force Gate Minikit": minikit_data(
-            "Spy Chase Right Path",
+            R_SPY_CHASE_RIGHT_PATH,
             logic_options(
                 base=HasAbility(JEDI),
                 # Triple high jump from the barrel in the corner to get enough height to get over the colision of the
@@ -481,7 +502,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             pickup_name="m_pup1",
         ),
         "Cinema Minikit": minikit_data(
-            "Cinema",
+            R_CINEMA,
             logic_options(
                 base=HasAbility(JEDI),
                 # Triple high jump over the jumbled cinema screen.
@@ -494,16 +515,16 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
         ),
     },
     power_brick=LocationData(
-        "Spawn",
+        R_SPAWN,
         HasAllAbilities(JEDI | ASTROMECH_PANEL),
     ),
     ridables={
-        "Landspeeder": LocationData("Spawn"),
-        "Mos Eisley Cannon": LocationData("Womp Rat Shooting Range", HasAbility(CAN_BUILD_BRICKS)),
+        "Landspeeder": LocationData(R_SPAWN),
+        "Mos Eisley Cannon": LocationData(R_WOMP_RAT_SHOOTING_RANGE, HasAbility(CAN_BUILD_BRICKS)),
         "AT-ST": LocationData(
-            "After Stormtrooper Gate (Protocol Exit)",
+            R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT,
             CAN_BUILD_FIRST_AT_ST,
         ),
-        "Dewback": LocationData("Stormtrooper And Dewback Courtyard"),
+        "Dewback": LocationData(R_STORMTROOPER_AND_DEWBACK_COURTYARD),
     }
 )
