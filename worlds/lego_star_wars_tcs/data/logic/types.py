@@ -221,3 +221,130 @@ class Chapter:
     @property
     def short_name(self) -> str:
         return f"{self.episode_number}-{self.chapter_number}"
+
+
+@dataclass
+class LegacyMinikitData:
+    level: str
+    pickup_names: tuple[str, ...]
+
+    @classmethod
+    def new(cls, level: str, pickup_name: str):
+        return cls(level, (pickup_name,))
+
+
+def _make_legacy_chapter(
+        name: str,
+        episode_number: int,
+        chapter_number: int,
+        start_level: str,
+        minikits_rule: Rule,
+        completion_rule: Rule,
+        #true_jedi_rule: Rule,
+        power_brick_rule: Rule,
+        minikits: dict[str, LegacyMinikitData],
+        ridables: dict[str, Rule],
+        extra_chapter_entrance_rules: Rule,
+        story_characters: Iterable[str] = (),
+        purchase_characters: dict[str, int] | None = None,
+        extra_toggle_characters: Iterable[str] = (),
+):
+    if purchase_characters is None:
+        purchase_characters = {}
+
+    required_minikit_levels = {data.level for data in minikits.values()}
+    required_minikit_levels.discard(start_level)
+
+    minikit_level_region_names = sorted(required_minikit_levels)
+
+    status_level = start_level.rpartition("_")[0] + "_status"
+
+    start_region = "Spawn"
+
+    regions: dict[str, tuple[ExitData, ...]] = {
+        start_region: (
+            ExitData("Chapter Completion", completion_rule, new_level=status_level),
+            ExitData("Minikits", minikits_rule),
+        ),
+        "Minikits": tuple(ExitData(level, new_level=level) for level in minikit_level_region_names)}
+    # Add exits from the Minikits region to each additional level region that is required.
+
+    # Add the required additional level regions.
+    for level in minikit_level_region_names:
+        regions[level] = ()
+
+    # Convert the placeholder minikit data into real MinikitData referencing regions with the correct level names.
+    minikits_data: dict[str, MinikitData] = {}
+    for minikit_name, placeholder_minikit_data in minikits.items():
+        region = "Minikits" if placeholder_minikit_data.level == start_level else placeholder_minikit_data.level
+        minikits_data[minikit_name] = MinikitData(region, pickup_names=placeholder_minikit_data.pickup_names)
+
+    ridables_data: dict[str, LocationData] = {}
+    for ridable_name, rule in ridables.items():
+        ridables_data[ridable_name] = LocationData(start_region, rule)
+
+    return Chapter(
+        name=name,
+        episode_number=episode_number,
+        chapter_number=chapter_number,
+        start_region=start_region,
+        start_level=start_level,
+        regions=regions,
+        minikits=minikits_data,
+        power_brick=LocationData(start_region, power_brick_rule),
+        ridables=ridables_data,
+        extra_chapter_entrance_rules=extra_chapter_entrance_rules,
+        story_characters=tuple(story_characters),
+        purchase_characters=purchase_characters,
+        extra_toggle_characters=tuple(extra_toggle_characters)
+    )
+
+
+def make_legacy_chapter(
+        short_name: str,
+        start_level: str,
+        minikits: dict[str, LegacyMinikitData],
+        extra_toggle_characters: Iterable[str] = (),
+):
+    from ...levels import SHORT_NAME_TO_CHAPTER_AREA, VEHICLE_CHAPTER_SHORTNAMES
+    from .rules import HasAllAbilities, HasAbility
+    from ...ridables import CHAPTER_TO_RIDABLES, get_ridable_requirements
+    from ...character_ability import CharacterAbility
+    from ...items import CHARACTERS_AND_VEHICLES_BY_NAME
+    area = SHORT_NAME_TO_CHAPTER_AREA[short_name]
+
+    if area.completion_alt_ability_requirements is not None:
+        completion_rule = Or(
+            HasAllAbilities(area.completion_main_ability_requirements),
+            HasAllAbilities(area.completion_alt_ability_requirements),
+        )
+    else:
+        completion_rule = HasAllAbilities(area.completion_main_ability_requirements)
+
+    chapter_ridables = CHAPTER_TO_RIDABLES.get(short_name, [])
+    ridables: dict[str, Rule] = {}
+    for ridable in chapter_ridables:
+        requirements = get_ridable_requirements(short_name, ridable.user_facing_name)
+        ridables[ridable.user_facing_name] = Or(*map(HasAllAbilities, requirements))
+
+    purchase_characters: dict[str, int] = {}
+    for character in area.alt_character_requirements:
+        cost = CHARACTERS_AND_VEHICLES_BY_NAME[character].purchase_cost
+        purchase_characters[character] = cost
+
+    return _make_legacy_chapter(
+        name=area.name,
+        episode_number=area.episode,
+        chapter_number=area.number_in_episode,
+        start_level=start_level,
+        minikits_rule=Or(*map(HasAllAbilities, area.all_minikits_ability_requirements)),
+        completion_rule=completion_rule,
+        power_brick_rule=Or(*map(HasAllAbilities, area.power_brick_ability_requirements)),
+        minikits=minikits,
+        ridables=ridables,
+        extra_chapter_entrance_rules=(HasAbility(CharacterAbility.IS_A_VEHICLE)
+                                      if short_name in VEHICLE_CHAPTER_SHORTNAMES else True_()),
+        story_characters=tuple(area.character_requirements),
+        purchase_characters=purchase_characters,
+        extra_toggle_characters=extra_toggle_characters,
+    )
