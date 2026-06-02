@@ -320,5 +320,6 @@ SECRET_PLANS = _helper.make_chapter(
     ridables={
         "Moon Car": LocationData(R_SIDE_ACCESS_CORRIDOR, MOON_CAR_LOGIC),
         "Town Car": LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, TOWN_CAR_LOGIC),
+        "Crane Control": LocationData(R_CRANE_ROOM),
     },
 )
