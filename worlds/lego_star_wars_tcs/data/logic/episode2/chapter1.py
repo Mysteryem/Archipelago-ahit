@@ -136,6 +136,6 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
     power_brick=LocationData(R_AFTER_FIRST_FORCEFIELD_TRAP, HasAbility(VEHICLE_BLASTER))
 )
 
-# This is the only Minikit in the entire game that is split across multiple levels.
+# This is one of the only Minikits in the entire game that is split across multiple levels.
 BOUNTY_HUNTER_PURSUIT.level_minikits["pursuit_a"]["Cylinder Advertisements Minikit"] \
     = BOUNTY_HUNTER_PURSUIT.minikits["Cylinder Advertisements Minikit"]
