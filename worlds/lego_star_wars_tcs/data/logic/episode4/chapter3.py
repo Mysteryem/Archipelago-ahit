@@ -13,7 +13,6 @@ from ..rules import (
     HasAbility,
     HasAnyAbilities,
     HasAllAbilities,
-    HasAbilityExceptCharacters,
     HasAbilityCombination,
     HasAnyCharacterExcept,
 )
@@ -77,12 +76,10 @@ def _make_can_pass_cantina_anti_droid_field() -> Rule:
     for character_name in tuple(affected_by_anti_droid_field):
         if BLASTER in CHARACTERS_AND_VEHICLES_BY_NAME[character_name].abilities:
             affected_by_anti_droid_field.remove(character_name)
-    characters_rule = HasAbilityExceptCharacters(CharacterAbility.NONE, *affected_by_anti_droid_field)
+    characters_rule = HasAnyCharacterExcept(*affected_by_anti_droid_field)
     # The ceiling has no collision, so Bodyguard can jump over the emitters when either OT high jump is enabled, or by
     # performing a triple jump.
-    characters_rule_moderate = HasAbilityExceptCharacters(
-        CharacterAbility.NONE, *(affected_by_anti_droid_field - {"Grievous' Bodyguard"})
-    )
+    characters_rule_moderate = HasAnyCharacterExcept(*(affected_by_anti_droid_field - {"Grievous' Bodyguard"}))
     return logic_options(
         base=characters_rule,
         moderate=characters_rule_moderate,

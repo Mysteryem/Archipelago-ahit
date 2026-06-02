@@ -209,9 +209,9 @@ class HasAbilityCombination(InLevelRule, game=GAME_NAME):
 
     @override
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
-        abilities = resolve_field(self.ability_combinations, world, CharacterAbility)
+        abilities = resolve_field(self.ability_combinations, world, tuple)
 
-        return self.make_rule(abilities).resolve(world)
+        return self.make_rule(*abilities).resolve(world)
 
     @staticmethod
     def simplify_contained_combinations(combinations: list[CharacterAbility]):

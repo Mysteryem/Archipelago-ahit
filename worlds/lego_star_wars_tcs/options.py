@@ -1691,6 +1691,18 @@ class LogicDifficulty(ChoiceFromStringExtension):
     def hard_plus(self) -> bool:
         return self.value >= self.option_hard
 
+class LogicExpectNonInfiniteTorpedoesPodRacer(Toggle):
+    """When enabled, logic can expect making progress in some vehicle levels with only Pod Racers unlocked, by gathering
+    Torpedoes from within the level.
+
+    Pod Racers have no weapon, but can still use Torpedoes to destroy certain objects.
+
+    In some vehicle levels, it is possible to gather torpedoes to destroy regular objects in the level, but this can be
+    extremely tedious without the *Infinite Torpedos* [sic] Extra unlocked.
+
+    """
+    display_name = "Logic Expects Gathering Torpedoes With Pod Racers"
+    rich_text_doc = True
 
 # Not using DeathLinkMixin currently because the docstring needs to be different.
 class LegoStarWarsTCSDeathLink(DeathLink):
@@ -1821,6 +1833,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
 
     # Logic and Difficulty.
     logic_difficulty: LogicDifficulty
+    expect_torpedo_gathering: LogicExpectNonInfiniteTorpedoesPodRacer
     episode_unlock_requirement: EpisodeUnlockRequirement
     chapter_unlock_requirement: ChapterUnlockRequirement
     #   Chapters locked by Characters.
@@ -1927,6 +1940,7 @@ OPTION_GROUPS: list[OptionGroup] = [
     OptionGroup("Logic and Difficulty", [
         LogicDifficulty,
         UncapOriginalTrilogyHighJump,
+        LogicExpectNonInfiniteTorpedoesPodRacer,
         EasierTrueJedi,
         ScaleTrueJediWithScoreMultipliers,
         MostExpensivePurchaseWithNoScoreMultiplier,

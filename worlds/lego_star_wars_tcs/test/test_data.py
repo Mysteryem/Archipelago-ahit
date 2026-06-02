@@ -3,13 +3,17 @@ from unittest import TestCase
 from typing import Callable, Iterable
 
 from rule_builder.rules import Rule, NestedRule, WrapperRule, And
+from test.general import setup_multiworld
+from worlds import AutoWorldRegister
 
 from ..data.logic import EPISODES
 from ..data.logic.extraction import un_nest_logic_options
 from ..data.logic.option_filters import LogicOptions
 from ..data.logic.types import Chapter
 
+from ..constants import GAME_NAME
 from ..items import CHARACTERS_AND_VEHICLES_BY_NAME
+from ..options import LogicDifficulty
 
 
 def chapters_iter() -> Iterable[Chapter]:
@@ -199,3 +203,33 @@ class TestEpisodes(TestCase):
         for owner_name, rule in self.chapter_rule_gen(chapter):
             with self.subTest(name=owner_name):
                 scan_for_empty_and(rule)
+
+    def test_rules_resolve(self):
+        logic_difficulties = [
+            LogicDifficulty(v) for v in LogicDifficulty.name_lookup.keys()
+        ]
+        world_types = [AutoWorldRegister.world_types[GAME_NAME]] * len(logic_difficulties)
+        options = [
+            {
+                "logic_difficulty": difficulty.value
+            } for difficulty in logic_difficulties
+        ]
+
+        # There is no region creation code currently, so CanReachRegion rules will fail with a KeyError.
+        ignore_key_errors = True
+
+        mw = setup_multiworld(world_types, steps=("generate_early",), seed=None, options=options)
+        for world, logic_difficulty in zip(mw.worlds.values(), logic_difficulties):
+            def test_function(_self, chapter: Chapter):
+                for owner_name, rule in self.chapter_rule_gen(chapter):
+                    with self.subTest(rule=owner_name):
+                        if ignore_key_errors:
+                            try:
+                                rule.resolve(world)
+                            except KeyError as ex:
+                                self.skipTest(f"Missing region: {ex}")
+                        else:
+                            rule.resolve(world)
+
+            with self.subTest(difficulty=logic_difficulty.current_option_name):
+                chapters_test(test_function)(self)
