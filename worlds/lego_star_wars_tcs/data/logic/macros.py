@@ -1,4 +1,4 @@
-from rule_builder.rules import Has, HasAny, True_, Or, Rule
+from rule_builder.rules import Has, HasAny, True_, Or, Rule, False_
 from rule_builder.options import OptionFilter
 
 from .option_filters import normal_logic, logic_options, OT_HIGH_JUMP_ENABLED
@@ -9,8 +9,14 @@ from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
 
 # Implemented as a CharacterAbility for now.
 # can_jetpack_hover = HasAny("Boba Fett", "Jango Fett")
-CAN_USE_SELF_DESTRUCT = HasAbility(CAN_SELF_DESTRUCT) & Has("Self Destruct")
-CAN_SUPER_EWOK_CATAPULT = HasAbility(WEAPON_EWOK) & Has("Super Ewok Catapult")
+CAN_USE_SELF_DESTRUCT = logic_options(
+    base=False_(),
+    normal=HasAbility(CAN_SELF_DESTRUCT) & Has("Self Destruct"),
+)
+CAN_SUPER_EWOK_CATAPULT = logic_options(
+    base=False_(),
+    normal=HasAbility(WEAPON_EWOK) & Has("Super Ewok Catapult")
+)
 
 HAS_FLUTTER_CHARACTER = HasAny("Geonosian", "Watto")
 
@@ -213,3 +219,23 @@ CAN_ATTACK_UP_CLOSE_EXCEPT_TARPALS = (
 ),
 
 CAN_ORIGINAL_TRILOGY_HIGH_JUMP = HasAbility(HIGH_JUMP) & OT_HIGH_JUMP_ENABLED
+
+CAN_USE_BOUNTY_HUNTER_ROCKETS = logic_options(
+    base=False_(),
+    normal=HasAbility(JETPACK) & Has("Bounty Hunter Rockets"),
+)
+
+NORMAL_PLUS = logic_options(
+    base=False_(),
+    normal=True_(),
+)
+
+MODERATE_PLUS = logic_options(
+    base=False_(),
+    moderate=True_(),
+)
+
+HARD_PLUS = logic_options(
+    base=False_(),
+    hard=True_(),
+)
