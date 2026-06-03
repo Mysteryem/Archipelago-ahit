@@ -13,7 +13,7 @@ from ..macros import (
 )
 from ..option_filters import logic_options, ot_high_jump_ternary, OT_HIGH_JUMP_ENABLED
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExceptCharacters
-from ..types import minikit_data, ExitData, ChapterHelper, LocationData
+from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ....character_ability import *
 
@@ -32,13 +32,14 @@ CAN_DESTROY_GENERATORS_WITHOUT_AT_ST = Or(
 # bolt to deflect into you, or for you to position P2 next to the cage and shoot them instead.
 # AT-ST seems to be unable to target the caged minikit, so I could not test it.
 # Unlike the cages in the Forest Loop, these cages cannot be destroyed by ramming them in a Speeder Bike.
+# todo: Hard logic for deflecting bolts with "Exploding Blaster Bolts" active.
 CAN_DESTROY_MINIKIT_CAGES = Or(
     HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
 )
 
 
-helper = ChapterHelper(
+SPEEDER_SHOWDOWN = Chapter(
     name="Speeder Showdown",
     episode_number=6,
     chapter_number=3,
@@ -53,32 +54,6 @@ helper = ChapterHelper(
         "AT-AT Driver",
         "Scout Trooper",
     ),
-)
-
-
-# # In the intended sequence of destroying the first generator, the first generator is always last to be destroyed,
-# # so it's not relevant to consider the intended sequence for the first generator.
-# # This entire sequence break
-# CAN_SEQUENCE_BREAK_DESTROY_FIRST_AREA_GENERATOR = CAN_DESTROY_GENERATORS_WITHOUT_AT_ST
-# CAN_DESTROY_SECOND_AREA_GENERATOR = Or(
-#     # Following expected progression, an AT-ST spawns that can be shot with the Speeder Bike, and then used to shoot the
-#     # generator.
-#     helper.can_reach_region("Second Open Area (Speeder Bikes Defeated)"),
-#     helper.can_reach_region("Second Open Area") & CAN_DESTROY_GENERATORS_WITHOUT_AT_ST,
-# )
-# CAN_DESTROY_THIRD_AREA_GENERATOR = Or(
-#     # This AT-ST is always able to be built, even if you sequence break to get to the "Third Open Area" early.
-#     helper.can_reach_region("Third Open Area (AT-ST Built)"),
-#     helper.can_reach_region("Third Open Area") & CAN_DESTROY_GENERATORS_WITHOUT_AT_ST,
-# )
-# CAN_DESTROY_FOURTH_AREA_GENERATOR = Or(
-#     # This AT-ST does not spawn unless the speeder bikes have been defeated.
-#     helper.can_reach_region("Fourth Open Area (Speeder Bikes Defeated)"),
-#     helper.can_reach_region("Fourth Open Area") & CAN_DESTROY_GENERATORS_WITHOUT_AT_ST,
-# )
-
-
-SPEEDER_SHOWDOWN = helper.make_chapter(
     regions={
         "Spawn": (
             ExitData(
@@ -123,70 +98,47 @@ SPEEDER_SHOWDOWN = helper.make_chapter(
             ),
         ),
         "Forest Loop": (
-            # Shoot the Scout Troopers.
-            ExitData("Second Open Area (Speeder Bikes Defeated)"),
+            # Shoot the Speeder Bikes.
+            ExitData("Second Open Area"),
             # Drop in P2, then you can Drop Out from the pause menu, and Drop Out while in a Speeder Bike, ejects you
             # from the Speeder Bike, so you can explore whichever area you want by dropping out in that area.
             # There is complexity, however, from the fact that certain things won't spawn in unless you progress
             # normally. This allows access to the Fourth Open Area without a Jedi to build the AT-ST in the third area
-            # (and without another means of destroying the generator in the third open area).
-            ExitData("Second Open Area", MODERATE_PLUS, name="2P Drop Out Sequence Break Into Second Open Area"),
-            ExitData("Third Open Area", MODERATE_PLUS, name="2P Drop Out Sequence Break Into Third Open Area"),
+            # (and without some other means of destroying the generator in the third open area).
+            # Access to the Second and Third open areas is always possible, since all you need is to shoot the Speeder
+            # Bikes to get to the Second area, shoot the AT-ST that spawns with the Speeder Bike and use the AT-ST to
+            # destroy the generator, then shoot the Speeder Bikes again and make it to the Third area.
             ExitData("Fourth Open Area", MODERATE_PLUS, name="2P Drop Out Sequence Break Into Fourth Open Area"),
+            # Hard logic could skip the force field entirely when they have a Jedi:
+            # The trick here, is that choosing to Drop Out from the menu, while riding a vehicle, ejects you from that
+            # vehicle, and *you can do this in the middle of a loop*.
+            # The Drop Out option in the menu only shows when both players are Dropped In, so drop in P2.
+            # Perform a loop in the Speeder by the force field.
+            # At the top of the loop, Drop Out, to eject from the vehicle.
+            # From the ejection, triple jump over the invisible wall of the force field.
+            # The loading zone for the area is close to the force field, so you may need to walk backwards to hit it.
+            # However, simply having a Jedi on Hard logic allows you to access every other area the intended way, so
+            # this sequence break is not relevant.
             # ExitData(
             #     "Landing Pad Ground Level",
             #     logic_options(
             #         base=False_(),
-            #         moderate=And(
-            #             CAN_SEQUENCE_BREAK_DESTROY_FIRST_AREA_GENERATOR,
-            #             CAN_DESTROY_SECOND_AREA_GENERATOR,
-            #             CAN_DESTROY_THIRD_AREA_GENERATOR,
-            #             CAN_DESTROY_FOURTH_AREA_GENERATOR,
-            #         ),
+            #         hard=HasAbility(JEDI),
             #     ),
-            #     name="Sequence break destroying the four generators",
+            #     name="Loop, Drop Out, and Triple Jump over the force field",
             # ),
-            ExitData(
-                "Landing Pad Ground Level",
-                logic_options(
-                    base=False_(),
-                    # The trick here, is that choosing to Drop Out from the menu, while riding a vehicle, ejects you
-                    # from that vehicle, and you can do this in the middle of a loop.
-                    # The Drop Out option in the menu only shows when both players are Dropped In, so drop in P2.
-                    # Perform a loop in the Speeder by the force field.
-                    # At the top of the loop, Drop Out, to eject from the vehicle.
-                    # From the ejection, triple jump over the invisible wall of the force field.
-                    # The loading zone for the area is close to the force field, so you may need to walk backwards to
-                    # hit it.
-                    hard=HasAbility(JEDI),
-                ),
-                name="Loop, Drop Out, and Triple Jump over the force field",
-            ),
         ),
-        "Second Open Area (Speeder Bikes Defeated)": (
-            ExitData("Second Open Area"),
+        "Second Open Area": (
             # Get in the Speeder Bike, shoot the AT-ST, get in the AT-ST, shoot the generator.
             # The AT-ST only spawns if the Speeder Bikes have been defeated.
-            ExitData("Third Open Area (Speeder Bikes Defeated)"),
-        ),
-        "Second Open Area": (),
-        "Third Open Area (Speeder Bikes Defeated)": (
             ExitData("Third Open Area"),
-            # The AT-ST needs to be built this time. Destroy some plants to reveal some parts, then go to the left area
-            # and pull the lever to spawn the rest of the parts. Force the parts together to make the AT-ST.
-            ExitData(
-                "Fourth Open Area (Speeder Bikes Defeated)",
-                helper.can_reach_region("Third Open Area (AT-ST Built)") | CAN_DESTROY_GENERATORS_WITHOUT_AT_ST
-            ),
         ),
         "Third Open Area": (
-            # This AT-ST is here even if you sequence break. I don't want to use an event because 3-3 could be the
-            # starting chapter, which could hurt progression balancing when locations after the event get delayed by 1
-            # sphere.
-            # Technically, when sequence breaking this AT-ST could very slowly walk around the entire Forest Loop,
-            # and destroy all the targets. I don't want to imagine how long that would take.
+            # The AT-ST needs to be built this time. Destroy some plants to reveal some parts, then go to the left area
+            # and pull the lever to spawn the rest of the parts. Force the parts together to make the AT-ST.
+            # Note that this AT-ST is able to be built even if you sequence break to get to the Third area early.
             ExitData(
-                "Third Open Area (AT-ST Built)",
+                "Fourth Open Area (No Sequence Break)",
                 # Jedi is strictly required to build the AT-ST.
                 logic_options(
                     # Destroy some plants to reveal some parts, then go to the left area and pull the lever to spawn
@@ -197,14 +149,15 @@ SPEEDER_SHOWDOWN = helper.make_chapter(
                         CAN_GRAPPLE | CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
                     ),
                     moderate=HasAbility(JEDI),
-                ),
+                ).or_rule(CAN_DESTROY_GENERATORS_WITHOUT_AT_ST),
             ),
         ),
-        "Third Open Area (AT-ST Built)": (),
-        "Fourth Open Area (Speeder Bikes Defeated)": (
+        "Fourth Open Area (No Sequence Break)": (
             # Get in the Speeder Bike, shoot the AT-ST, get in the AT-ST, shoot the generator.
             # The AT-ST only spawns if the Speeder Bikes have been defeated.
             ExitData("First Open Area (Second Visit)"),
+            # Can be accessed without being able to destroy the generator in "Third Open Area", through a sequence
+            # break, so an extra region is required to represent this logic.
             ExitData("Fourth Open Area"),
         ),
         "Fourth Open Area": (),
@@ -224,6 +177,10 @@ SPEEDER_SHOWDOWN = helper.make_chapter(
             ExitData(
                 "Landing Pad Top",
                 logic_options(
+                    # Activate the elevator on the right side.
+                    # Moderate logic can get here without a character that can pull levers, by doing the start of the
+                    # level with General Grievous/Grievous' Bodyguard, then riding the Speeder Bikes as Jar Jar Binks,
+                    # and destroying all the generators using a droid character with Self Destruct.
                     base=HasAbility(CAN_PULL_LEVERS),
                     hard=Or(
                         HasAbility(CAN_PULL_LEVERS),
@@ -367,8 +324,8 @@ SPEEDER_SHOWDOWN = helper.make_chapter(
         )
     ),
     ridables={
-        "Speeder Bike": LocationData("First Open Area"),
-        "AT-ST": LocationData("Second Open Area (Speeder Bikes Defeated)"),
+        "Speeder Bike": LocationData("Forest Loop"),
+        "AT-ST": LocationData("Second Open Area"),
         "AT-AT": LocationData("Landing Pad Top")
     }
 )
