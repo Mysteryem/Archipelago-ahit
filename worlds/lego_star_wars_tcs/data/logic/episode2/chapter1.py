@@ -26,6 +26,7 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
     purchase_characters={
         "Zam Wesell": 27_500,
         "Dexter Jettster": 10_000,
+        "Zam's Airspeeder": 24_000,
     },
     start_region=R_SPAWN,
     start_level="pursuit_a",
