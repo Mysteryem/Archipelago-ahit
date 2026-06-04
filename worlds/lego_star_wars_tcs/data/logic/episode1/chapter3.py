@@ -29,16 +29,6 @@ R_FINAL_ROOFTOP = "Final Rooftop"
 ESCAPE_FROM_NABOO = Chapter(
     name=NAME,
     area=Area.PALACERESCUE,
-    story_characters=(
-        "Obi-Wan Kenobi",
-        "Qui-Gon Jinn",
-        "Captain Panaka",
-        "Queen Amidala",
-    ),
-    purchase_characters={
-        "Royal Guard": 10_000,
-        "Padmé": 20_000,
-    },
     start_region=R_ROOFTOPS_SPAWN,
     regions={
         R_ROOFTOPS_SPAWN: (

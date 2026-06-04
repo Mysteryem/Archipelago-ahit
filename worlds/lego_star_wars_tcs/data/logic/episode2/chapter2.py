@@ -24,15 +24,6 @@ R_INTERIOR_BEFORE_JANGO_FIGHT = "Interior Before Jango Fight"
 DISCOVERY_ON_KAMINO = Chapter(
     name=NAME,
     area=Area.KAMINO,
-    story_characters=(
-        "Obi-Wan Kenobi (Jedi Master)",
-        "R4-P17",
-    ),
-    purchase_characters={
-        "Clone": 13_000,
-        "Lama Su": 9000,
-        "Taun We": 9000,
-    },
     start_region=R_LANDING_PAD,
     regions={
         R_LANDING_PAD: (

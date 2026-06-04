@@ -14,8 +14,4 @@ DEATH_STAR_ESCAPE = make_legacy_chapter(
         "Corridor Start Minikit": LegacyMinikitData.new("deathstarescape_c", "pup4"),
         "Reveal Three Berry Tiles Minikit": LegacyMinikitData.new("deathstarescape_c", "m_pup1"),
     },
-    extra_toggle_characters=(
-        "Mouse Droid",
-        "Imperial Engineer",
-    )
 )

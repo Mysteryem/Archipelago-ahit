@@ -17,8 +17,4 @@ CLOUD_CITY_TRAP = make_legacy_chapter(
         "Final Vader Chase Imperial Room Minikit": LegacyMinikitData.new("cloudcitytrap_b", "mk_1"),
         "Below Floor Minikit Across From Round Window": LegacyMinikitData.new("cloudcitytrap_b", "m_pup1"),
     },
-    extra_toggle_characters=(
-        "Skeleton",
-        "Han Solo (frozen in carbonite)",
-    )
 )

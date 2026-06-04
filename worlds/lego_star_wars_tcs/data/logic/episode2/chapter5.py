@@ -18,9 +18,6 @@ R_CONTROL_SHIP_BATTLE = "Control Ship Battle"
 GUNSHIP_CAVALRY = Chapter(
     name=NAME,
     area=Area.GUNSHIP,
-    story_characters=(
-        "Republic Gunship",
-    ),
     start_region=R_SPAWN,
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={

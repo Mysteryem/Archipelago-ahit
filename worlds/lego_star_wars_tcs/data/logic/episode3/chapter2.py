@@ -29,19 +29,6 @@ CHANCELLOR_IN_PERIL = Chapter(
     name=NAME,
     area=Area.CRUISER,
     start_region=R_HANGAR,
-    story_characters=(
-        "Anakin Skywalker (Jedi)",
-        "Chancellor Palpatine",
-        "Obi-Wan Kenobi (Episode III)",
-        "R2-D2",
-    ),
-    purchase_characters={
-        "Count Dooku": 100_000,
-        "Grievous' Bodyguard": 42_000,
-    },
-    extra_toggle_characters=(
-        "Buzz Droid",
-    ),
     regions={
         R_HANGAR: (
             ExitData(

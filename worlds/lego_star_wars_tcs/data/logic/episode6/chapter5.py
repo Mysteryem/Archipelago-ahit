@@ -15,8 +15,4 @@ JEDI_DESTINY = make_legacy_chapter(
         "Red Room Left Force Field Minikit": LegacyMinikitData.new("emperorfight_b", "mk_0"),
         "Red Room Grate Force Field Minikit": LegacyMinikitData.new("emperorfight_b", "mk_1"),
     },
-    extra_toggle_characters=(
-        "Mouse Droid",
-        "Imperial Engineer",
-    ),
 )

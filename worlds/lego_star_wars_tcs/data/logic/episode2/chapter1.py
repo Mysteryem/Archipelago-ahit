@@ -22,14 +22,6 @@ R_SECOND_FORCEFIELD_TRAP = "Second Forcefield Trap"
 BOUNTY_HUNTER_PURSUIT = Chapter(
     name=NAME,
     area=Area.PURSUIT,
-    story_characters=(
-        "Anakin's Speeder",
-    ),
-    purchase_characters={
-        "Zam Wesell": 27_500,
-        "Dexter Jettster": 10_000,
-        "Zam's Airspeeder": 24_000,
-    },
     start_region=R_SPAWN,
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={

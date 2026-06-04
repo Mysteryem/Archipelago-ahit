@@ -43,21 +43,6 @@ _helper = ChapterHelper(
     name=NAME,
     area=Area.BLOCKADERUNNER,
     start_region=R_SPAWN,
-    story_characters=(
-        "Captain Antilles",
-        "C-3PO",
-        "Princess Leia",
-        "R2-D2",
-        "Rebel Friend",
-    ),
-    purchase_characters={
-        "Rebel Trooper": 10_000,
-        "Stormtrooper": 10_000,
-        "Imperial Shuttle Pilot": 25_000,
-    },
-    extra_toggle_characters=(
-        "Rebel Engineer",
-    ),
 )
 
 # The ridables logic is also used in a Minikit location that requires riding a vehicle, so the individual logic is

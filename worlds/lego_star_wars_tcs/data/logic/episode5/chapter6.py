@@ -21,9 +21,6 @@ BETRAYAL_OVER_BESPIN = make_legacy_chapter(
         "Millennium Falcon Minikit": LegacyMinikitData.new("cloudcityescape_c", "pup4"),
         "Minikit Behind Camera After Imperial Elevator": LegacyMinikitData.new("cloudcityescape_c", "pup5"),
     },
-    extra_toggle_characters=(
-        "Han Solo (frozen in carbonite)",
-    )
 )
 
 # This is one of the only Minikits in the entire game that is split across multiple levels.

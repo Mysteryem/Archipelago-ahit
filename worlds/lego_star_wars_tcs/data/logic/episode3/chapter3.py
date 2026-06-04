@@ -33,16 +33,6 @@ _helper = ChapterHelper(
     name=NAME,
     area=Area.GRIEVOUS,
     start_region=R_CIRCULAR_PLATFORM,
-    story_characters=(
-        "Commander Cody",
-        "Obi-Wan Kenobi (Episode III)",
-    ),
-    purchase_characters={
-        "General Grievous": 70_000,
-    },
-    extra_toggle_characters=(
-        "Buzz Droid",
-    ),
 )
 
 # To complete the chapter, 3 sets of explosives need to be destroyed in a row.

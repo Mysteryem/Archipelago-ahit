@@ -31,14 +31,6 @@ R_HANGAR = "Hangar"
 RETAKE_THEED_PALACE = Chapter(
     name=NAME,
     area=Area.RETAKEPALACE,
-    story_characters=(
-        "Obi-Wan Kenobi",
-        "Qui-Gon Jinn",
-        "Anakin Skywalker (Boy)",
-        "Captain Panaka",
-        "Padmé (Battle)",
-        "R2-D2",
-    ),
     start_region=R_SPAWN,
     regions={
         R_SPAWN: (

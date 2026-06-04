@@ -14,8 +14,4 @@ ESCAPE_FROM_ECHO_BASE = make_legacy_chapter(
         "Minikit Inside Green-Yellow Shutter": LegacyMinikitData.new("hothescape_c", "pup2"),
         "Access Hatch Snow Canopy Minikit": LegacyMinikitData.new("hothescape_d", "pup1"),
     },
-    extra_toggle_characters=(
-        "Skeleton",
-        "Rebel Engineer",
-    ),
 )

@@ -49,24 +49,6 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
     name=NAME,
     area=Area.TATOOINE,
     start_region=R_SPAWN,
-    story_characters=(
-        "Ben Kenobi",
-        "C-3PO",
-        "Luke Skywalker (Tatooine)",
-        "R2-D2",
-    ),
-    purchase_characters={
-        "Tusken Raider": 23_000,
-        "Jawa": 24_000,
-    },
-    extra_toggle_characters=(
-        "Womp Rat",
-        "Droid 1",
-        "Droid 2",
-        "Droid 3",
-        "Droid 4",
-        "Skeleton",
-    ),
     regions={
         R_SPAWN: (
             ExitData(

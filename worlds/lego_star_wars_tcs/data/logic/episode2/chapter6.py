@@ -24,11 +24,6 @@ R_DOOKU_FIGHT = "Dooku Fight"
 COUNT_DOOKU = Chapter(
     name=NAME,
     area=Area.DOOKU,
-    story_characters=(
-        "Anakin Skywalker (Padawan)",
-        "Obi-Wan Kenobi (Jedi Master)",
-        "Yoda",
-    ),
     start_region=R_LANDING_PAD,
     regions={
         R_LANDING_PAD: (

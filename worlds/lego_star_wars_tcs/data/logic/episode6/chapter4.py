@@ -17,9 +17,4 @@ THE_BATTLE_OF_ENDOR = make_legacy_chapter(
         "Bunker Minikit After Hatch And Gap": LegacyMinikitData.new("endorbattle_c", "m_pup1"),
         "Bunker Buildable Minikit": LegacyMinikitData.new("endorbattle_c", "MINI06"),
     },
-    extra_toggle_characters=(
-        "Womp Rat",
-        "Imperial Engineer",
-        "Scout Trooper",
-    ),
 )

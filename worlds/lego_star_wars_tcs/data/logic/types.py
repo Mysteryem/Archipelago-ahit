@@ -12,6 +12,7 @@ from rule_builder.rules import (
 
 from .extra_toggle import ExtraToggleRuleReplacer
 from ..areas import Area
+from ..characters import Character, UnlockMethod
 from ..levels import Level
 
 
@@ -85,9 +86,6 @@ class ChapterHelper:
     name: str
     area: Area
     start_region: str
-    story_characters: tuple[str, ...] = ()
-    purchase_characters: dict[str, int] = field(default_factory=dict)
-    extra_toggle_characters: tuple[str, ...] = ()
     _regions_used_in_can_reach: set[str] = field(default_factory=set, init=False)
 
     def can_reach_region(self, region_name: str):
@@ -122,9 +120,6 @@ class ChapterHelper:
             power_brick=power_brick,
             ridables=ridables,
             extra_chapter_entrance_rules=extra_chapter_entrance_rules,
-            story_characters=self.story_characters,
-            purchase_characters=self.purchase_characters,
-            extra_toggle_characters=self.extra_toggle_characters,
             regions_in_can_reach=self._regions_used_in_can_reach,
         )
 
@@ -141,16 +136,35 @@ class Chapter:
     # TODO: Add wip_true_jedi_rule
     ridables: dict[str, LocationData] = field(default_factory=dict)
     extra_chapter_entrance_rules: Rule = field(default_factory=True_)
-    story_characters: tuple[str, ...] = ()
-    purchase_characters: dict[str, int] = field(default_factory=dict)
-    extra_toggle_characters: tuple[str, ...] = ()
     regions_in_can_reach: Iterable[str] = ()
 
+    story_characters: tuple[str, ...] = field(init=False)
+    purchase_characters: dict[str, int] = field(init=False)
+    extra_toggle_characters: tuple[str, ...] = field(init=False)
     start_level: Level = field(init=False)
     level_minikits: dict[Level, dict[str, MinikitData]] = field(init=False, default_factory=dict)
     region_to_level: dict[str, Level] = field(init=False, default_factory=dict)
 
     def __post_init__(self):
+        # Get story/purchase/Extra Toggle characters from the Area.
+        # todo: Iterating all characters for each chapter is poor performance.
+        purchase_characters: dict[str, int] = {}
+        story_characters: set[str] = set()
+        extra_toggle_characters: set[str] = set()
+        for c in Character:
+            if c.areas is None:
+                continue
+            if self.area in c.areas:
+                if c.unlock_method is UnlockMethod.STORY:
+                    story_characters.add(c.readable_name)
+                elif c.unlock_method is UnlockMethod.AREA_COMPLETE:
+                    purchase_characters[c.readable_name] = c.purchase_cost
+                elif c.unlock_method is UnlockMethod.EXTRA_TOGGLE:
+                    extra_toggle_characters.add(c.readable_name)
+        object.__setattr__(self, "story_characters", story_characters)
+        object.__setattr__(self, "purchase_characters", purchase_characters)
+        object.__setattr__(self, "extra_toggle_characters", extra_toggle_characters)
+
         start_level = self.area.get_first_playable_level()
         if start_level is None:
             raise Exception(f"First playable level for {self.name} is None")
@@ -322,16 +336,12 @@ def _make_legacy_chapter(
         power_brick=LocationData(start_region, power_brick_rule),
         ridables=ridables_data,
         extra_chapter_entrance_rules=extra_chapter_entrance_rules,
-        story_characters=tuple(story_characters),
-        purchase_characters=purchase_characters,
-        extra_toggle_characters=tuple(extra_toggle_characters)
     )
 
 
 def make_legacy_chapter(
         short_name: str,
         minikits: dict[str, LegacyMinikitData],
-        extra_toggle_characters: Iterable[str] = (),
 ):
     from ...levels import SHORT_NAME_TO_CHAPTER_AREA, VEHICLE_CHAPTER_SHORTNAMES
     from .rules import HasAllAbilities, HasAbility
@@ -354,11 +364,6 @@ def make_legacy_chapter(
         requirements = get_ridable_requirements(short_name, ridable.user_facing_name)
         ridables[ridable.user_facing_name] = Or(*map(HasAllAbilities, requirements))
 
-    purchase_characters: dict[str, int] = {}
-    for character in area.alt_character_requirements:
-        cost = CHARACTERS_AND_VEHICLES_BY_NAME[character].purchase_cost
-        purchase_characters[character] = cost
-
     return _make_legacy_chapter(
         name=area.name,
         episode_number=area.episode,
@@ -370,7 +375,4 @@ def make_legacy_chapter(
         ridables=ridables,
         extra_chapter_entrance_rules=(HasAbility(CharacterAbility.IS_A_VEHICLE)
                                       if short_name in VEHICLE_CHAPTER_SHORTNAMES else True_()),
-        story_characters=tuple(area.character_requirements),
-        purchase_characters=purchase_characters,
-        extra_toggle_characters=extra_toggle_characters,
     )

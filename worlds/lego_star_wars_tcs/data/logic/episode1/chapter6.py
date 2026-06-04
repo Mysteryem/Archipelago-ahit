@@ -27,13 +27,6 @@ R_MAUL_BOSS_ROOM = "Maul Boss Room"
 DARTH_MAUL = Chapter(
     name=NAME,
     area=Area.MAUL,
-    story_characters=(
-        "Obi-Wan Kenobi",
-        "Qui-Gon Jinn",
-    ),
-    purchase_characters={
-        "Darth Maul": 60_000,
-    },
     start_region=R_SPAWN,
     regions={
         R_SPAWN: (

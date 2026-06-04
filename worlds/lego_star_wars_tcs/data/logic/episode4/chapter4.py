@@ -14,9 +14,4 @@ RESCUE_THE_PRINCESS = make_legacy_chapter(
         "Caged Minikit": LegacyMinikitData.new("deathstarrescue_c", "mk_1"),
         "Holding Cell Minikit": LegacyMinikitData.new("deathstarrescue_c", "mk_2"),
     },
-    extra_toggle_characters=(
-        "Skeleton",
-        "Mouse Droid",
-        "Imperial Engineer",
-    ),
 )

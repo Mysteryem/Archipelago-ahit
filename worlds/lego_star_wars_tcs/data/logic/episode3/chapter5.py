@@ -43,18 +43,6 @@ RUIN_OF_THE_JEDI = Chapter(
         base=BASE_CAN_DAMAGE_AT_CLOSE_RANGE,
         normal=True_(),
     ),
-    story_characters=(
-        "Obi-Wan Kenobi (Episode III)",
-        "Yoda",
-    ),
-    purchase_characters={
-        "Mace Windu (Episode III)": 38_000,
-        "Disguised Clone": 12_000,
-    },
-    extra_toggle_characters=(
-        "Skeleton",
-        "Training Remote",
-    ),
     regions={
         R_OUTSIDE_TEMPLE: (
             ExitData(

@@ -15,21 +15,6 @@ R_AFTER_SECOND_DESTROYABLE_SHIP = "After Second Destroyable Ship"
 BATTLE_OVER_CORUSCANT = Chapter(
     name=NAME,
     area=Area.DOGFIGHT,
-    story_characters=(
-        "Jedi Starfighter (Yellow)",
-        "Jedi Starfighter (Red)",
-    ),
-    purchase_characters={
-        "Droid Trifighter": 28000,
-        "Vulture Droid": 30000,
-        "Clone Arcfighter": 33000,
-    },
-    extra_toggle_characters=(
-        # Completely useless in this level because it cannot shoot, and at least one unlocked vehicle is needed to
-        # enter the chapter in the first place.
-        # Interestingly, it can use the Self Destruct extra, but I could not find a use for this.
-        "Buzz Droid",
-    ),
     start_region=R_SPACE_BATTLE_SPAWN,
     extra_chapter_entrance_rules=logic_options(
         # In base logic, expect a blaster vehicle to fight back at the start.

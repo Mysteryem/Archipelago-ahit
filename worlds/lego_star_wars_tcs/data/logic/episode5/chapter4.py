@@ -19,7 +19,4 @@ DAGOBAH = make_legacy_chapter(
 
         "Final Area Lever Minikit": LegacyMinikitData.new("dagobah_c", "m_pup1"),
     },
-    extra_toggle_characters=(
-        "Skeleton",
-    )
 )

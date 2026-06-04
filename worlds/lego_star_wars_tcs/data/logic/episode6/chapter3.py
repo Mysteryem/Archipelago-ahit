@@ -45,15 +45,6 @@ SPEEDER_SHOWDOWN = Chapter(
     name="Speeder Showdown",
     area=Area.SPEEDERCHASE,
     start_region="Spawn",
-    story_characters=(
-        "Luke Skywalker (Endor)",
-        "Princess Leia (Endor)",
-    ),
-    # No Purchase Characters.
-    extra_toggle_characters=(
-        "AT-AT Driver",
-        "Scout Trooper",
-    ),
     regions={
         "Spawn": (
             ExitData(

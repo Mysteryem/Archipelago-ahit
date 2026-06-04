@@ -12,14 +12,6 @@ R_RACETRACK = "Racetrack"
 MOS_ESPA_POD_RACE = Chapter(
     name=NAME,
     area=Area.PODSPRINT,
-    story_characters=(
-        "Anakin's Pod",
-    ),
-    purchase_characters={
-        "Watto": 16_000,
-        "Pit Droid": 4000,
-        "Sebulba's Pod": 20000,
-    },
     start_region=R_RACETRACK,
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={

@@ -25,17 +25,6 @@ R_MTT_HANGAR = "MTT Hangar"
 NEGOTIATIONS = Chapter(
     name=NAME,
     area=Area.NEGOTIATIONS,
-    story_characters=(
-        "Obi-Wan Kenobi",
-        "Qui-Gon Jinn",
-        "TC-14",
-    ),
-    purchase_characters={
-        "Battle Droid": 6500,
-        "Battle Droid (Security)": 8500,
-        "Battle Droid (Commander)": 10_000,
-        "Droideka": 40_000,
-    },
     start_region=R_MEETING_ROOM,
     regions={
         R_MEETING_ROOM: (

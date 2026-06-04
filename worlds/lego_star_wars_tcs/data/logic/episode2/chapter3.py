@@ -37,16 +37,6 @@ R_OBI_WAN_HOLDING_CELL_ROOM = "Obi-Wan Holding Cell Room"
 DROID_FACTORY = Chapter(
     name=NAME,
     area=Area.FACTORY,
-    story_characters=(
-        "Anakin Skywalker (Padawan)",
-        "C-3PO",
-        "Padmé (Geonosis)",
-        "R2-D2",
-    ),
-    purchase_characters={
-        "Geonosian": 20_000,
-        "Battle Droid (Geonosis)": 8500,
-    },
     start_region=R_ENTRANCE_CORRIDOR,
     regions={
         R_ENTRANCE_CORRIDOR: (

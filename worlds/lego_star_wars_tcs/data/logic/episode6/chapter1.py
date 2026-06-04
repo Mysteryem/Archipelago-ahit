@@ -17,8 +17,4 @@ JABBAS_PALACE = make_legacy_chapter(
 
         "Rancor Pit Minikit": LegacyMinikitData.new("jabbaspalace_e", "m_pup1"),
     },
-    extra_toggle_characters=(
-        "Womp Rat",
-        "Han Solo (frozen in carbonite)",
-    ),
 )

@@ -20,29 +20,6 @@ R_ARENA = "Arena"
 JEDI_BATTLE = Chapter(
     name=NAME,
     area=Area.JEDI,
-    story_characters=(
-        "Anakin Skywalker (Padawan)",
-        "Mace Windu",
-        "Padmé (Clawed)",
-        "Obi-Wan Kenobi (Jedi Master)",
-        "R2-D2",
-    ),
-    purchase_characters={
-        "Super Battle Droid": 25_000,
-        "Jango Fett": 70_000,
-        "Boba Fett (Boy)": 5500,
-        "Luminara": 28_000,
-        "Ki-Adi Mundi": 30_000,
-        "Kit Fisto": 35_000,
-        "Shaak Ti": 36_000,
-        "Aayla Secura": 37_000,
-        "Plo Koon": 39_000,
-    },
-    extra_toggle_characters=(
-        # Skeleton can melee and is targetable, but this is not relevant in 2-4 because of Jedi being needed to
-        # progress.
-        "Skeleton",
-    ),
     start_region=R_ARENA,
     regions={
         R_ARENA: (

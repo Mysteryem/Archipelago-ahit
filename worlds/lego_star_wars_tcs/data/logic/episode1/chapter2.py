@@ -27,15 +27,6 @@ R_SWAMP_BEFORE_WATER = "Swamp Before Water"
 INVASION_OF_NABOO = Chapter(
     name=NAME,
     area=Area.GUNGAN,
-    story_characters=(
-        "Obi-Wan Kenobi",
-        "Qui-Gon Jinn",
-        "Jar Jar Binks",
-    ),
-    purchase_characters={
-        "Captain Tarpals": 17_500,
-        "Boss Nass": 15_000,
-    },
     start_region=R_FOREST_SPAWN,
     regions={
         R_FOREST_SPAWN: (

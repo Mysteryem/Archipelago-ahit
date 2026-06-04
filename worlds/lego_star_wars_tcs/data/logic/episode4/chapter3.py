@@ -98,26 +98,6 @@ helper = ChapterHelper(
     name=NAME,
     area=Area.MOSEISLEY,
     start_region=R_SPAWN,
-    story_characters=(
-        "Ben Kenobi",
-        "C-3PO",
-        "Chewbacca",
-        "Han Solo",
-        "Luke Skywalker (Tatooine)",
-        "R2-D2",
-    ),
-    purchase_characters={
-        "Sandtrooper": 14_000,
-        "Greedo": 60_000,
-        "Imperial Spy": 13_500,
-    },
-    extra_toggle_characters=(
-        "Droid 1",
-        "Droid 2",
-        "Droid 3",
-        "Droid 4",
-        "Womp Rat",
-    ),
 )
 
 
