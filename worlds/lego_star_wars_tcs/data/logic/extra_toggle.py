@@ -159,11 +159,12 @@ class ExtraToggleRuleReplacer:
         extra_toggle_abilities_unique_combinations: set[CharacterAbility] = set()
         extra_toggle_name_to_abilities: dict[str, CharacterAbility] = {}
         if chapter.extra_toggle_characters:
-            for character_name in chapter.extra_toggle_characters:
-                character = CHARACTERS_AND_VEHICLES_BY_NAME[character_name]
-                extra_toggle_abilities_union |= character.abilities
-                extra_toggle_abilities_unique_combinations.add(character.abilities)
-                extra_toggle_name_to_abilities[character_name] = character.abilities
+            for character in chapter.extra_toggle_characters:
+                character_name = character.readable_name
+                legacy_character = CHARACTERS_AND_VEHICLES_BY_NAME[character_name]
+                extra_toggle_abilities_union |= legacy_character.abilities
+                extra_toggle_abilities_unique_combinations.add(legacy_character.abilities)
+                extra_toggle_name_to_abilities[character_name] = legacy_character.abilities
         self.extra_toggle_abilities_union = extra_toggle_abilities_union
         self.extra_toggle_abilities_unique_combinations = extra_toggle_abilities_unique_combinations
         self.replaced_rules_memodict = {}

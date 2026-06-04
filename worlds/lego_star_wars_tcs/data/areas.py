@@ -1,7 +1,12 @@
-from typing import TypedDict
+from typing import TypedDict, TYPE_CHECKING
 from enum import IntEnum, IntFlag
 
 from .levels import Level
+
+
+if TYPE_CHECKING:
+    from .characters import Character
+
 
 __all__ = [
     "Area",
@@ -74,6 +79,21 @@ class Area(IntEnum):
 
     def get_playable_levels(self) -> list[Level]:
         return list(filter(Level.is_playable, self.levels))
+
+    def get_story_characters(self) -> "frozenset[Character]":
+        # Lazy import to prevent circular import.
+        from . import characters
+        return characters.AREA_TO_STORY_CHARACTERS.get(self, frozenset())
+
+    def get_purchase_characters(self) -> "frozenset[Character]":
+        # Lazy import to prevent circular import.
+        from . import characters
+        return characters.AREA_TO_PURCHASE_CHARACTERS.get(self, frozenset())
+
+    def get_extra_toggle_characters(self) -> "frozenset[Character]":
+        # Lazy import to prevent circular import.
+        from . import characters
+        return characters.AREA_TO_EXTRA_TOGGLE_CHARACTERS.get(self, frozenset())
 
     NEGOTIATIONS =      0, dict(episode_index= 0, area_index= 0, flags=AreaFlag(0x0010), story_true_jedi=31000, free_play_true_jedi= 64000, cheat_id= 8, levels=[Level.EP1_FAILEDNEG_INTRO1, Level.EP1_FAILEDNEG_INTRO2, Level.NEGOTIATIONS_A, Level.NEGOTIATIONS_B, Level.NEGOTIATIONS_C, Level.FAILEDNEG_OUTRO, Level.NEGOTIATIONS_STATUS])
     GUNGAN =            1, dict(episode_index= 0, area_index= 1, flags=AreaFlag(0x0010), story_true_jedi=44000, free_play_true_jedi= 52000, cheat_id= 9, levels=[Level.GUNGAN_INTRO1, Level.GUNGAN_INTRO2, Level.GUNGAN_A, Level.GUNGAN_B, Level.GUNGAN_C, Level.GUNGAN_E, Level.GUNGAN_OUTRO2, Level.GUNGAN_STATUS])

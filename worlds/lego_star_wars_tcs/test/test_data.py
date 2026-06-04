@@ -119,13 +119,13 @@ class TestEpisodes(TestCase):
     @chapters_test
     def test_story_characters(self, chapter: Chapter):
         for character in chapter.purchase_characters:
-            self.assertCharacterUsableInChapterRequirements(character)
+            self.assertCharacterUsableInChapterRequirements(character.readable_name)
 
     @chapters_test
     def test_purchase_characters(self, chapter: Chapter):
-        for character, purchase_cost in chapter.purchase_characters.items():
-            self.assertCharacterUsableInChapterRequirements(character)
-            self.assertGreater(purchase_cost, 0)
+        for character in chapter.purchase_characters:
+            self.assertCharacterUsableInChapterRequirements(character.readable_name)
+            self.assertGreater(character.purchase_cost, 0)
 
     def test_purchase_characters_unique_per_chapter(self):
         seen_characters = set()

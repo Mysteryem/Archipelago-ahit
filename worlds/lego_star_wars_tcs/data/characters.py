@@ -7,6 +7,9 @@ from .areas import Area
 __all__ = [
     "Character",
     "UnlockMethod",
+    "AREA_TO_STORY_CHARACTERS",
+    "AREA_TO_PURCHASE_CHARACTERS",
+    "AREA_TO_EXTRA_TOGGLE_CHARACTERS",
 ]
 
 
@@ -410,3 +413,37 @@ class Character(IntEnum):
     PLO_KOON =                          316, dict(readable_name="Plo Koon", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.JEDI, purchase_cost=39_000)
     INDIANA_JONES =                     317, dict(readable_name="Indiana Jones", unlock_method=UnlockMethod.INDY_TRAILER, purchase_cost=50_000)
     RAFT =                              318
+
+
+AreaToCharacter = dict[Area, frozenset[Character]]
+def _make_area_lookups() -> tuple[AreaToCharacter, AreaToCharacter, AreaToCharacter]:
+    area_to_story_characters: AreaToCharacter = {}
+    area_to_purchase_characters: AreaToCharacter = {}
+    area_to_extra_toggle_characters: AreaToCharacter = {}
+    empty = frozenset()
+    for c in Character:
+        if c.unlock_method is UnlockMethod.START:
+            if c.purchase_cost is None:
+                d = area_to_story_characters
+            else:
+                assert c.purchase_cost is not None
+                d = area_to_purchase_characters
+            d[Area.MAP] = d.get(Area.MAP, empty) | {c}
+        else:
+            if c.unlock_method is UnlockMethod.STORY:
+                d = area_to_story_characters
+            elif c.unlock_method is UnlockMethod.AREA_COMPLETE:
+                assert c.purchase_cost is not None
+                d = area_to_purchase_characters
+            elif c.unlock_method is UnlockMethod.EXTRA_TOGGLE:
+                d = area_to_extra_toggle_characters
+            else:
+                continue
+            assert c.areas is not None
+            for area in c.areas:
+                d[area] = d.get(area, empty) | {c}
+    return area_to_story_characters, area_to_purchase_characters, area_to_extra_toggle_characters
+
+
+AREA_TO_STORY_CHARACTERS, AREA_TO_PURCHASE_CHARACTERS, AREA_TO_EXTRA_TOGGLE_CHARACTERS = _make_area_lookups()
+del _make_area_lookups

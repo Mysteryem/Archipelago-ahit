@@ -138,29 +138,18 @@ class Chapter:
     extra_chapter_entrance_rules: Rule = field(default_factory=True_)
     regions_in_can_reach: Iterable[str] = ()
 
-    story_characters: tuple[str, ...] = field(init=False)
-    purchase_characters: dict[str, int] = field(init=False)
-    extra_toggle_characters: tuple[str, ...] = field(init=False)
+    story_characters: frozenset[Character] = field(init=False)
+    purchase_characters: frozenset[Character] = field(init=False)
+    extra_toggle_characters: frozenset[Character] = field(init=False)
     start_level: Level = field(init=False)
     level_minikits: dict[Level, dict[str, MinikitData]] = field(init=False, default_factory=dict)
     region_to_level: dict[str, Level] = field(init=False, default_factory=dict)
 
     def __post_init__(self):
         # Get story/purchase/Extra Toggle characters from the Area.
-        # todo: Iterating all characters for each chapter is poor performance.
-        purchase_characters: dict[str, int] = {}
-        story_characters: set[str] = set()
-        extra_toggle_characters: set[str] = set()
-        for c in Character:
-            if c.areas is None:
-                continue
-            if self.area in c.areas:
-                if c.unlock_method is UnlockMethod.STORY:
-                    story_characters.add(c.readable_name)
-                elif c.unlock_method is UnlockMethod.AREA_COMPLETE:
-                    purchase_characters[c.readable_name] = c.purchase_cost
-                elif c.unlock_method is UnlockMethod.EXTRA_TOGGLE:
-                    extra_toggle_characters.add(c.readable_name)
+        purchase_characters = self.area.get_purchase_characters()
+        story_characters = self.area.get_story_characters()
+        extra_toggle_characters = self.area.get_extra_toggle_characters()
         object.__setattr__(self, "story_characters", story_characters)
         object.__setattr__(self, "purchase_characters", purchase_characters)
         object.__setattr__(self, "extra_toggle_characters", extra_toggle_characters)
