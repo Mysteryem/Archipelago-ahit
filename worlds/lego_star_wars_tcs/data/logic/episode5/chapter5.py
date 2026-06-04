@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 CLOUD_CITY_TRAP = make_legacy_chapter(
     short_name="5-5",
-    start_level="cloudcitytrap_a",
     minikits={
         "Minikit Around Corner After Bridge": LegacyMinikitData.new("cloudcitytrap_a", "m_pup1"),
         "Bounty Hunter Panel Room Minikit": LegacyMinikitData.new("cloudcitytrap_a", "pup1"),

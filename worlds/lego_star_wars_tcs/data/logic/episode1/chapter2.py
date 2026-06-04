@@ -6,6 +6,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -36,7 +37,6 @@ INVASION_OF_NABOO = Chapter(
         "Boss Nass": 15_000,
     },
     start_region=R_FOREST_SPAWN,
-    start_level="gungan_a",
     regions={
         R_FOREST_SPAWN: (
             # Expert logic could get past the tree without a jedi.
@@ -49,11 +49,11 @@ INVASION_OF_NABOO = Chapter(
                     base=HasAbility(JEDI),
                     moderate=HasAnyAbilities(JEDI | HIGH_JUMP)
                 ),
-                new_level="gungan_b",
+                new_level=Level.GUNGAN_B,
             ),
         ),
         R_AFTER_CRASHED_MTT: (
-            ExitData(R_CLIFF_FACE_RUINS_ENTRANCE, new_level="gungan_b"),
+            ExitData(R_CLIFF_FACE_RUINS_ENTRANCE, new_level=Level.GUNGAN_B),
         ),
         R_CLIFF_FACE_RUINS_ENTRANCE: (
             # Hover across the gap or force down the mosaic.
@@ -161,7 +161,7 @@ INVASION_OF_NABOO = Chapter(
             ),
             ExitData(
                 R_SWAMP_RUINS_ENTRANCE,
-                new_level="gungan_c"
+                new_level=Level.GUNGAN_C
             ),
         ),
         R_SWAMP_RUINS_ENTRANCE: (
@@ -195,7 +195,7 @@ INVASION_OF_NABOO = Chapter(
                     # the wall.
                     hard=HasAnyAbilities(JEDI | HIGH_JUMP | JETPACK | CAN_JUMP_HEIGHT_0_37),
                 ),
-                new_level="gungan_e",
+                new_level=Level.GUNGAN_E,
             ),
         ),
         # There is nothing of logical relevance here yet, so this region is disabled for now.
@@ -204,7 +204,6 @@ INVASION_OF_NABOO = Chapter(
             ExitData(
                 # Just walk.
                 "Chapter Completion",
-                new_level="gungan_status",
             ),
         ),
     },

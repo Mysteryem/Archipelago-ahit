@@ -12,6 +12,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExce
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -48,7 +49,6 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
     name=NAME,
     area=Area.TATOOINE,
     start_region=R_SPAWN,
-    start_level="tatooine_a",
     story_characters=(
         "Ben Kenobi",
         "C-3PO",
@@ -144,7 +144,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                         capped=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                     ),
                 ),
-                new_level="tatooine_d",
+                new_level=Level.TATOOINE_D,
             ),
         ),
         R_SILVER_BRICKS_SIDE_PATH_LOWER_BEFORE_SILVER_BRICKS: (
@@ -266,14 +266,14 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                     # suction effect.
                     moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                 ),
-                new_level="tatooine_b",
+                new_level=Level.TATOOINE_B,
             ),
         ),
         R_TOP_OF_SANDCRAWLER: (
             ExitData(
                 R_SANDCRAWLER_INTERIOR_START,
                 HasAbility(CAN_PULL_LEVERS),
-                new_level="tatooine_b",
+                new_level=Level.TATOOINE_B,
             ),
         ),
         R_SANDCRAWLER_INTERIOR_START: (
@@ -348,7 +348,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 R_POST_SANDCRAWLER_SPAWN,
                 # Bizarrely, they can be shot, but not damaged by other sources.
                 HasAnyAbilities(JEDI | BLASTER | WEAPON_EWOK),
-                new_level="tatooine_c",
+                new_level=Level.TATOOINE_C,
             ),
         ),
         R_POST_SANDCRAWLER_SPAWN: (
@@ -438,7 +438,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
             ),
         ),
         R_AFTER_LARGE_QUICKSAND_POOL: (
-            ExitData(R_BEFORE_SEA_OF_QUICKSAND, new_level="tatooine_e"),
+            ExitData(R_BEFORE_SEA_OF_QUICKSAND, new_level=Level.TATOOINE_E),
         ),
         R_BEFORE_SEA_OF_QUICKSAND: (
             ExitData(
@@ -458,7 +458,6 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
             ExitData(
                 "Chapter Completion",
                 HasAbility(CAN_PULL_LEVERS),
-                new_level="tatooine_status",
             ),
         ),
     },

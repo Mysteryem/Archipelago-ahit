@@ -14,6 +14,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilityExce
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -39,7 +40,6 @@ ESCAPE_FROM_NABOO = Chapter(
         "Padmé": 20_000,
     },
     start_region=R_ROOFTOPS_SPAWN,
-    start_level="rescue_a",
     regions={
         R_ROOFTOPS_SPAWN: (
             ExitData(
@@ -51,7 +51,7 @@ ESCAPE_FROM_NABOO = Chapter(
             ),
         ),
         R_ROOFTOPS_CLIMB: (
-            ExitData(R_TOWER, new_level="rescue_b"),
+            ExitData(R_TOWER, new_level=Level.RESCUE_B),
         ),
         R_TOWER: (
             ExitData(
@@ -61,7 +61,7 @@ ESCAPE_FROM_NABOO = Chapter(
                     normal=CAN_ACTIVATE_CLOSE_TARGET,
                 ),
                 er_rule=CAN_ACTIVATE_CLOSE_TARGET,
-                new_level="rescue_c",
+                new_level=Level.RESCUE_C,
             ),
         ),
         R_ROOFTOPS_AFTER_SMALL_BLASTER_TARGET_GATE: (
@@ -87,7 +87,7 @@ ESCAPE_FROM_NABOO = Chapter(
                     ),
                 ),
                 # rescue_d does not exist.
-                new_level="rescue_e",
+                new_level=Level.RESCUE_E,
             ),
         ),
         R_FINAL_ROOFTOP: (
@@ -102,7 +102,6 @@ ESCAPE_FROM_NABOO = Chapter(
                     # Astromech droids can just barely get up to the raised area.
                     moderate=CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CAN_BARELY_JUMP),
                 ),
-                new_level="rescue_status",
             ),
         ),
     },

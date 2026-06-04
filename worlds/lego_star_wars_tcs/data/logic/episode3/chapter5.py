@@ -12,6 +12,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -37,7 +38,6 @@ RUIN_OF_THE_JEDI = Chapter(
     name=NAME,
     area=Area.TEMPLE,
     start_region=R_OUTSIDE_TEMPLE,
-    start_level="temple_a",
     # There are enemies at the start, so have the base logic expect fighting them.
     extra_chapter_entrance_rules=logic_options(
         base=BASE_CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -60,7 +60,7 @@ RUIN_OF_THE_JEDI = Chapter(
             ExitData(
                 R_INSIDE_TEMPLE_SPAWN,
                 HasAbility(JEDI),
-                new_level="temple_b",
+                new_level=Level.TEMPLE_B,
             ),
         ),
         R_INSIDE_TEMPLE_SPAWN: (
@@ -78,7 +78,7 @@ RUIN_OF_THE_JEDI = Chapter(
                 R_ARCHIVES,
                 True_(),
                 er_rule=HasAbility(JEDI),
-                new_level="temple_c",
+                new_level=Level.TEMPLE_C,
             ),
         ),
         R_CLONE_PIZZA_PARTY: (),
@@ -97,7 +97,6 @@ RUIN_OF_THE_JEDI = Chapter(
                 True_(),
                 # Force is needed to spin the wheel in the hologram projector.
                 er_rule=HasAbility(JEDI),
-                new_level="temple_status",
             ),
         ),
     },

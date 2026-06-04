@@ -13,6 +13,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -39,7 +40,6 @@ RETAKE_THEED_PALACE = Chapter(
         "R2-D2",
     ),
     start_region=R_SPAWN,
-    start_level="retake_a",
     regions={
         R_SPAWN: (
             ExitData(
@@ -60,7 +60,7 @@ RETAKE_THEED_PALACE = Chapter(
                     # possible with other characters that cannot jump normally.
                     # expert=HasAbility(ASTROMECH_PANEL),
                 ),
-                new_level="retake_b",
+                new_level=Level.RETAKE_B,
             ),
         ),
         R_INSIDE_PALACE: (
@@ -100,7 +100,7 @@ RETAKE_THEED_PALACE = Chapter(
                     ),
                 ),
                 # retake_c does not exist.
-                new_level="retake_d",
+                new_level=Level.RETAKE_D,
             ),
         ),
         R_COURTYARD: (
@@ -141,7 +141,7 @@ RETAKE_THEED_PALACE = Chapter(
                         HasAllAbilities(SHORTIE | HOVER),
                     )
                 ),
-                new_level="retake_e",
+                new_level=Level.RETAKE_E,
             ),
         ),
         R_ROOFTOPS: (
@@ -160,7 +160,7 @@ RETAKE_THEED_PALACE = Chapter(
                     # Triple high jump can stand on one of the taller bushes and triple high jump up.
                     moderate=HasAnyAbilities(JEDI | GRAPPLE | SHORTIE | CAN_HIGH_JUMP_SLAM),
                 ),
-                new_level="retake_f",
+                new_level=Level.RETAKE_F,
             ),
         ),
         R_DINING_HALL: (
@@ -201,7 +201,7 @@ RETAKE_THEED_PALACE = Chapter(
                         Has("Droideka"),
                     ),
                 ),
-                new_level="retake_g",
+                new_level=Level.RETAKE_G,
             ),
         ),
         R_HANGAR: (
@@ -249,7 +249,6 @@ RETAKE_THEED_PALACE = Chapter(
                         HasAbility(ASTROMECH_PANEL),
                     )
                 ),
-                new_level="retake_status",
             ),
         ),
     },

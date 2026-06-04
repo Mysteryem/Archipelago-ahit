@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 RESCUE_THE_PRINCESS = make_legacy_chapter(
     short_name="4-4",
-    start_level="deathstarrescue_a",
     minikits={
         "Minikit Inside Protocol Droid Door": LegacyMinikitData.new("deathstarrescue_a", "mk_0"),
         "Defeat Imperials With Crane Minikit": LegacyMinikitData.new("deathstarrescue_a", "m_pup1"),

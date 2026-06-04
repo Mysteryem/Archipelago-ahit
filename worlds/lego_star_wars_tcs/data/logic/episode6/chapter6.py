@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 INTO_THE_DEATH_STAR = make_legacy_chapter(
     short_name="6-6",
-    start_level="deathstar2battle_a",
     minikits={
         "Star Destroyer Minikit 1": LegacyMinikitData.new("deathstar2battle_a", "m_pup1"),
         "Star Destroyer Minikit 2": LegacyMinikitData.new("deathstar2battle_a", "m_pup2"),

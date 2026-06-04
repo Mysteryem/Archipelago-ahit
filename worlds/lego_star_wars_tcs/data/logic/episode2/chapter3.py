@@ -13,6 +13,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -47,7 +48,6 @@ DROID_FACTORY = Chapter(
         "Battle Droid (Geonosis)": 8500,
     },
     start_region=R_ENTRANCE_CORRIDOR,
-    start_level="factory_a",
     regions={
         R_ENTRANCE_CORRIDOR: (
             ExitData(
@@ -58,7 +58,7 @@ DROID_FACTORY = Chapter(
                     # Allow Deflect Bolts.
                     moderate=CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS,
                 ),
-                new_level="factory_b",
+                new_level=Level.FACTORY_B,
             ),
         ),
         R_FACTORY_CONVEYOR: (
@@ -128,7 +128,7 @@ DROID_FACTORY = Chapter(
                         HasAllAbilities(CAN_DOUBLE_JUMP | HOVER),
                     ),
                 ),
-                new_level="factory_d",
+                new_level=Level.FACTORY_D,
             ),
         ),
         R_COLOR_MIXING_ROOM: (),
@@ -196,7 +196,7 @@ DROID_FACTORY = Chapter(
                         HAS_FLUTTER_CHARACTER,
                     )
                 ),
-                new_level="factory_e",
+                new_level=Level.FACTORY_E,
             ),
         ),
         R_ROLLING_PLATFORMS_ROOM: (),
@@ -214,7 +214,7 @@ DROID_FACTORY = Chapter(
                     # easier (which Jedi can also jump to from the spinning platforms).
                     normal=HasAbility(PROTOCOL_PANEL) & HasAnyAbilities(JEDI | HOVER | GRAPPLE | HIGH_JUMP),
                 ),
-                new_level="factory_f",
+                new_level=Level.FACTORY_F,
             ),
         ),
         R_GEONOSIAN_HIVE: (
@@ -263,7 +263,7 @@ DROID_FACTORY = Chapter(
             ExitData(
                 R_TWIN_CONVEYOR_ROOM,
                 HasAbility(PROTOCOL_PANEL),
-                new_level="factory_g",
+                new_level=Level.FACTORY_G,
             ),
         ),
         R_TWIN_CONVEYOR_ROOM: (
@@ -277,7 +277,6 @@ DROID_FACTORY = Chapter(
                 "Chapter Completion",
                 # Impossible to get in here without JEDI.
                 # HasAbility(JEDI),
-                new_level="factory_status",
             ),
         ),
     },

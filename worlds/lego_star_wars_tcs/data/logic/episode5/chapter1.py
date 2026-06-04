@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 HOTH_BATTLE = make_legacy_chapter(
     short_name="5-1",
-    start_level="hothbattle_a",
     minikits={
         "Minikit Behind Wall In First Area": LegacyMinikitData.new("hothbattle_a", "m_pup1"),
         "First TIE Gate Behind Rock Minikit": LegacyMinikitData.new("hothbattle_a", "m_pup2"),

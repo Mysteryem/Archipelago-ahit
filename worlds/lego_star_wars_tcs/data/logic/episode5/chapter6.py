@@ -1,10 +1,11 @@
 from ..types import make_legacy_chapter, LegacyMinikitData, minikit_data
 
+from ...levels import Level
+
 FOUNTAINS_MINIKIT_NAME = "Build Three Fountain Sculptures Minikit"
 
 BETRAYAL_OVER_BESPIN = make_legacy_chapter(
     short_name="5-6",
-    start_level="cloudcityescape_a",
     minikits={
         "Spawn Protocol Panel Room Minikit": LegacyMinikitData.new("cloudcityescape_a", "pup4"),
         # This is also in cloudcityescape_c as "pup1". Note that "pup5" is used for a different minikit in
@@ -26,5 +27,5 @@ BETRAYAL_OVER_BESPIN = make_legacy_chapter(
 )
 
 # This is one of the only Minikits in the entire game that is split across multiple levels.
-BETRAYAL_OVER_BESPIN.level_minikits["cloudcityescape_c"][FOUNTAINS_MINIKIT_NAME] \
+BETRAYAL_OVER_BESPIN.level_minikits[Level.CLOUDCITYESCAPE_C][FOUNTAINS_MINIKIT_NAME] \
     = minikit_data("cloudcityescape_c", pickup_name="pup1")

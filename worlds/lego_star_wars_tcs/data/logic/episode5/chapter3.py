@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 FALCON_FLIGHT = make_legacy_chapter(
     short_name="5-3",
-    start_level="asteroidchase_d",
     minikits={
         "Behind Star Destroyer Minikit": LegacyMinikitData.new("asteroidchase_d", "m_pup1"),
 

@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 ESCAPE_FROM_ECHO_BASE = make_legacy_chapter(
     short_name="5-2",
-    start_level="hothescape_a",
     minikits={
         "Spawn Room Consoles Minikit": LegacyMinikitData.new("hothescape_a", "m_pup2"),
         "Four Buttons Thaw Skeletons Minikit": LegacyMinikitData.new("hothescape_a", "m_pup1"),

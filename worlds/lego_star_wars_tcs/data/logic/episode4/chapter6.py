@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 REBEL_ATTACK = make_legacy_chapter(
     short_name="4-6",
-    start_level="deathstarbattle_a",
     minikits={
         "First TIE Gate Minikit": LegacyMinikitData.new("deathstarbattle_a", "m_pup3"),
         "First Spinner Minikit": LegacyMinikitData.new("deathstarbattle_a", "m_pup1"),

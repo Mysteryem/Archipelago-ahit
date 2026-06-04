@@ -12,6 +12,7 @@ from rule_builder.rules import (
 
 from .extra_toggle import ExtraToggleRuleReplacer
 from ..areas import Area
+from ..levels import Level
 
 
 @dataclass(frozen=True)
@@ -66,7 +67,7 @@ class ExitData:
     rule: Rule = field(default_factory=True_)
     er_rule: Rule | None = None
     name: str | None = None
-    new_level: str | None = None
+    new_level: Level | None = None
 
 
 @dataclass(frozen=True)
@@ -84,7 +85,6 @@ class ChapterHelper:
     name: str
     area: Area
     start_region: str
-    start_level: str
     story_characters: tuple[str, ...] = ()
     purchase_characters: dict[str, int] = field(default_factory=dict)
     extra_toggle_characters: tuple[str, ...] = ()
@@ -106,8 +106,8 @@ class ChapterHelper:
             minikits: dict[str, MinikitData],
             power_brick: LocationData,
             # TODO: Add wip_true_jedi_rule
-            ridables: dict[str, LocationData] = None,
-            extra_chapter_entrance_rules: Rule = None,
+            ridables: dict[str, LocationData] | None = None,
+            extra_chapter_entrance_rules: Rule | None = None,
     ):
         if ridables is None:
             ridables = {}
@@ -117,7 +117,6 @@ class ChapterHelper:
             name=self.name,
             area=self.area,
             start_region=self.start_region,
-            start_level=self.start_level,
             regions=regions,
             minikits=minikits,
             power_brick=power_brick,
@@ -135,10 +134,10 @@ class Chapter:
     name: str
     area: Area
     start_region: str
-    start_level: str
     regions: dict[str, tuple[ExitData, ...]]
     minikits: dict[str, MinikitData]
     power_brick: LocationData
+
     # TODO: Add wip_true_jedi_rule
     ridables: dict[str, LocationData] = field(default_factory=dict)
     extra_chapter_entrance_rules: Rule = field(default_factory=True_)
@@ -146,11 +145,17 @@ class Chapter:
     purchase_characters: dict[str, int] = field(default_factory=dict)
     extra_toggle_characters: tuple[str, ...] = ()
     regions_in_can_reach: Iterable[str] = ()
-    level_minikits: dict[str, dict[str, MinikitData]] = field(init=False, default_factory=dict)
-    level_names: frozenset[str] = field(init=False)
-    region_to_level: dict[str, str] = field(init=False, default_factory=dict)
+
+    start_level: Level = field(init=False)
+    level_minikits: dict[Level, dict[str, MinikitData]] = field(init=False, default_factory=dict)
+    region_to_level: dict[str, Level] = field(init=False, default_factory=dict)
 
     def __post_init__(self):
+        start_level = self.area.get_first_playable_level()
+        if start_level is None:
+            raise Exception(f"First playable level for {self.name} is None")
+        object.__setattr__(self, "start_level", start_level)
+
         if self.extra_toggle_characters:
             extra_toggle_replacer = ExtraToggleRuleReplacer(self)
             for region_name, exits in self.regions.items():
@@ -169,14 +174,15 @@ class Chapter:
 
         # FIFO queue Depth-First-Search. DFS vs BFS doesn't matter here, only that every region is visited, and every
         # exit is tried.
-        region_queue: list[tuple[str, str]] = [(self.start_region, self.start_level)]
+        region_queue: list[tuple[str, Level]] = [(self.start_region, self.start_level)]
         region_to_level = self.region_to_level
         while region_queue:
             region_name, region_level = region_queue.pop()
 
             if region_name in region_to_level:
                 # Check that an alternative route has not propagated a different level name.
-                if region_to_level[region_name] != region_level:
+                # The "Chapter Completion" region's level is set automatically, so is ignored by this check.
+                if region_to_level[region_name] != region_level and region_name != "Chapter Completion":
                     raise Exception(f"Already found that {region_name} is in level {region_to_level[region_name]}, but"
                                     f"now also found it in {region_level}.")
                 continue
@@ -190,12 +196,16 @@ class Chapter:
                         # Traversing this exit continues within the current level.
                         region_queue.append((exit_data.to_region, region_level))
 
+        # Automatically set the Level of the Chapter Completion region to the status level of this area.
+        status_level = self.area.get_status_level()
+        if status_level is None:
+            raise Exception(f"Status level for {self.name} is None")
+        region_to_level["Chapter Completion"] = status_level
+
         # Check that there exists a path to each region from self.start_region.
         for region_name in self.regions:
             if region_name not in region_to_level:
                 raise Exception(f"No path to the {region_name} region was found.")
-
-        object.__setattr__(self, "level_names", frozenset(region_to_level.values()))
 
         for location_name, minikit in self.minikits.items():
             level = region_to_level[minikit.region]
@@ -255,7 +265,6 @@ def _make_legacy_chapter(
         name: str,
         episode_number: int,
         chapter_number: int,
-        start_level: str,
         minikits_rule: Rule,
         completion_rule: Rule,
         #true_jedi_rule: Rule,
@@ -270,21 +279,24 @@ def _make_legacy_chapter(
     if purchase_characters is None:
         purchase_characters = {}
 
+    for area in Area:
+        if area.episode_index == episode_number - 1 and area.area_index == chapter_number - 1:
+            break
+    else:
+        raise Exception(f"Could not find Area for {episode_number}-{chapter_number}")
+
     required_minikit_levels = {data.level for data in minikits.values()}
-    required_minikit_levels.discard(start_level)
 
     minikit_level_region_names = sorted(required_minikit_levels)
-
-    status_level = start_level.rpartition("_")[0] + "_status"
 
     start_region = "Spawn"
 
     regions: dict[str, tuple[ExitData, ...]] = {
         start_region: (
-            ExitData("Chapter Completion", completion_rule, new_level=status_level),
+            ExitData("Chapter Completion", completion_rule),
             ExitData("Minikits", minikits_rule),
         ),
-        "Minikits": tuple(ExitData(level, new_level=level) for level in minikit_level_region_names)}
+        "Minikits": tuple(ExitData(level, new_level=Level[level.upper()]) for level in minikit_level_region_names)}
     # Add exits from the Minikits region to each additional level region that is required.
 
     # Add the required additional level regions.
@@ -294,24 +306,17 @@ def _make_legacy_chapter(
     # Convert the placeholder minikit data into real MinikitData referencing regions with the correct level names.
     minikits_data: dict[str, MinikitData] = {}
     for minikit_name, placeholder_minikit_data in minikits.items():
-        region = "Minikits" if placeholder_minikit_data.level == start_level else placeholder_minikit_data.level
+        region = placeholder_minikit_data.level
         minikits_data[minikit_name] = MinikitData(region, pickup_names=placeholder_minikit_data.pickup_names)
 
     ridables_data: dict[str, LocationData] = {}
     for ridable_name, rule in ridables.items():
         ridables_data[ridable_name] = LocationData(start_region, rule)
 
-    for area in Area:
-        if area.episode_index == episode_number - 1 and area.area_index == chapter_number - 1:
-            break
-    else:
-        raise Exception(f"Could not find Area for {episode_number}-{chapter_number}")
-
     return Chapter(
         name=name,
         area=area,
         start_region=start_region,
-        start_level=start_level,
         regions=regions,
         minikits=minikits_data,
         power_brick=LocationData(start_region, power_brick_rule),
@@ -325,7 +330,6 @@ def _make_legacy_chapter(
 
 def make_legacy_chapter(
         short_name: str,
-        start_level: str,
         minikits: dict[str, LegacyMinikitData],
         extra_toggle_characters: Iterable[str] = (),
 ):
@@ -359,7 +363,6 @@ def make_legacy_chapter(
         name=area.name,
         episode_number=area.episode,
         chapter_number=area.number_in_episode,
-        start_level=start_level,
         minikits_rule=Or(*map(HasAllAbilities, area.all_minikits_ability_requirements)),
         completion_rule=completion_rule,
         power_brick_rule=Or(*map(HasAllAbilities, area.power_brick_ability_requirements)),

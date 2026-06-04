@@ -12,6 +12,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -29,20 +30,18 @@ COUNT_DOOKU = Chapter(
         "Yoda",
     ),
     start_region=R_LANDING_PAD,
-    start_level="dooku_b",
     regions={
         R_LANDING_PAD: (
             ExitData(
                 R_DOOKU_FIGHT,
                 HasAbility(JEDI),
-                new_level="dooku_c",
+                new_level=Level.DOOKU_C,
             ),
         ),
         R_DOOKU_FIGHT: (
             ExitData(
                 "Chapter Completion",
                 HasAbility(JEDI),
-                new_level="dooku_status",
             ),
         ),
     },

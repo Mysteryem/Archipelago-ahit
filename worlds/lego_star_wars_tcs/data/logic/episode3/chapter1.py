@@ -31,7 +31,6 @@ BATTLE_OVER_CORUSCANT = Chapter(
         "Buzz Droid",
     ),
     start_region=R_SPACE_BATTLE_SPAWN,
-    start_level="dogfight_a",
     extra_chapter_entrance_rules=logic_options(
         # In base logic, expect a blaster vehicle to fight back at the start.
         base=HasAbility(VEHICLE_BLASTER),
@@ -55,7 +54,7 @@ BATTLE_OVER_CORUSCANT = Chapter(
             ),
         ),
         R_AFTER_SECOND_DESTROYABLE_SHIP: (
-            ExitData("Chapter Completion", new_level="dogfight_status"),
+            ExitData("Chapter Completion"),
         ),
     },
     minikits={

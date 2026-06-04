@@ -54,6 +54,12 @@ class Level(IntEnum):
     def __init__(self, _id, flags: LevelFlag):
         self.flags = flags
 
+    def is_status(self) -> bool:
+        return LevelFlag.STATUS_LEVEL in self.flags
+
+    def is_playable(self) -> bool:
+        return LevelFlag.ALL_CUTSCENE_FLAGS & self.flags == 0 and not self.is_status()
+
     TITLES = 0, LevelFlag(0x5)
     EP1_FAILEDNEG_INTRO1 = 1, LevelFlag(0x2e)
     EP1_FAILEDNEG_INTRO2 = 2, LevelFlag(0x2e)

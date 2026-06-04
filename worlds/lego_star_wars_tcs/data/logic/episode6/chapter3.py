@@ -45,7 +45,6 @@ SPEEDER_SHOWDOWN = Chapter(
     name="Speeder Showdown",
     area=Area.SPEEDERCHASE,
     start_region="Spawn",
-    start_level="speederchase_a",
     story_characters=(
         "Luke Skywalker (Endor)",
         "Princess Leia (Endor)",
@@ -198,7 +197,6 @@ SPEEDER_SHOWDOWN = Chapter(
             ExitData(
                 "Chapter Completion",
                 HasAbility(CAN_PULL_LEVERS),
-                new_level="speederchase_status"
             ),
         ),
     },

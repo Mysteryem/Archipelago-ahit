@@ -5,6 +5,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -36,7 +37,6 @@ NEGOTIATIONS = Chapter(
         "Droideka": 40_000,
     },
     start_region=R_MEETING_ROOM,
-    start_level="negotiations_a",
     regions={
         R_MEETING_ROOM: (
             ExitData(R_MAIN_CORRIDOR, HasAbility(JEDI)),
@@ -53,7 +53,7 @@ NEGOTIATIONS = Chapter(
             ExitData(
                 R_VULTURE_DROID_ROOM,
                 HasAbility(ASTROMECH_PANEL),
-                new_level="negotiations_b",
+                new_level=Level.NEGOTIATIONS_B,
             ),
             ExitData(
                 R_SMALL_ROOM_BETWEEN_MAIN_CORRIDOR_AND_ROOM_BEFORE_HANGAR,
@@ -73,7 +73,7 @@ NEGOTIATIONS = Chapter(
             ExitData(
                 R_MAIN_HANGAR,
                 er_rule=HasAbility(JEDI),
-                new_level="negotiations_c",
+                new_level=Level.NEGOTIATIONS_C,
             ),
         ),
         R_MAIN_HANGAR: (
@@ -107,7 +107,6 @@ NEGOTIATIONS = Chapter(
             ExitData(
                 "Chapter Completion",
                 er_rule=HasAbility(PROTOCOL_PANEL),
-                new_level="negotiations_status",
             ),
         ),
     },

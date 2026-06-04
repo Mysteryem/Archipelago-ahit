@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 JABBAS_PALACE = make_legacy_chapter(
     short_name="6-1",
-    start_level="jabbaspalace_a",
     minikits={
         "Minikit Behind Astromech Door": LegacyMinikitData.new("jabbaspalace_a", "mk_0"),
         "Minikit Outside Above Silver Bricks": LegacyMinikitData.new("jabbaspalace_a", "mk_1"),

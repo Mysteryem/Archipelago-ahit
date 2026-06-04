@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 DAGOBAH = make_legacy_chapter(
     short_name="5-4",
-    start_level="dagobah_a",
     minikits={
         "Spawn Tree Minikit": LegacyMinikitData.new("dagobah_a", "m_pup2"),
         "Snake Central Island Minikit": LegacyMinikitData.new("dagobah_a", "m_pup1"),

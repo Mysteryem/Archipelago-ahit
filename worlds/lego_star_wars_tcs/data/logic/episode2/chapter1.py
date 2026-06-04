@@ -8,6 +8,7 @@ from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -30,24 +31,22 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
         "Zam's Airspeeder": 24_000,
     },
     start_region=R_SPAWN,
-    start_level="pursuit_a",
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         R_SPAWN: (
-            ExitData(R_FIRST_FORCEFIELD_TRAP, new_level="pursuit_b"),
+            ExitData(R_FIRST_FORCEFIELD_TRAP, new_level=Level.PURSUIT_B),
         ),
         R_FIRST_FORCEFIELD_TRAP: (
-            ExitData(R_AFTER_FIRST_FORCEFIELD_TRAP, new_level="pursuit_c"),
+            ExitData(R_AFTER_FIRST_FORCEFIELD_TRAP, new_level=Level.PURSUIT_C),
         ),
         R_AFTER_FIRST_FORCEFIELD_TRAP: (
-            ExitData(R_SECOND_FORCEFIELD_TRAP, new_level="pursuit_d"),
+            ExitData(R_SECOND_FORCEFIELD_TRAP, new_level=Level.PURSUIT_D),
         ),
         R_SECOND_FORCEFIELD_TRAP: (
             # Logically, pursuit_e is skipped because that is just the boss battle itself.
             ExitData(
                 "Chapter Completion",
                 HasAbility(VEHICLE_BLASTER),
-                new_level="pursuit_status",
             ),
         ),
     },
@@ -139,5 +138,5 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
 )
 
 # This is one of the only Minikits in the entire game that is split across multiple levels.
-BOUNTY_HUNTER_PURSUIT.level_minikits["pursuit_a"]["Cylinder Advertisements Minikit"] \
+BOUNTY_HUNTER_PURSUIT.level_minikits[Level.PURSUIT_A]["Cylinder Advertisements Minikit"] \
     = BOUNTY_HUNTER_PURSUIT.minikits["Cylinder Advertisements Minikit"]

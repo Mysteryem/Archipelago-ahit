@@ -9,6 +9,7 @@ from ..rules import HasAbility, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -28,7 +29,6 @@ CHANCELLOR_IN_PERIL = Chapter(
     name=NAME,
     area=Area.CRUISER,
     start_region=R_HANGAR,
-    start_level="cruiser_a",
     story_characters=(
         "Anakin Skywalker (Jedi)",
         "Chancellor Palpatine",
@@ -47,7 +47,7 @@ CHANCELLOR_IN_PERIL = Chapter(
             ExitData(
                 R_GENERATOR_ROOM,
                 HasAbility(JEDI),
-                new_level="cruiser_g",
+                new_level=Level.CRUISER_G,
             ),
         ),
         R_GENERATOR_ROOM: (
@@ -65,7 +65,7 @@ CHANCELLOR_IN_PERIL = Chapter(
                 R_DROID_DOORS_AND_DROID_ENEMIES_ROOM,
                 # Force the platformsForce off the grates to the next area.
                 # HasAbility(JEDI),
-                new_level="cruiser_b",
+                new_level=Level.CRUISER_B,
             ),
         ),
         R_DROID_DOORS_AND_DROID_ENEMIES_ROOM: (
@@ -100,7 +100,7 @@ CHANCELLOR_IN_PERIL = Chapter(
                     base=True_(),
                     hard=HasAbility(ASTROMECH_PANEL),
                 ),
-                new_level="cruiser_c",
+                new_level=Level.CRUISER_C,
             ),
         ),
         R_DOOKU_FIGHT: (
@@ -113,7 +113,7 @@ CHANCELLOR_IN_PERIL = Chapter(
                 #     # Would need to double check, but I was able to defeat him entirely as a Droideka.
                 #     normal=can_damage_at_close_range,
                 # ),
-                new_level="cruiser_d",
+                new_level=Level.CRUISER_D,
             ),
         ),
         R_HORIZONTAL_ELEVATOR_SHAFT: (
@@ -127,7 +127,7 @@ CHANCELLOR_IN_PERIL = Chapter(
                 #     # Yoda has too slow movement speed, but fast ground attacks and jumps.
                 #     normal=HasAbility(RUN_SPEED_1_0_OR_HIGHER) | HasAny("Yoda", "Yoda (Ghost)"),
                 # ),
-                new_level="cruiser_e",
+                new_level=Level.CRUISER_E,
             ),
         ),
         R_ROTATED_PATH_TO_THE_BRIDGE: (
@@ -142,7 +142,7 @@ CHANCELLOR_IN_PERIL = Chapter(
                 #     # are IG-88 and 4-LOM, who can jump.
                 #     moderate=HasAbility(ASTROMECH_PANEL),
                 # ),
-                new_level="cruiser_f",
+                new_level=Level.CRUISER_F,
             ),
         ),
         R_SHIPS_BRIDGE: (
@@ -152,7 +152,6 @@ CHANCELLOR_IN_PERIL = Chapter(
                 # logic_options(
                 #     base=HasAbility(JEDI),
                 # ),
-                new_level="cruiser_status",
             ),
         )
     },

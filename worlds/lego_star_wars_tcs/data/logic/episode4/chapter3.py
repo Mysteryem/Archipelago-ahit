@@ -19,6 +19,7 @@ from ..rules import (
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData, MinikitData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 from ....items import CHARACTERS_AND_VEHICLES_BY_NAME
@@ -97,7 +98,6 @@ helper = ChapterHelper(
     name=NAME,
     area=Area.MOSEISLEY,
     start_region=R_SPAWN,
-    start_level="moseisley_a",
     story_characters=(
         "Ben Kenobi",
         "C-3PO",
@@ -194,7 +194,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             ExitData(
                 R_CANTINA_ENTRANCE,
                 CAN_DAMAGE_AT_CLOSE_RANGE,
-                new_level="moseisley_c",
+                new_level=Level.MOSEISLEY_C,
             ),
         ),
         R_CANTINA_ENTRANCE: (
@@ -206,7 +206,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
         R_INSIDE_CANTINA: (
             ExitData(
                 R_SPY_CHASE_START,
-                new_level="moseisley_d",
+                new_level=Level.MOSEISLEY_D,
             ),
         ),
         R_SPY_CHASE_START: (
@@ -309,7 +309,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             ExitData(
                 R_CINEMA,
                 HasAbility(ASTROMECH_PANEL),
-                new_level="moseisley_e",
+                new_level=Level.MOSEISLEY_E,
             ),
             ExitData(
                 R_HANGAR,
@@ -341,7 +341,6 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                     )
                     # Droideka and General Grievous are too big to fit in the door of the Millennium Falcon.
                 ) & HasAnyCharacterExcept("Droideka", "General Grievous"),
-                new_level="moseisley_status",
             ),
         ),
     },

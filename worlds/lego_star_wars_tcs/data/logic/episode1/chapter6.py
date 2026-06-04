@@ -10,6 +10,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -34,7 +35,6 @@ DARTH_MAUL = Chapter(
         "Darth Maul": 60_000,
     },
     start_region=R_SPAWN,
-    start_level="maul_a",
     regions={
         R_SPAWN: (
             ExitData(
@@ -67,11 +67,11 @@ DARTH_MAUL = Chapter(
                     # Alternatively, triple high jump all the way up.
                     moderate=HasAbility(IMPERIAL) & HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM)
                 ),
-                new_level="maul_b",
+                new_level=Level.MAUL_B,
             ),
             ExitData(
                 R_TOWER_ROOM,
-                new_level="maul_b",
+                new_level=Level.MAUL_B,
             ),
         ),
         R_IMPERIAL_ROOM: (),
@@ -112,13 +112,13 @@ DARTH_MAUL = Chapter(
                 ),
                 er_rule=HasAbility(JEDI),
                 # maul_c does not exist.
-                new_level="maul_d",
+                new_level=Level.MAUL_D,
             ),
         ),
         R_TOWER_ROOM_TOP: (
             # Just drop down.
             # maul_c does not exist.
-            ExitData(R_ENERGY_COLUMNS_ROOM, new_level="maul_d"),
+            ExitData(R_ENERGY_COLUMNS_ROOM, new_level=Level.MAUL_D),
         ),
         R_ENERGY_COLUMNS_ROOM: (
             # Logically, fighting the Droideka and going through the force doors corridor (maul_e), is skipped and the
@@ -132,7 +132,7 @@ DARTH_MAUL = Chapter(
                     normal=HasAbility(JEDI),
                 ),
                 er_rule=HasAbility(JEDI),
-                new_level="maul_f",
+                new_level=Level.MAUL_F,
             ),
         ),
         R_MAUL_BOSS_ROOM: (
@@ -140,7 +140,6 @@ DARTH_MAUL = Chapter(
                 "Chapter Completion",
                 # ER Note: Would be more complicated, but for now, assume JEDI was needed to reach here.
                 # HasAbility(JEDI),
-                new_level="maul_status",
             ),
         ),
     },

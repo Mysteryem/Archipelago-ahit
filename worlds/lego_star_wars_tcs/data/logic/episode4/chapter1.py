@@ -13,6 +13,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExce
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData, MinikitData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -42,7 +43,6 @@ _helper = ChapterHelper(
     name=NAME,
     area=Area.BLOCKADERUNNER,
     start_region=R_SPAWN,
-    start_level="blockade_runner_a",
     story_characters=(
         "Captain Antilles",
         "C-3PO",
@@ -88,7 +88,7 @@ SECRET_PLANS = _helper.make_chapter(
         R_SECOND_HALLWAY: (
             ExitData(R_SITH_DOUBLE_SCORE_ZONE, CAN_SITH_FORCE),
             # The Stormtroopers must be defeated to continue.
-            ExitData(R_GRAPPLE_ROOM, CAN_DAMAGE_AT_CLOSE_RANGE, new_level="blockade_runner_b"),
+            ExitData(R_GRAPPLE_ROOM, CAN_DAMAGE_AT_CLOSE_RANGE, new_level=Level.BLOCKADERUNNER_B),
         ),
         R_SITH_DOUBLE_SCORE_ZONE: (),
         R_GRAPPLE_ROOM: (
@@ -159,7 +159,7 @@ SECRET_PLANS = _helper.make_chapter(
                     # You can just ignore these Stormtroopers.
                     normal=True_(),
                 ),
-                new_level="blockade_runner_c"
+                new_level=Level.BLOCKADERUNNER_C
             ),
         ),
         R_SIDE_ACCESS_CORRIDOR: (
@@ -196,7 +196,7 @@ SECRET_PLANS = _helper.make_chapter(
                 # can use the crane have at jump that can cross the gap...
                 # moderate=HasAbility(PROTOCOL_PANEL) & HasAnyAbilities(CAN_BARELY_JUMP | CAN_RIDE_VEHICLES),
                 HasAllAbilities(PROTOCOL_PANEL | CAN_BARELY_JUMP),
-                new_level="blockaderunner_d"
+                new_level=Level.BLOCKADERUNNER_D
             ),
         ),
         R_CAPTIVE_REBELS_HALLWAY: (
@@ -207,7 +207,6 @@ SECRET_PLANS = _helper.make_chapter(
             ExitData(
                 "Chapter Completion",
                 HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL | CAN_PULL_LEVERS),
-                new_level="blockade_runner_status"
             ),
         ),
         R_VENT_IMPERIALS_INTO_SPACE: (),

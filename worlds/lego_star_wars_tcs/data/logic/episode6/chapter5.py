@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 JEDI_DESTINY = make_legacy_chapter(
     short_name="6-5",
-    start_level="emperorfight_a",
     minikits={
         "Silver Brick Panels And Red Buttons Minikit": LegacyMinikitData.new("emperorfight_a", "MINI_3"),
         "Grapple Platform Right Of Spawn Minikit": LegacyMinikitData.new("emperorfight_a", "pup1"),

@@ -12,6 +12,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityComb
 from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -35,7 +36,6 @@ DEFENSE_OF_KASHYYYK = Chapter(
     name=NAME,
     area=Area.KASHYYYK,
     start_region=R_SPAWN_PLATFORM,
-    start_level="kashyyyk_a",
     story_characters=(
         "Chewbacca",
         "Yoda",
@@ -97,7 +97,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                     # Third Wookie.
                     CAN_DAMAGE_AT_CLOSE_RANGE,
                 ),
-                new_level="kashyyyk_b",
+                new_level=Level.KASHYYYK_B,
             ),
         ),
         R_BEACH_INVASION: (
@@ -192,7 +192,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                         ),
                     ),
                 ),
-                new_level="kashyyyk_c",
+                new_level=Level.KASHYYYK_C,
             ),
         ),
         R_SWAMP: (
@@ -204,7 +204,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                     base=CAN_DAMAGE_AT_CLOSE_RANGE,
                     normal=True_(),
                 ),
-                new_level="kashyyyk_d",
+                new_level=Level.KASHYYYK_D,
             ),
         ),
         R_FOREST: (
@@ -224,7 +224,6 @@ DEFENSE_OF_KASHYYYK = Chapter(
                         HasAbility(JEDI),
                     )
                 ),
-                new_level="kashyyyk_status",
             ),
         ),
     },

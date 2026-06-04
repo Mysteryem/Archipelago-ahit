@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 THE_BATTLE_OF_ENDOR = make_legacy_chapter(
     short_name="6-4",
-    start_level="endorbattle_a",
     minikits={
         "Minikit Left Of Spawn": LegacyMinikitData.new("endorbattle_a", "mk_0"),
         "Minikit Behind Wooden Gate": LegacyMinikitData.new("endorbattle_a", "mk_1"),

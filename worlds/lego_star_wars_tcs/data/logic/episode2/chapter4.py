@@ -44,10 +44,9 @@ JEDI_BATTLE = Chapter(
         "Skeleton",
     ),
     start_region=R_ARENA,
-    start_level="jedi_b",
     regions={
         R_ARENA: (
-            ExitData("Chapter Completion", HasAbility(JEDI), new_level="jedi_status"),
+            ExitData("Chapter Completion", HasAbility(JEDI)),
         ),
     },
     minikits={

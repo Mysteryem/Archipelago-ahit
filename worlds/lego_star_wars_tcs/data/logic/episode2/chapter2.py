@@ -6,6 +6,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -33,7 +34,6 @@ DISCOVERY_ON_KAMINO = Chapter(
         "Taun We": 9000,
     },
     start_region=R_LANDING_PAD,
-    start_level="kamino_a",
     regions={
         R_LANDING_PAD: (
             ExitData(
@@ -47,7 +47,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                     moderate=HasAnyAbilities(JEDI | JETPACK),
                 ),
                 # Yes, the levels are out-of-order, and kamino_b does not exist.
-                new_level="kamino_d",
+                new_level=Level.KAMINO_D,
             ),
         ),
         R_CLONE_VIEWING_AREA: (
@@ -60,7 +60,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                 # Notably, clipping past the door does not allow you to enter kamino_c, the trigger does not load until
                 # the astromech panel has been used.
                 HasAllAbilities(JEDI | ASTROMECH_PANEL),
-                new_level="kamino_c",
+                new_level=Level.KAMINO_C,
             ),
         ),
         R_BOUNTY_HUNTER_AREA: (),
@@ -82,7 +82,7 @@ DISCOVERY_ON_KAMINO = Chapter(
         ),
         R_LIVING_QUARTERS_BEHIND_FORCE_FIELD: (
             # The levels are out-of-order again.
-            ExitData(R_OUTSIDE_JANGO_CHASE, new_level="kamino_f"),
+            ExitData(R_OUTSIDE_JANGO_CHASE, new_level=Level.KAMINO_F),
         ),
         R_OUTSIDE_JANGO_CHASE: (
             ExitData(
@@ -102,12 +102,12 @@ DISCOVERY_ON_KAMINO = Chapter(
                         HasAnyAbilities(JEDI | ASTROMECH_PANEL),
                     ),
                 ),
-                new_level="kamino_f",
+                new_level=Level.KAMINO_F,
             ),
         ),
         R_INTERIOR_BEFORE_JANGO_FIGHT: (
             # Force the bricks out of the way, use the panel and then defeat Jango Fett.
-            ExitData("Chapter Completion", HasAllAbilities(JEDI | ASTROMECH_PANEL), new_level="kamino_status"),
+            ExitData("Chapter Completion", HasAllAbilities(JEDI | ASTROMECH_PANEL)),
         )
     },
     minikits={

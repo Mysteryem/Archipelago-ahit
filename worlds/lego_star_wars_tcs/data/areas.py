@@ -64,6 +64,17 @@ class Area(IntEnum):
         self.free_play_true_jedi = area_initializer["free_play_true_jedi"]
         self.cheat_id = area_initializer["cheat_id"]
         self.levels = tuple(area_initializer["levels"])
+
+    def get_first_playable_level(self) -> Level | None:
+        return next(filter(Level.is_playable, self.levels), None)
+
+    def get_status_level(self) -> Level | None:
+        # Status levels are last when present, so iterate in reverse.
+        return next(filter(Level.is_status, reversed(self.levels)), None)
+
+    def get_playable_levels(self) -> list[Level]:
+        return list(filter(Level.is_playable, self.levels))
+
     NEGOTIATIONS =      0, dict(episode_index= 0, area_index= 0, flags=AreaFlag(0x0010), story_true_jedi=31000, free_play_true_jedi= 64000, cheat_id= 8, levels=[Level.EP1_FAILEDNEG_INTRO1, Level.EP1_FAILEDNEG_INTRO2, Level.NEGOTIATIONS_A, Level.NEGOTIATIONS_B, Level.NEGOTIATIONS_C, Level.FAILEDNEG_OUTRO, Level.NEGOTIATIONS_STATUS])
     GUNGAN =            1, dict(episode_index= 0, area_index= 1, flags=AreaFlag(0x0010), story_true_jedi=44000, free_play_true_jedi= 52000, cheat_id= 9, levels=[Level.GUNGAN_INTRO1, Level.GUNGAN_INTRO2, Level.GUNGAN_A, Level.GUNGAN_B, Level.GUNGAN_C, Level.GUNGAN_E, Level.GUNGAN_OUTRO2, Level.GUNGAN_STATUS])
     PALACERESCUE =      2, dict(episode_index= 0, area_index= 2, flags=AreaFlag(0x0010), story_true_jedi=48000, free_play_true_jedi= 60000, cheat_id=10, levels=[Level.RESCUE_INTRO1, Level.RESCUE_INTRO2, Level.RESCUE_INTRO4, Level.RESCUE_A, Level.RESCUE_B, Level.RESCUE_C, Level.RESCUE_E, Level.RESCUE_OUTRO, Level.RESCUE_STATUS])

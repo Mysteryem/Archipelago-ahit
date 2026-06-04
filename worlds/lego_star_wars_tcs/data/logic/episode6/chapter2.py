@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 THE_GREAT_PIT_OF_CARKOON = make_legacy_chapter(
     short_name="6-2",
-    start_level="sarlaccpit_a",
     minikits={
         "Walk The Plank Minikit": LegacyMinikitData.new("sarlaccpit_a", "mk_0"),
         "Barge Left Side Minikit": LegacyMinikitData.new("sarlaccpit_a", "mk_2"),

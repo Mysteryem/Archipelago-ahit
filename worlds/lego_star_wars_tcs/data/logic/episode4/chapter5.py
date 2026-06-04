@@ -2,7 +2,6 @@ from ..types import make_legacy_chapter, LegacyMinikitData
 
 DEATH_STAR_ESCAPE = make_legacy_chapter(
     short_name="4-5",
-    start_level="deathstarescape_a",
     minikits={
         "Minikit Behind Silver Bricks": LegacyMinikitData.new("deathstarescape_a", "m_pup1"),
         "Access Hatch Minikit": LegacyMinikitData.new("deathstarescape_a", "mk_0"),

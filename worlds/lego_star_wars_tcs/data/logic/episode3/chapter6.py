@@ -1,7 +1,6 @@
 from rule_builder.rules import True_, And, Has, Or, HasAny, False_, Rule
 
 from ..macros import (
-    CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT,
     CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
 )
@@ -10,6 +9,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAbilityCombination, HasAbili
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 from ....items import LOGIC_CONSIDERED_CHARACTERS, VehicleData
@@ -72,7 +72,6 @@ DARTH_VADER = Chapter(
     name=NAME,
     area=Area.VADER,
     start_region=R_COLLAPSING_LAVA_HALLWAY,
-    start_level="vader_a",
     regions={
         R_COLLAPSING_LAVA_HALLWAY: (
             ExitData(
@@ -129,7 +128,7 @@ DARTH_VADER = Chapter(
             ExitData(
                 R_COLLAPSING_EXTERIOR_SPAWN,
                 HasAbility(JEDI),
-                new_level="vader_b",
+                new_level=Level.VADER_B,
             ),
         ),
         R_POWER_BRICK_CONFERENCE_ROOM: (),
@@ -211,7 +210,7 @@ DARTH_VADER = Chapter(
                 True_(),
                 # Strictly required, otherwise the trigger to load the next level does not happen.
                 er_rule=HasAbility(JEDI),
-                new_level="vader_c",
+                new_level=Level.VADER_C,
             ),
         ),
         R_LAVA_PLATFORMING_START: (
@@ -271,7 +270,6 @@ DARTH_VADER = Chapter(
                 #         Has("Super Zapper") & HasAllAbilities(WEAPON_ZAPPER | DROID),
                 #     ),
                 # ),
-                new_level="vader_status",
             ),
             ExitData(
                 R_LAVA_PLATFORMING_FAR_MINIKIT_PLATFORM,

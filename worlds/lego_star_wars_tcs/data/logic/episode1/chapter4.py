@@ -21,11 +21,10 @@ MOS_ESPA_POD_RACE = Chapter(
         "Sebulba's Pod": 20000,
     },
     start_region=R_RACETRACK,
-    start_level="podsprint_a",
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         R_RACETRACK: (
-            ExitData("Chapter Completion", new_level="podsprint_status"),
+            ExitData("Chapter Completion"),
         ),
     },
     minikits={

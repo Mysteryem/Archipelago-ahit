@@ -6,6 +6,7 @@ from rule_builder.rules import Rule, NestedRule, WrapperRule, And
 from test.general import setup_multiworld
 from worlds import AutoWorldRegister
 
+from ..data.levels import Level
 from ..data.logic import EPISODES
 from ..data.logic.extraction import un_nest_logic_options
 from ..data.logic.option_filters import LogicOptions
@@ -68,18 +69,23 @@ class TestEpisodes(TestCase):
         this level."""
         self.assertIn("Chapter Completion", chapter.region_to_level)
         status_level = chapter.region_to_level["Chapter Completion"]
-        self.assertTrue(status_level.endswith("_status"))
+        self.assertTrue(status_level.name.endswith("_STATUS"))
         for region, level in chapter.region_to_level.items():
             if region != "Chapter Completion":
                 self.assertNotEqual(level, status_level)
 
     def test_levels_unique_per_chapter(self):
         """Test that levels are unique to a single chapter."""
-        seen_levels = set()
+        seen_levels: set[Level] = set()
         for chapter in chapters_iter():
             chapter_levels = set(chapter.region_to_level.values())
             self.assertTrue(seen_levels.isdisjoint(chapter_levels))
             seen_levels.update(chapter_levels)
+
+    @chapters_test
+    def test_levels_exist_in_area(self, chapter: Chapter):
+        for level in set(chapter.region_to_level.values()):
+            self.assertIn(level, chapter.area.levels)
 
     def test_episode_chapter_numbers(self):
         """Test that chapter episode/chapter numbers are unique and within the expected bounds."""

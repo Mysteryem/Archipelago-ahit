@@ -5,6 +5,7 @@ from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -21,7 +22,6 @@ GUNSHIP_CAVALRY = Chapter(
         "Republic Gunship",
     ),
     start_region=R_SPAWN,
-    start_level="gunship_a",
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         R_SPAWN: (
@@ -31,14 +31,13 @@ GUNSHIP_CAVALRY = Chapter(
             ExitData(
                 R_CONTROL_SHIP_BATTLE,
                 HasAbility(VEHICLE_TOW),
-                new_level="gunship_b",
+                new_level=Level.GUNSHIP_B,
             ),
         ),
         R_CONTROL_SHIP_BATTLE: (
             ExitData(
                 "Chapter Completion",
                 HasAbility(VEHICLE_TOW),
-                new_level="gunship_status"
             ),
         ),
     },

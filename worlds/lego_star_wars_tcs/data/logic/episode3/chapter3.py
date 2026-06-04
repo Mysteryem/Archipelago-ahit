@@ -11,6 +11,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityComb
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData
 
 from ...areas import Area
+from ...levels import Level
 
 from ....character_ability import *
 
@@ -32,7 +33,6 @@ _helper = ChapterHelper(
     name=NAME,
     area=Area.GRIEVOUS,
     start_region=R_CIRCULAR_PLATFORM,
-    start_level="grievous_a",
     story_characters=(
         "Commander Cody",
         "Obi-Wan Kenobi (Episode III)",
@@ -203,7 +203,6 @@ GENERAL_GRIEVOUS = _helper.make_chapter(
                 "Chapter Completion",
                 # Note: Contains a few CanReachRegion rules.
                 CAN_EXPLODE_LAST_EXPLOSIVES,
-                new_level="grievous_status",
             )
         ),
         R_FAR_LEFT_SILVER_BRICK_SECTION: (
@@ -257,7 +256,6 @@ GENERAL_GRIEVOUS = _helper.make_chapter(
                     moderate=HasAbility(BLASTER),
                 ),
                 name="Grieve-Cheese",
-                new_level="grievous_status",
             ),
             # Logically irrelevant because "Low Platform With Power Up -> Third Explosives Section Gap Area" only
             # requires high jump height, and then
