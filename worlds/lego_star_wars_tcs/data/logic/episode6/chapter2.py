@@ -16,8 +16,4 @@ THE_GREAT_PIT_OF_CARKOON = make_legacy_chapter(
         "Minikit Between Barge Deck Targets": LegacyMinikitData.new("sarlaccpit_c", "mk_1"),
         "Barge Deck Access Hatch Minikit": LegacyMinikitData.new("sarlaccpit_c", "mk_2"),
     },
-    extra_toggle_characters=(
-        "Womp Rat",
-        "Han Solo (frozen in carbonite)",
-    ),
 )
