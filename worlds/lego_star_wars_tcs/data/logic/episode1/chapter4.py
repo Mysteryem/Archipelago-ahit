@@ -1,6 +1,8 @@
 from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import VEHICLE_TIE, IS_A_VEHICLE
 
 NAME = "Mos Espa Pod Race"
@@ -9,8 +11,7 @@ R_RACETRACK = "Racetrack"
 
 MOS_ESPA_POD_RACE = Chapter(
     name=NAME,
-    episode_number=1,
-    chapter_number=4,
+    area=Area.PODSPRINT,
     story_characters=(
         "Anakin's Pod",
     ),

@@ -5,6 +5,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Discovery On Kamino"
@@ -20,8 +22,7 @@ R_INTERIOR_BEFORE_JANGO_FIGHT = "Interior Before Jango Fight"
 
 DISCOVERY_ON_KAMINO = Chapter(
     name=NAME,
-    episode_number=2,
-    chapter_number=2,
+    area=Area.KAMINO,
     story_characters=(
         "Obi-Wan Kenobi (Jedi Master)",
         "R4-P17",

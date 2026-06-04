@@ -11,6 +11,8 @@ from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, ot_high_jump_t
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExceptCharacters
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Through The Jundland Wastes"
@@ -44,8 +46,7 @@ R_ACROSS_SEA_OF_QUICKSAND = "Across Sea Of Quicksand"
 
 THROUGH_THE_JUNDLAND_WASTES = Chapter(
     name=NAME,
-    episode_number=4,
-    chapter_number=2,
+    area=Area.TATOOINE,
     start_region=R_SPAWN,
     start_level="tatooine_a",
     story_characters=(

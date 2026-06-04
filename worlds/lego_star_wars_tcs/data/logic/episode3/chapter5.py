@@ -11,6 +11,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Ruin Of The Jedi"
@@ -33,8 +35,7 @@ CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
 
 RUIN_OF_THE_JEDI = Chapter(
     name=NAME,
-    episode_number=3,
-    chapter_number=5,
+    area=Area.TEMPLE,
     start_region=R_OUTSIDE_TEMPLE,
     start_level="temple_a",
     # There are enemies at the start, so have the base logic expect fighting them.

@@ -9,6 +9,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Jedi Battle"
@@ -17,8 +19,7 @@ R_ARENA = "Arena"
 
 JEDI_BATTLE = Chapter(
     name=NAME,
-    episode_number=2,
-    chapter_number=4,
+    area=Area.JEDI,
     story_characters=(
         "Anakin Skywalker (Padawan)",
         "Mace Windu",

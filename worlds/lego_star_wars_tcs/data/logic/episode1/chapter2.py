@@ -5,6 +5,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Invasion of Naboo"
@@ -23,8 +25,7 @@ R_SWAMP_BEFORE_WATER = "Swamp Before Water"
 
 INVASION_OF_NABOO = Chapter(
     name=NAME,
-    episode_number=1,
-    chapter_number=2,
+    area=Area.GUNGAN,
     story_characters=(
         "Obi-Wan Kenobi",
         "Qui-Gon Jinn",

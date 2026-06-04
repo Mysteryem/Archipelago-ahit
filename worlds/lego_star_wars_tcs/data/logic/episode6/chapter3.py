@@ -15,6 +15,8 @@ from ..option_filters import logic_options, ot_high_jump_ternary, OT_HIGH_JUMP_E
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExceptCharacters
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 # Exploding Blaster Bolts does not work.
@@ -41,8 +43,7 @@ CAN_DESTROY_MINIKIT_CAGES = Or(
 
 SPEEDER_SHOWDOWN = Chapter(
     name="Speeder Showdown",
-    episode_number=6,
-    chapter_number=3,
+    area=Area.SPEEDERCHASE,
     start_region="Spawn",
     start_level="speederchase_a",
     story_characters=(

@@ -12,6 +12,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Droid Factory"
@@ -33,8 +35,7 @@ R_OBI_WAN_HOLDING_CELL_ROOM = "Obi-Wan Holding Cell Room"
 
 DROID_FACTORY = Chapter(
     name=NAME,
-    episode_number=2,
-    chapter_number=3,
+    area=Area.FACTORY,
     story_characters=(
         "Anakin Skywalker (Padawan)",
         "C-3PO",

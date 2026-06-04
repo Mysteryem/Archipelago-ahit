@@ -7,6 +7,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Bounty Hunter Pursuit"
@@ -18,8 +20,7 @@ R_SECOND_FORCEFIELD_TRAP = "Second Forcefield Trap"
 
 BOUNTY_HUNTER_PURSUIT = Chapter(
     name=NAME,
-    episode_number=2,
-    chapter_number=1,
+    area=Area.PURSUIT,
     story_characters=(
         "Anakin's Speeder",
     ),

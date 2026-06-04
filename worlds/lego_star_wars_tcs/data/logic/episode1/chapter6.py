@@ -9,6 +9,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Darth Maul"
@@ -23,8 +25,7 @@ R_MAUL_BOSS_ROOM = "Maul Boss Room"
 
 DARTH_MAUL = Chapter(
     name=NAME,
-    episode_number=1,
-    chapter_number=6,
+    area=Area.MAUL,
     story_characters=(
         "Obi-Wan Kenobi",
         "Qui-Gon Jinn",

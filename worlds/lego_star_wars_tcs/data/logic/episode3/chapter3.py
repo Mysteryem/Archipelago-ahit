@@ -10,6 +10,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "General Grievous"
@@ -28,8 +30,7 @@ R_BRICK_COVERED_MINIKIT_ALCOVE = "Brick Covered Minikit Alcove"
 
 _helper = ChapterHelper(
     name=NAME,
-    episode_number=3,
-    chapter_number=3,
+    area=Area.GRIEVOUS,
     start_region=R_CIRCULAR_PLATFORM,
     start_level="grievous_a",
     story_characters=(

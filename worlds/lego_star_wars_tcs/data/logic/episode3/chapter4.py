@@ -11,6 +11,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
 from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Defense Of Kashyyyk"
@@ -31,8 +33,7 @@ _CAN_BUILD_BEACHFRONT_CLONE_WALKER_ER = CAN_BUILD_BEACH_CLONE_WALKER.and_rule(Ha
 
 DEFENSE_OF_KASHYYYK = Chapter(
     name=NAME,
-    episode_number=3,
-    chapter_number=4,
+    area=Area.KASHYYYK,
     start_region=R_SPAWN_PLATFORM,
     start_level="kashyyyk_a",
     story_characters=(

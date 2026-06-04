@@ -1,6 +1,9 @@
 from ..rules import HasAbility, HasAbilityExceptCharacters, True_
 from ..types import minikit_data, ExitData, Chapter, LocationData
 from ..option_filters import logic_options
+
+from ...areas import Area
+
 from ....character_ability import IS_A_VEHICLE, VEHICLE_BLASTER
 
 NAME = "Battle Over Coruscant"
@@ -11,8 +14,7 @@ R_AFTER_SECOND_DESTROYABLE_SHIP = "After Second Destroyable Ship"
 
 BATTLE_OVER_CORUSCANT = Chapter(
     name=NAME,
-    episode_number=3,
-    chapter_number=1,
+    area=Area.DOGFIGHT,
     story_characters=(
         "Jedi Starfighter (Yellow)",
         "Jedi Starfighter (Red)",

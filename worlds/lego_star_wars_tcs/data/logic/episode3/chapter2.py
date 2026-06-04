@@ -8,6 +8,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Chancellor In Peril"
@@ -24,8 +26,7 @@ R_SHIPS_BRIDGE = "Ship's Bridge"
 
 CHANCELLOR_IN_PERIL = Chapter(
     name=NAME,
-    episode_number=3,
-    chapter_number=2,
+    area=Area.CRUISER,
     start_region=R_HANGAR,
     start_level="cruiser_a",
     story_characters=(

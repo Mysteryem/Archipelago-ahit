@@ -11,6 +11,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Count Dooku"
@@ -20,8 +22,7 @@ R_DOOKU_FIGHT = "Dooku Fight"
 
 COUNT_DOOKU = Chapter(
     name=NAME,
-    episode_number=2,
-    chapter_number=6,
+    area=Area.DOOKU,
     story_characters=(
         "Anakin Skywalker (Padawan)",
         "Obi-Wan Kenobi (Jedi Master)",

@@ -12,6 +12,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Retake Theed Palace"
@@ -27,8 +29,7 @@ R_HANGAR = "Hangar"
 
 RETAKE_THEED_PALACE = Chapter(
     name=NAME,
-    episode_number=1,
-    chapter_number=5,
+    area=Area.RETAKEPALACE,
     story_characters=(
         "Obi-Wan Kenobi",
         "Qui-Gon Jinn",

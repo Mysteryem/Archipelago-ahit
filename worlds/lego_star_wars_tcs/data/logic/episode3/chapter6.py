@@ -9,6 +9,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAbilityCombination, HasAbilityExceptCharacters
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 from ....items import LOGIC_CONSIDERED_CHARACTERS, VehicleData
 
@@ -68,8 +70,7 @@ del _make_any_character_except_force_ghost
 
 DARTH_VADER = Chapter(
     name=NAME,
-    episode_number=3,
-    chapter_number=6,
+    area=Area.VADER,
     start_region=R_COLLAPSING_LAVA_HALLWAY,
     start_level="vader_a",
     regions={

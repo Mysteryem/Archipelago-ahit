@@ -17,6 +17,9 @@ from ..rules import (
     HasAnyCharacterExcept,
 )
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData, MinikitData
+
+from ...areas import Area
+
 from ....character_ability import *
 from ....items import CHARACTERS_AND_VEHICLES_BY_NAME
 
@@ -92,8 +95,7 @@ del _make_can_pass_cantina_anti_droid_field
 
 helper = ChapterHelper(
     name=NAME,
-    episode_number=4,
-    chapter_number=3,
+    area=Area.MOSEISLEY,
     start_region=R_SPAWN,
     start_level="moseisley_a",
     story_characters=(

@@ -11,6 +11,7 @@ from rule_builder.rules import (
 )
 
 from .extra_toggle import ExtraToggleRuleReplacer
+from ..areas import Area
 
 
 @dataclass(frozen=True)
@@ -81,8 +82,7 @@ class RegionData:
 @dataclass
 class ChapterHelper:
     name: str
-    episode_number: int
-    chapter_number: int
+    area: Area
     start_region: str
     start_level: str
     story_characters: tuple[str, ...] = ()
@@ -115,8 +115,7 @@ class ChapterHelper:
             extra_chapter_entrance_rules = True_()
         return Chapter(
             name=self.name,
-            episode_number=self.episode_number,
-            chapter_number=self.chapter_number,
+            area=self.area,
             start_region=self.start_region,
             start_level=self.start_level,
             regions=regions,
@@ -134,8 +133,7 @@ class ChapterHelper:
 @dataclass(frozen=True)
 class Chapter:
     name: str
-    episode_number: int
-    chapter_number: int
+    area: Area
     start_region: str
     start_level: str
     regions: dict[str, tuple[ExitData, ...]]
@@ -219,6 +217,26 @@ class Chapter:
         yield self.power_brick
 
     @property
+    def area_id(self) -> int:
+        return self.area.area_index
+
+    @property
+    def episode_number(self) -> int:
+        return self.area.episode_index + 1
+
+    @property
+    def chapter_number(self) -> int:
+        return self.area.area_index + 1
+
+    @property
+    def story_true_jedi(self) -> int:
+        return self.area.story_true_jedi
+
+    @property
+    def free_play_true_jedi(self) -> int:
+        return self.area.free_play_true_jedi
+
+    @property
     def short_name(self) -> str:
         return f"{self.episode_number}-{self.chapter_number}"
 
@@ -283,10 +301,15 @@ def _make_legacy_chapter(
     for ridable_name, rule in ridables.items():
         ridables_data[ridable_name] = LocationData(start_region, rule)
 
+    for area in Area:
+        if area.episode_index == episode_number - 1 and area.area_index == chapter_number - 1:
+            break
+    else:
+        raise Exception(f"Could not find Area for {episode_number}-{chapter_number}")
+
     return Chapter(
         name=name,
-        episode_number=episode_number,
-        chapter_number=chapter_number,
+        area=area,
         start_region=start_region,
         start_level=start_level,
         regions=regions,

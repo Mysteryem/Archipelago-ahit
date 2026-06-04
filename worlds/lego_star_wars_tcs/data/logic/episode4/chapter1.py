@@ -12,6 +12,8 @@ from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, OT_HIGH_JUMP_D
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExceptCharacters
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData, MinikitData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Secret Plans"
@@ -38,8 +40,7 @@ R_ESCAPE_POD_CORRIDOR = "Escape Pod Corridor"
 
 _helper = ChapterHelper(
     name=NAME,
-    episode_number=4,
-    chapter_number=1,
+    area=Area.BLOCKADERUNNER,
     start_region=R_SPAWN,
     start_level="blockade_runner_a",
     story_characters=(

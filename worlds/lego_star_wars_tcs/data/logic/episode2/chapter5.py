@@ -4,6 +4,8 @@ from ..option_filters import logic_options
 from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
+from ...areas import Area
+
 from ....character_ability import *
 
 NAME = "Gunship Cavalry"
@@ -14,8 +16,7 @@ R_CONTROL_SHIP_BATTLE = "Control Ship Battle"
 
 GUNSHIP_CAVALRY = Chapter(
     name=NAME,
-    episode_number=2,
-    chapter_number=5,
+    area=Area.GUNSHIP,
     story_characters=(
         "Republic Gunship",
     ),
