@@ -71,6 +71,10 @@ del _make_any_character_except_force_ghost
 DARTH_VADER = Chapter(
     name=NAME,
     area=Area.VADER,
+    story_characters=(
+        "Anakin Skywalker (Jedi)",
+        "Obi-Wan Kenobi (Episode III)",
+    ),
     start_region=R_COLLAPSING_LAVA_HALLWAY,
     regions={
         R_COLLAPSING_LAVA_HALLWAY: (
