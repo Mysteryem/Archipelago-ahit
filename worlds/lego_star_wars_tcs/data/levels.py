@@ -47,7 +47,7 @@ class Level(IntEnum):
     flags: LevelFlag
 
     def __new__(cls, *args, **kwargs):
-        obj = int.__new__(cls)
+        obj = int.__new__(cls, args[0])
         obj._value_ = args[0]
         return obj
 
