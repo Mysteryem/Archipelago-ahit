@@ -4,6 +4,9 @@ from typing import TypedDict, NotRequired
 from .areas import Area
 
 
+_EVENT_OFFSET = 1000
+
+
 __all__ = [
     "Character",
     "UnlockMethod",
@@ -413,6 +416,8 @@ class Character(IntEnum):
     PLO_KOON =                          316, dict(readable_name="Plo Koon", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.JEDI, purchase_cost=39_000)
     INDIANA_JONES =                     317, dict(readable_name="Indiana Jones", unlock_method=UnlockMethod.INDY_TRAILER, purchase_cost=50_000)
     RAFT =                              318
+    # Events
+    EVENT_SUPER_GONK_DROID = 1 + _EVENT_OFFSET, dict(readable_name="Super Gonk Droid")
 
 
 AreaToCharacter = dict[Area, frozenset[Character]]
