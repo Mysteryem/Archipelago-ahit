@@ -74,11 +74,14 @@ def _extract():
             # we don't care about anything else, and I don't know exactly what the remaining fields are anyway.
         ]
     from ..levels import Level
+    from ..extras import Extra
 
     process = pymem.Pymem("LegoStarWarsSaga")
     p_a_data_start = 0x00951374
     a_data_start = process.read_uint(p_a_data_start)
     a_data_size = 0x9c
+
+    longest_extra = "Extra.EXPLODING_BLASTER_BOLTS"
 
     i = 0
     while True:
@@ -95,13 +98,20 @@ def _extract():
         level_names = [f"Level.{Level(level).name}" for level in level_ids]
         level_ids_str = ", ".join(level_names)
 
+        if area_data.red_brick_cheat_id != -1:
+            extra = Extra(area_data.red_brick_cheat_id)
+            extra_str = f"Extra.{extra.name}"
+        else:
+            extra_str = "None"
+        extra_str = " " * (len(longest_extra) - len(extra_str)) + extra_str
+
         print(f"    {name.upper()} = {space}{i:2}"
               f", dict(episode_index={area_data.episode_index:2}"
               f", area_index={area_data.area_index:2}"
               f", flags=AreaFlag(0x{area_data.area_flags:04x})"
               f", story_true_jedi={story_true_jedi:5}"
               f", free_play_true_jedi={free_play_true_jedi:6}"
-              f", cheat_id={area_data.red_brick_cheat_id:2}"
+              f", extra={extra_str}"
               f", levels=[{level_ids_str}])"
               )
 
