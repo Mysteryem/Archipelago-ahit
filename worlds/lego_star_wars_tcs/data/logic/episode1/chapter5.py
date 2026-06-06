@@ -416,6 +416,7 @@ RETAKE_THEED_PALACE = Chapter(
         HasAbility(JEDI),
     ),
     ridables={
+        "Flash Speeder": LocationData(R_SPAWN, HasAbility(JEDI)),
         "Service Car": LocationData(R_HANGAR),
     }
 )
