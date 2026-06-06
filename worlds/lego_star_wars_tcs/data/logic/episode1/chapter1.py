@@ -5,6 +5,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
@@ -223,7 +224,7 @@ NEGOTIATIONS = Chapter(
         )
     ),
     ridables={
-        "STAP": LocationData(
+        Character.STAP2: LocationData(
             R_MAIN_HANGAR,
             er_rule=HasAbility(CAN_BUILD_BRICKS),
         )

@@ -13,6 +13,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
@@ -413,7 +414,7 @@ RETAKE_THEED_PALACE = Chapter(
         HasAbility(JEDI),
     ),
     ridables={
-        "Flash Speeder": LocationData(R_SPAWN, HasAbility(JEDI)),
-        "Service Car": LocationData(R_HANGAR),
+        Character.FLASHSPEEDER: LocationData(R_SPAWN, HasAbility(JEDI)),
+        Character.SERVICE_CAR: LocationData(R_HANGAR),
     }
 )

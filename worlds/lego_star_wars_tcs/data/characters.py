@@ -1,11 +1,7 @@
 from enum import IntEnum, auto
-from typing import TypedDict, NotRequired, TYPE_CHECKING
+from typing import TypedDict, NotRequired
 
 from .areas import Area
-
-
-if TYPE_CHECKING:
-    from .items.character_items import CharacterData
 
 
 _EVENT_OFFSET = 1000
@@ -117,10 +113,10 @@ class Character(IntEnum):
     C_3PO =                              12, dict(readable_name="C-3PO", unlock_method=UnlockMethod.STORY, areas=[Area.FACTORY, Area.BLOCKADERUNNER, Area.TATOOINE, Area.MOSEISLEY, Area.DEATHSTARRESCUE, Area.DEATHSTARESCAPE, Area.HOTHESCAPE, Area.CLOUDCITYESCAPE, Area.JABBASPALACE, Area.SARLACCPIT, Area.ENDORBATTLE])
     REBEL_TROOPER =                      13, dict(readable_name="Rebel Trooper", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.BLOCKADERUNNER, purchase_cost=10_000)
     IMPERIAL_OFFICER =                   14, dict(readable_name="Imperial Officer", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.DEATHSTARRESCUE, purchase_cost=28_000)
-    SPEEDER_LAND =                       15
+    SPEEDER_LAND =                       15, dict(readable_name="Landspeeder")
     CHEWBACCA =                          16, dict(readable_name="Chewbacca", unlock_method=UnlockMethod.STORY, areas=[Area.KASHYYYK, Area.MOSEISLEY, Area.DEATHSTARRESCUE, Area.DEATHSTARESCAPE, Area.HOTHESCAPE, Area.CLOUDCITYESCAPE, Area.JABBASPALACE, Area.SARLACCPIT, Area.ENDORBATTLE])
     GONK_DROID =                         17, dict(readable_name="Gonk Droid", unlock_method=UnlockMethod.START, purchase_cost=3000)
-    CLONEWALKER =                        18
+    CLONEWALKER =                        18, dict(readable_name="Clone Walker")
     TRAINING_REMOTE =                    19, dict(readable_name="Training Remote", unlock_method=UnlockMethod.EXTRA_TOGGLE, areas=[Area.TEMPLE])
     STORMTROOPER =                       20, dict(readable_name="Stormtrooper", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.BLOCKADERUNNER, purchase_cost=10_000)
     BARMAN =                             21
@@ -132,7 +128,7 @@ class Character(IntEnum):
     LUKE_SKYWALKER_JEDI =                27, dict(readable_name="Luke Skywalker (Jedi)", unlock_method=UnlockMethod.STORY, areas=[Area.JABBASPALACE, Area.SARLACCPIT, Area.EMPERORFIGHT])
     LUKE_SKYWALKER_TATOOINE =            28, dict(readable_name="Luke Skywalker (Tatooine)", unlock_method=UnlockMethod.STORY, areas=[Area.TATOOINE, Area.MOSEISLEY, Area.DEATHSTARESCAPE])
     LUKE_SKYWALKER_STORMTROOPER =        29, dict(readable_name="Luke Skywalker (Stormtrooper)", unlock_method=UnlockMethod.STORY, areas=[Area.DEATHSTARRESCUE])
-    SPEEDERBIKE =                        30
+    SPEEDERBIKE =                        30, dict(readable_name="Speeder Bike")
     SPEEDERBIKE_SNOW =                   31
     SNOWSPEEDER =                        32, dict(readable_name="Snowspeeder", unlock_method=UnlockMethod.STORY, areas=[Area.HOTHBATTLE])
     HAN_SOLO =                           33, dict(readable_name="Han Solo", unlock_method=UnlockMethod.STORY, areas=[Area.MOSEISLEY, Area.DEATHSTARESCAPE])
@@ -149,7 +145,7 @@ class Character(IntEnum):
     MOUSE_DROID =                        44, dict(readable_name="Mouse Droid", unlock_method=UnlockMethod.EXTRA_TOGGLE, areas=[Area.DEATHSTARRESCUE, Area.DEATHSTARESCAPE, Area.EMPERORFIGHT])
     SNOWTROOPER =                        45, dict(readable_name="Snowtrooper", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.HOTHESCAPE, purchase_cost=16_000)
     PROBEDROID =                         46
-    ATAT =                               47
+    ATAT =                               47, dict(readable_name="AT-AT")
     BEACH_TROOPER =                      48, dict(readable_name="Beach Trooper", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.DEATHSTARRESCUE, purchase_cost=20_000)
     DEATH_STAR_TROOPER =                 49, dict(readable_name="Death Star Trooper", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.DEATHSTARRESCUE, purchase_cost=19_000)
     TIE_FIGHTER_PILOT =                  50, dict(readable_name="TIE Fighter Pilot", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.DEATHSTARRESCUE, purchase_cost=21_000)
@@ -208,9 +204,9 @@ class Character(IntEnum):
     COUNT_DOOKU =                       103, dict(readable_name="Count Dooku", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.CRUISER, purchase_cost=100_000)
     QUI_GON_JINN =                      104, dict(readable_name="Qui-Gon Jinn", unlock_method=UnlockMethod.STORY, areas=[Area.NEGOTIATIONS, Area.GUNGAN, Area.PALACERESCUE, Area.RETAKEPALACE, Area.MAUL])
     HAN_SOLO_FROZEN_IN_CARBONITE =      105, dict(readable_name="Han Solo (frozen in carbonite)", unlock_method=UnlockMethod.EXTRA_TOGGLE, areas=[Area.CLOUDCITYTRAP, Area.CLOUDCITYESCAPE, Area.JABBASPALACE, Area.E5CHARACTERBONUS])
-    BANTHA =                            106
+    BANTHA =                            106, dict(readable_name="Bantha")
     REBEL_TROOPER_HOTH =                107, dict(readable_name="Rebel Trooper (Hoth)", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.HOTHESCAPE, purchase_cost=16_000)
-    TAUNTAUN =                          108
+    TAUNTAUN =                          108, dict(readable_name="Tauntaun")
     WAMPA =                             109, dict(readable_name="Wampa", unlock_method=UnlockMethod.EXTRA_TOGGLE, areas=[Area.E5VEHICLEBONUS])
     MINI_REPUBLIC_CRUISER =             110, dict(readable_name="Republic Cruiser", unlock_method=UnlockMethod.MINIKIT, area=Area.NEGOTIATIONS)
     MINI_GUNGAN_BONGO =                 111, dict(readable_name="Gungan Bongo", unlock_method=UnlockMethod.MINIKIT, area=Area.GUNGAN)
@@ -236,10 +232,10 @@ class Character(IntEnum):
     GRAND_MOFF_TARKIN =                 131, dict(readable_name="Grand Moff Tarkin", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.DEATHSTARRESCUE, purchase_cost=38_000)
     BAT =                               132
     SNAKE =                             133
-    CANNON =                            134
-    GRABBERCONTROL =                    135
+    CANNON =                            134, dict(readable_name="Skiff Cannon")
+    GRABBERCONTROL =                    135, dict(readable_name="Crane Control")
     MAGNET =                            136
-    DEWBACK =                           137
+    DEWBACK =                           137, dict(readable_name="Dewback")
     HEAVYREPEATINGCANNON =              138
     MINI_IMPERIAL_SHUTTLE =             139, dict(readable_name="Imperial Shuttle", unlock_method=UnlockMethod.MINIKIT, area=Area.EMPERORFIGHT)
     MINI_SLAVE_1 =                      140, dict(readable_name="Slave 1", unlock_method=UnlockMethod.MINIKIT, area=Area.CLOUDCITYESCAPE)
@@ -261,12 +257,12 @@ class Character(IntEnum):
     LUKE_SKYWALKER_PILOT =              156, dict(readable_name="Luke Skywalker (Pilot)", unlock_method=UnlockMethod.STORY, areas=[Area.DAGOBAH])
     LUKE_SKYWALKER_DAGOBAH =            157, dict(readable_name="Luke Skywalker (Dagobah)", unlock_method=UnlockMethod.STORY, areas=[Area.DAGOBAH])
     UGNAUGHT =                          158, dict(readable_name="Ugnaught", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.CLOUDCITYESCAPE, purchase_cost=36_000)
-    CATAPULT =                          159
-    SERVICE_CAR =                       160
+    CATAPULT =                          159, dict(readable_name="Ewok Catapult")
+    SERVICE_CAR =                       160, dict(readable_name="Service Car")
     PRINCESS_LEIA_SLAVE =               161, dict(readable_name="Princess Leia (Slave)", unlock_method=UnlockMethod.STORY, areas=[Area.SARLACCPIT])
     PRINCESS_LEIA_ENDOR =               162, dict(readable_name="Princess Leia (Endor)", unlock_method=UnlockMethod.STORY, areas=[Area.SPEEDERCHASE, Area.ENDORBATTLE])
     GRABBERR2CONTROL =                  163
-    ATST =                              164
+    ATST =                              164, dict(readable_name="AT-ST")
     WOMP_RAT =                          165, dict(readable_name="Womp Rat", unlock_method=UnlockMethod.EXTRA_TOGGLE, areas=[Area.TATOOINE, Area.MOSEISLEY, Area.JABBASPALACE, Area.ENDORBATTLE, Area.BONUS, Area.BONUS2, Area.E4CHARACTERBONUS])
     WORM =                              166
     DUVET =                             167
@@ -282,18 +278,18 @@ class Character(IntEnum):
     DROID_4 =                           177, dict(readable_name="Droid 4", unlock_method=UnlockMethod.EXTRA_TOGGLE, areas=[Area.TATOOINE, Area.MOSEISLEY, Area.E4CHARACTERBONUS])
     DREVAZAN =                          178
     SENTRYDROID =                       179
-    MOSCANNON =                         180
+    MOSCANNON =                         180, dict(readable_name="Mos Eisley Cannon")
     PONDABABA =                         181
     TIE_FIGHTER_DARTH_VADER =           182, dict(readable_name="TIE Fighter (Darth Vader)", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.DEATHSTARBATTLE, purchase_cost=50_000)
     JABBA =                             183
-    BOMARRMONK =                        184
+    BOMARRMONK =                        184, dict(readable_name="B'omarr Monk")
     BIB_FORTUNA =                       185, dict(readable_name="Bib Fortuna", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.JABBASPALACE, purchase_cost=16_000)
     SKIFF_GUARD =                       186, dict(readable_name="Skiff Guard", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.SARLACCPIT, purchase_cost=12_000)
-    MOONCAR =                           187
-    TRACTOR =                           188
-    TOWNCAR =                           189
+    MOONCAR =                           187, dict(readable_name="Moon Car")
+    TRACTOR =                           188, dict(readable_name="Tractor")
+    TOWNCAR =                           189, dict(readable_name="Town Car")
     REBEL_FRIEND =                      190, dict(readable_name="Rebel Friend", unlock_method=UnlockMethod.STORY, areas=[Area.BLOCKADERUNNER])
-    CLOUDCAR =                          191
+    CLOUDCAR =                          191, dict(readable_name="Cloud Car")
     LOBOT =                             192, dict(readable_name="Lobot", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.CLOUDCITYESCAPE, purchase_cost=11_000)
     BESPIN_GUARD =                      193, dict(readable_name="Bespin Guard", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.CLOUDCITYESCAPE, purchase_cost=15_000)
     IMPERIAL_GUARD =                    194, dict(readable_name="Imperial Guard", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.EMPERORFIGHT, purchase_cost=45_000)
@@ -302,17 +298,17 @@ class Character(IntEnum):
     IG_88 =                             197, dict(readable_name="IG-88", unlock_method=UnlockMethod.ALL_EPISODES_COMPLETE, purchase_cost=100_000)
     IMPERIAL_SHUTTLE =                  198, dict(readable_name="Imperial Shuttle", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.ASTEROIDCHASE, purchase_cost=25_000)
     EWOK =                              199, dict(readable_name="Ewok", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.ENDORBATTLE, purchase_cost=34_000)
-    TROOPERCANNON =                     200
+    TROOPERCANNON =                     200, dict(readable_name="Stormtrooper Cannon")
     LANDO_PALACE_GUARD =                201, dict(readable_name="Lando (Palace Guard)", unlock_method=UnlockMethod.STORY, areas=[Area.SARLACCPIT])
     CANTINAALIENS =                     202
-    SNOWMOB =                           203
+    SNOWMOB =                           203, dict(readable_name="Snowmobile")
     LUKE_SKYWALKER_HOTH =               204, dict(readable_name="Luke Skywalker (Hoth)", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.HOTHESCAPE, purchase_cost=14_000)
     PRINCESS_LEIA_PRISONER =            205, dict(readable_name="Princess Leia (Prisoner)", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.CLOUDCITYESCAPE, purchase_cost=22_000)
     HAN_SOLO_ENDOR =                    206, dict(readable_name="Han Solo (Endor)", unlock_method=UnlockMethod.STORY, areas=[Area.ENDORBATTLE])
     CAPTAIN_ANTILLES =                  207, dict(readable_name="Captain Antilles", unlock_method=UnlockMethod.STORY, areas=[Area.BLOCKADERUNNER])
     CURTAINS =                          208
     TIE_BOMBER =                        209, dict(readable_name="TIE Bomber", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.ASTEROIDCHASE, purchase_cost=60_000)
-    BIGGUN =                            210
+    BIGGUN =                            210, dict(readable_name="Sail Barge Cannon")
     ADMIRAL_ACKBAR =                    211, dict(readable_name="Admiral Ackbar", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.DEATHSTAR2BATTLE, purchase_cost=33_000)
     BOSSK =                             212, dict(readable_name="Bossk", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.JABBASPALACE, purchase_cost=75_000)
     DENGAR =                            213, dict(readable_name="Dengar", unlock_method=UnlockMethod.ALL_EPISODES_COMPLETE, purchase_cost=70_000)
@@ -324,7 +320,7 @@ class Character(IntEnum):
     PADMEUPTHEDUFF_MUSTAFAR =           219, dict(readable_name="Padmé")
     ROYALNABOOSTARSHIP =                220
     JEDI_STARFIGHTER_YELLOW =           221, dict(readable_name="Jedi Starfighter (Yellow)", unlock_method=UnlockMethod.STORY, areas=[Area.DOGFIGHT])
-    WOOKIEFLYER =                       222
+    WOOKIEFLYER =                       222, dict(readable_name="Wookie Flyer")
     WICKET =                            223, dict(readable_name="Wicket", unlock_method=UnlockMethod.STORY, areas=[Area.ENDORBATTLE])
     REBEL_ENGINEER =                    224, dict(readable_name="Rebel Engineer", unlock_method=UnlockMethod.EXTRA_TOGGLE, areas=[Area.BLOCKADERUNNER, Area.HOTHESCAPE])
     FOUR_LOM =                          225, dict(readable_name="4-LOM", unlock_method=UnlockMethod.ALL_EPISODES_COMPLETE, purchase_cost=45_000)
@@ -347,7 +343,7 @@ class Character(IntEnum):
     LUKE_SKYWALKER_JEDI_PYJAMAS =       242, dict(readable_name="Luke Skywalker (Jedi)")
     LUKE_SKYWALKER_JEDI_CEREMONY =      243, dict(readable_name="Luke Skywalker (Jedi)")
     SKIFFSHADOW =                       244
-    BASKETCANNON =                      245
+    BASKETCANNON =                      245, dict(readable_name="Basketball Cannon")
     DROIDSTARFIGHTER =                  246
     TRADEFEDERATIONLANDINGSHIP =        247
     MTT =                               248
@@ -374,7 +370,7 @@ class Character(IntEnum):
     PIT_DROID =                         268, dict(readable_name="Pit Droid", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.PODSPRINT, purchase_cost=4000)
     WATTO =                             269, dict(readable_name="Watto", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.PODSPRINT, purchase_cost=16_000)
     MAWHONIC =                          270
-    FLASHSPEEDER =                      271
+    FLASHSPEEDER =                      271, dict(readable_name="Flash Speeder")
     NABOO_STARFIGHTER =                 272, dict(readable_name="Naboo Starfighter", unlock_method=UnlockMethod.STORY, areas=[Area.ANAKINSFLIGHT])
     NABOO_STARFIGHTER_BLUE =            273, dict(readable_name="Naboo Starfighter (Blue)")
     NABOO_STARFIGHTER_GREEN =           274, dict(readable_name="Naboo Starfighter (Green)")
@@ -406,15 +402,15 @@ class Character(IntEnum):
     PADMEUPTHEDUFF =                    299, dict(readable_name="Padmé")
     JEDISTARFIGHTER =                   300
     DARTHSIDIOUS =                      301
-    STAP2 =                             302
-    MAPCAR =                            303
+    STAP2 =                             302, dict(readable_name="STAP")
+    MAPCAR =                            303, dict(readable_name="Cantina Car")
     DEXTER_JETTSTER =                   304, dict(readable_name="Dexter Jettster", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.PURSUIT, purchase_cost=10_000)
     UNPLAYABLE_ZAM_WESELL =             305, dict(readable_name="Zam Wesell")
     SANSWEET =                          306
     WHIP =                              307
     ZAMDROID =                          308
-    FIRETRUCK =                         309
-    LIFEBOAT =                          310
+    FIRETRUCK =                         309, dict(readable_name="Firetruck")
+    LIFEBOAT =                          310, dict(readable_name="Lifeboat")
     UNPLAYABLE_BASKETCANNON =           311  # I don't know what this BASKETCANNON is used for.
     MINI_ZAMS_AIRSPEEDER =              312, dict(readable_name="Zam's Airspeeder", unlock_method=UnlockMethod.MINIKIT, area=Area.PURSUIT)
     MINI_LAND_SPEEDER =                 313, dict(readable_name="Land Speeder", unlock_method=UnlockMethod.MINIKIT, area=Area.MOSEISLEY)

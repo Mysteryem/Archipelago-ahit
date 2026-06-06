@@ -16,6 +16,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExce
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 
 from ....character_ability import *
 
@@ -313,9 +314,9 @@ SPEEDER_SHOWDOWN = Chapter(
         )
     ),
     ridables={
-        "Speeder Bike": LocationData("Forest Loop"),
-        "AT-ST": LocationData("Second Open Area"),
-        "AT-AT": LocationData("Landing Pad Top")
+        Character.SPEEDERBIKE: LocationData("Forest Loop"),
+        Character.ATST: LocationData("Second Open Area"),
+        Character.ATAT: LocationData("Landing Pad Top")
     }
 )
 

@@ -12,6 +12,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExce
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
@@ -552,8 +553,8 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
         ),
     ),
     ridables={
-        "Bantha": LocationData(R_SPAWN),
-        "Dewback": LocationData(
+        Character.BANTHA: LocationData(R_SPAWN),
+        Character.DEWBACK: LocationData(
             R_ACROSS_SEA_OF_QUICKSAND,
             logic_options(
                 # Expect fighting the Stormtroopers
@@ -561,6 +562,6 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 normal=True_(),
             ),
         ),
-        "Landspeeder": LocationData(R_BEFORE_SEA_OF_QUICKSAND, HasAbility(CAN_BUILD_BRICKS)),
+        Character.SPEEDER_LAND: LocationData(R_BEFORE_SEA_OF_QUICKSAND, HasAbility(CAN_BUILD_BRICKS)),
     },
 )

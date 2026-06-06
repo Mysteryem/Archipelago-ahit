@@ -13,6 +13,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExce
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData, MinikitData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
@@ -300,8 +301,8 @@ SECRET_PLANS = _helper.make_chapter(
     },
     power_brick=LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, HasAbility(JEDI)),
     ridables={
-        "Moon Car": LocationData(R_SIDE_ACCESS_CORRIDOR, MOON_CAR_LOGIC),
-        "Town Car": LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, TOWN_CAR_LOGIC),
-        "Crane Control": LocationData(R_CRANE_ROOM),
+        Character.MOONCAR: LocationData(R_SIDE_ACCESS_CORRIDOR, MOON_CAR_LOGIC),
+        Character.TOWNCAR: LocationData(R_SIDE_ACCESS_CORRIDOR_BEHIND_FORCE_FIELD, TOWN_CAR_LOGIC),
+        Character.GRABBERCONTROL: LocationData(R_CRANE_ROOM),
     },
 )

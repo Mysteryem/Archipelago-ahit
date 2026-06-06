@@ -80,6 +80,7 @@ _RIDABLES: tuple[Ridable, ...] = (
     Ridable("SnowMob", "Snowmobile", 203, "5-2"),
     Ridable("Catapult", "Ewok Catapult", 159, "6-4"),
     Ridable("Cannon", "Skiff Cannon", 134, "6-2"),
+    # fixme: Name should be "Sail Barge Cannon"
     Ridable("BigGun", "Big Skiff Cannon", 210, "6-2"),
     # Requires pulling a lever OR destroying barrels and building bricks.
     Ridable("mapcar", "Cantina Car", 303, "cantina"),

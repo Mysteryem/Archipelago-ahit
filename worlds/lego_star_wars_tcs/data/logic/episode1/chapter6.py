@@ -10,6 +10,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
@@ -259,6 +260,6 @@ DARTH_MAUL = Chapter(
     },
     power_brick=LocationData(R_IMPERIAL_ROOM),
     ridables={
-        "Service Car": LocationData(R_HANGAR),
+        Character.SERVICE_CAR: LocationData(R_HANGAR),
     },
 )

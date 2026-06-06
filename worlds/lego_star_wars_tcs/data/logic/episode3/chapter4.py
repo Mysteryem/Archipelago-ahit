@@ -12,6 +12,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityComb
 from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
@@ -446,7 +447,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
         er_rule=CAN_SITH_FORCE & CAN_DESTROY_CLOSE_SILVER_BRICKS,
     ),
     ridables={
-        "Clone Walker": LocationData(
+        Character.CLONEWALKER: LocationData(
             R_BEACH_INVASION,
             # If you could somehow get to the forest without being able to build the one on the beach, there is also a
             # walker being piloted by an enemy in the forest, requiring only the ability to damage/force it to be able

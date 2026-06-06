@@ -104,7 +104,7 @@ class ChapterHelper:
             minikits: dict[str, MinikitData],
             power_brick: LocationData,
             # TODO: Add wip_true_jedi_rule
-            ridables: dict[str, LocationData] | None = None,
+            ridables: dict[Character, LocationData] | None = None,
             extra_chapter_entrance_rules: Rule | None = None,
     ):
         if ridables is None:
@@ -132,7 +132,7 @@ class Chapter:
     power_brick: LocationData
 
     # TODO: Add wip_true_jedi_rule
-    ridables: dict[str, LocationData] = field(default_factory=dict)
+    ridables: dict[Character, LocationData] = field(default_factory=dict)
     extra_chapter_entrance_rules: Rule = field(default_factory=True_)
     regions_in_can_reach: Iterable[str] = ()
 
@@ -170,8 +170,8 @@ class Chapter:
                 )
             for minikit_name, minikit_data in self.minikits.items():
                 self.minikits[minikit_name] = extra_toggle_replacer.add_extra_toggle_rules(minikit_data)
-            for ridable_name, ridable_data in self.ridables.items():
-                self.ridables[ridable_name] = extra_toggle_replacer.add_extra_toggle_rules(ridable_data)
+            for ridable_character, ridable_data in self.ridables.items():
+                self.ridables[ridable_character] = extra_toggle_replacer.add_extra_toggle_rules(ridable_data)
             replaced_power_brick_data = extra_toggle_replacer.add_extra_toggle_rules(self.power_brick)
             object.__setattr__(self, "power_brick", replaced_power_brick_data)
 
@@ -275,14 +275,9 @@ def _make_legacy_chapter(
         #true_jedi_rule: Rule,
         power_brick_rule: Rule,
         minikits: dict[str, LegacyMinikitData],
-        ridables: dict[str, Rule],
+        ridables: dict[Character, Rule],
         extra_chapter_entrance_rules: Rule,
-        story_characters: Iterable[str] = (),
-        purchase_characters: dict[str, int] | None = None,
-        extra_toggle_characters: Iterable[str] = (),
 ):
-    if purchase_characters is None:
-        purchase_characters = {}
 
     for area in Area:
         if area.episode_index == episode_number - 1 and area.area_index == chapter_number - 1:
@@ -314,9 +309,9 @@ def _make_legacy_chapter(
         region = placeholder_minikit_data.level
         minikits_data[minikit_name] = MinikitData(region, pickup_names=placeholder_minikit_data.pickup_names)
 
-    ridables_data: dict[str, LocationData] = {}
-    for ridable_name, rule in ridables.items():
-        ridables_data[ridable_name] = LocationData(start_region, rule)
+    ridables_data: dict[Character, LocationData] = {}
+    for ridable_character, rule in ridables.items():
+        ridables_data[ridable_character] = LocationData(start_region, rule)
 
     return Chapter(
         area=area,
@@ -337,7 +332,6 @@ def make_legacy_chapter(
     from .rules import HasAllAbilities, HasAbility
     from ...ridables import CHAPTER_TO_RIDABLES, get_ridable_requirements
     from ...character_ability import CharacterAbility
-    from ...items import CHARACTERS_AND_VEHICLES_BY_NAME
     area = SHORT_NAME_TO_CHAPTER_AREA[short_name]
 
     if area.completion_alt_ability_requirements is not None:
@@ -349,10 +343,10 @@ def make_legacy_chapter(
         completion_rule = HasAllAbilities(area.completion_main_ability_requirements)
 
     chapter_ridables = CHAPTER_TO_RIDABLES.get(short_name, [])
-    ridables: dict[str, Rule] = {}
+    ridables: dict[Character, Rule] = {}
     for ridable in chapter_ridables:
         requirements = get_ridable_requirements(short_name, ridable.user_facing_name)
-        ridables[ridable.user_facing_name] = Or(*map(HasAllAbilities, requirements))
+        ridables[Character(ridable.character_id)] = Or(*map(HasAllAbilities, requirements))
 
     return _make_legacy_chapter(
         episode_number=area.episode,

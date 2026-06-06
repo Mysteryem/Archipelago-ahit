@@ -500,12 +500,12 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
         HasAllAbilities(JEDI | ASTROMECH_PANEL),
     ),
     ridables={
-        "Landspeeder": LocationData(R_SPAWN),
-        "Mos Eisley Cannon": LocationData(R_WOMP_RAT_SHOOTING_RANGE, HasAbility(CAN_BUILD_BRICKS)),
-        "AT-ST": LocationData(
+        Character.SPEEDER_LAND: LocationData(R_SPAWN),
+        Character.MOSCANNON: LocationData(R_WOMP_RAT_SHOOTING_RANGE, HasAbility(CAN_BUILD_BRICKS)),
+        Character.ATST: LocationData(
             R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT,
             CAN_BUILD_FIRST_AT_ST,
         ),
-        "Dewback": LocationData(R_STORMTROOPER_AND_DEWBACK_COURTYARD),
+        Character.DEWBACK: LocationData(R_STORMTROOPER_AND_DEWBACK_COURTYARD),
     }
 )
