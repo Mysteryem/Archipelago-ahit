@@ -1,9 +1,17 @@
 from enum import IntEnum
-from typing import TypedDict
+from typing import TypedDict, TYPE_CHECKING
 
 __all__ = [
     "Extra",
 ]
+
+
+if TYPE_CHECKING:
+    from .areas import Area
+
+
+# Starts unpopulated to avoid circular imports.
+EXTRA_TO_AREA: "dict[Extra, Area]" = {}
 
 
 class ExtraInitializer(TypedDict):
@@ -27,6 +35,18 @@ class Extra(IntEnum):
         self.readable_name = initializer["readable_name"]
         self.localization_id = initializer["localization_id"]
         self.purchase_cost = initializer["purchase_cost"]
+
+    def get_purchase_location_name(self) -> str:
+        global EXTRA_TO_AREA
+        if not EXTRA_TO_AREA:
+            # Lazy import to prevent circular import.
+            from . import areas
+            EXTRA_TO_AREA = areas.EXTRA_TO_AREA
+        area = EXTRA_TO_AREA[self]
+        if area.is_chapter():
+            return area.prefix_name(f"Purchase {self.readable_name}")
+        else:
+            return f"Purchase {self.readable_name}"
 
     EXTRA_TOGGLE =             0, dict(localization_id= 672, purchase_cost=   30000, readable_name="Extra Toggle")
     FERTILIZER =               1, dict(localization_id= 671, purchase_cost=    8000, readable_name="Fertilizer")

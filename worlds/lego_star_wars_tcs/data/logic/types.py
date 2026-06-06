@@ -332,28 +332,30 @@ def make_legacy_chapter(
     from .rules import HasAllAbilities, HasAbility
     from ...ridables import CHAPTER_TO_RIDABLES, get_ridable_requirements
     from ...character_ability import CharacterAbility
-    area = SHORT_NAME_TO_CHAPTER_AREA[short_name]
+    from ..areas import EPISODE_AREA_LOOKUP
+    legacy_area = SHORT_NAME_TO_CHAPTER_AREA[short_name]
+    area = EPISODE_AREA_LOOKUP[legacy_area.episode][legacy_area.number_in_episode]
 
-    if area.completion_alt_ability_requirements is not None:
+    if legacy_area.completion_alt_ability_requirements is not None:
         completion_rule = Or(
-            HasAllAbilities(area.completion_main_ability_requirements),
-            HasAllAbilities(area.completion_alt_ability_requirements),
+            HasAllAbilities(legacy_area.completion_main_ability_requirements),
+            HasAllAbilities(legacy_area.completion_alt_ability_requirements),
         )
     else:
-        completion_rule = HasAllAbilities(area.completion_main_ability_requirements)
+        completion_rule = HasAllAbilities(legacy_area.completion_main_ability_requirements)
 
-    chapter_ridables = CHAPTER_TO_RIDABLES.get(short_name, [])
+    chapter_ridables = CHAPTER_TO_RIDABLES.get(area, [])
     ridables: dict[Character, Rule] = {}
     for ridable in chapter_ridables:
-        requirements = get_ridable_requirements(short_name, ridable.user_facing_name)
-        ridables[Character(ridable.character_id)] = Or(*map(HasAllAbilities, requirements))
+        requirements = get_ridable_requirements(area, ridable.user_facing_name)
+        ridables[ridable.character] = Or(*map(HasAllAbilities, requirements))
 
     return _make_legacy_chapter(
-        episode_number=area.episode,
-        chapter_number=area.number_in_episode,
-        minikits_rule=Or(*map(HasAllAbilities, area.all_minikits_ability_requirements)),
+        episode_number=legacy_area.episode,
+        chapter_number=legacy_area.number_in_episode,
+        minikits_rule=Or(*map(HasAllAbilities, legacy_area.all_minikits_ability_requirements)),
         completion_rule=completion_rule,
-        power_brick_rule=Or(*map(HasAllAbilities, area.power_brick_ability_requirements)),
+        power_brick_rule=Or(*map(HasAllAbilities, legacy_area.power_brick_ability_requirements)),
         minikits=minikits,
         ridables=ridables,
         extra_chapter_entrance_rules=(HasAbility(CharacterAbility.IS_A_VEHICLE)

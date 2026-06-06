@@ -13,6 +13,10 @@ __all__ = [
     "Area",
     "AreaFlag",
     "EPISODE_AREA_LOOKUP",
+    "PURCHASABLE_NON_POWER_BRICK_EXTRAS",
+    "EXTRA_TO_AREA",
+    "POWER_BRICK_EXTRAS",
+    "BONUS_ROOM_BONUSES",
 ]
 
 class AreaFlag(IntFlag):
@@ -101,7 +105,25 @@ class Area(IntEnum):
         return characters.AREA_TO_EXTRA_TOGGLE_CHARACTERS.get(self, frozenset())
 
     def is_chapter(self):
-        return self.episode_index in range(0, 6) and self.area_index in range(0, 6)
+        return self.area_index in range(0, 6)
+
+    def is_character_bonus(self):
+        return self.area_index == 7
+
+    def is_minikit_bonus(self):
+        return self.area_index == 8
+
+    def is_bonus_room_bonus(self):
+        return self in BONUS_ROOM_BONUSES
+
+    def prefix_name(self, name: str):
+        return f"{self.readable_name} - {name}"
+
+    def get_true_jedi_name(self):
+        return self.prefix_name("True Jedi")
+
+    def get_completion_name(self):
+        return self.prefix_name("Completion")
 
     NEGOTIATIONS =      0, dict(episode_index= 0, area_index= 0, readable_name=               "Negotiations", flags=AreaFlag(0x0010), story_true_jedi=31000, free_play_true_jedi= 64000, extra=             Extra.SUPER_GONK, levels=[Level.EP1_FAILEDNEG_INTRO1, Level.EP1_FAILEDNEG_INTRO2, Level.NEGOTIATIONS_A, Level.NEGOTIATIONS_B, Level.NEGOTIATIONS_C, Level.FAILEDNEG_OUTRO, Level.NEGOTIATIONS_STATUS])
     GUNGAN =            1, dict(episode_index= 0, area_index= 1, readable_name=          "Invasion Of Naboo", flags=AreaFlag(0x0010), story_true_jedi=44000, free_play_true_jedi= 52000, extra=              Extra.POO_MONEY, levels=[Level.GUNGAN_INTRO1, Level.GUNGAN_INTRO2, Level.GUNGAN_A, Level.GUNGAN_B, Level.GUNGAN_C, Level.GUNGAN_E, Level.GUNGAN_OUTRO2, Level.GUNGAN_STATUS])
@@ -170,7 +192,42 @@ class Area(IntEnum):
     NB_KASHYYYK =      64, dict(episode_index=-1, area_index=-1, readable_name=                   "Kashyyyk", flags=AreaFlag(0x2804), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.NB_KASHYYYK_A, Level.NB_KASHYYYK_STATUS])
     NB_DAGOBAH =       65, dict(episode_index=-1, area_index=-1, readable_name=                    "Dagobah", flags=AreaFlag(0x2804), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.NB_DAGOBAH_A, Level.NB_DAGOBAH_STATUS])
     MAP =              66, dict(episode_index=-1, area_index=-1, readable_name=                          "?", flags=AreaFlag(0x0048), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.MAP])
-    LOSTTEMPLE =       67, dict(episode_index=-1, area_index=-1, readable_name=                "Lost Temple", flags=AreaFlag(0x2c00), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.LOSTTEMPLE_A])
+    LOSTTEMPLE =       67, dict(episode_index=-1, area_index=-1, readable_name=      "Indiana Jones Trailer", flags=AreaFlag(0x2c00), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.LOSTTEMPLE_A])
+
+
+BONUS_ROOM_BONUSES = frozenset({
+    Area.PODRACE,
+    Area.BONUS_GUNSHIP,
+    Area.ANEWHOPE,
+    Area.ANAKINSFLIGHT,
+    Area.BONUS,
+    Area.BONUS2,
+    Area.LOSTTEMPLE,
+})
+
+_TWO_PLAYER_ARCADE_ARES = frozenset({
+    Area.SENATE,
+    Area.UTAPAU,
+    Area.HOTH,
+    Area.NB_KAMINO,
+    Area.NB_KASHYYYK,
+    Area.NB_DAGOBAH,
+})
+
+POWER_BRICK_EXTRAS: frozenset[Extra] = frozenset({
+    area.extra for area in Area if area.extra is not None
+})
+NON_POWER_BRICK_EXTRAS: frozenset[Extra] = frozenset({
+    extra for extra in Extra if extra not in POWER_BRICK_EXTRAS
+})
+PURCHASABLE_NON_POWER_BRICK_EXTRAS: frozenset[Extra] = frozenset({
+    extra for extra in NON_POWER_BRICK_EXTRAS if extra.purchase_cost is not None
+})
+EXTRA_TO_AREA: dict[Extra, Area] = {
+    **{a.extra: a for a in Area if a.extra is not None},
+    **{extra: Area.MAP for extra in PURCHASABLE_NON_POWER_BRICK_EXTRAS},
+}
+
 
 def make_episode_area_lookup() -> dict[int, dict[int, Area]]:
     lookup: dict[int, dict[int, Area]] = {}

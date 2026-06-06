@@ -13,6 +13,9 @@ __all__ = [
     "AREA_TO_STORY_CHARACTERS",
     "AREA_TO_PURCHASE_CHARACTERS",
     "AREA_TO_EXTRA_TOGGLE_CHARACTERS",
+    "CHARACTER_TO_STORY_AREA",
+    "CHARACTER_TO_PURCHASE_AREA",
+    "CHARACTER_TO_EXTRA_TOGGLE_AREA",
 ]
 
 
@@ -94,6 +97,21 @@ class Character(IntEnum):
     def is_event(self):
         return self.value >= _EVENT_OFFSET
 
+    def get_purchase_location_name(self):
+        base_name = f"Purchase {self.readable_name}"
+        area = CHARACTER_TO_PURCHASE_AREA[self]
+        if area.is_chapter() or area.is_bonus_room_bonus():
+            return area.prefix_name(base_name)
+        else:
+            # Cantina purchases.
+            return base_name
+
+    def get_level_completion_unlock_location_name(self):
+        return f"Level Completion - Unlock {self.readable_name}"
+
+    def get_ridesanity_location_name(self):
+        return f"Ride {self.readable_name}"
+
     # There is no extractor for this data because of a significant number of edits needing to be made due to duplicates
     # and invalid identifiers. Most of the extractable data from characters is not really usable individually and needs
     # parsing manually to extract what's useful from it.
@@ -110,7 +128,7 @@ class Character(IntEnum):
     TUSKEN_RAIDER =                       9, dict(readable_name="Tusken Raider", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.TATOOINE, purchase_cost=23_000)
     YODA =                               10, dict(readable_name="Yoda", unlock_method=UnlockMethod.STORY, areas=[Area.DOOKU, Area.KASHYYYK, Area.TEMPLE, Area.DAGOBAH])
     SLAVE_1 =                            11, dict(readable_name="Slave 1", unlock_method=UnlockMethod.ALL_MINIKITS_COMPLETE)
-    C_3PO =                              12, dict(readable_name="C-3PO", unlock_method=UnlockMethod.STORY, areas=[Area.FACTORY, Area.BLOCKADERUNNER, Area.TATOOINE, Area.MOSEISLEY, Area.DEATHSTARRESCUE, Area.DEATHSTARESCAPE, Area.HOTHESCAPE, Area.CLOUDCITYESCAPE, Area.JABBASPALACE, Area.SARLACCPIT, Area.ENDORBATTLE])
+    C_3PO =                              12, dict(readable_name="C-3PO", unlock_method=UnlockMethod.STORY, areas=[Area.FACTORY, Area.BLOCKADERUNNER, Area.TATOOINE, Area.MOSEISLEY, Area.DEATHSTARRESCUE, Area.DEATHSTARESCAPE, Area.HOTHESCAPE, Area.CLOUDCITYESCAPE, Area.JABBASPALACE, Area.SARLACCPIT, Area.ENDORBATTLE, Area.ANEWHOPE])
     REBEL_TROOPER =                      13, dict(readable_name="Rebel Trooper", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.BLOCKADERUNNER, purchase_cost=10_000)
     IMPERIAL_OFFICER =                   14, dict(readable_name="Imperial Officer", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.DEATHSTARRESCUE, purchase_cost=28_000)
     SPEEDER_LAND =                       15, dict(readable_name="Landspeeder")
@@ -138,7 +156,7 @@ class Character(IntEnum):
     TIE_FIGHTER =                        37, dict(readable_name="TIE Fighter", unlock_method=UnlockMethod.AREA_COMPLETE, area=Area.DEATHSTARBATTLE, purchase_cost=35_000)
     MILLENNIUM_FALCON =                  38, dict(readable_name="Millennium Falcon", unlock_method=UnlockMethod.STORY, areas=[Area.ASTEROIDCHASE, Area.DEATHSTAR2BATTLE])
     Y_WING =                             39, dict(readable_name="Y-wing", unlock_method=UnlockMethod.STORY, areas=[Area.DEATHSTARBATTLE])
-    DARTH_VADER =                        40, dict(readable_name="Darth Vader", unlock_method=UnlockMethod.STORY, areas=[Area.EMPERORFIGHT])
+    DARTH_VADER =                        40, dict(readable_name="Darth Vader", unlock_method=UnlockMethod.STORY, areas=[Area.EMPERORFIGHT, Area.ANEWHOPE])
     MINI_MILLENNIUM_FALCON =             41, dict(readable_name="Millennium Falcon", unlock_method=UnlockMethod.MINIKIT, area=Area.DEATHSTARRESCUE)
     MINI_X_WING =                        42, dict(readable_name="X-wing", unlock_method=UnlockMethod.MINIKIT, area=Area.DAGOBAH)
     MINI_TIE_INTERCEPTOR =               43, dict(readable_name="TIE Interceptor", unlock_method=UnlockMethod.MINIKIT, area=Area.DEATHSTAR2BATTLE)
@@ -430,13 +448,21 @@ def _make_area_lookups() -> tuple[AreaToCharacter, AreaToCharacter, AreaToCharac
     area_to_extra_toggle_characters: AreaToCharacter = {}
     empty = frozenset()
     for c in Character:
-        if c.unlock_method is UnlockMethod.START:
+        if c.unlock_method is UnlockMethod.START or c.unlock_method is UnlockMethod.ALL_EPISODES_COMPLETE:
             if c.purchase_cost is None:
-                d = area_to_story_characters
+                # Character is unlocked from the start (STRANGER 1 and STRANGER 2).
+                continue
             else:
                 assert c.purchase_cost is not None
                 d = area_to_purchase_characters
             d[Area.MAP] = d.get(Area.MAP, empty) | {c}
+        elif c.unlock_method is UnlockMethod.INDY_TRAILER:
+            # The LOSTTEMPLE Area does not get completed when watching the trailer, but rather a different byte,
+            # dedicated to recording whether the trailer has been watched, gets set. For purposes of assigning the
+            # character purchase to an Area however, Indiana Jones is assigned to LOSTTEMPLE, so that the purchase
+            # location gets given the expected name.
+            d = area_to_purchase_characters
+            d[Area.LOSTTEMPLE] = d.get(Area.LOSTTEMPLE, empty) | {c}
         else:
             if c.unlock_method is UnlockMethod.STORY:
                 d = area_to_story_characters
@@ -455,3 +481,13 @@ def _make_area_lookups() -> tuple[AreaToCharacter, AreaToCharacter, AreaToCharac
 
 AREA_TO_STORY_CHARACTERS, AREA_TO_PURCHASE_CHARACTERS, AREA_TO_EXTRA_TOGGLE_CHARACTERS = _make_area_lookups()
 del _make_area_lookups
+
+CHARACTER_TO_STORY_AREA = {
+    character: area for area, characters in AREA_TO_STORY_CHARACTERS.items() for character in characters
+}
+CHARACTER_TO_PURCHASE_AREA = {
+    character: area for area, characters in AREA_TO_PURCHASE_CHARACTERS.items() for character in characters
+}
+CHARACTER_TO_EXTRA_TOGGLE_AREA = {
+    character: area for area, characters in AREA_TO_EXTRA_TOGGLE_CHARACTERS.items() for character in characters
+}
