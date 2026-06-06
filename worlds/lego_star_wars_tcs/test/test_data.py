@@ -7,7 +7,7 @@ from test.general import setup_multiworld
 from worlds import AutoWorldRegister
 
 from ..data.levels import Level
-from ..data.logic import EPISODES
+from ..data.logic import EPISODES, CHAPTERS_BY_NUMBERS, CHAPTERS_BY_SHORT_NAME
 from ..data.logic.extraction import un_nest_logic_options
 from ..data.logic.option_filters import LogicOptions
 from ..data.logic.types import Chapter
@@ -239,3 +239,13 @@ class TestEpisodes(TestCase):
 
             with self.subTest(difficulty=logic_difficulty.current_option_name):
                 chapters_test(test_function)(self)
+
+    def test_chapters_by_numbers(self):
+        for episode_number, chapters in CHAPTERS_BY_NUMBERS.items():
+            for chapter_number, chapter in chapters.items():
+                self.assertEqual(episode_number, chapter.episode_number)
+                self.assertEqual(chapter_number, chapter.chapter_number)
+
+    def test_chapters_by_short_name(self):
+        for short_name, chapter in CHAPTERS_BY_SHORT_NAME.items():
+            self.assertEqual(short_name, chapter.short_name)
