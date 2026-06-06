@@ -12,7 +12,8 @@ from ...areas import Area
 from ...levels import Level
 
 from ....character_ability import *
-from ....items import LOGIC_CONSIDERED_CHARACTERS, VehicleData
+from ....data.characters import Character
+from ....data.items.character_items import CHARACTER_TO_DATA
 
 NAME = "Darth Vader"
 
@@ -34,11 +35,12 @@ ANY_DOUBLE_JUMP_EXCEPT_YODA = HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | H
 ANY_DOUBLE_JUMP_EXCEPT_YODA_ER = HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, "Yoda", "Yoda (Ghost)")
 
 
+# todo: Replace with HasAnyCharacterExcept
 def _make_any_character_except_force_ghost() -> Rule:
-    ghosts = {"Yoda (Ghost)", "Anakin Skywalker (Ghost)", "Ben Kenobi (Ghost)"}
+    ghosts = {Character.YODA_GHOST, Character.ANAKIN_SKYWALKER_GHOST, Character.BEN_KENOBI_GHOST}
     abilities_union = CharacterAbility.NONE
     for ghost in ghosts:
-        abilities_union |= LOGIC_CONSIDERED_CHARACTERS[ghost].abilities
+        abilities_union |= CHARACTER_TO_DATA[ghost].abilities
 
     # Vehicles are obviously no good either, since they cannot be brought into regular levels.
     abilities_union |= CharacterAbility.ALL_VEHICLE_ABILITIES
@@ -50,9 +52,7 @@ def _make_any_character_except_force_ghost() -> Rule:
     # Now find all non-ghost characters who don't share a single ability in common with `abilities_union`. Those
     # characters will need to be checked for individually.
     individual_check_characters: list[str] = []
-    for character in LOGIC_CONSIDERED_CHARACTERS.values():
-        if isinstance(character, VehicleData):
-            continue
+    for character in CHARACTER_TO_DATA.values():
         if character.name in ghosts:
             continue
         if character.abilities & any_abilities == 0:

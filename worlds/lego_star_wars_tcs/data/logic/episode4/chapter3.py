@@ -22,7 +22,8 @@ from ...areas import Area
 from ...levels import Level
 
 from ....character_ability import *
-from ....items import CHARACTERS_AND_VEHICLES_BY_NAME
+from ....data.characters import Character
+from ....data.items.character_items import CHARACTER_TO_DATA
 
 NAME = "Mos Eisley Spaceport"
 
@@ -50,40 +51,43 @@ CAN_BUILD_FIRST_AT_ST = HasAllAbilities(PROTOCOL_PANEL | JEDI | ASTROMECH_PANEL)
 
 
 def _make_can_pass_cantina_anti_droid_field() -> Rule:
-    affected_by_anti_droid_field = {
-        "R2-D2",
-        "C-3PO",
-        "Gonk Droid",
-        "Super Gonk Droid",
-        "Grievous' Bodyguard",
-        "Droideka",
-        "R4-P17",
-        "Battle Droid",
-        "Battle Droid (Commander)",
-        "Battle Droid (Geonosis)",
-        "Battle Droid (Security)",
-        "TC-14",
-        "Super Battle Droid",
-        "PK Droid",
-        "IG-88",
-        "4-LOM",
-        "Pit Droid",
-        "R2-Q5",
+    affected_by_anti_droid_field: set[Character] = {
+        Character.R2_D2,
+        Character.C_3PO,
+        Character.GONK_DROID,
+        Character.EVENT_SUPER_GONK_DROID,
+        Character.GRIEVOUS_BODYGUARD,
+        Character.DROIDEKA,
+        Character.R4_P17,
+        Character.BATTLE_DROID,
+        Character.BATTLE_DROID_COMMANDER,
+        Character.BATTLE_DROID_GEONOSIS,
+        Character.BATTLE_DROID_SECURITY,
+        Character.TC_14,
+        Character.SUPER_BATTLE_DROID,
+        Character.PK_DROID,
+        Character.IG_88,
+        Character.FOUR_LOM,
+        Character.PIT_DROID,
+        Character.R2_Q5,
         # Extra toggle characters:
-        "Droid 1",
-        "Droid 2",
-        "Droid 3",
-        "Droid 4",
+        Character.DROID_1,
+        Character.DROID_2,
+        Character.DROID_3,
+        Character.DROID_4,
         # While Mouse Droid and Buzz Droid might be affected, they are not available in this chapter.
     }
     # Remove droids that can destroy the anti-droid field on their own.
-    for character_name in tuple(affected_by_anti_droid_field):
-        if BLASTER in CHARACTERS_AND_VEHICLES_BY_NAME[character_name].abilities:
-            affected_by_anti_droid_field.remove(character_name)
-    characters_rule = HasAnyCharacterExcept(*affected_by_anti_droid_field)
+    for character in tuple(affected_by_anti_droid_field):
+        if BLASTER in CHARACTER_TO_DATA[character].abilities:
+            affected_by_anti_droid_field.remove(character)
+    character_names = {c.readable_name for c in affected_by_anti_droid_field}
+    characters_rule = HasAnyCharacterExcept(*character_names)
     # The ceiling has no collision, so Bodyguard can jump over the emitters when either OT high jump is enabled, or by
     # performing a triple jump.
-    characters_rule_moderate = HasAnyCharacterExcept(*(affected_by_anti_droid_field - {"Grievous' Bodyguard"}))
+    characters_rule_moderate = HasAnyCharacterExcept(
+        *(character_names - {Character.GRIEVOUS_BODYGUARD.readable_name})
+    )
     return logic_options(
         base=characters_rule,
         moderate=characters_rule_moderate,

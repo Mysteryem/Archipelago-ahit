@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING
 from BaseClasses import Region, LocationProgressType, Location, Entrance
 
 from .constants import GOLD_BRICK_EVENT_NAME, CharacterAbility
-from .items import CHARACTERS_AND_VEHICLES_BY_NAME, SHOP_SLOT_REQUIREMENT_TO_UNLOCKS, PURCHASABLE_NON_POWER_BRICK_EXTRAS
+from .data.characters import UnlockMethod
+from .data.shop import UNLOCK_REQUIREMENT_TO_CHARACTERS
+from .items import CHARACTERS_AND_VEHICLES_BY_NAME, PURCHASABLE_NON_POWER_BRICK_EXTRAS
 from .levels import (
     EPISODE_TO_CHAPTER_AREAS,
     CHAPTER_AREA_STORY_CHARACTERS,
@@ -342,7 +344,7 @@ class _RegionBuilder:
         world = self.world
         all_episodes = world.create_region("All Episodes Unlocked")
         self.cantina.connect(all_episodes, "Unlock All Episodes")
-        all_episodes_purchases = SHOP_SLOT_REQUIREMENT_TO_UNLOCKS["ALL_EPISODES"]
+        all_episodes_purchases = UNLOCK_REQUIREMENT_TO_CHARACTERS[UnlockMethod.ALL_EPISODES_COMPLETE]
         for character_name in all_episodes_purchases.keys():
             character = CHARACTERS_AND_VEHICLES_BY_NAME[character_name]
             world.add_shop_location(character.purchase_location_name, all_episodes, character.purchase_cost)

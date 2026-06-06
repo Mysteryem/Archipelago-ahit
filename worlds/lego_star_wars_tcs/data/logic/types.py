@@ -12,7 +12,7 @@ from rule_builder.rules import (
 
 from .extra_toggle import ExtraToggleRuleReplacer
 from ..areas import Area
-from ..characters import Character, UnlockMethod
+from ..characters import Character
 from ..levels import Level
 
 
@@ -71,6 +71,7 @@ class ExitData:
     new_level: Level | None = None
 
 
+# FIXME: Move chapter names into the Area type.
 @dataclass(frozen=True)
 class RegionData:
     name: str

@@ -1,7 +1,11 @@
 from enum import IntEnum, auto
-from typing import TypedDict, NotRequired
+from typing import TypedDict, NotRequired, TYPE_CHECKING
 
 from .areas import Area
+
+
+if TYPE_CHECKING:
+    from .items.character_items import CharacterData
 
 
 _EVENT_OFFSET = 1000
@@ -90,6 +94,9 @@ class Character(IntEnum):
                 raise ValueError(f"The unlock method for {self.name} is {self.unlock_method!r}, which should not"
                                  f" include any Areas")
             self.areas = frozenset()
+
+    def is_event(self):
+        return self.value >= _EVENT_OFFSET
 
     # There is no extractor for this data because of a significant number of edits needing to be made due to duplicates
     # and invalid identifiers. Most of the extractable data from characters is not really usable individually and needs

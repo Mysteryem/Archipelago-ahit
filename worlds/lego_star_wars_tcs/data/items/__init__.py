@@ -29,3 +29,9 @@ class GenericItemData:
 class GenericCharacterData(GenericItemData):
     character: Character
     abilities: CharacterAbility
+
+
+@dataclass(frozen=True)
+class MinikitItemData(GenericItemData):
+    bundle_size: int
+    item_type: ClassVar[ItemType] = "Minikit"

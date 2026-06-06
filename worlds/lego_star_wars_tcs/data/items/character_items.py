@@ -7,6 +7,16 @@ from ..characters import Character
 from ...character_ability import *
 
 
+__all__ = [
+    "Alignment",
+    "CharacterData",
+    "CHARACTER_DATA",
+    "CHARACTER_TO_DATA",
+    "EXTRA_CHARACTER_DATA",
+    "CANTINA_CAR",
+]
+
+
 class Alignment(IntEnum):
     GOOD = auto()  # Enemies will attack on sight.
     NEUTRAL = auto()  # Enemies will only attack if attacked first (or attacks are used nearby).
@@ -552,7 +562,8 @@ CHARACTER_DATA: list[CharacterData] = [
     generic_solo(Character.INDIANA_JONES),
 
     # This is an additional character to define the abilities of Gonk Droid when the Super Gonk Extra is active.
-    CharacterData.event("Super Gonk Droid", Character.GONK_DROID, CAN_SELF_DESTRUCT, 1.44, 0.53, 1.325, Alignment.PASSIVE),
+    CharacterData.event("Super Gonk Droid", Character.EVENT_SUPER_GONK_DROID, CAN_SELF_DESTRUCT,
+                        1.44, 0.53, 1.325, Alignment.PASSIVE),
 ]
 
 EXTRA_CHARACTER_DATA = [

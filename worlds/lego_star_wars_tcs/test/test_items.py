@@ -1,7 +1,9 @@
 from unittest import TestCase
 
-from ..items import ITEM_DATA, GenericCharacterData, CHARACTER_SHOP_SLOTS, CHARACTERS_AND_VEHICLES_BY_NAME
-from ..levels import SHORT_NAME_TO_CHAPTER_AREA
+from ..data.characters import UnlockMethod
+from ..data.items import GenericCharacterData
+from ..data.shop import CHARACTER_SHOP_SLOTS
+from ..items import ITEM_DATA, CHARACTERS_AND_VEHICLES_BY_NAME
 
 
 class TestItems(TestCase):
@@ -21,13 +23,18 @@ class TestItems(TestCase):
             found_names.add(item.name)
 
     def test_character_number_uniqueness(self):
-        found_character_numbers = set()
+        found_characters = set()
         for item in ITEM_DATA:
             if not isinstance(item, GenericCharacterData):
                 continue
-            self.assertNotIn(item.character_index, found_character_numbers)
-            self.assertGreaterEqual(item.character_index, 0 if item.is_sendable else -1)
-            found_character_numbers.add(item.character_index)
+            self.assertNotIn(item.character, found_characters)
+            if item.character.is_event():
+                self.assertIsNone(item.code)
+                self.assertTrue(item.is_sendable)
+            else:
+                self.assertIsNotNone(item.code)
+                self.assertFalse(item.is_sendable)
+            found_characters.add(item.character)
 
     def test_shop_slots_count(self):
         """Test that there are the correct number of Character shop slots."""
@@ -35,16 +42,20 @@ class TestItems(TestCase):
         self.assertEqual(len(CHARACTER_SHOP_SLOTS), 89)
 
     def test_shop_slots_characters(self):
-        for character_name in CHARACTER_SHOP_SLOTS.keys():
-            self.assertIn(character_name, CHARACTERS_AND_VEHICLES_BY_NAME)
+        for character in CHARACTER_SHOP_SLOTS:
+            self.assertIn(character.readable_name, CHARACTERS_AND_VEHICLES_BY_NAME)
 
     def test_shop_slots_unlocks(self):
         possible_unlocks = {
-            *SHORT_NAME_TO_CHAPTER_AREA.keys(),  # Complete a story chapter (story chapters are auto-completed by the
-            # client when free play is completed).
-            "ALL_EPISODES",  # Complete all episode in vanilla, unlock all episodes in the rando.
-            None,  # Available from the start.
-            "INDY_TRAILER",  # Watch the Indy Trailer.
+            UnlockMethod.AREA_COMPLETE,
+            UnlockMethod.INDY_TRAILER,
+            UnlockMethod.ALL_EPISODES_COMPLETE,
         }
-        for area_name, _studs_cost in CHARACTER_SHOP_SLOTS.values():
-            self.assertIn(area_name, possible_unlocks)
+        for character in CHARACTER_SHOP_SLOTS:
+            self.assertIn(character.unlock_method, possible_unlocks)
+            if character.unlock_method is UnlockMethod.AREA_COMPLETE:
+                areas = character.areas
+                self.assertIsNotNone(areas)
+                self.assertTrue(len(areas) == 1)
+                self.assertTrue(next(iter(areas)).is_chapter())
+

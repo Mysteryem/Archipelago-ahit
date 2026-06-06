@@ -31,8 +31,7 @@ from .items import (
     ITEM_NAME_TO_ID,
     LegoStarWarsTCSItem,
     ExtraData,
-    NonPowerBrickExtraData,
-    VehicleData,
+    PURCHASABLE_NON_POWER_BRICK_EXTRAS,
     CharacterData,
     GenericCharacterData,
     ITEM_DATA_BY_NAME,
@@ -41,7 +40,6 @@ from .items import (
     MINIKITS_BY_COUNT,
     MINIKITS_BY_NAME,
     EXTRAS_BY_NAME,
-    SHOP_SLOT_REQUIREMENT_TO_UNLOCKS,
     PURCHASABLE_NON_POWER_BRICK_EXTRAS,
     SUPER_GONK_ITEMS,
     SUPER_GONK_DROID_ABILITIES_VALUE,
@@ -238,7 +236,7 @@ class LegoStarWarsTCSWorld(World):
             raise RuntimeError(f"Error: Item '{name}' cannot be created")
         assert item_data.code != -1
         if isinstance(item_data, ExtraData):
-            if isinstance(item_data, NonPowerBrickExtraData):
+            if item_data in PURCHASABLE_NON_POWER_BRICK_EXTRAS:
                 # Only Extra Toggle is useful out of these Extras due to the high movement speed Mouse Droid and a few
                 # logic uses.
                 if name == "Extra Toggle":

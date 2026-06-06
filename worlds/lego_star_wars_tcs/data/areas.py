@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 __all__ = [
     "Area",
     "AreaFlag",
+    "EPISODE_AREA_LOOKUP",
 ]
 
 class AreaFlag(IntFlag):
@@ -40,7 +41,7 @@ class AreaInitializer(TypedDict):
     flags: AreaFlag
     story_true_jedi: int
     free_play_true_jedi: int
-    extra: int | None
+    extra: Extra | None
     levels: list[Level]
 
 
@@ -51,7 +52,7 @@ class Area(IntEnum):
     flags: AreaFlag
     story_true_jedi: int
     free_play_true_jedi: int
-    extra: int | None
+    extra: Extra | None
     levels: tuple[Level, ...]
 
     def __new__(cls, *args, **kwargs):
@@ -95,6 +96,9 @@ class Area(IntEnum):
         # Lazy import to prevent circular import.
         from . import characters
         return characters.AREA_TO_EXTRA_TOGGLE_CHARACTERS.get(self, frozenset())
+
+    def is_chapter(self):
+        return self.episode_index in range(0, 6) and self.area_index in range(0, 6)
 
     NEGOTIATIONS =      0, dict(episode_index= 0, area_index= 0, flags=AreaFlag(0x0010), story_true_jedi=31000, free_play_true_jedi= 64000, extra=             Extra.SUPER_GONK, levels=[Level.EP1_FAILEDNEG_INTRO1, Level.EP1_FAILEDNEG_INTRO2, Level.NEGOTIATIONS_A, Level.NEGOTIATIONS_B, Level.NEGOTIATIONS_C, Level.FAILEDNEG_OUTRO, Level.NEGOTIATIONS_STATUS])
     GUNGAN =            1, dict(episode_index= 0, area_index= 1, flags=AreaFlag(0x0010), story_true_jedi=44000, free_play_true_jedi= 52000, extra=              Extra.POO_MONEY, levels=[Level.GUNGAN_INTRO1, Level.GUNGAN_INTRO2, Level.GUNGAN_A, Level.GUNGAN_B, Level.GUNGAN_C, Level.GUNGAN_E, Level.GUNGAN_OUTRO2, Level.GUNGAN_STATUS])
@@ -164,3 +168,14 @@ class Area(IntEnum):
     NB_DAGOBAH =       65, dict(episode_index=-1, area_index=-1, flags=AreaFlag(0x2804), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.NB_DAGOBAH_A, Level.NB_DAGOBAH_STATUS])
     MAP =              66, dict(episode_index=-1, area_index=-1, flags=AreaFlag(0x0048), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.MAP])
     LOSTTEMPLE =       67, dict(episode_index=-1, area_index=-1, flags=AreaFlag(0x2c00), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.LOSTTEMPLE_A])
+
+def make_episode_area_lookup() -> dict[int, dict[int, Area]]:
+    lookup: dict[int, dict[int, Area]] = {}
+    for area in Area:
+        if area.episode_index == -1:
+            continue
+        lookup.setdefault(area.episode_index + 1, {})[area.area_index + 1] = area
+    return lookup
+
+EPISODE_AREA_LOOKUP: dict[int, dict[int, Area]] = make_episode_area_lookup()
+del make_episode_area_lookup

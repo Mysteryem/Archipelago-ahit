@@ -25,7 +25,9 @@ from .constants import (
     IS_A_VEHICLE,
     CHAPTER_SPECIFIC_FLAGS,
 )
-from .items import SHOP_SLOT_REQUIREMENT_TO_UNLOCKS, CHARACTERS_AND_VEHICLES_BY_NAME
+from .data.areas import EPISODE_AREA_LOOKUP
+from .data.characters import AREA_TO_PURCHASE_CHARACTERS, Character
+from .items import CHARACTERS_AND_VEHICLES_BY_NAME
 
 
 @dataclass(frozen=True)
@@ -128,11 +130,14 @@ class ChapterArea:
         character_requirements = CHAPTER_AREA_STORY_CHARACTERS[self.short_name]
         object.__setattr__(self, "character_requirements", character_requirements)
 
-        character_shop_unlock_data = SHOP_SLOT_REQUIREMENT_TO_UNLOCKS.get(self.short_name, {})
-        object.__setattr__(self, "alt_character_requirements", frozenset(character_shop_unlock_data.keys()))
+        area = EPISODE_AREA_LOOKUP[self.episode][self.number_in_episode]
+        character_shop_unlock_data = AREA_TO_PURCHASE_CHARACTERS.get(area, ())
+        object.__setattr__(self,
+                           "alt_character_requirements",
+                           frozenset(c.readable_name for c in character_shop_unlock_data))
 
-        character_shop_unlocks = {f"Purchase {character} ({self.short_name})": price for character, price
-                                  in character_shop_unlock_data.items()}
+        character_shop_unlocks = {f"Purchase {character.readable_name} ({self.short_name})": character.purchase_cost
+                                  for character in character_shop_unlock_data}
         object.__setattr__(self, "character_shop_unlocks", character_shop_unlocks)
 
         power_brick = POWER_BRICK_REQUIREMENTS[self.short_name]
@@ -201,7 +206,7 @@ class BonusArea:
     completion_ability_requirements: CharacterAbility = CharacterAbility.NONE
     gold_bricks_required: int = 0
     gold_brick: bool = True
-    story_characters: frozenset[str] = field(init=False)
+    story_characters: frozenset[Character] = field(init=False)
 
     def __post_init__(self):
         object.__setattr__(self, "story_characters", BONUS_AREA_STORY_CHARACTERS.get(self.name, frozenset()))
@@ -421,20 +426,20 @@ CHAPTER_AREA_STORY_CHARACTERS: dict[str, frozenset[str]] = {
 }
 
 
-BONUS_AREA_STORY_CHARACTERS: dict[str, frozenset[str]] = {
+BONUS_AREA_STORY_CHARACTERS: dict[str, frozenset[Character]] = {
     k: frozenset(v) for k, v in {
         "Mos Espa Pod Race (Original)": {
-            "Anakin's Pod",
+            Character.ANAKINS_POD,
         },
         "Anakin's Flight": {
-            "Naboo Starfighter",
+            Character.NABOO_STARFIGHTER,
         },
         "Gunship Cavalry (Original)": {
-            "Republic Gunship",
+            Character.REPUBLIC_GUNSHIP,
         },
         "A New Hope (Bonus Level)": {
-            "Darth Vader",
-            "C-3PO",
+            Character.DARTH_VADER,
+            Character.C_3PO,
         }
     }.items()
 }
@@ -698,9 +703,14 @@ CHAPTER_AREAS = [
     # area 57 = Bonus: New Town
     # area 58 = Bonus: Anakin's Flight, AreaData* index 50
     # area 59 = Bonus: Lego City
-    # area 60 = Two Player Arcade
+    # area 60 = Two Player Arcade (Senate) (also used by the door in the cantina)
+    # area 61 = Two Player Arcade (Utapau)
+    # area 62 = Two Player Arcade (Hoth)
+    # area 63 = Two Player Arcade (Kamino)
+    # area 64 = Two Player Arcade (Kashyyyk)
+    # area 65 = Two Player Arcade (Dagobah)
     # area 66 = Cantina
-    # area 67 = Bonus: Trailers door
+    # area 67 = Bonus: Trailers door (technically belongs to LostTemple, but the level is unfinished, and inaccessible)
 ]
 
 
