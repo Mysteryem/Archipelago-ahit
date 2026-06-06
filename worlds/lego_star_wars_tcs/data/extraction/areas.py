@@ -81,7 +81,11 @@ def _extract():
     a_data_start = process.read_uint(p_a_data_start)
     a_data_size = 0x9c
 
+    p_t_tab_addr = 0x00926c40
+    t_tab_addr = process.read_uint(p_t_tab_addr)
+
     longest_extra = "Extra.EXPLODING_BLASTER_BOLTS"
+    longest_name = len("Through The Jundland Wastes")
 
     i = 0
     while True:
@@ -90,10 +94,32 @@ def _extract():
         name = area_data.area_name.rstrip(b"\x00").decode("utf-8")
         level_ids = area_data.level_ids[:area_data.level_id_count]
 
+        # char **
+        if area_data.area_index == 6:
+            human_readable_name = f"Episode {area_data.episode_index+1} Ending"
+        # The Character and Minikit Bonuses actually have names based on where they are, e.g. "Tatooine" or "Endor".
+        elif area_data.area_index == 7:
+            human_readable_name = f"Episode {area_data.episode_index+1} Character Bonus"
+        elif area_data.area_index == 8:
+            human_readable_name = f"Episode {area_data.episode_index+1} Minikit Bonus"
+        elif area_data.localized_text_id > 0:
+            p_human_readable_name_addr = t_tab_addr + area_data.localized_text_id * 4
+            human_readable_name_addr = process.read_uint(p_human_readable_name_addr)
+            if human_readable_name_addr:
+                human_readable_name = process.read_bytes(
+                    human_readable_name_addr, 64
+                ).partition(b"\x00")[0].decode("utf-8)").title().replace("'S", "'s")
+            else:
+                human_readable_name = "?"
+        else:
+            human_readable_name = "??"
+
         space = " " * (16 - len(name))
         story_true_jedi, free_play_true_jedi = KNOWN_TRUE_JEDI.get(
             i, (area_data.story_true_jedi_requirement, area_data.free_play_true_jedi_requirement)
         )
+
+        name_spaces = " " * (longest_name - len(human_readable_name))
 
         level_names = [f"Level.{Level(level).name}" for level in level_ids]
         level_ids_str = ", ".join(level_names)
@@ -108,6 +134,7 @@ def _extract():
         print(f"    {name.upper()} = {space}{i:2}"
               f", dict(episode_index={area_data.episode_index:2}"
               f", area_index={area_data.area_index:2}"
+              f", readable_name={name_spaces}\"{human_readable_name}\""
               f", flags=AreaFlag(0x{area_data.area_flags:04x})"
               f", story_true_jedi={story_true_jedi:5}"
               f", free_play_true_jedi={free_play_true_jedi:6}"
