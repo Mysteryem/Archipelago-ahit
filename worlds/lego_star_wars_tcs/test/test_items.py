@@ -6,13 +6,22 @@ from ..data.shop import CHARACTER_SHOP_SLOTS
 from ..items import ITEM_DATA, CHARACTERS_AND_VEHICLES_BY_NAME
 
 
+_MIN_ID = 1
+_MAX_ID = 2**53 - 1
+
+
 class TestItems(TestCase):
     def test_item_code_uniqueness(self):
         found_codes = set()
         for item in ITEM_DATA:
-            if item.code == -1:
+            if not item.is_sendable:
+                self.assertIsNone(item.code, f"{item} is an event but has a code")
                 continue
-            self.assertGreater(item.code, 0)
+            self.assertIsNotNone(item.code, f"{item} is not an event, but does not have a code")
+            self.assertGreaterEqual(item.code, _MIN_ID, f"Item codes must be greater than or equal to {_MIN_ID},"
+                                                        f" but {item}'s code is {item.code}")
+            self.assertLessEqual(item.code, _MAX_ID, f"Item codes must be less than or equal to {_MAX_ID},"
+                                                     f" but {item}'s code is {item.code}")
             self.assertNotIn(item.code, found_codes)
             found_codes.add(item.code)
 
@@ -27,13 +36,13 @@ class TestItems(TestCase):
         for item in ITEM_DATA:
             if not isinstance(item, GenericCharacterData):
                 continue
-            self.assertNotIn(item.character, found_characters)
+            self.assertNotIn(item.character, found_characters, f"Duplicate character {item.character} for {item}")
             if item.character.is_event():
-                self.assertIsNone(item.code)
-                self.assertTrue(item.is_sendable)
+                self.assertIsNone(item.code, f"{item} is an event but has a code")
+                self.assertFalse(item.is_sendable, f"{item} is an event, but is sendable")
             else:
-                self.assertIsNotNone(item.code)
-                self.assertFalse(item.is_sendable)
+                self.assertIsNotNone(item.code, f"{item} is not an event, but does not have a code")
+                self.assertTrue(item.is_sendable, f"{item} is not an event, but is not sendable")
             found_characters.add(item.character)
 
     def test_shop_slots_count(self):
@@ -47,6 +56,7 @@ class TestItems(TestCase):
 
     def test_shop_slots_unlocks(self):
         possible_unlocks = {
+            UnlockMethod.START,
             UnlockMethod.AREA_COMPLETE,
             UnlockMethod.INDY_TRAILER,
             UnlockMethod.ALL_EPISODES_COMPLETE,
@@ -58,4 +68,6 @@ class TestItems(TestCase):
                 self.assertIsNotNone(areas)
                 self.assertTrue(len(areas) == 1)
                 self.assertTrue(next(iter(areas)).is_chapter())
+                self.assertIsNotNone(character.purchase_cost)
+                self.assertGreater(character.purchase_cost, 0)
 
