@@ -10,7 +10,6 @@ NAME = "Mos Espa Pod Race"
 R_RACETRACK = "Racetrack"
 
 MOS_ESPA_POD_RACE = Chapter(
-    name=NAME,
     area=Area.PODSPRINT,
     start_region=R_RACETRACK,
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),

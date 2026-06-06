@@ -14,8 +14,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Darth Maul"
-
 R_SPAWN = "Spawn"
 R_HANGAR = "Hangar"
 R_IMPERIAL_ROOM = "Imperial Room"
@@ -25,7 +23,6 @@ R_ENERGY_COLUMNS_ROOM = "Energy Columns Room"
 R_MAUL_BOSS_ROOM = "Maul Boss Room"
 
 DARTH_MAUL = Chapter(
-    name=NAME,
     area=Area.MAUL,
     start_region=R_SPAWN,
     regions={

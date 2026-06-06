@@ -10,8 +10,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Discovery On Kamino"
-
 R_LANDING_PAD = "Landing Pad"
 R_CLONE_VIEWING_AREA = "Clone Viewing Area"
 R_BOUNTY_HUNTER_AREA = "Bounty Hunter Area"
@@ -22,7 +20,6 @@ R_END_OF_OUTSIDE_JANGO_CHASE = "End Of Outside Jango Chase"
 R_INTERIOR_BEFORE_JANGO_FIGHT = "Interior Before Jango Fight"
 
 DISCOVERY_ON_KAMINO = Chapter(
-    name=NAME,
     area=Area.KAMINO,
     start_region=R_LANDING_PAD,
     regions={

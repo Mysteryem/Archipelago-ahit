@@ -16,8 +16,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Ruin Of The Jedi"
-
 R_OUTSIDE_TEMPLE = "Outside Temple"
 R_INSIDE_TEMPLE_SPAWN = "Inside Temple Spawn"
 R_CLONE_PIZZA_PARTY = "Clone Pizza Party"
@@ -35,7 +33,6 @@ CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
 
 
 RUIN_OF_THE_JEDI = Chapter(
-    name=NAME,
     area=Area.TEMPLE,
     start_region=R_OUTSIDE_TEMPLE,
     # There are enemies at the start, so have the base logic expect fighting them.

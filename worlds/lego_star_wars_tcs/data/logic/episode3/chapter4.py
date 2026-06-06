@@ -16,8 +16,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Defense Of Kashyyyk"
-
 R_SPAWN_PLATFORM = "Spawn Platform"
 R_ORDER_66_PLATFORMS = "Order 66 Platforms"
 R_RESCUE_WOOKIES_AREA = "Rescue Wookies Area"
@@ -33,7 +31,6 @@ CAN_BUILD_BEACH_CLONE_WALKER = logic_options(
 _CAN_BUILD_BEACHFRONT_CLONE_WALKER_ER = CAN_BUILD_BEACH_CLONE_WALKER.and_rule(HasAbility(JEDI))
 
 DEFENSE_OF_KASHYYYK = Chapter(
-    name=NAME,
     area=Area.KASHYYYK,
     start_region=R_SPAWN_PLATFORM,
     regions={

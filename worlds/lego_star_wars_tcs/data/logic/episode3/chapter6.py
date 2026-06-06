@@ -69,7 +69,6 @@ del _make_any_character_except_force_ghost
 
 
 DARTH_VADER = Chapter(
-    name=NAME,
     area=Area.VADER,
     start_region=R_COLLAPSING_LAVA_HALLWAY,
     regions={

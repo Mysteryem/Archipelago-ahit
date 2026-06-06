@@ -9,8 +9,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Negotiations"
-
 R_MEETING_ROOM = "Meeting Room"
 R_MAIN_CORRIDOR = "Main Corridor"
 R_SINGLE_FORCE_FIELD_ROOM = "Single Force Field Room"
@@ -23,7 +21,6 @@ R_POWER_BRICK_ROOM = "Power Brick Room"
 R_MTT_HANGAR = "MTT Hangar"
 
 NEGOTIATIONS = Chapter(
-    name=NAME,
     area=Area.NEGOTIATIONS,
     start_region=R_MEETING_ROOM,
     regions={

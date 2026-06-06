@@ -99,7 +99,6 @@ del _make_can_pass_cantina_anti_droid_field
 
 
 helper = ChapterHelper(
-    name=NAME,
     area=Area.MOSEISLEY,
     start_region=R_SPAWN,
 )

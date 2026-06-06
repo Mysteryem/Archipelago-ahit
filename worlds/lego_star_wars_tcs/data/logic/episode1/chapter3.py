@@ -18,8 +18,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Escape From Naboo"
-
 R_ROOFTOPS_SPAWN = "Rooftops Spawn"
 R_ROOFTOPS_CLIMB = "Rooftops Climb"
 R_TOWER = "Tower"
@@ -27,7 +25,6 @@ R_ROOFTOPS_AFTER_SMALL_BLASTER_TARGET_GATE = "Rooftops After Small Blaster Targe
 R_FINAL_ROOFTOP = "Final Rooftop"
 
 ESCAPE_FROM_NABOO = Chapter(
-    name=NAME,
     area=Area.PALACERESCUE,
     start_region=R_ROOFTOPS_SPAWN,
     regions={

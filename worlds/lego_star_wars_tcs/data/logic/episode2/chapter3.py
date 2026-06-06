@@ -17,8 +17,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Droid Factory"
-
 R_ENTRANCE_CORRIDOR = "Entrance Corridor"
 R_FACTORY_CONVEYOR = "Factory Conveyor"
 R_AFTER_FACTORY_CONVEYOR = "After Factory Conveyor"
@@ -35,7 +33,6 @@ R_OBI_WAN_HOLDING_CELL_ROOM = "Obi-Wan Holding Cell Room"
 
 
 DROID_FACTORY = Chapter(
-    name=NAME,
     area=Area.FACTORY,
     start_region=R_ENTRANCE_CORRIDOR,
     regions={

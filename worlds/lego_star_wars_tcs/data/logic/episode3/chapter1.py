@@ -13,7 +13,6 @@ R_AFTER_FIRST_DESTROYABLE_SHIP = "After First Destroyable Ship"
 R_AFTER_SECOND_DESTROYABLE_SHIP = "After Second Destroyable Ship"
 
 BATTLE_OVER_CORUSCANT = Chapter(
-    name=NAME,
     area=Area.DOGFIGHT,
     start_region=R_SPACE_BATTLE_SPAWN,
     extra_chapter_entrance_rules=logic_options(

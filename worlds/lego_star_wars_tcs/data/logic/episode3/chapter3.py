@@ -15,8 +15,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "General Grievous"
-
 R_CIRCULAR_PLATFORM = "Circular Platform"
 R_FAR_LEFT_SILVER_BRICK_SECTION = "Far Left Silver Brick Section"
 R_FIRST_EXPLOSIVES_SECTION = "First Explosives Section"
@@ -30,7 +28,6 @@ R_BRIDGE_AND_MINES_BUILDING = "Bridge And Mines Building"
 R_BRICK_COVERED_MINIKIT_ALCOVE = "Brick Covered Minikit Alcove"
 
 _helper = ChapterHelper(
-    name=NAME,
     area=Area.GRIEVOUS,
     start_region=R_CIRCULAR_PLATFORM,
 )

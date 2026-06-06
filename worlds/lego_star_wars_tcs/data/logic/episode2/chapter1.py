@@ -12,15 +12,12 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Bounty Hunter Pursuit"
-
 R_SPAWN = "Spawn"
 R_FIRST_FORCEFIELD_TRAP = "First Forcefield Trap"
 R_AFTER_FIRST_FORCEFIELD_TRAP = "After First Forcefield Trap"
 R_SECOND_FORCEFIELD_TRAP = "Second Forcefield Trap"
 
 BOUNTY_HUNTER_PURSUIT = Chapter(
-    name=NAME,
     area=Area.PURSUIT,
     start_region=R_SPAWN,
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),

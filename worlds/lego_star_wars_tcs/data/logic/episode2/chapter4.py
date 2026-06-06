@@ -13,12 +13,9 @@ from ...areas import Area
 
 from ....character_ability import *
 
-NAME = "Jedi Battle"
-
 R_ARENA = "Arena"
 
 JEDI_BATTLE = Chapter(
-    name=NAME,
     area=Area.JEDI,
     start_region=R_ARENA,
     regions={

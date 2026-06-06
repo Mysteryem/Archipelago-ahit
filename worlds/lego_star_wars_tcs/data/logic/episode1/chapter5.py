@@ -17,8 +17,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Retake Theed Palace"
-
 R_SPAWN = "Spawn"
 R_INSIDE_PALACE = "Inside Palace"
 R_AFTER_COLLAPSED_FLOOR_IN_PALACE = "After Collapsed Floor In Palace"
@@ -29,7 +27,6 @@ R_DINING_HALL = "Dining Hall"
 R_HANGAR = "Hangar"
 
 RETAKE_THEED_PALACE = Chapter(
-    name=NAME,
     area=Area.RETAKEPALACE,
     start_region=R_SPAWN,
     regions={

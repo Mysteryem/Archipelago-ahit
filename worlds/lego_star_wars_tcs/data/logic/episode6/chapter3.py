@@ -42,7 +42,6 @@ CAN_DESTROY_MINIKIT_CAGES = Or(
 
 
 SPEEDER_SHOWDOWN = Chapter(
-    name="Speeder Showdown",
     area=Area.SPEEDERCHASE,
     start_region="Spawn",
     regions={

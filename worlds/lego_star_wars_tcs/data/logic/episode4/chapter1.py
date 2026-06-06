@@ -17,8 +17,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Secret Plans"
-
 R_SPAWN = "Spawn"
 R_FIRST_HALLWAY = "First Hallway"
 R_SECOND_HALLWAY = "Second Hallway"
@@ -40,7 +38,6 @@ R_ESCAPE_POD_CORRIDOR = "Escape Pod Corridor"
 
 
 _helper = ChapterHelper(
-    name=NAME,
     area=Area.BLOCKADERUNNER,
     start_region=R_SPAWN,
 )

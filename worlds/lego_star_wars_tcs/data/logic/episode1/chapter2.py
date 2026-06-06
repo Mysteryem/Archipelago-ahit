@@ -10,8 +10,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Invasion of Naboo"
-
 R_FOREST_SPAWN = "Forest Spawn"
 R_AFTER_FIRST_FALLEN_TREE = "After First Fallen Tree"
 R_AFTER_CRASHED_MTT = "After Crashed MTT"
@@ -25,7 +23,6 @@ R_SWAMP_RUINS = "Swamp Ruins"
 R_SWAMP_BEFORE_WATER = "Swamp Before Water"
 
 INVASION_OF_NABOO = Chapter(
-    name=NAME,
     area=Area.GUNGAN,
     start_region=R_FOREST_SPAWN,
     regions={

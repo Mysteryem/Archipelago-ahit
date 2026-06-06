@@ -9,14 +9,11 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Gunship Cavalry"
-
 R_SPAWN = "Spawn"
 R_BEHIND_FIRST_FORCE_FIELD = "Behind First Force Field"
 R_CONTROL_SHIP_BATTLE = "Control Ship Battle"
 
 GUNSHIP_CAVALRY = Chapter(
-    name=NAME,
     area=Area.GUNSHIP,
     start_region=R_SPAWN,
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),

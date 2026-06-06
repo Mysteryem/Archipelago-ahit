@@ -16,8 +16,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Through The Jundland Wastes"
-
 R_SPAWN = "Spawn"
 R_ACROSS_GAP = "Across Gap"
 R_SILVER_BRICKS_SIDE_PATH_LOWER_BEFORE_SILVER_BRICKS = "Silver Bricks Side Path Lower Before Silver Bricks"
@@ -46,7 +44,6 @@ R_ACROSS_SEA_OF_QUICKSAND = "Across Sea Of Quicksand"
 
 
 THROUGH_THE_JUNDLAND_WASTES = Chapter(
-    name=NAME,
     area=Area.TATOOINE,
     start_region=R_SPAWN,
     regions={

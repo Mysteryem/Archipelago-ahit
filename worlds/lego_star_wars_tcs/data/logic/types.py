@@ -84,20 +84,19 @@ class RegionData:
 
 @dataclass
 class ChapterHelper:
-    name: str
     area: Area
     start_region: str
     _regions_used_in_can_reach: set[str] = field(default_factory=set, init=False)
 
     def can_reach_region(self, region_name: str):
         self._regions_used_in_can_reach.add(region_name)
-        return CanReachRegion(f"{self.name} - {region_name}")
+        return CanReachRegion(f"{self.area.readable_name} - {region_name}")
 
     def can_reach_location(self, location_name: str):
-        return CanReachLocation(f"{self.name} - {location_name}")
+        return CanReachLocation(f"{self.area.readable_name} - {location_name}")
 
     def can_reach_entrance(self, entrance_name: str):
-        return CanReachEntrance(f"{self.name} - {entrance_name}")
+        return CanReachEntrance(f"{self.area.readable_name} - {entrance_name}")
 
     def make_chapter(
             self,
@@ -113,7 +112,6 @@ class ChapterHelper:
         if extra_chapter_entrance_rules is None:
             extra_chapter_entrance_rules = True_()
         return Chapter(
-            name=self.name,
             area=self.area,
             start_region=self.start_region,
             regions=regions,
@@ -127,7 +125,6 @@ class ChapterHelper:
 
 @dataclass(frozen=True)
 class Chapter:
-    name: str
     area: Area
     start_region: str
     regions: dict[str, tuple[ExitData, ...]]
@@ -139,6 +136,7 @@ class Chapter:
     extra_chapter_entrance_rules: Rule = field(default_factory=True_)
     regions_in_can_reach: Iterable[str] = ()
 
+    name: str = field(init=False)
     story_characters: frozenset[Character] = field(init=False)
     purchase_characters: frozenset[Character] = field(init=False)
     extra_toggle_characters: frozenset[Character] = field(init=False)
@@ -147,6 +145,10 @@ class Chapter:
     region_to_level: dict[str, Level] = field(init=False, default_factory=dict)
 
     def __post_init__(self):
+        # Get the name from the Area.
+        name = self.area.readable_name
+        object.__setattr__(self, "name", name)
+
         # Get story/purchase/Extra Toggle characters from the Area.
         purchase_characters = self.area.get_purchase_characters()
         story_characters = self.area.get_story_characters()
@@ -266,7 +268,6 @@ class LegacyMinikitData:
 
 
 def _make_legacy_chapter(
-        name: str,
         episode_number: int,
         chapter_number: int,
         minikits_rule: Rule,
@@ -318,7 +319,6 @@ def _make_legacy_chapter(
         ridables_data[ridable_name] = LocationData(start_region, rule)
 
     return Chapter(
-        name=name,
         area=area,
         start_region=start_region,
         regions=regions,
@@ -355,7 +355,6 @@ def make_legacy_chapter(
         ridables[ridable.user_facing_name] = Or(*map(HasAllAbilities, requirements))
 
     return _make_legacy_chapter(
-        name=area.name,
         episode_number=area.episode,
         chapter_number=area.number_in_episode,
         minikits_rule=Or(*map(HasAllAbilities, area.all_minikits_ability_requirements)),

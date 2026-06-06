@@ -13,8 +13,6 @@ from ...levels import Level
 
 from ....character_ability import *
 
-NAME = "Chancellor In Peril"
-
 R_HANGAR = "Hangar"
 R_GENERATOR_ROOM = "Generator Room"
 R_DROID_DOORS_AND_DROID_ENEMIES_ROOM = "Droid Doors And Droid Enemies Room"
@@ -26,7 +24,6 @@ R_SHIPS_BRIDGE = "Ship's Bridge"
 
 
 CHANCELLOR_IN_PERIL = Chapter(
-    name=NAME,
     area=Area.CRUISER,
     start_region=R_HANGAR,
     regions={
