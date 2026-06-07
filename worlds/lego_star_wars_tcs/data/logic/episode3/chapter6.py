@@ -13,7 +13,7 @@ from ...levels import Level
 
 from ....character_ability import *
 from ....data.characters import Character
-from ....data.items.character_items import CHARACTER_TO_DATA
+from ....data.items.character_items import CHARACTER_TO_ITEM_DATA
 
 NAME = "Darth Vader"
 
@@ -40,7 +40,7 @@ def _make_any_character_except_force_ghost() -> Rule:
     ghosts = {Character.YODA_GHOST, Character.ANAKIN_SKYWALKER_GHOST, Character.BEN_KENOBI_GHOST}
     abilities_union = CharacterAbility.NONE
     for ghost in ghosts:
-        abilities_union |= CHARACTER_TO_DATA[ghost].abilities
+        abilities_union |= CHARACTER_TO_ITEM_DATA[ghost].abilities
 
     # Vehicles are obviously no good either, since they cannot be brought into regular levels.
     abilities_union |= CharacterAbility.ALL_VEHICLE_ABILITIES
@@ -52,7 +52,7 @@ def _make_any_character_except_force_ghost() -> Rule:
     # Now find all non-ghost characters who don't share a single ability in common with `abilities_union`. Those
     # characters will need to be checked for individually.
     individual_check_characters: list[str] = []
-    for character in CHARACTER_TO_DATA.values():
+    for character in CHARACTER_TO_ITEM_DATA.values():
         if character.name in ghosts:
             continue
         if character.abilities & any_abilities == 0:

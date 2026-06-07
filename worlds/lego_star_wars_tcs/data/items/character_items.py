@@ -11,7 +11,7 @@ __all__ = [
     "Alignment",
     "CharacterData",
     "CHARACTER_DATA",
-    "CHARACTER_TO_DATA",
+    "CHARACTER_TO_ITEM_DATA",
     "EXTRA_CHARACTER_DATA",
     "CANTINA_CAR",
 ]
@@ -596,7 +596,7 @@ EXTRA_CHARACTER_DATA = [
 # This is the vehicle present in the outside area of the Cantina. 'map' is the internal name for the Cantina.
 CANTINA_CAR = _char(Character.MAPCAR, CharacterAbility.NONE, 2.0, 0.0, 0.0, Alignment.GOOD),
 
-CHARACTER_TO_DATA = {
+CHARACTER_TO_ITEM_DATA = {
     data.character: data for characters_data in (CHARACTER_DATA, EXTRA_CHARACTER_DATA) for data in characters_data
 }
-assert len(CHARACTER_TO_DATA) == (len(CHARACTER_DATA) + len(EXTRA_CHARACTER_DATA))
+assert len(CHARACTER_TO_ITEM_DATA) == (len(CHARACTER_DATA) + len(EXTRA_CHARACTER_DATA))

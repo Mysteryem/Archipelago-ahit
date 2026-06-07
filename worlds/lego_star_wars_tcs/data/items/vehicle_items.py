@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from enum import IntEnum, auto
 from typing import ClassVar
 
 from . import VEHICLE_ITEMS_BASE, GenericCharacterData, ItemType
@@ -67,6 +66,6 @@ VEHICLE_DATA: list[VehicleData] = [
     _vehicle(Character.JEDI_STARFIGHTER_RED, VEHICLE_BLASTER, 21.0),
 ]
 
-CHARACTER_TO_DATA = {
+VEHICLE_CHARACTER_TO_ITEM_DATA = {
     data.character: data for data in VEHICLE_DATA
 }

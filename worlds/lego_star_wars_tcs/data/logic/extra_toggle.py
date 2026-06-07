@@ -38,7 +38,7 @@ from .option_filters import LogicOptions
 from ..extras import Extra
 from ...character_ability import CharacterAbility
 from ...constants import GAME_NAME
-from ...data.items.character_items import CHARACTER_TO_DATA
+from ...data.items.character_items import CHARACTER_TO_ITEM_DATA
 
 
 if TYPE_CHECKING:
@@ -161,7 +161,7 @@ class ExtraToggleRuleReplacer:
         extra_toggle_name_to_abilities: dict[str, CharacterAbility] = {}
         if chapter.extra_toggle_characters:
             for character in chapter.extra_toggle_characters:
-                character_data = CHARACTER_TO_DATA[character]
+                character_data = CHARACTER_TO_ITEM_DATA[character]
                 extra_toggle_abilities_union |= character_data.abilities
                 extra_toggle_abilities_unique_combinations.add(character_data.abilities)
                 extra_toggle_name_to_abilities[character_data.name] = character_data.abilities

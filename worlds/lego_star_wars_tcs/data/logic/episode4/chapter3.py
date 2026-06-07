@@ -23,7 +23,7 @@ from ...levels import Level
 
 from ....character_ability import *
 from ....data.characters import Character
-from ....data.items.character_items import CHARACTER_TO_DATA
+from ....data.items.character_items import CHARACTER_TO_ITEM_DATA
 
 NAME = "Mos Eisley Spaceport"
 
@@ -79,7 +79,7 @@ def _make_can_pass_cantina_anti_droid_field() -> Rule:
     }
     # Remove droids that can destroy the anti-droid field on their own.
     for character in tuple(affected_by_anti_droid_field):
-        if BLASTER in CHARACTER_TO_DATA[character].abilities:
+        if BLASTER in CHARACTER_TO_ITEM_DATA[character].abilities:
             affected_by_anti_droid_field.remove(character)
     character_names = {c.readable_name for c in affected_by_anti_droid_field}
     characters_rule = HasAnyCharacterExcept(*character_names)
