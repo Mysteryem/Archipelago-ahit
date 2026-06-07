@@ -62,6 +62,12 @@ class InLevelRule(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         """
         return dataclasses.replace(self, options=(), filtered_resolution=False)
 
+    def make_simpler_rule(self) -> Rule:
+        """Return a simpler version of this rule, intended to make it easier to extract logic for use in external
+        software. Often times, this will just return the current rule, or will return the combination of rules that this
+        rule will resolve to."""
+        return self
+
 
 @dataclasses.dataclass
 class HasAbility(InLevelRule, game=GAME_NAME):
@@ -275,7 +281,14 @@ class HasAbilityCombination(InLevelRule, game=GAME_NAME):
     def _instantiate(self, world: TWorld) -> Rule.Resolved:
         abilities = resolve_field(self.ability_combinations, world, tuple)
 
-        return self.make_rule(*abilities).resolve(world)
+        return self.static_make_simpler_rule(*abilities).resolve(world)
+
+    @override
+    def make_simpler_rule(self) -> Rule:
+        if isinstance(self.ability_combinations, FieldResolver):
+            return self
+        else:
+            return self.static_make_simpler_rule(*self.ability_combinations)
 
     @staticmethod
     def simplify_contained_combinations(combinations: list[CharacterAbility]):
@@ -305,7 +318,7 @@ class HasAbilityCombination(InLevelRule, game=GAME_NAME):
         return simplified_combinations
 
     @staticmethod
-    def make_rule(*combinations: CharacterAbility) -> Rule:
+    def static_make_simpler_rule(*combinations: CharacterAbility) -> Rule:
         if not combinations:
             return False_()
 
@@ -359,7 +372,7 @@ class HasAbilityCombination(InLevelRule, game=GAME_NAME):
                     for character_data in CHARACTER_TO_ITEM_DATA.values():
                         if main_ability in character_data.abilities and other_abilities not in character_data.abilities:
                             excluded_characters.add(character_data.character)
-                    ability_except_rule = HasAbilityExceptCharacters.make_rule(main_ability, excluded_characters)
+                    ability_except_rule = HasAbilityExceptCharacters.static_make_rule(main_ability, excluded_characters)
                     ability_except_rule_attemps.append(ability_except_rule)
 
                 # todo: I think these rules might always be the same due to optimisations HasAbilityExceptCharacters
@@ -444,6 +457,12 @@ class HasAbilityExceptCharacters(InLevelRule, game=GAME_NAME):
         self.except_characters = set(except_characters)
 
     @override
+    def make_simpler_rule(self) -> Rule:
+        if isinstance(self.ability, FieldResolver) or isinstance(self.except_characters, FieldResolver):
+            return self
+        return self.static_make_rule(self.ability, self.except_characters)
+
+    @override
     def prepare_for_or_extra_toggle(self) -> "HasAbilityExceptCharacters":
         if isinstance(self.except_characters, FieldResolver):
             raise Exception(f"Fields Resolvers are not supported by prepare_for_or_extra_toggle. FieldResolver"
@@ -461,21 +480,21 @@ class HasAbilityExceptCharacters(InLevelRule, game=GAME_NAME):
 
         except_characters = set(resolve_field(self.except_characters, world, Iterable))
 
-        return self.make_rule(required_ability, except_characters).resolve(world)
+        return self.static_make_rule(required_ability, except_characters).resolve(world)
 
     @override
     def to_dict(self) -> dict[str, Any]:
         if isinstance(self.except_characters, FieldResolver) or isinstance(self.ability, FieldResolver):
             return super().to_dict()
         else:
-            return self.make_rule(self.ability, self.except_characters).to_dict()
+            return self.static_make_rule(self.ability, self.except_characters).to_dict()
             # data = super().to_dict()
             # # sets are not allowed.
             # data["args"]["except_characters"] = list(data["args"]["except_characters"])
             # return data
 
     @staticmethod
-    def make_rule(required_ability: CharacterAbility, except_characters: AbstractSet[Character]) -> Rule:
+    def static_make_rule(required_ability: CharacterAbility, except_characters: AbstractSet[Character]) -> Rule:
         if not except_characters:
             return HasAbility(required_ability)
 
@@ -612,7 +631,9 @@ class HasAnyCharacterExcept(HasAbilityExceptCharacters, game=GAME_NAME):
         )
 
     @override
-    def prepare_for_or_extra_toggle(self) -> Self:
+    def prepare_for_or_extra_toggle(self) -> "HasAnyCharacterExcept":
+        if isinstance(self.except_characters, FieldResolver):
+            raise Exception(f"Unexpected field resolver for .except_characters on {self}")
         return HasAnyCharacterExcept(*self.except_characters)
 
     @override
@@ -622,6 +643,6 @@ class HasAnyCharacterExcept(HasAbilityExceptCharacters, game=GAME_NAME):
 
         except_characters = set(resolve_field(self.except_characters, world, Iterable))
 
-        return self.make_rule(CharacterAbility.NONE, except_characters).resolve(world)
+        return self.static_make_rule(CharacterAbility.NONE, except_characters).resolve(world)
 
 

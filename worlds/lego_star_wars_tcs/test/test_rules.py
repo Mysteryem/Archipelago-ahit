@@ -167,7 +167,7 @@ class TestAbilityExceptCharacters(TestCase):
     def test_jedi_except_yoda(self):
         """Test a fairly common case of needing any Jedi, except Yoda/Yoda (Ghost)"""
         rule = HasAbilityExceptCharacters(CharacterAbility.JEDI, Character.YODA, Character.YODA_GHOST)
-        made = rule.make_rule(rule.ability, rule.except_characters)
+        made = rule.make_simpler_rule()
 
         self.assertIsInstance(made, Or)
         self.assertEqual(len(made.children), 2)
@@ -191,7 +191,7 @@ class TestAbilityExceptCharacters(TestCase):
     def test_double_jump_except_yoda(self):
         """Test a fairly common case of needing any Double Jumper character, except Yoda/Yoda (Ghost)"""
         rule = HasAbilityExceptCharacters(CharacterAbility.CAN_DOUBLE_JUMP, Character.YODA, Character.YODA_GHOST)
-        made = rule.make_rule(rule.ability, rule.except_characters)
+        made = rule.make_simpler_rule()
 
         self.assertIsInstance(made, HasAnyAbilities)
         self.assertEqual(made.abilities, CharacterAbility.CAN_TRIPLE_JUMP_GREAT_DISTANCE | CharacterAbility.HIGH_JUMP)
@@ -241,12 +241,14 @@ class TestAbilityExceptCharacters(TestCase):
 
 class TestAbilityCombinations(TestCase):
     def test_ride_vehicles_and_high_jump(self):
-        rule = HasAbilityCombination.make_rule(CharacterAbility.CAN_RIDE_VEHICLES | CharacterAbility.HIGH_JUMP)
+        rule = HasAbilityCombination.static_make_simpler_rule(
+            CharacterAbility.CAN_RIDE_VEHICLES | CharacterAbility.HIGH_JUMP)
         self.assertIsInstance(rule, HasAny)
         self.assertEqual(set(rule.item_names), {"Jar Jar Binks", "Captain Tarpals"})
 
     def test_ride_vehicles_and_double_jump(self):
-        rule = HasAbilityCombination.make_rule(CharacterAbility.CAN_RIDE_VEHICLES | CharacterAbility.CAN_DOUBLE_JUMP)
+        rule = HasAbilityCombination.static_make_simpler_rule(
+            CharacterAbility.CAN_RIDE_VEHICLES | CharacterAbility.CAN_DOUBLE_JUMP)
         self.assertIsInstance(rule, Or)
         self.assertEqual(len(rule.children), 2)
 
@@ -259,12 +261,13 @@ class TestAbilityCombinations(TestCase):
         self.assertEqual(set(r2.item_names), {"Jar Jar Binks", "Captain Tarpals"})
 
     def test_imperial_and_jedi(self):
-        rule = HasAbilityCombination.make_rule(CharacterAbility.IMPERIAL | CharacterAbility.JEDI)
+        rule = HasAbilityCombination.static_make_simpler_rule(
+            CharacterAbility.IMPERIAL | CharacterAbility.JEDI)
         self.assertIsInstance(rule, HasAny)
         self.assertEqual(set(rule.item_names), {"Darth Vader", "The Emperor"})
 
     def test_imperial_and_jedi_or_ride_vehicles_and_high_jump(self):
-        rule = HasAbilityCombination.make_rule(
+        rule = HasAbilityCombination.static_make_simpler_rule(
             CharacterAbility.IMPERIAL | CharacterAbility.JEDI,
             CharacterAbility.CAN_RIDE_VEHICLES | CharacterAbility.HIGH_JUMP,
         )
@@ -280,7 +283,8 @@ class TestAbilityCombinations(TestCase):
         self.assertEqual(set(r2.item_names), {"Jar Jar Binks", "Captain Tarpals"})
 
     def test_bounty_hunter_and_can_build_bricks(self):
-        rule = HasAbilityCombination.make_rule(CharacterAbility.BOUNTY_HUNTER | CharacterAbility.CAN_BUILD_BRICKS)
+        rule = HasAbilityCombination.static_make_simpler_rule(
+            CharacterAbility.BOUNTY_HUNTER | CharacterAbility.CAN_BUILD_BRICKS)
         self.assertIsInstance(rule, Or)
         self.assertEqual(len(rule.children), 2)
 
@@ -293,12 +297,14 @@ class TestAbilityCombinations(TestCase):
         self.assertEqual(set(r2.item_names), {"Bossk", "Dengar", "Greedo", "Zam Wesell"})
 
     def test_bounty_hunter_and_astromech_panel(self):
-        rule = HasAbilityCombination.make_rule(CharacterAbility.BOUNTY_HUNTER | CharacterAbility.ASTROMECH_PANEL)
+        rule = HasAbilityCombination.static_make_simpler_rule(
+            CharacterAbility.BOUNTY_HUNTER | CharacterAbility.ASTROMECH_PANEL)
         self.assertIsInstance(rule, HasAny)
         self.assertEqual(set(rule.item_names), {"4-LOM", "IG-88"})
 
     def test_bounty_hunter_and_double_jump(self):
-        rule = HasAbilityCombination.make_rule(CharacterAbility.BOUNTY_HUNTER | CharacterAbility.CAN_DOUBLE_JUMP)
+        rule = HasAbilityCombination.static_make_simpler_rule(
+            CharacterAbility.BOUNTY_HUNTER | CharacterAbility.CAN_DOUBLE_JUMP)
         self.assertIsInstance(rule, HasAny)
         self.assertEqual(set(rule.item_names), set())
 
