@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, Has, HasAny
+from rule_builder.rules import And, Or
 
 from ..macros import CAN_SITH_FORCE, CAN_USE_DEFLECT_BOLTS, CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS
 from ..option_filters import logic_options
@@ -6,6 +6,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
@@ -151,9 +152,9 @@ DISCOVERY_ON_KAMINO = Chapter(
                         # Optimise the CAN_JUMP_DISTANCE_0_84 from CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS into the
                         # HasAnyAbilities.
                         HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER | CAN_JUMP_DISTANCE_0_84),
-                        Has("Dexter Jettster"),
+                        Character.DEXTER_JETTSTER.has(),
                     ),
-                    HasAbility(BLASTER) | Has("General Grievous"),
+                    HasAbility(BLASTER) | Character.GENERAL_GRIEVOUS.has(),
                     HasAbility(SHORTIE),
                 ),
             ),
@@ -172,14 +173,14 @@ DISCOVERY_ON_KAMINO = Chapter(
                 # Dexter can make it with a good jump.
                 moderate=And(
                     HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER) | CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
-                    HasAbility(BLASTER) | Has("General Grievous"),
+                    HasAbility(BLASTER) | Character.GENERAL_GRIEVOUS.has(),
                     HasAbility(SHORTIE),
                 ),
                 # # Instead of using a vent, Yoda ceiling clip over the top of the machine and access the minikit from
                 # # behind.
                 # hard=And(
                 #     HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER | CAN_JUMP_DISTANCE_0_69),
-                #     HasAbility(BLASTER) | Has("General Grievous"),
+                #     HasAbility(BLASTER) | Character.GENERAL_GRIEVOUS.has(),
                 #     HasAbility(SHORTIE) | HasAny("Yoda", "Yoda (Ghost)"),
                 # ),
             ),
@@ -192,7 +193,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                 # Swap to Droideka while as close to the Minikit as possible. Stud Magnet isn't even needed.
                 moderate=Or(
                     HasAbility(JEDI),
-                    HasAbility(CAN_JUMP_HEIGHT_0_37) & Has("Droideka"),
+                    HasAbility(CAN_JUMP_HEIGHT_0_37) & Character.DROIDEKA.has(),
                 ),
             ),
             pickup_name="mkvend",
@@ -209,7 +210,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                 # sliding up the wall when holding forwards on the controller.
                 moderate=Or(
                     HasAnyAbilities(CAN_JUMP_0_44 | CAN_FLOP_JUMP),
-                    HasAny("Taun We", "Lama Su")
+                    Character.has_any(Character.TAUN_WE, Character.LAMA_SU),
                 ),
             ),
             pickup_name="mk3way",
@@ -239,7 +240,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                         HasAbility(PROTOCOL_PANEL) & HasAnyAbilities(BLASTER | WEAPON_EWOK),
                         # Jump up to the slightly raised part of the machine the minikit is in, and then swap to
                         # Droideka to grab the minikit through the door of the machine. Stud Magnet is not required.
-                        Has("Droideka"),
+                        Character.DROIDEKA.has(),
                     )
                 ),
             ),

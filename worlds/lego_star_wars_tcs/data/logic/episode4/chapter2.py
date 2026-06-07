@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, HasAny, False_, Has, True_
+from rule_builder.rules import And, Or, False_, True_
 
 from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -268,7 +268,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 logic_options(
                     base=HasAbility(ASTROMECH_PANEL),
                     # Ceiling clip and jump into the loading zone.
-                    hard=HasAbility(ASTROMECH_PANEL) | HasAny("Yoda", "Yoda (Ghost)"),
+                    hard=HasAbility(ASTROMECH_PANEL) | Character.has_any(Character.YODA, Character.YODA_GHOST),
                 ),
             ),
         ),
@@ -284,7 +284,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                     hard=Or(
                         CAN_SITH_FORCE & HasAbility(SHORTIE),
                         # Ceiling clip over the fence.
-                        HasAny("Yoda", "Yoda (Ghost)"),
+                        Character.has_any(Character.YODA, Character.YODA_GHOST),
                     ),
                 ),
             ),
@@ -311,7 +311,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                     hard=Or(
                         HasAbility(PROTOCOL_PANEL),
                         # Ceiling clip over the door.
-                        HasAny("Yoda", "Yoda (Ghost)"),
+                        Character.has_any(Character.YODA, Character.YODA_GHOST),
                     ),
                 ),
             ),
@@ -429,7 +429,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                     # Grievous can triple jump across the entire quicksand sea.
                     moderate=Or(
                         HasAllAbilities(CAN_BUILD_BRICKS | CAN_RIDE_VEHICLES),
-                        Has("General Grievous") & OT_HIGH_JUMP_ENABLED,
+                        Character.GENERAL_GRIEVOUS.has() & OT_HIGH_JUMP_ENABLED,
                     ),
                 ),
             ),
@@ -469,7 +469,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 normal=Or(
                     And(
                         HasAbility(CAN_BUILD_BRICKS) & CAN_GRAPPLE,
-                        HasAbility(HOVER) | HasAny("Yoda", "Yoda (Ghost)"),
+                        HasAbility(HOVER) | Character.has_any(Character.YODA, Character.YODA_GHOST),
                     ),
                     HasAbility(HIGH_JUMP) & OT_HIGH_JUMP_ENABLED,
                 ),
@@ -508,7 +508,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 # Droideka and Grievous also can with a character swap.
                 moderate=Or(
                     HasAbility(CAN_RIDE_VEHICLES),
-                    HasAny("Droideka", "General Grievous"),
+                    Character.has_any(Character.DROIDEKA, Character.GENERAL_GRIEVOUS),
                 ),
             ),
             pickup_name="mk_0",

@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, Has, HasAny, True_
+from rule_builder.rules import And, Or, True_
 
 from ..macros import (
     CAN_USE_SELF_DESTRUCT,
@@ -14,6 +14,7 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
 from ...characters import Character
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -159,7 +160,7 @@ RETAKE_THEED_PALACE = Chapter(
                 # Base:
                 #  HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP) implies CAN_BARELY_JUMP
                 #  can_damage_shielded_droideka.base is
-                #  Or(HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM), Has("Droideka"))
+                #  Or(HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM), Character.DROIDEKA.has())
                 # Normal:
                 #  HasAnyAbilities(HIGH_JUMP | SHORTIE) implies HasAbility(CAN_BARELY_JUMP).
                 #  can_damage_at_close_range is already needed at "After Collapsed Floor In Palace -> Courtyard".
@@ -173,7 +174,7 @@ RETAKE_THEED_PALACE = Chapter(
                     # button.
                     base=Or(
                         HasAnyAbilities(JEDI | BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM),
-                        Has("Droideka") & HasAbility(CAN_BARELY_JUMP),
+                        Character.DROIDEKA.has() & HasAbility(CAN_BARELY_JUMP),
                     ),
                     # The droideka can be ignored.
                     normal=HasAbility(CAN_BARELY_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -188,7 +189,7 @@ RETAKE_THEED_PALACE = Chapter(
                             CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS,
                             HasAbility(CAN_BARELY_JUMP),
                         ),
-                        Has("Droideka"),
+                        Character.DROIDEKA.has(),
                     ),
                 ),
                 new_level=Level.RETAKE_G,
@@ -262,14 +263,16 @@ RETAKE_THEED_PALACE = Chapter(
                 moderate=Or(
                     HasAbility(JEDI),
                     HasAllAbilities(GRAPPLE | CAN_JUMP_0_44),
-                    Has("Grievous' Bodyguard"),
+                    Character.GRIEVOUS_BODYGUARD.has(),
                     And(
-                        Has("General Grievous"),
+                        Character.GENERAL_GRIEVOUS.has(),
                         Or(
                             HasAbility(BLASTER),
-                            Has("Super Jedi Slam"),
+                            Extra.SUPER_JEDI_SLAM.has(),
                             CAN_USE_SELF_DESTRUCT,
-                            HasAbility(WEAPON_EWOK) & HasAny("Super Ewok Catapult", "Exploding Blaster Bolts")
+                            HasAbility(WEAPON_EWOK) & Extra.has_any(
+                                Extra.SUPER_EWOK_CATAPULT, Extra.EXPLODING_BLASTER_BOLTS
+                            )
                         )
                     )
                 )
@@ -348,7 +351,7 @@ RETAKE_THEED_PALACE = Chapter(
                     HasAnyAbilities(HIGH_JUMP | JETPACK),
                     And(
                         HasAbility(JEDI),
-                        HasAbility(GRAPPLE) | Has("Force Grapple Leap"),
+                        HasAbility(GRAPPLE) | Extra.FORCE_GRAPPLE_LEAP.has(),
                     ),
                 ),
                 # Astromech hover from the rail along the steps can get to the alcove next the alcove with the grapple

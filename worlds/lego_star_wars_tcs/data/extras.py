@@ -2,7 +2,7 @@ from enum import IntEnum
 from typing import TypedDict, TYPE_CHECKING
 
 
-from rule_builder.rules import Has
+from rule_builder.rules import Has, HasAll, HasAny, True_, False_
 
 __all__ = [
     "Extra",
@@ -51,8 +51,36 @@ class Extra(IntEnum):
         else:
             return f"Purchase {self.readable_name}"
 
+    def check_can_use_in_rules(self):
+        if self.purchase_cost is None or self in _SCORE_MULTIPLIERS:
+            raise ValueError(f"{self!r} cannot be used in rules.")
+
     def has(self) -> Has:
+        self.check_can_use_in_rules()
         return Has(self.readable_name)
+
+    @staticmethod
+    def has_all(*extras: "Extra") -> Has | HasAll | True_:
+        if not extras:
+            return True_()
+        if len(extras) == 1:
+            extras[0].check_can_use_in_rules()
+            return Has(extras[0].readable_name)
+        for extra in extras:
+            extra.check_can_use_in_rules()
+        return HasAll(*[extra.readable_name for extra in extras])
+
+    @staticmethod
+    def has_any(*extras: "Extra") -> Has | HasAny | False_:
+        if not extras:
+            return False_()
+        if len(extras) == 1:
+            extras[0].check_can_use_in_rules()
+            return Has(extras[0].readable_name)
+        for extra in extras:
+            extra.check_can_use_in_rules()
+        return HasAny(*[extra.readable_name for extra in extras])
+
 
     EXTRA_TOGGLE =             0, dict(localization_id= 672, purchase_cost=   30000, readable_name="Extra Toggle")
     FERTILIZER =               1, dict(localization_id= 671, purchase_cost=    8000, readable_name="Fertilizer")
@@ -99,3 +127,12 @@ class Extra(IntEnum):
     INFINITE_TORPEDOS =       42, dict(localization_id= 686, purchase_cost=   25000, readable_name="Infinite Torpedos")
     SCORE_X10 =               43, dict(localization_id= 680, purchase_cost=20000000, readable_name="Score x10")
     ADAPTIVE_DIFFICULTY =     44, dict(localization_id= 690, purchase_cost=None,     readable_name="Adaptive Difficulty")
+
+
+_SCORE_MULTIPLIERS = {
+    Extra.SCORE_X2,
+    Extra.SCORE_X4,
+    Extra.SCORE_X6,
+    Extra.SCORE_X8,
+    Extra.SCORE_X10,
+}

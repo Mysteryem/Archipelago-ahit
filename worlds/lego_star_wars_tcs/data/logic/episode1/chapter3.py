@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, Has, True_
+from rule_builder.rules import And, Or, True_
 
 from ..macros import (
     CAN_GRAPPLE,
@@ -15,6 +15,7 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
 from ...characters import Character
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -136,7 +137,7 @@ ESCAPE_FROM_NABOO = Chapter(
                 # Droideka can also get over the lip by taking a running start from the furthest right flower bed.
                 moderate=And(
                     CAN_DAMAGE_AT_CLOSE_RANGE,
-                    HasAbility(CAN_BARELY_JUMP) | Has("Droideka"),
+                    HasAbility(CAN_BARELY_JUMP) | Character.DROIDEKA.has(),
                 ),
             ),
             pickup_name="mk_0",
@@ -183,7 +184,7 @@ ESCAPE_FROM_NABOO = Chapter(
                 # Also consider Force Grapple Leap.
                 normal=And(
                     HasAbility(JEDI),
-                    HasAnyAbilities(GRAPPLE | HIGH_JUMP) | Has("Force Grapple Leap")
+                    HasAnyAbilities(GRAPPLE | HIGH_JUMP) | Extra.FORCE_GRAPPLE_LEAP.has()
                 ),
                 # Triple jump to the fences area.
                 moderate=HasAbility(JEDI),
@@ -245,13 +246,13 @@ ESCAPE_FROM_NABOO = Chapter(
             normal=And(
                 Or(
                     HasAbility(SITH),
-                    Has("Dark Side") & HasAbilityExceptCharacters(JEDI, Character.YODA, Character.YODA_GHOST)
+                    Extra.DARK_SIDE.has() & HasAbilityExceptCharacters(JEDI, Character.YODA, Character.YODA_GHOST)
                 ),
                 CAN_DESTROY_CLOSE_SILVER_BRICKS
             ),
             moderate=Or(
                 HasAbility(SITH),
-                Has("Dark Side") & HasAbilityExceptCharacters(JEDI, Character.YODA, Character.YODA_GHOST)
+                Extra.DARK_SIDE.has() & HasAbilityExceptCharacters(JEDI, Character.YODA, Character.YODA_GHOST)
             )
         ),
         er_rule=logic_options(
@@ -268,7 +269,7 @@ ESCAPE_FROM_NABOO = Chapter(
             # destroy Silver brick objects is not needed.
             moderate=Or(
                 HasAbility(SITH),
-                Has("Dark Side") & HasAbilityExceptCharacters(JEDI, Character.YODA, Character.YODA_GHOST)
+                Extra.DARK_SIDE.has() & HasAbilityExceptCharacters(JEDI, Character.YODA, Character.YODA_GHOST)
             )
         )
     ),

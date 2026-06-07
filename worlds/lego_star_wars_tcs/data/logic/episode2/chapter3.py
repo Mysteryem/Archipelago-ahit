@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, Has, HasAny
+from rule_builder.rules import And, Or
 
 from ..macros import (
     CAN_GRAPPLE,
@@ -13,6 +13,8 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -60,7 +62,7 @@ DROID_FACTORY = Chapter(
                     # unable to, instead hitting the crusher's hurtbox and dying.
                     normal=Or(
                         HasAnyAbilities(RUN_SPEED_0_9_OR_HIGHER | JEDI),
-                        Has("Boba Fett (Boy)")
+                        Character.BOBA_FETT_BOY.has(),
                     ),
                     # All characters can walk around crushers by hugging the edge of the conveyor, except Gonk Droid,
                     # who is unable to walk over the slight increases in height between each flap along the edge of the
@@ -74,7 +76,7 @@ DROID_FACTORY = Chapter(
                         #        and CAN_PASS_UNDER_DROID_FACTORY_CRUSHERS not in c.abilities
                         #        and JEDI not in c.abilities
                         #        and c.name != "Gonk Droid"))
-                        HasAny("C-3PO", "PK Droid", "Pit Droid", "TC-14")
+                        Character.has_any(Character.C_3PO, Character.PK_DROID, Character.PIT_DROID, Character.TC_14),
                     ),
                     # Even Gonk Droid can actually move past the crushers because the trigger for the conveyor flaps
                     # collapsing does not extend all the way along the flap, so hugging the top of the flaps allows for
@@ -350,7 +352,7 @@ DROID_FACTORY = Chapter(
                     Or(
                         HasAbility(HIGH_JUMP),
                         # Double jump slam with Stud Magnet active can reach the minikit.
-                        Has("Stud Magnet")
+                        Extra.STUD_MAGNET.has(),
                     ),
                 ),
                 # Triple jump reaches higher than high jump.

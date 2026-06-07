@@ -1,4 +1,4 @@
-from rule_builder.rules import Or, Has, True_, False_
+from rule_builder.rules import Or, True_, False_
 
 from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
@@ -11,6 +11,7 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
 from ...characters import Character
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -37,7 +38,7 @@ DARTH_MAUL = Chapter(
                     # the player gets close to him.
                     # The high jump is a bit too difficult/inconsistent with Jar Jar/Captain Tarpals, but is pretty easy
                     # with General Grievous. TODO: Try Grievous' Bodyguard.
-                    normal=HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous"),
+                    normal=HasAbility(IS_NON_GHOST_JEDI) | Character.GENERAL_GRIEVOUS.has(),
                     # Allow Jar Jar/Captain Tarpals and triple jump.
                     moderate=HasAnyAbilities(JEDI | HIGH_JUMP),
                 )
@@ -75,7 +76,7 @@ DARTH_MAUL = Chapter(
                     # Allow Force Grapple Leap.
                     normal=Or(
                         HasAnyAbilities(JEDI | HIGH_JUMP) & HasAbility(GRAPPLE),
-                        HasAbility(JEDI) & Has("Force Grapple Leap"),
+                        HasAbility(JEDI) & Extra.FORCE_GRAPPLE_LEAP.has(),
                     ),
                     # HasAnyAbilities(JEDI | HIGH_JUMP) was used at "Spawn -> Hangar"
                     moderate=True_(),
@@ -86,7 +87,7 @@ DARTH_MAUL = Chapter(
                     # Allow Force Grapple Leap.
                     normal=Or(
                         HasAnyAbilities(JEDI | HIGH_JUMP) & HasAbility(GRAPPLE),
-                        HasAbility(JEDI) & Has("Force Grapple Leap"),
+                        HasAbility(JEDI) & Extra.FORCE_GRAPPLE_LEAP.has(),
                     ),
                     # The wall collision near the grapple point can be stood on to jump up to the end of the grapple
                     # point.
@@ -174,7 +175,7 @@ DARTH_MAUL = Chapter(
         "Behind Silver Bricks Minikit": minikit_data(
             R_TOWER_ROOM,
             # IS_NON_GHOST_JEDI implies CAN_JUMP_DISTANCE_0_69.
-            # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_DISTANCE_0_69.
+            # Normal: HasAbility(IS_NON_GHOST_JEDI) | Character.GENERAL_GRIEVOUS.has() implies CAN_JUMP_DISTANCE_0_69.
             # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_DISTANCE_0_69.
             CAN_DESTROY_CLOSE_SILVER_BRICKS,
             er_rule=logic_options(
@@ -198,7 +199,7 @@ DARTH_MAUL = Chapter(
         "Energy Column Minikit": minikit_data(
             R_ENERGY_COLUMNS_ROOM,
             # Base: IS_NON_GHOST_JEDI implies CAN_JUMP_DISTANCE_0_69.
-            # Normal: HasAbility(IS_NON_GHOST_JEDI) | Has("General Grievous") implies CAN_JUMP_DISTANCE_0_69.
+            # Normal: HasAbility(IS_NON_GHOST_JEDI) | Character.GENERAL_GRIEVOUS.has() implies CAN_JUMP_DISTANCE_0_69.
             # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_DISTANCE_0_69.
             True_(),
             # The first gap is about 0.8650856462150265, though Ewok can cross it without too much trouble.

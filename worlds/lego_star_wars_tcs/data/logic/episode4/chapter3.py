@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, HasAny, Has, Rule
+from rule_builder.rules import And, Or, Rule
 
 from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -244,7 +244,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                 logic_options(
                     base=HasAbility(CAN_DOUBLE_JUMP),
                     # I don't think it will ever be relevant, but Gamorrean Guard can just jump straight up here.
-                    moderate=HasAbility(CAN_DOUBLE_JUMP) | Has("Gamorrean Guard"),
+                    moderate=HasAbility(CAN_DOUBLE_JUMP) | Character.GAMORREAN_GUARD.has(),
                 ),
             ),
             ExitData(
@@ -435,7 +435,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                         ),
                     ),
                     # Triple High Jump up without making the tower more upright.
-                    Has("General Grievous") & OT_HIGH_JUMP_ENABLED,
+                    Character.GENERAL_GRIEVOUS.has() & OT_HIGH_JUMP_ENABLED,
                 ),
             ),
             pickup_name="mk_0",

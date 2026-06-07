@@ -79,7 +79,7 @@ CAN_SITH_FORCE = logic_options(
     # Alternative because SITH implies JEDI:
     # normal=And(
     #     HasAbility(JEDI),
-    #     HasAbility(SITH) | Has("Dark Side"),
+    #     HasAbility(SITH) | Extra.DARK_SIDE.has(),
     # )
     normal=Or(
         HasAbility(SITH),

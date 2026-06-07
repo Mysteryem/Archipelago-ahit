@@ -1,14 +1,15 @@
-from rule_builder.rules import HasAny, True_
+from rule_builder.rules import True_, Or
 
 from ..macros import (
     CAN_GRAPPLE,
     CAN_DESTROY_CLOSE_SILVER_BRICKS
 )
 from ..option_filters import logic_options
-from ..rules import HasAbility, HasAnyAbilities
+from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
@@ -55,18 +56,21 @@ CHANCELLOR_IN_PERIL = Chapter(
         R_DROID_DOORS_AND_DROID_ENEMIES_ROOM: (
             ExitData(
                 R_TOWER_CLIMB,
-                # logic_options(
-                #     # Use the panel to open the door, force the explosive into position, and then force the explosive
-                #     # again to explode it and open the way forward.
-                #     base=HasAllAbilities(ASTROMECH_PANEL | JEDI),
-                #     # Yoda can triple jump under the trigger to the next area, swap to another character,
-                #     # and then hit the trigger to load into the next area, skipping the Astromech Panel requirement.
-                #     hard=HasAllAbilities(ASTROMECH_PANEL | JEDI) | HasAny("Yoda", "Yoda (Ghost)"),
-                # ),
-                # Simplified without ER:
+                # Optimise out the JEDI required to reach here.
                 logic_options(
                     base=HasAbility(ASTROMECH_PANEL),
-                    hard=HasAbility(ASTROMECH_PANEL) | HasAny("Yoda", "Yoda (Ghost)"),
+                    hard=HasAbility(ASTROMECH_PANEL) | Character.has_any(Character.YODA, Character.YODA_GHOST),
+                ),
+                er_rule=logic_options(
+                    # Use the panel to open the door, force the explosive into position, and then force the explosive
+                    # again to explode it and open the way forward.
+                    base=HasAllAbilities(ASTROMECH_PANEL | JEDI),
+                    # Yoda can triple jump under the trigger to the next area, swap to another character,
+                    # and then hit the trigger to load into the next area, skipping the Astromech Panel requirement.
+                    hard=Or(
+                        HasAllAbilities(ASTROMECH_PANEL | JEDI),
+                        Character.has_any(Character.YODA, Character.YODA_GHOST)
+                    ),
                 ),
             ),
         ),

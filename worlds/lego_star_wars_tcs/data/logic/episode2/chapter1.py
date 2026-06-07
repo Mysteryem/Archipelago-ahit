@@ -1,5 +1,3 @@
-from rule_builder.rules import Has
-
 from ..macros import (
     CAN_SHOOT_ALLOW_TORPEDOES,
 )
@@ -8,6 +6,7 @@ from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
 from ...areas import Area
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -75,7 +74,7 @@ BOUNTY_HUNTER_PURSUIT = Chapter(
             # ER Note: Needs `CanReachRegion("Bounty Hunter Pursuit - Spawn") &`
             logic_options(
                 base=HasAbility(VEHICLE_BLASTER),
-                moderate=HasAbility(VEHICLE_BLASTER) | Has("Infinite Torpedos"),
+                moderate=HasAbility(VEHICLE_BLASTER) | Extra.INFINITE_TORPEDOS.has(),
                 hard=CAN_SHOOT_ALLOW_TORPEDOES,
             ),
             pickup_names=(

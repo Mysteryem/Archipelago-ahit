@@ -1,4 +1,4 @@
-from rule_builder.rules import Or, And, HasAny
+from rule_builder.rules import Or, And
 
 from ..macros import (
     CAN_GRAPPLE,
@@ -12,6 +12,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
@@ -204,7 +205,10 @@ COUNT_DOOKU = Chapter(
                 CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 HasAbility(SHORTIE),
                 # High jumpers, except Grievous' Bodyguard, can jump to the Power Brick from the grapple point.
-                CAN_GRAPPLE | HasAny("General Grievous", "Jar Jar Binks", "Captain Tarpals"),
+                Or(
+                    CAN_GRAPPLE,
+                    Character.has_any(Character.GENERAL_GRIEVOUS, Character.JAR_JAR_BINKS, Character.CAPTAIN_TARPALS)
+                ),
             ),
             # Triple jump can skip the access hatch and skip the grapple.
             moderate=Or(
@@ -226,7 +230,10 @@ COUNT_DOOKU = Chapter(
                 CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 HasAbility(SHORTIE),
                 # High jumpers, except Grievous' Bodyguard, can jump to the Power Brick from the grapple point.
-                CAN_GRAPPLE | HasAny("General Grievous", "Jar Jar Binks", "Captain Tarpals"),
+                Or(
+                    CAN_GRAPPLE,
+                    Character.has_any(Character.GENERAL_GRIEVOUS, Character.JAR_JAR_BINKS, Character.CAPTAIN_TARPALS)
+                ),
             ),
             # Triple jump can skip the access hatch and skip the grapple.
             moderate=Or(

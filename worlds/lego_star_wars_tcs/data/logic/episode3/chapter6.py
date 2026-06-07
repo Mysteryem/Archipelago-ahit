@@ -1,4 +1,4 @@
-from rule_builder.rules import True_, And, Has, Or, HasAny, False_, Rule
+from rule_builder.rules import True_, And, Or, False_, Rule
 
 from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT,
@@ -9,11 +9,12 @@ from ..rules import HasAbility, HasAnyAbilities, HasAbilityCombination, HasAbili
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
+from ...extras import Extra
+from ...items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from ...levels import Level
 
 from ....character_ability import *
-from ....data.characters import Character
-from ....data.items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 
 NAME = "Darth Vader"
 
@@ -146,7 +147,7 @@ DARTH_VADER = Chapter(
                     # cannot be used in this section to destroy the objects.
                     moderate=Or(
                         CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT & HasAbility(CAN_BARELY_JUMP),
-                        Has("Droideka"),
+                        Character.DROIDEKA.has(),
                     ),
                 ),
             ),
@@ -267,7 +268,7 @@ DARTH_VADER = Chapter(
                 #         # With no Jedi unlocked, or with only ghost Jedi unlocked, control both P1 and P2
                 #         # independently to complete the chapter.
                 #         HasAbility(CAN_DAMAGE_AT_CLOSE_RANGE) & ANY_CHARACTER_EXCEPT_FORCE_GHOST,
-                #         Has("Super Zapper") & HasAllAbilities(WEAPON_ZAPPER | DROID),
+                #         Extra.SUPER_ZAPPER.has() & HasAllAbilities(WEAPON_ZAPPER | DROID),
                 #     ),
                 # ),
             ),
@@ -277,10 +278,12 @@ DARTH_VADER = Chapter(
                     base=HasAbility(HOVER),
                     normal=Or(
                         HasAbility(HOVER),
-                        HasAny("Yoda", "Yoda (Ghost)"),
+                        Character.has_any(Character.YODA, Character.YODA_GHOST),
                         # Write out the HasAny to help confirm in logic tests that HasAbilityExceptCharacters is working
                         # as expected. Rule Builder will automatically combine the two HasAny within the Or.
-                        HasAny("Jar Jar Binks", "Captain Tarpals", "General Grievous"),
+                        Character.has_any(
+                            Character.JAR_JAR_BINKS, Character.CAPTAIN_TARPALS, Character.GENERAL_GRIEVOUS
+                        ),
                     ),
                     # A Jedi is required to reach here.
                     moderate=True_()
@@ -291,7 +294,7 @@ DARTH_VADER = Chapter(
                         HasAbility(HOVER),
                         # Yoda can make the jump due to his increase double jump distance.
                         # High jumpers, except Grievous' Bodyguard can also make the jump.
-                        HasAny("Yoda", "Yoda (Ghost)"),
+                        Character.has_any(Character.YODA, Character.YODA_GHOST),
                         HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD),
                     ),
                     # Triple jumps or Yoda can jump the required distance.
@@ -331,7 +334,7 @@ DARTH_VADER = Chapter(
                 # HasAbility(CAN_BARELY_JUMP) can be optimised away.
                 moderate=Or(
                     HasAbility(JEDI),
-                    Has("Stud Magnet"),
+                    Extra.STUD_MAGNET.has(),
                 )
             ),
             er_rule=logic_options(
@@ -341,7 +344,7 @@ DARTH_VADER = Chapter(
                 # single-jump-attack, but Jedi can just get the minikit normally, so this is logically pointless.
                 moderate=Or(
                     HasAbility(JEDI),
-                    Has("Stud Magnet") & HasAbility(CAN_BARELY_JUMP),
+                    Extra.STUD_MAGNET.has() & HasAbility(CAN_BARELY_JUMP),
                 )
             ),
             pickup_name="mk_1",

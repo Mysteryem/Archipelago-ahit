@@ -1,4 +1,4 @@
-from rule_builder.rules import True_, And, Has, Or, HasAny
+from rule_builder.rules import True_, And, Or
 
 from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
@@ -13,6 +13,7 @@ from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
 from ...areas import Area
 from ...characters import Character
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -54,7 +55,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                 # Optimised out the HasAbility(JEDI) that is needed to reach here.
                 logic_options(
                     base=CAN_GRAPPLE,
-                    normal=HasAbility(GRAPPLE) | Has("Force Grapple Leap"),
+                    normal=HasAbility(GRAPPLE) | Extra.FORCE_GRAPPLE_LEAP.has(),
                     moderate=True_(),
                 ),
                 # In hard/moderate logic using Invincibility to make clones walk onto the buttons could also work.
@@ -71,7 +72,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                     logic_options(
                         base=HasAllAbilities(GRAPPLE | JEDI),
                         # Allow Force Grapple Leap.
-                        normal=HasAbility(JEDI) & (HasAbility(GRAPPLE) | Has("Force Grapple Leap")),
+                        normal=HasAbility(JEDI) & (HasAbility(GRAPPLE) | Extra.FORCE_GRAPPLE_LEAP.has()),
                         # Allow triple high jump.
                         # Allow triple jump. A near max height triple jump from one of the boxes or the forceable
                         # object is required, and Yoda is pretty difficult because he tends to slide off after just
@@ -96,14 +97,14 @@ DEFENSE_OF_KASHYYYK = Chapter(
                         HasAbility(BLASTER),
                         And(
                             HasAbility(WEAPON_EWOK),
-                            HasAny("Super Ewok Catapult", "Exploding Blaster Bolts"),
+                            Extra.has_any(Extra.SUPER_EWOK_CATAPULT, Extra.EXPLODING_BLASTER_BOLTS),
                         ),
                     ),
                     moderate=Or(
                         HasAbility(BLASTER),
                         And(
                             HasAbility(WEAPON_EWOK),
-                            HasAny("Super Ewok Catapult", "Exploding Blaster Bolts"),
+                            Extra.has_any(Extra.SUPER_EWOK_CATAPULT, Extra.EXPLODING_BLASTER_BOLTS),
                         ),
                         # HOVER implies CAN_JUMP_DISTANCE_0_69 so can be optimised away.
                         CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_DISTANCE_0_69),
@@ -130,7 +131,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                                     # targets, so an explosive Extra is needed.
                                     And(
                                         HasAbility(WEAPON_EWOK),
-                                        HasAny("Super Ewok Catapult", "Exploding Blaster Bolts"),
+                                        Extra.has_any(Extra.SUPER_EWOK_CATAPULT, Extra.EXPLODING_BLASTER_BOLTS),
                                     ),
                                 )
                             ),
@@ -157,12 +158,12 @@ DEFENSE_OF_KASHYYYK = Chapter(
                                     HasAbility(BLASTER),
                                     And(
                                         HasAbility(WEAPON_EWOK),
-                                        HasAny("Super Ewok Catapult", "Exploding Blaster Bolts"),
+                                        Extra.has_any(Extra.SUPER_EWOK_CATAPULT, Extra.EXPLODING_BLASTER_BOLTS),
                                     ),
                                     Or(
                                         # 'shoot' the targets by hovering over to them and exploding as an Astromech
                                         # Droid.
-                                        Has("Self Destruct") & HasAbility(ASTROMECH_DROID),
+                                        Extra.SELF_DESTRUCT.has() & HasAbility(ASTROMECH_DROID),
                                         # Or jumping over to them, swapping to a droid and then exploding.
                                         # Boba Fett (Boy) (jump distance 0.56) is not enough for the left side.
                                         # Works:
@@ -221,7 +222,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
             logic_options(
                 base=HasAllAbilities(GRAPPLE | JETPACK | HIGH_JUMP),
                 normal=And(
-                    HasAbility(GRAPPLE) | Has("Force Grapple Leap"),
+                    HasAbility(GRAPPLE) | Extra.FORCE_GRAPPLE_LEAP.has(),
                     HasAllAbilities(HOVER | HIGH_JUMP),
                 ),
                 moderate=True_(),
@@ -356,7 +357,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                 # JEDI and can_grapple are required to reach here.
                 normal=Or(
                     And(
-                        HasAbility(SITH) | Has("Dark Side"),
+                        HasAbility(SITH) | Extra.DARK_SIDE.has(),
                         HasAbility(HOVER),
                     ),
                     HasAbilityCombination(HIGH_JUMP | CAN_RIDE_VEHICLES),
@@ -383,7 +384,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                     HasAbility(CAN_HIGH_JUMP_SLAM),
                     # For some reason, Yoda can repeatedly jump up the tree to the left by the Dark Side Bush, through
                     # this is irrelevant because all Jedi can ride vehicles and then triple jump up to the platform.
-                    HasAny("Yoda", "Yoda (Ghost)"),
+                    Character.has_any(Character.YODA, Character.YODA_GHOST),
                 ),
             ),
             pickup_name="m_pup2",
@@ -442,7 +443,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
         # JEDI is needed to reach here, so the normal+ rules can be slightly optimised.
         logic_options(
             base=HasAllAbilities(SITH | BOUNTY_HUNTER),
-            normal=HasAbility(SITH) | Has("Dark Side") & CAN_DESTROY_CLOSE_SILVER_BRICKS,
+            normal=HasAbility(SITH) | Extra.DARK_SIDE.has() & CAN_DESTROY_CLOSE_SILVER_BRICKS,
         ),
         er_rule=CAN_SITH_FORCE & CAN_DESTROY_CLOSE_SILVER_BRICKS,
     ),

@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, HasAny, False_, Has
+from rule_builder.rules import And, Or
 
 from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
@@ -178,7 +178,7 @@ SPEEDER_SHOWDOWN = Chapter(
                         # Stand on a plant and triple high jump up to the Power Brick catwalk or the Grapple catwalk.
                         # Hover out of the end of the catwalk, and into the middle section catwalk. The walls of the
                         # middle section catwalk only block collision from the inside.
-                        (HasAbility(HOVER) & Has("General Grievous")) & OT_HIGH_JUMP_ENABLED,
+                        (HasAbility(HOVER) & Character.GENERAL_GRIEVOUS.has()) & OT_HIGH_JUMP_ENABLED,
                     ),
                 ),
             ),
@@ -227,7 +227,7 @@ SPEEDER_SHOWDOWN = Chapter(
                     Or(
                         HasAbility(HOVER),
                         # Yoda can double jump across.
-                        HasAny("Yoda", "Yoda (Ghost)"),
+                        Character.has_any(Character.YODA, Character.YODA_GHOST),
                         # High jump characters, except Grievous' Bodygaurd can jump across.
                         HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD) & OT_HIGH_JUMP_ENABLED,
                     )
@@ -308,7 +308,7 @@ SPEEDER_SHOWDOWN = Chapter(
             base=HasAbility(SHORTIE),
             # Allow triple jump off a plant with Grievous. Bodyguard does not appear to get enough height.
             moderate=ot_high_jump_ternary(
-                uncapped=HasAbility(SHORTIE) | Has("General Grievous"),
+                uncapped=HasAbility(SHORTIE) | Character.GENERAL_GRIEVOUS.has(),
                 capped=HasAbility(SHORTIE)
             )
         )

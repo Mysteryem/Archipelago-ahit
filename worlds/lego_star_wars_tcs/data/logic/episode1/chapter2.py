@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, HasAny, False_, True_
+from rule_builder.rules import And, Or, False_, True_
 
 from ..macros import CAN_USE_SELF_DESTRUCT
 from ..option_filters import logic_options
@@ -6,6 +6,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -214,7 +215,10 @@ INVASION_OF_NABOO = Chapter(
                             HasAbility(BLASTER),
                             # The explosion allows Ewok to hit the target without needing a Jedi to move the boulders
                             # for extra height.
-                            HasAbility(WEAPON_EWOK) & (HasAny("Super Ewok Catapult", "Exploding Blaster Bolts")),
+                            And(
+                                HasAbility(WEAPON_EWOK),
+                                Extra.has_any(Extra.SUPER_EWOK_CATAPULT, Extra.EXPLODING_BLASTER_BOLTS)
+                            ),
                             # Self-destruct can also hit the target.
                             CAN_USE_SELF_DESTRUCT,
                         )

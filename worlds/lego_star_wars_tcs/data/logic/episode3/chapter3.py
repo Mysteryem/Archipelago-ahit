@@ -1,4 +1,4 @@
-from rule_builder.rules import True_, Or, False_, And, Has
+from rule_builder.rules import True_, Or, False_, And
 
 from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
@@ -12,6 +12,7 @@ from ..types import minikit_data, ExitData, ChapterHelper, LocationData
 
 from ...areas import Area
 from ...characters import Character
+from ...extras import Extra
 
 from ....character_ability import *
 
@@ -540,7 +541,7 @@ GENERAL_GRIEVOUS = _helper.make_chapter(
                         HasAbility(JEDI),
                         Or(
                             # Double Jump + Slam with Stud Magnet active can reach the minikit.
-                            Has("Stud Magnet"),
+                            Extra.STUD_MAGNET.has(),
                             # Force the third explosives partially out, then jump on top of them as they return, to get
                             # extra height, to then double jump to the minikit.
                             CAN_EXPLODE_FIRST_TWO_EXPLOSIVES,

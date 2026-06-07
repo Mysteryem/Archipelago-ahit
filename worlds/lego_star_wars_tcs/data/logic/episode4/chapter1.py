@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, HasAll, Has, HasAny, True_
+from rule_builder.rules import And, Or, True_
 
 from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -14,6 +14,7 @@ from ..types import minikit_data, ExitData, ChapterHelper, LocationData, Minikit
 
 from ...areas import Area
 from ...characters import Character
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -54,7 +55,7 @@ MOON_CAR_LOGIC = logic_options(
             # You can push a stormtrooper all the way into the corridor and deflect one of their bolts into
             # near the silver bricks.
             # Only relevant to Darth Vader/The Emperor/Imperial Guard while there is no panel randomizer.
-            Has("Exploding Blaster Bolts") & CAN_USE_DEFLECT_BOLTS,
+            Extra.EXPLODING_BLASTER_BOLTS.has() & CAN_USE_DEFLECT_BOLTS,
         ),
     ),
 )
@@ -114,7 +115,10 @@ SECRET_PLANS = _helper.make_chapter(
                         HasAbility(CAN_PULL_LEVERS),
                         Or(
                             HasAbility(BLASTER),
-                            HasAbility(WEAPON_EWOK) & HasAny("Exploding Blaster Bolts", "Super Ewok Catapult"),
+                            And(
+                                HasAbility(WEAPON_EWOK),
+                                Extra.has_any(Extra.EXPLODING_BLASTER_BOLTS, Extra.SUPER_EWOK_CATAPULT),
+                            ),
                         ),
                     ),
                     # Adds deflecting bolts with Exploding Blaster Bolts active.
@@ -122,12 +126,15 @@ SECRET_PLANS = _helper.make_chapter(
                         HasAbility(CAN_PULL_LEVERS),
                         Or(
                             HasAbility(BLASTER),
-                            HasAbility(WEAPON_EWOK) & HasAny("Exploding Blaster Bolts", "Super Ewok Catapult"),
+                            And(
+                                HasAbility(WEAPON_EWOK),
+                                Extra.has_any(Extra.EXPLODING_BLASTER_BOLTS, Extra.SUPER_EWOK_CATAPULT),
+                            ),
                             # Exploding Blaster Bolts is technically not required, but it would be *extremely* slow
                             # relying on random deflections to hit the explosives enough times.
                             # The Stormtroopers can be aggro-ed with a melee-only character, by attacking one of the
                             # boxes in the same area, so getting aggro with a melee character is fine.
-                            Has("Exploding Blaster Bolts") & CAN_USE_DEFLECT_BOLTS,
+                            Extra.EXPLODING_BLASTER_BOLTS.has() & CAN_USE_DEFLECT_BOLTS,
                         ),
                     ),
                 ),
@@ -218,7 +225,7 @@ SECRET_PLANS = _helper.make_chapter(
                     HasAbility(JEDI),
                     # Triple jump. With High Jump disabled, General Grievous can only just get this minikit by using
                     # Stud Magnet.
-                    HasAll("Stud Magnet", "General Grievous") & OT_HIGH_JUMP_DISABLED,
+                    (Extra.STUD_MAGNET.has() & Character.GENERAL_GRIEVOUS.has()) & OT_HIGH_JUMP_DISABLED,
                     HasAbility(CAN_HIGH_JUMP_SLAM) & OT_HIGH_JUMP_ENABLED,
                 )
             ),
@@ -282,7 +289,7 @@ SECRET_PLANS = _helper.make_chapter(
                         CAN_DESTROY_CLOSE_SILVER_BRICKS,
                         # Darth Vader, The Emperor and Imperial Guard can deflect bolts fired by stormtroopers into near
                         # the silver bricks, exploding them.
-                        Has("Exploding Blaster Bolts") & CAN_USE_DEFLECT_BOLTS,
+                        Extra.EXPLODING_BLASTER_BOLTS.has() & CAN_USE_DEFLECT_BOLTS,
                     ),
                     _helper.can_reach_region(R_VENT_IMPERIALS_INTO_SPACE),
                 ),

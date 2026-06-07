@@ -1,4 +1,4 @@
-from rule_builder.rules import True_, And, Has, Or, HasAny
+from rule_builder.rules import True_, And, Or
 
 from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS as BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS,
@@ -12,6 +12,8 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -27,7 +29,7 @@ R_HOLOGRAM_ROOM = "Hologram Room"
 # Toggle rules won't cover this case of CAN_DESTROY_CLOSE_SILVER_BRICKS.
 CAN_DESTROY_CLOSE_SILVER_BRICKS = BASE_CAN_DESTROY_CLOSE_SILVER_BRICKS.or_rule(
     # Use the Training Remote, to either Self Destruct, or shoot exploding bolts.
-    Has("Extra Toggle") & Has("Exploding Blaster Bolts"),
+    Extra.has_all(Extra.EXTRA_TOGGLE, Extra.EXPLODING_BLASTER_BOLTS),
     apply_to="normal+",
 )
 
@@ -208,7 +210,7 @@ RUIN_OF_THE_JEDI = Chapter(
                 base=CAN_DESTROY_CLOSE_SILVER_BRICKS & CAN_SITH_FORCE,
                 normal=And(
                     CAN_DESTROY_CLOSE_SILVER_BRICKS,
-                    HasAbility(SITH) | Has("Dark Side"),
+                    HasAbility(SITH) | Extra.DARK_SIDE.has(),
                 ),
             ),
             er_rule=logic_options(
@@ -217,7 +219,7 @@ RUIN_OF_THE_JEDI = Chapter(
                     CAN_DESTROY_CLOSE_SILVER_BRICKS & CAN_SITH_FORCE,
                     # Swapping to yoda up against the force field seems to let you grab this minikit through the force
                     # field.
-                    HasAny("Yoda", "Yoda (Ghost)"),
+                    Character.has_any(Character.YODA, Character.YODA_GHOST),
                 ),
             ),
             pickup_name="m_pup1",

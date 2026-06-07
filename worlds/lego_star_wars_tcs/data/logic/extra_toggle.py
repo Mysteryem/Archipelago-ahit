@@ -179,7 +179,7 @@ class ExtraToggleRuleReplacer:
         if extra_and_rule is None:
             return Or(
                 replacement,
-                Has(Extra.EXTRA_TOGGLE.readable_name),
+                Extra.EXTRA_TOGGLE.has(),
                 options=rule.options, filtered_resolution=rule.filtered_resolution
             )
             # return Or(
@@ -189,7 +189,7 @@ class ExtraToggleRuleReplacer:
         else:
             return Or(
                 replacement,
-                extra_and_rule & Has(Extra.EXTRA_TOGGLE.readable_name),
+                extra_and_rule & Extra.EXTRA_TOGGLE.has(),
                 options=rule.options, filtered_resolution=rule.filtered_resolution)
             # return Or(
             #     rule,
