@@ -1,13 +1,12 @@
-from rule_builder.rules import HasAny, True_, Or, Rule, False_
+from rule_builder.rules import True_, Or, False_
 from rule_builder.options import OptionFilter
 
 from .option_filters import normal_logic, logic_options, OT_HIGH_JUMP_ENABLED
-from .rules import HasAbility, HasAnyAbilities, HasAbilityExceptCharacters
+from .rules import HasAbility, HasAnyAbilities, HasAbilityExceptCharacters, HasSingleJumpDistance
 from ..characters import Character
 from ..extras import Extra
 from ..items.character_items import NON_VEHICLE_CHARACTER_TO_ITEM_DATA
 from ...character_ability import *
-from ...items import SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTER_NAMES
 from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
 
 # Implemented as a CharacterAbility for now.
@@ -26,43 +25,14 @@ HAS_FLUTTER_CHARACTER = Character.has_any(Character.GEONOSIAN, Character.WATTO)
 
 # FIXME: Jump Distance needs to be a custom rule so that Extra Toggle rules can correctly adjust it if an Extra Toggle
 #  character has the requested jump distance.
-def can_jump_distance_rule(distance_or_character: float | Character) -> Rule:
+def can_jump_distance_rule(distance_or_character: float | Character) -> HasSingleJumpDistance:
     distance: float
     if isinstance(distance_or_character, Character):
         distance = NON_VEHICLE_CHARACTER_TO_ITEM_DATA[distance_or_character].single_jump_distance
     else:
         distance = distance_or_character
 
-    if distance <= 0:
-        raise ValueError(f"Tried to create rule for distance less than or equal to zero. This does not make sens.")
-
-    if distance <= NON_VEHICLE_CHARACTER_TO_ITEM_DATA[Character.BOBA_FETT_BOY].single_jump_distance:
-        return HasAbility(CAN_BARELY_JUMP)
-    if distance <= 0.69:
-        base_ability = CAN_JUMP_DISTANCE_0_69
-        max_distance_exclusive = 0.69
-    elif distance <= 0.84:
-        base_ability = CAN_JUMP_DISTANCE_0_84
-        max_distance_exclusive = 0.84
-    elif distance <= 0.92:
-        base_ability = CAN_JUMP_DISTANCE_0_92
-        max_distance_exclusive = 0.92
-    else:
-        raise ValueError(f"Tried to create rule for distance greater than 0.92, but the furthest regular single-jump is"
-                         f" 0.92. Use ")
-
-    all_character_names = []
-    for jump_distance, character_names in SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTER_NAMES.items():
-        if jump_distance >= max_distance_exclusive:
-            # The `base_ability` covers all other characters that can jump this distance.
-            break
-        if jump_distance >= distance:
-            all_character_names.extend(character_names)
-
-    if all_character_names:
-        return HasAbility(base_ability) | HasAny(*all_character_names)
-    else:
-        return HasAbility(base_ability)
+    return HasSingleJumpDistance(distance)
 
 
 # No rule is defined for being able to jump at least as far as Boba Fett (Boy) (0.56) because he is the only character

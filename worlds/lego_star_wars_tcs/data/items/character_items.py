@@ -16,6 +16,7 @@ __all__ = [
     "NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA",
     "EXTRA_CHARACTER_DATA",
     "CANTINA_CAR",
+    "SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTERS",
 ]
 
 
@@ -568,7 +569,7 @@ NORMAL_CHARACTER_DATA: list[CharacterData] = [
                         1.44, 0.53, 1.325, Alignment.PASSIVE),
 ]
 
-EXTRA_CHARACTER_DATA = [
+EXTRA_CHARACTER_DATA: list[CharacterData] = [
     # "Extra Toggle" characters.
     # Floats above the ground, with hover_height=0.25, which prevents the last safe position from updating.
     # Shoots short range blaster bolts that deal no damage to enemies, but can destroy objects and are affected by
@@ -600,17 +601,37 @@ CANTINA_CAR = _char(Character.MAPCAR, CharacterAbility.NONE, 2.0, 0.0, 0.0, Alig
 
 assert len(EXTRA_TOGGLE_LOGIC_RELEVANT_CHARACTERS) == len(EXTRA_CHARACTER_DATA)
 
-NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA = {
+NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA: dict[Character, CharacterData] = {
     data.character: data for data in NORMAL_CHARACTER_DATA
 }
-NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA = {
+NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA: dict[Character, CharacterData] = {
     data.character: data for data in EXTRA_CHARACTER_DATA
 }
 
-NON_VEHICLE_CHARACTER_TO_ITEM_DATA = {
+NON_VEHICLE_CHARACTER_TO_ITEM_DATA: dict[Character, CharacterData] = {
     **NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA,
     **NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA,
 }
 assert len(NON_VEHICLE_CHARACTER_TO_ITEM_DATA) == (
         len(NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA) + len(NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA)
 )
+
+def _make_single_jump_distance_relevant_characters_by_jump_distance() -> dict[float, list[Character]]:
+    jump_distance_to_characters: dict[float, list[Character]] = {}
+    for c in NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA.values():
+        if (HOVER | CAN_DOUBLE_JUMP) & c.abilities != 0:
+            # Double jump and hover characters are always considered to have max jump distance.
+            # Any need for logic beyond how far non-double-jump and non-hover characters can jump is handled separately.
+            continue
+        distance = c.single_jump_distance
+        if distance in jump_distance_to_characters:
+            jump_distance_to_characters[distance].append(c.character)
+        else:
+            jump_distance_to_characters[distance] = [c.character]
+
+    # Sort by jump distance and then return.
+    return dict(sorted(jump_distance_to_characters.items(), key=lambda t: t[0]))
+
+
+SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTERS = _make_single_jump_distance_relevant_characters_by_jump_distance()
+del _make_single_jump_distance_relevant_characters_by_jump_distance

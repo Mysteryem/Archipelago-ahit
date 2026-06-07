@@ -33,6 +33,7 @@ from .rules import (
     HasAnyAbilities,
     HasAllAbilities,
     HasAbilityExceptCharacters,
+    HasSingleJumpDistance,
 )
 from .option_filters import LogicOptions
 from ..extras import Extra
@@ -355,6 +356,21 @@ class ExtraToggleRuleReplacer:
                     replacement = rule
             else:
                 raise Exception("FieldResolver support is not implemented.")
+        elif isinstance(rule, HasSingleJumpDistance):
+            if (CharacterAbility.HOVER | CharacterAbility.CAN_DOUBLE_JUMP) & self.extra_toggle_abilities_union != 0:
+                # A character that can hover or double jump can jump further than the best single-jump distance.
+                replacement = self.or_extra_toggle(rule)
+            else:
+                required_distance = rule.distance
+                for character in self.chapter.extra_toggle_characters:
+                    character_data = NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA[character]
+                    if character_data.single_jump_distance >= required_distance:
+                        # Found a character that can jump the required distance.
+                        replacement = self.or_extra_toggle(rule)
+                        break
+                else:
+                    # No extra toggle character was found that could satisfy the rule.
+                    replacement = rule
         else:
             assert isinstance(rule, ALLOWED_OTHER_RULES), f"Unexpected rule {rule}"
             replacement = rule

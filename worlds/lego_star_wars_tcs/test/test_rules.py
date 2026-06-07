@@ -104,7 +104,7 @@ class TestLogicOptionsRules(TestCase):
 
 class TestJumpDistanceMacros(TestCase):
     def _test(self, distance: float, expected_ability: CharacterAbility, *expected_characters: str):
-        rule = can_jump_distance_rule(distance)
+        rule = can_jump_distance_rule(distance).make_simpler_rule()
         if expected_characters:
             self.assertIsInstance(rule, Or)
             for child in rule.children:

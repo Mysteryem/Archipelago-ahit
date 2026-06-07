@@ -27,7 +27,7 @@ from ..items.all_character_items import (
     EXTRA_TOGGLE_CHARACTER_TO_ITEM_DATA,
     NORMAL_CHARACTER_TO_ITEM_DATA,
 )
-from ..items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
+from ..items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA, SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTERS
 from ..items.vehicle_items import VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from ...character_ability import CharacterAbility, IMPLIED_BY_ABILITIES
 from ...constants import GAME_NAME
@@ -179,6 +179,63 @@ class HasAnyAbilities(InLevelRule, game=GAME_NAME):
         @override
         def _evaluate(self, state: CollectionState) -> bool:
             return state.prog_items[self.player]["COMBINED_ABILITIES"] & self.abilities_as_int != 0
+
+
+@dataclasses.dataclass
+class HasSingleJumpDistance(InLevelRule, game=GAME_NAME):
+    """A rule that checks if the player has any character with the specified jump distance, or greater, up to the
+    maximum single-jump distance of 0.92."""
+    distance: float
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.distance <= 0:
+            raise ValueError("distance must be greater than 0")
+        if self.distance > 0.92:
+            raise ValueError("distance must be less than or equal to 0.92")
+
+    def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
+        return self.make_simpler_rule().resolve(world)
+
+    def make_simpler_rule(self) -> Rule:
+        return self.static_make_simpler_rule(
+            self.distance, options=self.options, filtered_resolution=self.filtered_resolution)
+
+    @staticmethod
+    def static_make_simpler_rule(distance: float, *, options=(), filtered_resolution=False) -> Rule:
+        if distance <= NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA[Character.BOBA_FETT_BOY].single_jump_distance:
+            return HasAbility(CharacterAbility.CAN_BARELY_JUMP)
+        if distance <= 0.69:
+            base_ability = CharacterAbility.CAN_JUMP_DISTANCE_0_69
+            max_distance_exclusive = 0.69
+        elif distance <= 0.84:
+            base_ability = CharacterAbility.CAN_JUMP_DISTANCE_0_84
+            max_distance_exclusive = 0.84
+        elif distance <= 0.92:
+            base_ability = CharacterAbility.CAN_JUMP_DISTANCE_0_92
+            max_distance_exclusive = 0.92
+        else:
+            raise ValueError(
+                f"Tried to create rule for distance greater than 0.92, but the furthest regular single-jump is"
+                f" 0.92. Use ")
+
+        all_characters = []
+        for jump_distance, characters in SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTERS.items():
+            if jump_distance >= max_distance_exclusive:
+                # The `base_ability` covers all other characters that can jump this distance.
+                break
+            if jump_distance >= distance:
+                all_characters.extend(characters)
+
+        if all_characters:
+            return Or(
+                HasAbility(base_ability),
+                Character.has_any(*all_characters),
+                options=options,
+                filtered_resolution=filtered_resolution,
+            )
+        else:
+            return HasAbility(base_ability, options=options, filtered_resolution=filtered_resolution)
 
 
 @dataclasses.dataclass

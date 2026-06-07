@@ -5,6 +5,8 @@ from rule_builder.rules import Rule, NestedRule, And, Or, WrapperRule, Filtered,
 from .option_filters import LogicOptions
 
 
+# todo: When extracting, also call rule.make_simpler_rule() for special rules like HasSingleJumpDistance, to reduce special
+#  rules into their more easily extractable parts.
 def _recursively_replace_logic_options(rule: Rule, difficulty_attribute: Literal["base", "normal", "moderate", "hard"]):
     rule_class = type(rule)
     if rule_class is LogicOptions:
