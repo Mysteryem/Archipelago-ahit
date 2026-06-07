@@ -1,6 +1,8 @@
 from enum import IntEnum, auto
 from typing import TypedDict, NotRequired
 
+from rule_builder.rules import HasAny, Has
+
 from .areas import Area
 
 
@@ -111,6 +113,19 @@ class Character(IntEnum):
 
     def get_ridesanity_location_name(self):
         return f"Ride {self.readable_name}"
+
+    def has(self) -> Has:
+        return Has(self.readable_name)
+
+    @staticmethod
+    def has_any(*characters: "Character") -> HasAny | Has:
+        if not characters:
+            raise ValueError("At least one character is expected.")
+        if len(characters) == 1:
+            return Has(characters[0].readable_name)
+        else:
+            return HasAny(*[c.readable_name for c in characters])
+
 
     # There is no extractor for this data because of a significant number of edits needing to be made due to duplicates
     # and invalid identifiers. Most of the extractable data from characters is not really usable individually and needs

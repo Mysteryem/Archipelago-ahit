@@ -11,7 +11,7 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityComb
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData
 
 from ...areas import Area
-from ...levels import Level
+from ...characters import Character
 
 from ....character_ability import *
 
@@ -160,11 +160,11 @@ GENERAL_GRIEVOUS = _helper.make_chapter(
                 er_rule=logic_options(
                     # Ewok (jump_distance>=0.69) can make it across fairly easily jumping across the left/middle of the
                     # gap.
-                    base=can_jump_distance_rule("Ewok"),
+                    base=can_jump_distance_rule(Character.EWOK),
                     # Boba Fett (Boy) (jump_distance>=0.56) can only barely make it by jumping across the shortest
                     # distance between the platforms along the far left. Jumping immediately upon landing is probably
                     # required to prevent sliding off.
-                    moderate=can_jump_distance_rule("Boba Fett (Boy)"),
+                    moderate=can_jump_distance_rule(Character.BOBA_FETT_BOY),
                 ),
             ),
             ExitData(

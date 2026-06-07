@@ -1,6 +1,9 @@
 from enum import IntEnum
 from typing import TypedDict, TYPE_CHECKING
 
+
+from rule_builder.rules import Has
+
 __all__ = [
     "Extra",
 ]
@@ -47,6 +50,9 @@ class Extra(IntEnum):
             return area.prefix_name(f"Purchase {self.readable_name}")
         else:
             return f"Purchase {self.readable_name}"
+
+    def has(self) -> Has:
+        return Has(self.readable_name)
 
     EXTRA_TOGGLE =             0, dict(localization_id= 672, purchase_cost=   30000, readable_name="Extra Toggle")
     FERTILIZER =               1, dict(localization_id= 671, purchase_cost=    8000, readable_name="Fertilizer")
