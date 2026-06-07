@@ -35,6 +35,7 @@ from .rules import (
     HasAbilityExceptCharacters,
 )
 from .option_filters import LogicOptions
+from ..extras import Extra
 from ...character_ability import CharacterAbility
 from ...constants import GAME_NAME
 from ...data.items.character_items import CHARACTER_TO_DATA
@@ -144,7 +145,7 @@ class HasAbilityFieldResolver(FieldResolver, game=GAME_NAME):
 #         @override
 #         def _evaluate(self, state: CollectionState) -> bool:
 #             return (state.prog_items[self.player]["COMBINED_ABILITIES"] & self.ability_as_int != 0
-#                     or state.prog_items[self.player]["Extra Toggle"] >= 1)
+#                     or state.prog_items[self.player][Extra.EXTRA_TOGGLE.readable_name] >= 1)
 
 
 class ExtraToggleRuleReplacer:
@@ -178,23 +179,23 @@ class ExtraToggleRuleReplacer:
         if extra_and_rule is None:
             return Or(
                 replacement,
-                Has("Extra Toggle"),
+                Has(Extra.EXTRA_TOGGLE.readable_name),
                 options=rule.options, filtered_resolution=rule.filtered_resolution
             )
             # return Or(
             #     rule,
-            #     Has("Extra Toggle", options=rule.options, filtered_resolution=rule.filtered_resolution)
+            #     Has(Extra.EXTRA_TOGGLE.readable_name, options=rule.options, filtered_resolution=rule.filtered_resolution)
             # )
         else:
             return Or(
                 replacement,
-                extra_and_rule & Has("Extra Toggle"),
+                extra_and_rule & Has(Extra.EXTRA_TOGGLE.readable_name),
                 options=rule.options, filtered_resolution=rule.filtered_resolution)
             # return Or(
             #     rule,
             #     And(
             #         extra_and_rule,
-            #         Has("Extra Toggle"),
+            #         Has(Extra.EXTRA_TOGGLE.readable_name),
             #         options=rule.options,
             #         filtered_resolution=rule.filtered_resolution
             #     )
@@ -291,12 +292,11 @@ class ExtraToggleRuleReplacer:
                 if rule.ability not in self.extra_toggle_abilities_union:
                     replacement = rule
                 else:
-                    replacement = rule | Has("Extra Toggle",
-                                             options=rule.options, filtered_resolution=rule.filtered_resolution)
+                    replacement = self.or_extra_toggle(rule)
             else:
                 # FieldResolver support for HasAbility is provided as an example. FieldResolver support is not
                 # currently implemented for other Ability rule types.
-                replacement = rule | Has("Extra Toggle",
+                replacement = rule | Has(Extra.EXTRA_TOGGLE.readable_name,
                                          count=HasAbilityFieldResolver(
                                              rule.ability, self.extra_toggle_abilities_union
                                          ),
