@@ -23,7 +23,7 @@ from ...levels import Level
 
 from ....character_ability import *
 from ....data.characters import Character
-from ....data.items.character_items import CHARACTER_TO_ITEM_DATA
+from ....data.items.character_items import NON_VEHICLE_CHARACTER_TO_ITEM_DATA
 
 NAME = "Mos Eisley Spaceport"
 
@@ -79,14 +79,13 @@ def _make_can_pass_cantina_anti_droid_field() -> Rule:
     }
     # Remove droids that can destroy the anti-droid field on their own.
     for character in tuple(affected_by_anti_droid_field):
-        if BLASTER in CHARACTER_TO_ITEM_DATA[character].abilities:
+        if BLASTER in NON_VEHICLE_CHARACTER_TO_ITEM_DATA[character].abilities:
             affected_by_anti_droid_field.remove(character)
-    character_names = {c.readable_name for c in affected_by_anti_droid_field}
-    characters_rule = HasAnyCharacterExcept(*character_names)
+    characters_rule = HasAnyCharacterExcept(*affected_by_anti_droid_field)
     # The ceiling has no collision, so Bodyguard can jump over the emitters when either OT high jump is enabled, or by
     # performing a triple jump.
     characters_rule_moderate = HasAnyCharacterExcept(
-        *(character_names - {Character.GRIEVOUS_BODYGUARD.readable_name})
+        *(affected_by_anti_droid_field - {Character.GRIEVOUS_BODYGUARD})
     )
     return logic_options(
         base=characters_rule,
@@ -323,7 +322,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                         HasAbility(CAN_DOUBLE_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
                     )
                     # Droideka and General Grievous are too big to fit in the door of the Millennium Falcon.
-                ) & HasAnyCharacterExcept("Droideka", "General Grievous"),
+                ) & HasAnyCharacterExcept(Character.DROID_TRIFIGHTER, Character.GENERAL_GRIEVOUS),
             ),
         ),
     },
@@ -445,7 +444,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             R_INSIDE_CANTINA,
             logic_options(
                 base=HasAbility(SHORTIE),
-                hard=HasAbility(SHORTIE) | HasAny("Yoda", "Yoda (Ghost)")
+                hard=HasAbility(SHORTIE) | Character.has_any(Character.YODA, Character.YODA_GHOST)
             ),
             pickup_name="m_pup1",
         ),

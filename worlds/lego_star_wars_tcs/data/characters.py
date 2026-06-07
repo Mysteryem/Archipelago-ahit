@@ -1,7 +1,7 @@
 from enum import IntEnum, auto
 from typing import TypedDict, NotRequired
 
-from rule_builder.rules import HasAny, Has
+from rule_builder.rules import HasAny, Has, True_
 
 from .areas import Area
 
@@ -18,6 +18,9 @@ __all__ = [
     "CHARACTER_TO_STORY_AREA",
     "CHARACTER_TO_PURCHASE_AREA",
     "CHARACTER_TO_EXTRA_TOGGLE_AREA",
+    "ALL_LOGIC_RELEVANT_CHARACTERS",
+    "NORMAL_LOGIC_RELEVANT_CHARACTERS",
+    "EXTRA_TOGGLE_LOGIC_RELEVANT_CHARACTERS",
 ]
 
 
@@ -99,6 +102,18 @@ class Character(IntEnum):
     def is_event(self):
         return self.value >= _EVENT_OFFSET
 
+    def is_unlockable(self) -> bool:
+        """Is this Character unlockable in-game?"""
+        return self.unlock_method is not None
+
+    def is_logic_relevant(self) -> bool:
+        """Can this character be collected into a Collection state (by .readable_name)?"""
+        return (self.is_unlockable() and self.unlock_method is not UnlockMethod.MINIKIT) or self.is_event()
+
+    def is_sendable(self) -> bool:
+        """Can this Character be shuffled into the multiworld and sent to players as an item?"""
+        return self.is_logic_relevant() and not self.is_event()
+
     def get_purchase_location_name(self):
         base_name = f"Purchase {self.readable_name}"
         area = CHARACTER_TO_PURCHASE_AREA[self]
@@ -115,12 +130,23 @@ class Character(IntEnum):
         return f"Ride {self.readable_name}"
 
     def has(self) -> Has:
+        if self not in NORMAL_LOGIC_RELEVANT_CHARACTERS:
+            raise ValueError(f"{self!r} cannot be used in rules.")
         return Has(self.readable_name)
 
     @staticmethod
-    def has_any(*characters: "Character") -> HasAny | Has:
+    def has_any(*characters: "Character") -> HasAny | Has | True_:
+        if not all(map(NORMAL_LOGIC_RELEVANT_CHARACTERS.__contains__, characters)):
+            if any(map(EXTRA_TOGGLE_LOGIC_RELEVANT_CHARACTERS.__contains__, characters)):
+                raise ValueError("Cannot create rules that check for Extra Toggle characters because these never get"
+                                " collected into a CollectionState. Logic should check for"
+                                " Extra.EXTRA_TOGGLE.readable_name being in the state instead, if an Extra Toggle character"
+                                f" can satisfy a rule. Got {characters}.")
+            else:
+                raise ValueError(f"Cannot create rules that check for characters that cannot be used in rules. Got"
+                                 f" {characters}")
         if not characters:
-            raise ValueError("At least one character is expected.")
+            return True_()
         if len(characters) == 1:
             return Has(characters[0].readable_name)
         else:
@@ -506,3 +532,15 @@ CHARACTER_TO_PURCHASE_AREA = {
 CHARACTER_TO_EXTRA_TOGGLE_AREA = {
     character: area for area, characters in AREA_TO_EXTRA_TOGGLE_CHARACTERS.items() for character in characters
 }
+
+ALL_LOGIC_RELEVANT_CHARACTERS = {c for c in Character if c.is_logic_relevant()}
+NORMAL_LOGIC_RELEVANT_CHARACTERS = {
+    c for c in ALL_LOGIC_RELEVANT_CHARACTERS if c.unlock_method is not UnlockMethod.EXTRA_TOGGLE
+}
+_MINIKIT_BONUS_EXTRA_TOGGLE_CHARACTERS = {Character.WAMPA, Character.RANCOR}
+EXTRA_TOGGLE_LOGIC_RELEVANT_CHARACTERS = {
+    c for c in ALL_LOGIC_RELEVANT_CHARACTERS
+    if c.unlock_method is UnlockMethod.EXTRA_TOGGLE
+    and c not in _MINIKIT_BONUS_EXTRA_TOGGLE_CHARACTERS
+}
+ALL_SENDABLE_CHARACTERS = {c for c in ALL_LOGIC_RELEVANT_CHARACTERS if c.is_sendable()}

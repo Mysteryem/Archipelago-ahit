@@ -214,7 +214,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                             HasAllAbilities(CAN_BUILD_BRICKS | CAN_PUSH_OBJECTS),
                             Or(
                                 HasAbility(CAN_JUMP_0_44),
-                                HasAbilityExceptCharacters(CAN_JUMP_HEIGHT_0_37, "Boba Fett (Boy)")
+                                HasAbilityExceptCharacters(CAN_JUMP_HEIGHT_0_37, Character.BOBA_FETT_BOY)
                                 # HasAbilityCombination(CAN_JUMP_HEIGHT_0_37 | RUN_SPEED_1_18_OR_HIGHER),
                             )
                         )

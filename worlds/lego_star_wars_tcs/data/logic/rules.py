@@ -21,9 +21,16 @@ from rule_builder.rules import (
     Or,
 )
 
+from ..characters import Character
+from ..items.all_character_items import (
+    CHARACTER_TO_ITEM_DATA,
+    EXTRA_TOGGLE_CHARACTER_TO_ITEM_DATA,
+    NORMAL_CHARACTER_TO_ITEM_DATA,
+)
+from ..items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
+from ..items.vehicle_items import VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from ...character_ability import CharacterAbility, IMPLIED_BY_ABILITIES
 from ...constants import GAME_NAME
-from ...items import LOGIC_CONSIDERED_CHARACTERS, CHARACTERS_AND_VEHICLES_BY_NAME
 from ...options import ChapterUnlockRequirement, EpisodeUnlockRequirement
 
 
@@ -287,12 +294,14 @@ class HasAbilityCombination(InLevelRule, game=GAME_NAME):
             best_ability_except_rules = []
             for combination in still_multiple_bits:
                 ability_except_rule_attemps: list[Rule] = []
+                main_ability: CharacterAbility
                 for main_ability in combination:
                     other_abilities = combination & ~main_ability
-                    excluded_characters: set[str] = set()
-                    for character in LOGIC_CONSIDERED_CHARACTERS.values():
-                        if main_ability in character.abilities and other_abilities not in character.abilities:
-                            excluded_characters.add(character.name)
+                    excluded_characters: set[Character] = set()
+                    # Make sure to include Extra Toggle characters in the exclusions.
+                    for character_data in CHARACTER_TO_ITEM_DATA.values():
+                        if main_ability in character_data.abilities and other_abilities not in character_data.abilities:
+                            excluded_characters.add(character_data.character)
                     ability_except_rule = HasAbilityExceptCharacters.make_rule(main_ability, excluded_characters)
                     ability_except_rule_attemps.append(ability_except_rule)
 
@@ -318,7 +327,8 @@ class HasAbilityCombination(InLevelRule, game=GAME_NAME):
             for combination in still_multiple_bits:
                 common_abilities = ~CharacterAbility.NONE
                 # Find all characters with this ability combination.
-                for character in LOGIC_CONSIDERED_CHARACTERS.values():
+                # Extra Toggle characters are ignored because they are never collected into a state.
+                for character in NORMAL_CHARACTER_TO_ITEM_DATA.values():
                     if combination in character.abilities:
                         # If there are some single bits to check for, then all characters with those single bits can be
                         # ignored because that single bit would match before needing to check for the character being in
@@ -359,25 +369,28 @@ class HasAbilityExceptCharacters(InLevelRule, game=GAME_NAME):
     ability: CharacterAbility | FieldResolver
     """The ability to check for. CharacterAbility.NONE is allowed."""
 
-    except_characters: AbstractSet[str] | FieldResolver
+    except_characters: AbstractSet[Character] | FieldResolver
     """The characters excluded from this rule."""
 
     def __init__(
             self,
             ability: CharacterAbility | FieldResolver,
-            *except_characters: str,
+            *except_characters: Character,
             options: Iterable[OptionFilter] = (),
             filtered_resolution: bool = False,
     ):
         super().__init__(options=options, filtered_resolution=filtered_resolution)
         self.ability = ability
-        for character_name in except_characters:
-            if character_name not in LOGIC_CONSIDERED_CHARACTERS:
-                raise Exception(f"Character '{character_name}' does not exist.")
+        for character in except_characters:
+            if character not in CHARACTER_TO_ITEM_DATA:
+                raise Exception(f"Item data for Character '{character!r}' does not exist.")
         self.except_characters = set(except_characters)
 
     @override
-    def prepare_for_or_extra_toggle(self) -> Self:
+    def prepare_for_or_extra_toggle(self) -> "HasAbilityExceptCharacters":
+        if isinstance(self.except_characters, FieldResolver):
+            raise Exception(f"Fields Resolvers are not supported by prepare_for_or_extra_toggle. FieldResolver"
+                            f" {self.except_characters} on {self}")
         return HasAbilityExceptCharacters(self.ability, *self.except_characters)
 
     @override
@@ -395,76 +408,74 @@ class HasAbilityExceptCharacters(InLevelRule, game=GAME_NAME):
 
     @override
     def to_dict(self) -> dict[str, Any]:
-        return self.make_rule(self.ability, self.except_characters).to_dict()
-        # data = super().to_dict()
-        # # sets are not allowed.
-        # data["args"]["except_characters"] = list(data["args"]["except_characters"])
-        # return data
+        if isinstance(self.except_characters, FieldResolver) or isinstance(self.ability, FieldResolver):
+            return super().to_dict()
+        else:
+            return self.make_rule(self.ability, self.except_characters).to_dict()
+            # data = super().to_dict()
+            # # sets are not allowed.
+            # data["args"]["except_characters"] = list(data["args"]["except_characters"])
+            # return data
 
     @staticmethod
-    def make_rule(required_ability: CharacterAbility, except_characters: AbstractSet[str]) -> Rule:
+    def make_rule(required_ability: CharacterAbility, except_characters: AbstractSet[Character]) -> Rule:
         if not except_characters:
             return HasAbility(required_ability)
 
-        except_characters_abilities = CharacterAbility.NONE
-        for character_name in except_characters:
+        except_characters_abilities: CharacterAbility = CharacterAbility.NONE
+        for character in except_characters:
             # Extra Toggle characters are allowed in the exclusions to make sure they cannot be allowed due to their
             # abilities when automatically adding Extra Toggle rules, but they otherwise do not need to be considered by
             # the rule.
-            if character_name in LOGIC_CONSIDERED_CHARACTERS:
-                except_characters_abilities |= LOGIC_CONSIDERED_CHARACTERS[character_name].abilities
-            elif character_name not in CHARACTERS_AND_VEHICLES_BY_NAME:
-                raise KeyError(f"No character named '{character_name}' found.")
+            if character in NORMAL_CHARACTER_TO_ITEM_DATA:
+                except_characters_abilities |= NORMAL_CHARACTER_TO_ITEM_DATA[character].abilities
+            elif character not in EXTRA_TOGGLE_CHARACTER_TO_ITEM_DATA:
+                raise KeyError(f"No item data found for Character {character!r} found.")
 
-        include_characters = set()
+        usable_implied_by_abilities_to_characters: dict[CharacterAbility, set[Character]]
+        include_characters: set[Character] = set()
         if required_ability is CharacterAbility.NONE:
             if CharacterAbility.IS_A_VEHICLE in except_characters_abilities:
                 all_abilities = CharacterAbility.ALL_VEHICLE_ABILITIES
-                vehicles = True
+                character_data_collection = VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
             else:
                 all_abilities = ~CharacterAbility.ALL_VEHICLE_ABILITIES
-                vehicles = False
+                character_data_collection = NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 
             usable_abilities = ~except_characters_abilities & all_abilities
 
-            usable_implied_by_abilities_to_characters: dict[CharacterAbility, set[str]] = {
+            usable_implied_by_abilities_to_characters = {
                 ability: set() for ability in usable_abilities
             }
             include_characters_abilities = ~CharacterAbility.NONE
-            for character in LOGIC_CONSIDERED_CHARACTERS.values():
-                if vehicles:
-                    if CharacterAbility.IS_A_VEHICLE not in character.abilities:
-                        continue
-                else:
-                    if CharacterAbility.IS_A_VEHICLE in character.abilities:
-                        continue
-                if character.name not in except_characters:
-                    include_characters_abilities &= character.abilities
-                    include_characters.add(character.name)
-                    for ability in (character.abilities & usable_abilities):
-                        usable_implied_by_abilities_to_characters[ability].add(character.name)
+            for character_data in character_data_collection.values():
+                if character_data.character not in except_characters:
+                    include_characters_abilities &= character_data.abilities
+                    include_characters.add(character_data.character)
+                    for ability in (character_data.abilities & usable_abilities):
+                        usable_implied_by_abilities_to_characters[ability].add(character_data.character)
         else:
             usable_implied_by_abilities = CharacterAbility.NONE
             for ability in IMPLIED_BY_ABILITIES.get(required_ability, ()):
                 if ability not in except_characters_abilities:
                     usable_implied_by_abilities |= ability
 
-            usable_implied_by_abilities_to_characters: dict[CharacterAbility, set[str]] = {
+            usable_implied_by_abilities_to_characters = {
                 ability: set() for ability in usable_implied_by_abilities
             }
             include_characters_abilities = ~CharacterAbility.NONE
-            for character in LOGIC_CONSIDERED_CHARACTERS.values():
-                if required_ability in character.abilities and character.name not in except_characters:
-                    include_characters_abilities &= character.abilities
-                    include_characters.add(character.name)
-                    for ability in (character.abilities & usable_implied_by_abilities):
-                        usable_implied_by_abilities_to_characters[ability].add(character.name)
+            for character_data in NORMAL_CHARACTER_TO_ITEM_DATA.values():
+                if required_ability in character_data.abilities and character_data.character not in except_characters:
+                    include_characters_abilities &= character_data.abilities
+                    include_characters.add(character_data.character)
+                    for ability in (character_data.abilities & usable_implied_by_abilities):
+                        usable_implied_by_abilities_to_characters[ability].add(character_data.character)
 
         if not include_characters:
             return False_()
 
         if len(include_characters) == 1:
-            return Has(next(iter(include_characters)))
+            return next(iter(include_characters)).has()
 
         # todo: I don't know if this is useful, it hasn't managed to do anything so far.
         # abilities_included_characters_all_have_but_except_characters_do_not = (
@@ -490,7 +501,7 @@ class HasAbilityExceptCharacters(InLevelRule, game=GAME_NAME):
         has_any_implied_by_abilities = CharacterAbility.NONE
         if any(usable_implied_by_abilities_to_characters.values()):
             # Some characters can be replaced with HasAnyAbilities instead of including them each in a HasAny.
-            most_common_last: list[tuple[CharacterAbility, set[str]]]
+            most_common_last: list[tuple[CharacterAbility, set[Character]]]
             most_common_last = sorted(usable_implied_by_abilities_to_characters.items(), key=lambda t: len(t[1]))
             while True:
                 most_common_ability, characters_with_ability = most_common_last.pop()
@@ -516,23 +527,23 @@ class HasAbilityExceptCharacters(InLevelRule, game=GAME_NAME):
                 return any_abilities_rule
             else:
                 if len(include_characters) >= 8 and required_ability is not CharacterAbility.NONE:
-                    return HasAbility(required_ability) & (any_abilities_rule | HasAny(*include_characters))
+                    return HasAbility(required_ability) & (any_abilities_rule | Character.has_any(*include_characters))
                 else:
-                    return any_abilities_rule | HasAny(*include_characters)
+                    return any_abilities_rule | Character.has_any(*include_characters)
         else:
             if len(include_characters) >= 8 and required_ability is not CharacterAbility.NONE:
                 # If there are lots of characters that match this, check for having all the required abilities first
                 # because that is a faster check.
-                return HasAbility(required_ability) & HasAny(*include_characters)
+                return HasAbility(required_ability) & Character.has_any(*include_characters)
             else:
-                return HasAny(*include_characters)
+                return Character.has_any(*include_characters)
 
 
 @dataclasses.dataclass
 class HasAnyCharacterExcept(HasAbilityExceptCharacters, game=GAME_NAME):
     def __init__(
             self,
-            *except_characters: str,
+            *except_characters: Character,
             options: Iterable[OptionFilter] = (),
             filtered_resolution: bool = False,
     ):

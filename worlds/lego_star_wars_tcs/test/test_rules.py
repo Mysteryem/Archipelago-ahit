@@ -7,6 +7,10 @@ from worlds import AutoWorldRegister
 
 from ..character_ability import CharacterAbility
 from ..constants import GAME_NAME
+from ..data.characters import Character
+from ..data.extras import Extra
+from ..data.items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
+from ..data.items.vehicle_items import VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from ..data.logic.option_filters import logic_options
 from ..data.logic.macros import can_jump_distance_rule
 from ..data.logic.rules import (
@@ -16,7 +20,6 @@ from ..data.logic.rules import (
     HasAnyCharacterExcept,
     HasAbilityCombination,
 )
-from ..items import LOGIC_CONSIDERED_CHARACTERS
 from ..options import LogicDifficulty
 
 BASE_ITEM = "BASE_ITEM"
@@ -163,7 +166,7 @@ class TestJumpDistanceMacros(TestCase):
 class TestAbilityExceptCharacters(TestCase):
     def test_jedi_except_yoda(self):
         """Test a fairly common case of needing any Jedi, except Yoda/Yoda (Ghost)"""
-        rule = HasAbilityExceptCharacters(CharacterAbility.JEDI, "Yoda", "Yoda (Ghost)")
+        rule = HasAbilityExceptCharacters(CharacterAbility.JEDI, Character.YODA, Character.YODA_GHOST)
         made = rule.make_rule(rule.ability, rule.except_characters)
 
         self.assertIsInstance(made, Or)
@@ -187,7 +190,7 @@ class TestAbilityExceptCharacters(TestCase):
 
     def test_double_jump_except_yoda(self):
         """Test a fairly common case of needing any Double Jumper character, except Yoda/Yoda (Ghost)"""
-        rule = HasAbilityExceptCharacters(CharacterAbility.CAN_DOUBLE_JUMP, "Yoda", "Yoda (Ghost)")
+        rule = HasAbilityExceptCharacters(CharacterAbility.CAN_DOUBLE_JUMP, Character.YODA, Character.YODA_GHOST)
         made = rule.make_rule(rule.ability, rule.except_characters)
 
         self.assertIsInstance(made, HasAnyAbilities)
@@ -201,13 +204,8 @@ class TestAbilityExceptCharacters(TestCase):
         mw = setup_multiworld([world_type], steps=(), options=options)
         world = mw.worlds[1]
         test_state = CollectionState(mw)
-        vehicle_characters: list[str] = []
-        normal_characters: list[str] = []
-        for character_data in LOGIC_CONSIDERED_CHARACTERS.values():
-            if CharacterAbility.IS_A_VEHICLE in character_data.abilities:
-                vehicle_characters.append(character_data.name)
-            else:
-                normal_characters.append(character_data.name)
+        vehicle_characters = [d.character for d in VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA.values()]
+        normal_characters = [d.character for d in NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA.values()]
         for characters in (vehicle_characters, normal_characters):
             for _ in range(len(characters)):
                 # Pick some character to exclude.
@@ -217,22 +215,25 @@ class TestAbilityExceptCharacters(TestCase):
                     collection_rule = rule.resolve(world)
                     for character in characters:
                         expect_true = character not in except_characters
-                        if character == "Super Gonk Droid":
+                        if character is Character.EVENT_SUPER_GONK_DROID:
                             # Super Gonk Droid is only available via a collect() override.
-                            items = [world.create_item("Gonk Droid"), world.create_item("Super Gonk")]
+                            items = [
+                                world.create_item(Character.GONK_DROID.readable_name),
+                                world.create_item(Extra.SUPER_GONK.readable_name),
+                            ]
                             # The collect override includes "Gonk Droid", so if "Gonk Droid" is not also excluded, the
                             # rule should pass.
-                            if "Gonk Droid" not in except_characters:
+                            if Character.GONK_DROID not in except_characters:
                                 expect_true = True
                         else:
-                            items = [world.create_item(character)]
+                            items = [world.create_item(character.readable_name)]
                         for item in items:
                             test_state.collect(item, True)
                         try:
                             if expect_true:
-                                self.assertTrue(collection_rule(test_state), f"Failed for {character}")
+                                self.assertTrue(collection_rule(test_state), f"Failed for {character!r}")
                             else:
-                                self.assertFalse(collection_rule(test_state), f"Failed for {character}")
+                                self.assertFalse(collection_rule(test_state), f"Failed for {character!r}")
                         finally:
                             for item in items:
                                 test_state.remove(item)

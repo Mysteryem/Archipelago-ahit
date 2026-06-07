@@ -66,6 +66,8 @@ VEHICLE_DATA: list[VehicleData] = [
     _vehicle(Character.JEDI_STARFIGHTER_RED, VEHICLE_BLASTER, 21.0),
 ]
 
-VEHICLE_CHARACTER_TO_ITEM_DATA = {
+ALL_VEHICLE_CHARACTER_TO_ITEM_DATA = {
     data.character: data for data in VEHICLE_DATA
 }
+# There are no Extra Toggle vehicle characters, besides Buzz Droid in 3-1, that can't do anything.
+VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA = ALL_VEHICLE_CHARACTER_TO_ITEM_DATA

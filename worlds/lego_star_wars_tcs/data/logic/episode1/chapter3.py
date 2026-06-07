@@ -14,6 +14,7 @@ from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilityExce
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
@@ -244,13 +245,13 @@ ESCAPE_FROM_NABOO = Chapter(
             normal=And(
                 Or(
                     HasAbility(SITH),
-                    Has("Dark Side") & HasAbilityExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
+                    Has("Dark Side") & HasAbilityExceptCharacters(JEDI, Character.YODA, Character.YODA_GHOST)
                 ),
                 CAN_DESTROY_CLOSE_SILVER_BRICKS
             ),
             moderate=Or(
                 HasAbility(SITH),
-                Has("Dark Side") & HasAbilityExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
+                Has("Dark Side") & HasAbilityExceptCharacters(JEDI, Character.YODA, Character.YODA_GHOST)
             )
         ),
         er_rule=logic_options(
@@ -261,13 +262,13 @@ ESCAPE_FROM_NABOO = Chapter(
                 CAN_SITH_FORCE,
                 # When Dark Side is allowed instead of just Sith. Yoda (and Yoda (Ghost)) struggle a lot to use force on
                 # one of the flowers, so they are excluded.
-                HasAbilityExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
+                HasAbilityExceptCharacters(JEDI, Character.YODA, Character.YODA_GHOST)
             ),
             # The Silver brick objects can actually be destroyed with a slam attack for some reason, so being able to
             # destroy Silver brick objects is not needed.
             moderate=Or(
                 HasAbility(SITH),
-                Has("Dark Side") & HasAbilityExceptCharacters(JEDI, "Yoda", "Yoda (Ghost)")
+                Has("Dark Side") & HasAbilityExceptCharacters(JEDI, Character.YODA, Character.YODA_GHOST)
             )
         )
     ),

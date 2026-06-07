@@ -229,7 +229,7 @@ SPEEDER_SHOWDOWN = Chapter(
                         # Yoda can double jump across.
                         HasAny("Yoda", "Yoda (Ghost)"),
                         # High jump characters, except Grievous' Bodygaurd can jump across.
-                        HasAbilityExceptCharacters(HIGH_JUMP, "Grievous' Bodyguard") & OT_HIGH_JUMP_ENABLED,
+                        HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD) & OT_HIGH_JUMP_ENABLED,
                     )
                 ),
                 # Triple jump up, and triple jump across.

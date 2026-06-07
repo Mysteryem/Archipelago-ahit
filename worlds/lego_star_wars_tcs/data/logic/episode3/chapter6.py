@@ -13,7 +13,7 @@ from ...levels import Level
 
 from ....character_ability import *
 from ....data.characters import Character
-from ....data.items.character_items import CHARACTER_TO_ITEM_DATA
+from ....data.items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 
 NAME = "Darth Vader"
 
@@ -32,7 +32,7 @@ R_LAVA_PLATFORMING_FAR_MINIKIT_PLATFORM = "Lava Platforming Far Minikit Platform
 
 ANY_DOUBLE_JUMP_EXCEPT_YODA = HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | HIGH_JUMP)
 # More expensive and makes fewer assumptions but should be identical.
-ANY_DOUBLE_JUMP_EXCEPT_YODA_ER = HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, "Yoda", "Yoda (Ghost)")
+ANY_DOUBLE_JUMP_EXCEPT_YODA_ER = HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, Character.YODA, Character.YODA_GHOST)
 
 
 # todo: Replace with HasAnyCharacterExcept
@@ -40,7 +40,7 @@ def _make_any_character_except_force_ghost() -> Rule:
     ghosts = {Character.YODA_GHOST, Character.ANAKIN_SKYWALKER_GHOST, Character.BEN_KENOBI_GHOST}
     abilities_union = CharacterAbility.NONE
     for ghost in ghosts:
-        abilities_union |= CHARACTER_TO_ITEM_DATA[ghost].abilities
+        abilities_union |= NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA[ghost].abilities
 
     # Vehicles are obviously no good either, since they cannot be brought into regular levels.
     abilities_union |= CharacterAbility.ALL_VEHICLE_ABILITIES
@@ -51,15 +51,16 @@ def _make_any_character_except_force_ghost() -> Rule:
 
     # Now find all non-ghost characters who don't share a single ability in common with `abilities_union`. Those
     # characters will need to be checked for individually.
-    individual_check_characters: list[str] = []
-    for character in CHARACTER_TO_ITEM_DATA.values():
-        if character.name in ghosts:
+    individual_check_characters: list[Character] = []
+    # Skip extra toggle characters.
+    for character_data in NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA.values():
+        if character_data.character in ghosts:
             continue
-        if character.abilities & any_abilities == 0:
-            individual_check_characters.append(character.name)
+        if character_data.abilities & any_abilities == 0:
+            individual_check_characters.append(character_data.character)
 
     if individual_check_characters:
-        return abilities_rule | HasAny(*individual_check_characters)
+        return abilities_rule | Character.has_any(*individual_check_characters)
     else:
         return abilities_rule
 
@@ -291,7 +292,7 @@ DARTH_VADER = Chapter(
                         # Yoda can make the jump due to his increase double jump distance.
                         # High jumpers, except Grievous' Bodyguard can also make the jump.
                         HasAny("Yoda", "Yoda (Ghost)"),
-                        HasAbilityExceptCharacters(HIGH_JUMP, "Grievous' Bodyguard"),
+                        HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD),
                     ),
                     # Triple jumps or Yoda can jump the required distance.
                     moderate=HasAnyAbilities(HOVER | JEDI | HIGH_JUMP),

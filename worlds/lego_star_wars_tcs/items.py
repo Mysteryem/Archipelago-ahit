@@ -7,10 +7,10 @@ from .data.areas import Area
 from .data.characters import Character
 from .data.extras import Extra
 from .data.items import GenericItemData, GenericCharacterData
-from .data.items.character_items import CHARACTER_DATA, CharacterData, CHARACTER_TO_ITEM_DATA
+from .data.items.character_items import NORMAL_CHARACTER_DATA, CharacterData, NON_VEHICLE_CHARACTER_TO_ITEM_DATA
 from .data.items.extra_items import EXTRA_DATA, ExtraData
 from .data.items.generic_items import GENERIC_DATA, MinikitItemData, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
-from .data.items.vehicle_items import VEHICLE_DATA, VEHICLE_CHARACTER_TO_ITEM_DATA
+from .data.items.vehicle_items import VEHICLE_DATA, ALL_VEHICLE_CHARACTER_TO_ITEM_DATA
 
 
 ItemType = Literal["Character", "Vehicle", "Extra", "Generic", "Minikit"]
@@ -36,7 +36,7 @@ class LegoStarWarsTCSItem(Item):
 
 
 ITEM_DATA: list[GenericItemData] = [
-    *CHARACTER_DATA,
+    *NORMAL_CHARACTER_DATA,
     *VEHICLE_DATA,
     *GENERIC_DATA,
     *EXTRA_DATA,
@@ -74,8 +74,8 @@ PURCHASABLE_NON_POWER_BRICK_EXTRAS: tuple[ExtraData, ...] = tuple(
      if extra.extra.purchase_cost is not None and extra.extra not in _POWER_BRICK_EXTRAS]
 )
 ALL_CHARACTERS_TO_ITEMS: Mapping[Character, GenericCharacterData] = {
-    **CHARACTER_TO_ITEM_DATA,
-    **VEHICLE_CHARACTER_TO_ITEM_DATA,
+    **NON_VEHICLE_CHARACTER_TO_ITEM_DATA,
+    **ALL_VEHICLE_CHARACTER_TO_ITEM_DATA,
 }
 CHARACTERS_AND_VEHICLES_BY_NAME: Mapping[str, GenericCharacterData] = {
     data.name: data for data in ITEM_DATA if isinstance(data, GenericCharacterData)}

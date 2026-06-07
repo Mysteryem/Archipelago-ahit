@@ -5,7 +5,7 @@ from .option_filters import normal_logic, logic_options, OT_HIGH_JUMP_ENABLED
 from .rules import HasAbility, HasAnyAbilities, HasAbilityExceptCharacters
 from ..characters import Character
 from ..extras import Extra
-from ..items.character_items import CHARACTER_TO_ITEM_DATA
+from ..items.character_items import NON_VEHICLE_CHARACTER_TO_ITEM_DATA
 from ...character_ability import *
 from ...items import SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTER_NAMES
 from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
@@ -24,17 +24,19 @@ CAN_SUPER_EWOK_CATAPULT = logic_options(
 HAS_FLUTTER_CHARACTER = Character.has_any(Character.GEONOSIAN, Character.WATTO)
 
 
+# FIXME: Jump Distance needs to be a custom rule so that Extra Toggle rules can correctly adjust it if an Extra Toggle
+#  character has the requested jump distance.
 def can_jump_distance_rule(distance_or_character: float | Character) -> Rule:
     distance: float
     if isinstance(distance_or_character, Character):
-        distance = CHARACTER_TO_ITEM_DATA[distance_or_character].single_jump_distance
+        distance = NON_VEHICLE_CHARACTER_TO_ITEM_DATA[distance_or_character].single_jump_distance
     else:
         distance = distance_or_character
 
     if distance <= 0:
         raise ValueError(f"Tried to create rule for distance less than or equal to zero. This does not make sens.")
 
-    if distance <= CHARACTER_TO_ITEM_DATA[Character.BOBA_FETT_BOY].single_jump_distance:
+    if distance <= NON_VEHICLE_CHARACTER_TO_ITEM_DATA[Character.BOBA_FETT_BOY].single_jump_distance:
         return HasAbility(CAN_BARELY_JUMP)
     if distance <= 0.69:
         base_ability = CAN_JUMP_DISTANCE_0_69
@@ -210,13 +212,13 @@ CAN_ATTACK_UP_CLOSE_EXCEPT_TARPALS = (
     logic_options(
         base=Or(
             HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM | BLASTER | WEAPON_EWOK),
-            HasAbilityExceptCharacters(CAN_MELEE, Character.CAPTAIN_TARPALS.readable_name),
+            HasAbilityExceptCharacters(CAN_MELEE, Character.CAPTAIN_TARPALS),
         ),
         # Allow Self Destruct.
         normal=Or(
             HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM | BLASTER | WEAPON_EWOK),
             CAN_USE_SELF_DESTRUCT,
-            HasAbilityExceptCharacters(CAN_MELEE, Character.CAPTAIN_TARPALS.readable_name),
+            HasAbilityExceptCharacters(CAN_MELEE, Character.CAPTAIN_TARPALS),
         ),
     )
 ),

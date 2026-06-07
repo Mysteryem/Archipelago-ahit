@@ -94,7 +94,7 @@ SECRET_PLANS = _helper.make_chapter(
                     # All Jedi can build, so the triple jump great distance includes General Grievous for no logic cost.
                     base=Or(
                         HasAnyAbilities(CAN_BUILD_BRICKS | HOVER),
-                        HasAbilityExceptCharacters(HIGH_JUMP, "Grievous' Bodyguard") & OT_HIGH_JUMP_ENABLED,
+                        HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD) & OT_HIGH_JUMP_ENABLED,
                     ),
                     # Bodyguard has to go one floor down, and jump from there instead.
                     # Yoda can double jump across the gap without building the bridge, though that has no logic
