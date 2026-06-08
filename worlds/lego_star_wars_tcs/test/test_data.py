@@ -163,21 +163,21 @@ class TestEpisodes(TestCase):
                     exit_name = f"{region_name} -> {exit_.to_region}"
                 yield exit_name, exit_.rule
                 if exit_.er_rule is not None:
-                    yield exit_name, exit_.er_rule
+                    yield exit_name + "(ER)", exit_.er_rule
 
         for minikit_name, minikit_data in chapter.minikits.items():
             yield minikit_name, minikit_data.rule
             if minikit_data.er_rule is not None:
-                yield minikit_name, minikit_data.er_rule
+                yield minikit_name + "(ER)", minikit_data.er_rule
 
         for ridable, ridable_data in chapter.ridables.items():
             yield ridable.readable_name, ridable_data.rule
             if ridable_data.er_rule is not None:
-                yield ridable.readable_name, ridable_data.er_rule
+                yield ridable.readable_name + "(ER)", ridable_data.er_rule
 
         yield "Power Brick", chapter.power_brick.rule
         if chapter.power_brick.er_rule is not None:
-            yield "Power Brick", chapter.power_brick.er_rule
+            yield "Power Brick (ER)", chapter.power_brick.er_rule
 
         yield "Extra Chapter Entrance Rules", chapter.extra_chapter_entrance_rules
 
