@@ -173,7 +173,7 @@ class RuleReplacer:
         any_abilities_simplified = any_abilities.simplify_or()
         if not changed and any_abilities_simplified is not any_abilities:
             changed = True
-        if any_abilities is not CharacterAbility.NONE:
+        if any_abilities_simplified is not CharacterAbility.NONE and all_abilities_set:
             # Any one of these abilities allows the Or rule to return True, so a HasAllAbilities containing any of these
             # abilities is pointless.
             delete_rule_if_found_in_all_abilities = any_abilities | any_abilities_simplified
@@ -293,7 +293,7 @@ class RuleReplacer:
         all_abilities_simplified = all_abilities.simplify_and()
         if not changed and all_abilities_simplified is not all_abilities:
             changed = True
-        if all_abilities_simplified is not CharacterAbility.NONE:
+        if all_abilities_simplified is not CharacterAbility.NONE and any_abilities_set:
             # Every one of these abilities is required for the And rule to return True, so a HasAnyAbilities containing
             # one of these abilities is pointless.
             delete_rule_if_found_in_any_abilities = all_abilities_simplified
