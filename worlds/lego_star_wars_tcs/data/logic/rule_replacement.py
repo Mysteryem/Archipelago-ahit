@@ -1,10 +1,12 @@
 import dataclasses
 from typing import Literal, TypeVar, Protocol
 
-from rule_builder.rules import Rule, And, Or, WrapperRule, Filtered
+from rule_builder.field_resolvers import FieldResolver
+from rule_builder.rules import Rule, And, Or, WrapperRule, Filtered, False_, True_
 
 from .option_filters import LogicOptions
-
+from .rules import HasAbility, HasAnyAbilities, HasAllAbilities
+from ...character_ability import CharacterAbility, IMPLIED_ABILITIES, IMPLIED_BY_ABILITIES
 
 Difficulty = Literal["base", "normal", "moderate", "hard"]
 
@@ -139,17 +141,117 @@ class RuleReplacer:
             return self.replace(rule.children[0], difficulty)
 
         changed = False
-        new_children = []
+        initial_new_children = []
         for child in rule.children:
             replaced = self.replace(child, difficulty)
             if replaced is not child:
                 changed = True
             if isinstance(replaced, Or) and replaced.options == rule.options:
-                new_children.extend(replaced.children)
+                initial_new_children.extend(replaced.children)
             else:
-                new_children.append(replaced)
+                initial_new_children.append(replaced)
+
+        # todo: When extending this to also apply to nested rule, this will have some potential issues with how the
+        #  memodict is used, because a rule could be handle differently depending on what nested rules we are within.
+        # Some early basic ability rule combinations.
+        final_new_children = []
+        any_abilities = CharacterAbility.NONE
+        all_abilities_set: set[CharacterAbility] = set()
+        for child in initial_new_children:
+            if child.options == rule.options:
+                if isinstance(child, HasAbility) and not isinstance(child.ability, FieldResolver):
+                    any_abilities |= child.ability
+                elif isinstance(child, HasAnyAbilities) and not isinstance(child.abilities, FieldResolver):
+                    any_abilities |= child.abilities
+                elif isinstance(child, HasAllAbilities) and not isinstance(child.abilities, FieldResolver):
+                    all_abilities_set.add(child.abilities)
+                else:
+                    final_new_children.append(child)
+            else:
+                # todo: Abilities with .options set can be optimised based on the other abilities rules.
+                final_new_children.append(child)
+        any_abilities_simplified = any_abilities.simplify_or()
+        if not changed and any_abilities_simplified is not any_abilities:
+            changed = True
+        if any_abilities is not CharacterAbility.NONE:
+            # Any one of these abilities allows the Or rule to return True, so a HasAllAbilities containing any of these
+            # abilities is pointless.
+            delete_rule_if_found_in_all_abilities = any_abilities | any_abilities_simplified
+            for ability in delete_rule_if_found_in_all_abilities:
+                # Having an ability that implies any of these abilities would also allow the Or rule to return True, so
+                # these abilities can be removed too.
+                # Or(
+                #    HasAbility(CAN_DOUBLE_JUMP),
+                #    HasAllAbilities(JEDI | ASTROMECH_PANEL),
+                # )
+                # can be reduced to just HasAbility(CAN_DOUBLE_JUMP).
+                # Merge in all abilities that are implied by `ability`. E.g. if CAN_DOUBLE_JUMP is one of the already
+                # found abilities, then JEDI can also be removed because CAN_DOUBLE_JUMP is implied by JEDI.
+                for implied_by_abilities in IMPLIED_BY_ABILITIES[ability]:
+                    delete_rule_if_found_in_all_abilities |= implied_by_abilities
+
+            pointless_removed_all_abilities_set = {
+                all_abilities for all_abilities in all_abilities_set
+                if (all_abilities & delete_rule_if_found_in_all_abilities) == 0
+            }
+            if not changed and pointless_removed_all_abilities_set != all_abilities_set:
+                changed = True
+            all_abilities_set = pointless_removed_all_abilities_set
+
+        # Or(
+        #    [...],
+        #    HasAllAbilities(JEDI | ASTROMECH_PANEL),
+        #    HasAllAbilities(JEDI | ASTROMECH_PANEL | BLASTER),
+        # )
+        # can be reduced to:
+        # Or(
+        #    [...],
+        #    HasAllAbilities(JEDI | ASTROMECH_PANEL),
+        # )
+        # Sort largest bit counts to the top of the stack because these are most likely to contain all the abilities
+        # of another HasAllAbilities rule, where that other rule would always be satisfied first.
+        all_abilities_stack = sorted(all_abilities_set, key=CharacterAbility.bit_count)
+        all_abilities_list = []
+        while all_abilities_stack:
+            abilities = all_abilities_stack.pop()
+            # Iterate in reverse to get the abilities with smallest bits first, since those are most likely to be
+            # contained within `abilities`.
+            for other_ability in reversed(all_abilities_stack):
+                if other_ability in abilities:
+                    # `abilities` is pointless because it contains `other_ability`.
+                    changed = True
+                    break
+            else:
+                # No break, try the abilities in the list next.
+                for other_ability in reversed(all_abilities_list):
+                    if other_ability in abilities:
+                        # `abilities` is pointless because it contains `other_ability`.
+                        changed = True
+                        break
+                else:
+                    # The ability/abilities are relevant.
+                    all_abilities_list.append(abilities)
+
+        # todo: Make sure the easiest to satisfy rules are put towards the front of the children.
+        for all_abilities in all_abilities_list:
+            if all_abilities.bit_count() == 1:
+                # The HasAllAbilities has reduced to a HasAbility, which can be combined into a HasAnyAbilities.
+                any_abilities_simplified |= all_abilities
+            else:
+                # Insert at the front.
+                final_new_children.insert(0, HasAllAbilities(all_abilities))
+
+        if any_abilities_simplified is not CharacterAbility.NONE:
+            changed = True
+            # Insert the new HasAnyAbilities at the front because it is a fast rule.
+            if any_abilities_simplified.bit_count() == 1:
+                new_has_any_abilities = HasAbility(any_abilities_simplified)
+            else:
+                new_has_any_abilities = HasAnyAbilities(any_abilities_simplified)
+            final_new_children.insert(0, new_has_any_abilities)
+
         if changed:
-            return Or(*new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
+            return Or(*final_new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
         else:
             return rule
 
@@ -161,16 +263,114 @@ class RuleReplacer:
             return self.replace(rule.children[0], difficulty)
 
         changed = False
-        new_children = []
+        initial_new_children = []
         for child in rule.children:
             replaced = self.replace(child, difficulty)
             if replaced is not child:
                 changed = True
             if isinstance(replaced, And) and replaced.options == rule.options:
-                new_children.extend(replaced.children)
+                initial_new_children.extend(replaced.children)
             else:
-                new_children.append(replaced)
+                initial_new_children.append(replaced)
+
+        # Some early basic ability rule combinations.
+        final_new_children = []
+        all_abilities = CharacterAbility.NONE
+        any_abilities_set: set[CharacterAbility] = set()
+        for child in initial_new_children:
+            if child.options == rule.options:
+                if isinstance(child, HasAbility) and not isinstance(child.ability, FieldResolver):
+                    all_abilities |= child.ability
+                elif isinstance(child, HasAllAbilities) and not isinstance(child.abilities, FieldResolver):
+                    all_abilities |= child.abilities
+                elif isinstance(child, HasAnyAbilities) and not isinstance(child.abilities, FieldResolver):
+                    any_abilities_set.add(child.abilities)
+                else:
+                    final_new_children.append(child)
+            else:
+                # todo: Abilities with .options set can be optimised based on the other abilities rules.
+                final_new_children.append(child)
+        all_abilities_simplified = all_abilities.simplify_and()
+        if not changed and all_abilities_simplified is not all_abilities:
+            changed = True
+        if all_abilities_simplified is not CharacterAbility.NONE:
+            # Every one of these abilities is required for the And rule to return True, so a HasAnyAbilities containing
+            # one of these abilities is pointless.
+            delete_rule_if_found_in_any_abilities = all_abilities_simplified
+            for ability in delete_rule_if_found_in_any_abilities:
+                # An ability that is implied by any one of these abilities
+                # And(
+                #     HasAbility(JEDI),
+                #     HasAnyAbilities(CAN_DOUBLE_JUMP | ASTROMECH_PANEL),
+                # )
+                # can be reduced to just HasAbility(JEDI).
+                # Merge in all abilities that `ability` implies. E.g. if JEDI is one of the already found abilities,
+                # then CAN_DOUBLE_JUMP can also be removed because JEDI implies CAN_DOUBLE_JUMP.
+                for implied_abilities in IMPLIED_ABILITIES[ability]:
+                    delete_rule_if_found_in_any_abilities |= implied_abilities
+
+            # Update any_abilities_set to remove pointless rules.
+            pointless_removed_any_abilities_set = {
+                any_abilities for any_abilities in any_abilities_set
+                if (any_abilities & delete_rule_if_found_in_any_abilities) == 0
+            }
+            if not changed and pointless_removed_any_abilities_set != any_abilities_set:
+                changed = True
+            any_abilities_set = pointless_removed_any_abilities_set
+
+        # And(
+        #     [...],
+        #     HasAnyAbilities(CAN_DOUBLE_JUMP | ASTROMECH_PANEL),
+        #     HasAnyAbilities(CAN_DOUBLE_JUMP | ASTROMECH_PANEL | BLASTER),
+        # )
+        # can be reduced to:
+        # And(
+        #     [...],
+        #     HasAnyAbilities(CAN_DOUBLE_JUMP | ASTROMECH_PANEL),
+        # )
+        # Sort largest bit counts to the top of the stack because these are most likely to contain all the abilities
+        # of another HasAllAbilities rule, where that other rule would always be satisfied first.
+        any_abilities_stack = sorted(any_abilities_set, key=CharacterAbility.bit_count)
+        any_abilities_list = []
+        while any_abilities_stack:
+            abilities = any_abilities_stack.pop()
+            # Iterate in reverse to get the abilities with smallest bits first, since those are most likely to be
+            # contained within `abilities`.
+            for other_ability in reversed(any_abilities_stack):
+                if other_ability in abilities:
+                    # `abilities` is pointless because it contains `other_ability`.
+                    changed = True
+                    break
+            else:
+                # No break, try the abilities in the lust next.
+                for other_ability in reversed(any_abilities_list):
+                    if other_ability in abilities:
+                        # `abilities` is pointless because it contains `other_ability`.
+                        changed = True
+                        break
+                else:
+                    # The ability/abilities are relevant.
+                    any_abilities_list.append(abilities)
+
+        # todo: Make sure the hardest to satisfy rules are put towards the front of the children.
+        for any_abilities in any_abilities_list:
+            if any_abilities.bit_count() == 1:
+                # The HasAnyAbilities has reduced to a HasAbility, which can be combined into a HasAllAbilities.
+                all_abilities_simplified |= any_abilities
+            else:
+                # Insert at the front.
+                final_new_children.insert(0, HasAnyAbilities(any_abilities))
+
+        if all_abilities_simplified is not CharacterAbility.NONE:
+            changed = True
+            # Insert the new HasAnyAbilities at the front because it is a fast rule.
+            if all_abilities_simplified.bit_count() == 1:
+                new_has_all_abilities = HasAbility(all_abilities_simplified)
+            else:
+                new_has_all_abilities = HasAllAbilities(all_abilities_simplified)
+            final_new_children.insert(0, new_has_all_abilities)
+
         if changed:
-            return And(*new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
+            return And(*final_new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
         else:
             return rule
