@@ -132,6 +132,12 @@ class RuleReplacer:
         return self.replace(getattr(rule, difficulty), difficulty)
 
     def _handle_or(self, rule: Or, difficulty: Difficulty) -> Rule:
+        if not rule.children:
+            return False_()
+
+        if len(rule.children) == 1:
+            return self.replace(rule.children[0], difficulty)
+
         changed = False
         new_children = []
         for child in rule.children:
@@ -148,6 +154,12 @@ class RuleReplacer:
             return rule
 
     def _handle_and(self, rule: And, difficulty: Difficulty) -> Rule:
+        if not rule.children:
+            return True_()
+
+        if len(rule.children) == 1:
+            return self.replace(rule.children[0], difficulty)
+
         changed = False
         new_children = []
         for child in rule.children:
