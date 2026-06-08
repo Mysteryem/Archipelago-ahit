@@ -251,6 +251,12 @@ class RuleReplacer:
             final_new_children.insert(0, new_has_any_abilities)
 
         if changed:
+            if len(final_new_children) == 1:
+                child = final_new_children[0]
+                if child.options == rule.options and child.filtered_resolution == rule.filtered_resolution:
+                    return child
+                else:
+                    return Filtered(child, options=rule.options, filtered_resolution=rule.filtered_resolution)
             return Or(*final_new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
         else:
             return rule
@@ -371,6 +377,12 @@ class RuleReplacer:
             final_new_children.insert(0, new_has_all_abilities)
 
         if changed:
+            if len(final_new_children) == 1:
+                child = final_new_children[0]
+                if child.options == rule.options and child.filtered_resolution == rule.filtered_resolution:
+                    return child
+                else:
+                    return Filtered(child, options=rule.options, filtered_resolution=rule.filtered_resolution)
             return And(*final_new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
         else:
             return rule
