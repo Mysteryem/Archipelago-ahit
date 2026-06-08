@@ -11,7 +11,7 @@ from rule_builder.rules import (
 )
 
 from .extra_toggle import ExtraToggleRuleReplacer
-from .rule_replacement import NestedOptimizerRuleReplacer
+from .rule_replacement import NestedOptimizerRuleReplacer, NestedAndInLevelRuleSimplifierRuleReplacer
 from ..areas import Area
 from ..characters import Character
 from ..levels import Level
@@ -163,11 +163,16 @@ class Chapter:
             raise Exception(f"First playable level for {self.name} is None")
         object.__setattr__(self, "start_level", start_level)
 
-        rule_optimizer = NestedOptimizerRuleReplacer()
-
         if self.extra_toggle_characters:
             # Add `| Has("Extra Toggle")` to rules that can be satisfied by having Extra Toggle.
-            rule_optimizer = ExtraToggleRuleReplacer(self, rule_optimizer)
+            # It's important that replacements go in the following order:
+            # 1) Un-nest rules, so that Extra Toggle rules can efficiently apply to And/Or rules.
+            # 2) Add Extra Toggle Rules. Special InLevelRules that can be simplified must still be untouched so that it
+            #    is possible to tell whether Extra Toggle is a suitable alternative for the rule.
+            # 3) todo: Simplify special InLevelRules and un-nest any that become And/Or rules.
+            rule_optimizer = ExtraToggleRuleReplacer(self, NestedOptimizerRuleReplacer())
+        else:
+            rule_optimizer = NestedAndInLevelRuleSimplifierRuleReplacer()
 
         for region_name, exits in self.regions.items():
             self.regions[region_name] = tuple(

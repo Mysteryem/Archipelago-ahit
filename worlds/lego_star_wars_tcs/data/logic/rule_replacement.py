@@ -5,7 +5,7 @@ from rule_builder.field_resolvers import FieldResolver
 from rule_builder.rules import Rule, And, Or, WrapperRule, Filtered, False_, True_
 
 from .option_filters import LogicOptions
-from .rules import HasAbility, HasAnyAbilities, HasAllAbilities
+from .rules import HasAbility, HasAnyAbilities, HasAllAbilities, InLevelRule
 from ...character_ability import CharacterAbility, IMPLIED_ABILITIES, IMPLIED_BY_ABILITIES
 
 Difficulty = Literal["base", "normal", "moderate", "hard"]
@@ -460,3 +460,10 @@ class NestedOptimizerRuleReplacer(RuleReplacer):
             return And(*final_new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
         else:
             return rule
+
+class NestedAndInLevelRuleSimplifierRuleReplacer(NestedOptimizerRuleReplacer):
+    def _handle(self, rule: Rule) -> Rule:
+        if isinstance(rule, InLevelRule):
+            return super()._handle(rule.make_simpler_rule())
+        else:
+            return super()._handle(rule)
