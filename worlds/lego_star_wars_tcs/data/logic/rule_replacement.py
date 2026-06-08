@@ -25,6 +25,9 @@ TRuleData = TypeVar("TRuleData", bound=RuleData)
 
 
 class RuleReplacer:
+    current_difficulty_path: Difficulty
+    current_found_difficulty: Difficulty | None = None
+
     def __init__(self, dispatch_overrides: dict | None = None) -> None:
         self._handlers = {
             Filtered: self._handle_filtered,
@@ -35,7 +38,7 @@ class RuleReplacer:
         }
         if dispatch_overrides:
             self._handlers |= dispatch_overrides
-        self.replaced_rules_memodict: dict[tuple[int, Difficulty], Rule] = {}
+        self.replaced_rules_memodict: dict[tuple[int, Difficulty | None], Rule] = {}
 
     def replace_each_difficulty(
             self,
@@ -46,10 +49,10 @@ class RuleReplacer:
     ) -> Rule | None:
         # If any of base/normal/moderate/hard contain a LogicOptions rule, replace that with the
         # base/normal/moderate/hard rule.
-        base_rule = self.replace(base, "base")
-        normal_rule = self.replace(normal, "normal")
-        moderate_rule = self.replace(moderate, "moderate")
-        hard_rule = self.replace(hard, "hard")
+        base_rule = self.start_replace(base, "base")
+        normal_rule = self.start_replace(normal, "normal")
+        moderate_rule = self.start_replace(moderate, "moderate")
+        hard_rule = self.start_replace(hard, "hard")
 
         assert isinstance(base_rule, Rule)
         if hard_rule is moderate_rule and hard_rule is normal_rule and hard_rule is base_rule:
@@ -94,56 +97,127 @@ class RuleReplacer:
         else:
             return rule_data
 
+    def start_replace(self, rule: Rule, difficulty: Difficulty) -> Rule:
+        if self.current_found_difficulty is not None:
+            raise Exception("Error: Replacement is already ongoing.")
+        try:
+            self.current_difficulty_path = difficulty
+            replaced = self.replace(rule)
+        finally:
+            self.current_found_difficulty = None
+        return replaced
 
-    def replace(self, rule: Rule, difficulty: Difficulty) -> Rule:
-        key = (id(rule), difficulty)
+
+    def replace(self, rule: Rule) -> Rule:
+        key = (id(rule), self.current_difficulty_path)
         already_handled = self.replaced_rules_memodict.get(key)
         if already_handled is not None:
             return already_handled
         else:
-            replaced = self._handle(rule, difficulty)
-            self.replaced_rules_memodict[key] = replaced
+            replaced = self._handle(rule)
+            if self.current_found_difficulty is None:
+                none_key = (key[0], None)
+                if none_key in self.replaced_rules_memodict:
+                    existing = self.replaced_rules_memodict[none_key]
+                    self.replaced_rules_memodict[key[0], self.current_found_difficulty] = existing
+                    return existing
+            self.replaced_rules_memodict[key[0], self.current_found_difficulty] = replaced
             return replaced
 
-    def _handle(self, rule: Rule, difficulty: Difficulty) -> Rule:
+    def _handle(self, rule: Rule) -> Rule:
         rule_class = type(rule)
         if rule_class in self._handlers:
-            return self._handlers[rule_class](rule, difficulty)
+            return self._handlers[rule_class](rule)
         else:
             return rule
 
-    def _handle_filtered(self, rule: Filtered, difficulty: Difficulty) -> Rule:
-        replaced = self.replace(rule.child, difficulty)
+    def _handle_filtered(self, rule: Filtered) -> Rule:
+        replaced = self.replace(rule.child)
         if replaced is not rule.child:
             return Filtered(replaced, options=rule.options, filtered_resolution=rule.filtered_resolution)
         else:
             return rule
 
-    def _handle_wrapper_rule(self, rule: WrapperRule, difficulty: Difficulty) -> Rule:
-        replaced = self.replace(rule.child, difficulty)
+    def _handle_wrapper_rule(self, rule: WrapperRule) -> Rule:
+        replaced = self.replace(rule.child)
         if replaced is not rule.child:
             return WrapperRule(replaced, options=rule.options, filtered_resolution=rule.filtered_resolution)
         else:
             return rule
 
-    def _handle_logic_options(self, rule: LogicOptions, difficulty: Difficulty) -> Rule:
+    def _handle_logic_options(self, rule: LogicOptions) -> Rule:
         if rule.options:
             # OptionFilters would probably be annoying to combine correctly, especially if filtered_resolution
             # differs between the LogicOptions and the rule being getattr-ed.
             raise Exception("LogicOptions should not use OptionFilters, filter the individual rules instead.")
-        return self.replace(getattr(rule, difficulty), difficulty)
+        # Mark that we are now processing difficulty-specific rules.
+        self.current_found_difficulty = self.current_difficulty_path
+        return self.replace(getattr(rule, self.current_difficulty_path))
 
-    def _handle_or(self, rule: Or, difficulty: Difficulty) -> Rule:
+    def _handle_or(self, rule: Or) -> Rule:
         if not rule.children:
             return False_()
 
         if len(rule.children) == 1:
-            return self.replace(rule.children[0], difficulty)
+            return self.replace(rule.children[0])
+
+        changed = False
+        new_children = []
+        for child in rule.children:
+            replaced = self.replace(child)
+            if replaced is not child:
+                changed = True
+            new_children.append(replaced)
+
+        if changed:
+            if len(new_children) == 1:
+                child = new_children[0]
+                if child.options == rule.options and child.filtered_resolution == rule.filtered_resolution:
+                    return child
+                else:
+                    return Filtered(child, options=rule.options, filtered_resolution=rule.filtered_resolution)
+            return Or(*new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
+        else:
+            return rule
+
+    def _handle_and(self, rule: And) -> Rule:
+        if not rule.children:
+            return True_()
+
+        if len(rule.children) == 1:
+            return self.replace(rule.children[0])
+
+        changed = False
+        new_children = []
+        for child in rule.children:
+            replaced = self.replace(child)
+            if replaced is not child:
+                changed = True
+            new_children.append(replaced)
+
+        if changed:
+            if len(new_children) == 1:
+                child = new_children[0]
+                if child.options == rule.options and child.filtered_resolution == rule.filtered_resolution:
+                    return child
+                else:
+                    return Filtered(child, options=rule.options, filtered_resolution=rule.filtered_resolution)
+            return And(*new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
+        else:
+            return rule
+
+class NestedOptimizerRuleReplacer(RuleReplacer):
+    def _handle_or(self, rule: Or) -> Rule:
+        if not rule.children:
+            return False_()
+
+        if len(rule.children) == 1:
+            return self.replace(rule.children[0])
 
         changed = False
         initial_new_children = []
         for child in rule.children:
-            replaced = self.replace(child, difficulty)
+            replaced = self.replace(child)
             if replaced is not child:
                 changed = True
             if isinstance(replaced, Or) and replaced.options == rule.options:
@@ -261,17 +335,17 @@ class RuleReplacer:
         else:
             return rule
 
-    def _handle_and(self, rule: And, difficulty: Difficulty) -> Rule:
+    def _handle_and(self, rule: And) -> Rule:
         if not rule.children:
             return True_()
 
         if len(rule.children) == 1:
-            return self.replace(rule.children[0], difficulty)
+            return self.replace(rule.children[0])
 
         changed = False
         initial_new_children = []
         for child in rule.children:
-            replaced = self.replace(child, difficulty)
+            replaced = self.replace(child)
             if replaced is not child:
                 changed = True
             if isinstance(replaced, And) and replaced.options == rule.options:
