@@ -138,7 +138,10 @@ class RuleReplacer:
             replaced = self.replace(child, difficulty)
             if replaced is not child:
                 changed = True
-            new_children.append(replaced)
+            if isinstance(replaced, Or) and replaced.options == rule.options:
+                new_children.extend(replaced.children)
+            else:
+                new_children.append(replaced)
         if changed:
             return Or(*new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
         else:
@@ -151,7 +154,10 @@ class RuleReplacer:
             replaced = self.replace(child, difficulty)
             if replaced is not child:
                 changed = True
-            new_children.append(replaced)
+            if isinstance(replaced, And) and replaced.options == rule.options:
+                new_children.extend(replaced.children)
+            else:
+                new_children.append(replaced)
         if changed:
             return And(*new_children, options=rule.options, filtered_resolution=rule.filtered_resolution)
         else:
