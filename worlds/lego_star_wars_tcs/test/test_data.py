@@ -1,6 +1,6 @@
 import json
 from unittest import TestCase
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Any
 
 from rule_builder.rules import Rule, NestedRule, WrapperRule, And
 from test.general import setup_multiworld
@@ -8,13 +8,34 @@ from worlds import AutoWorldRegister
 
 from ..data.levels import Level
 from ..data.logic import EPISODES, CHAPTERS_BY_NUMBERS, CHAPTERS_BY_SHORT_NAME
-from ..data.logic.extraction import un_nest_logic_options
+from ..data.logic.extraction import ExtractionRuleReplacer
 from ..data.logic.option_filters import LogicOptions
 from ..data.logic.types import Chapter
 
 from ..constants import GAME_NAME
 from ..items import CHARACTERS_AND_VEHICLES_BY_NAME
 from ..options import LogicDifficulty
+
+
+_DUMP_EXTRACTION_RULE_TO_FILE = False
+
+if _DUMP_EXTRACTION_RULE_TO_FILE:
+    import os
+    from Utils import get_file_safe_name
+    def json_dump_rule(rule_dict: dict[str, Any], un_nested: bool, owner_name: str, chapter: Chapter):
+        un_nested_str = "un_nested" if un_nested else "original"
+        file_name = f"{get_file_safe_name(owner_name)}_{un_nested_str}.json"
+        dir_path = os.path.join("output",
+                     "lego_star_wars_tcs",
+                     "rules_dump",
+                     get_file_safe_name(chapter.area.readable_name))
+        os.makedirs(dir_path, exist_ok=True)
+        with open(os.path.join(dir_path, file_name), "w", encoding="utf-8") as f:
+            json.dump(rule_dict, f, ensure_ascii=False, indent=2)
+        print()
+else:
+    def json_dump_rule(rule_dict: dict[str, Any], un_nested: bool, owner_name: str, chapter: Chapter):
+        json.dumps(rule_dict)
 
 
 def chapters_iter() -> Iterable[Chapter]:
@@ -150,10 +171,10 @@ class TestEpisodes(TestCase):
             if minikit_data.er_rule is not None:
                 yield minikit_name, minikit_data.er_rule
 
-        for ridable_name, ridable_data in chapter.ridables.items():
-            yield ridable_name, ridable_data.rule
+        for ridable, ridable_data in chapter.ridables.items():
+            yield ridable.readable_name, ridable_data.rule
             if ridable_data.er_rule is not None:
-                yield ridable_name, ridable_data.er_rule
+                yield ridable.readable_name, ridable_data.er_rule
 
         yield "Power Brick", chapter.power_brick.rule
         if chapter.power_brick.er_rule is not None:
@@ -173,22 +194,24 @@ class TestEpisodes(TestCase):
 
     @chapters_test
     def test_extraction_un_nesting(self, chapter: Chapter):
+        replacer = ExtractionRuleReplacer()
         for owner_name, rule in self.chapter_rule_gen(chapter):
             with self.subTest(name=owner_name):
-                un_nested = un_nest_logic_options(rule)
+                un_nested = replacer.replace_top_level_rule(rule)
                 self._check_top_level_rule(un_nested)
 
     @chapters_test
     def test_rules_json_serializable(self, chapter: Chapter):
+        replacer = ExtractionRuleReplacer()
         for owner_name, rule in self.chapter_rule_gen(chapter):
             with self.subTest(name=owner_name):
-                un_nested = un_nest_logic_options(rule)
+                un_nested = replacer.replace_top_level_rule(rule)
 
                 with self.subTest(un_nested=False):
-                    json.dumps(rule.to_dict())
+                    json_dump_rule(rule.to_dict(), False, owner_name, chapter)
                 if un_nested is not rule:
                     with self.subTest(un_nested=True):
-                        json.dumps(un_nested.to_dict())
+                        json_dump_rule(un_nested.to_dict(), True, owner_name, chapter)
 
     @chapters_test
     def test_no_empty_and_in_rules(self, chapter: Chapter):

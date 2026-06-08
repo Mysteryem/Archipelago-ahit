@@ -2,28 +2,7 @@ import dataclasses
 
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
-from rule_builder.rules import (
-    And,
-    Or,
-    NestedRule,
-    Filtered,
-    WrapperRule,
-    Rule,
-    Has,
-    HasAll,
-    HasAny,
-    HasFromListUnique,
-    HasGroup,
-    HasAnyCount,
-    HasFromList,
-    HasAllCounts,
-    HasGroupUnique,
-    CanReachRegion,
-    CanReachEntrance,
-    CanReachLocation,
-    True_,
-    False_,
-)
+from rule_builder.rules import Or, Rule, Has
 from rule_builder.field_resolvers import FieldResolver
 
 from .rules import (
@@ -35,7 +14,7 @@ from .rules import (
     HasAbilityExceptCharacters,
     HasSingleJumpDistance,
 )
-from .option_filters import LogicOptions
+from .rule_replacement import RuleReplacer, Difficulty
 from ..extras import Extra
 from ...character_ability import CharacterAbility
 from ...constants import GAME_NAME
@@ -47,34 +26,6 @@ if TYPE_CHECKING:
     from worlds.AutoWorld import World
 else:
     Chapter = object
-
-
-CHILD_RULES_TO_CHECK = (
-    NestedRule,
-    WrapperRule,
-    HasAbility,
-    HasAbilityCombination,
-    HasAnyAbilities,
-    HasAllAbilities,
-    HasAbilityExceptCharacters,
-    LogicOptions,
-)
-ALLOWED_OTHER_RULES = (
-    True_,
-    False_,
-    Has,
-    HasAll,
-    HasAny,
-    HasFromListUnique,
-    HasGroup,
-    HasAnyCount,
-    HasFromList,
-    HasAllCounts,
-    HasGroupUnique,
-    CanReachRegion,
-    CanReachEntrance,
-    CanReachLocation,
-)
 
 
 @dataclasses.dataclass
@@ -149,14 +100,14 @@ class HasAbilityFieldResolver(FieldResolver, game=GAME_NAME):
 #                     or state.prog_items[self.player][Extra.EXTRA_TOGGLE.readable_name] >= 1)
 
 
-class ExtraToggleRuleReplacer:
+class ExtraToggleRuleReplacer(RuleReplacer):
     chapter: Chapter
     extra_toggle_abilities_union: CharacterAbility
     extra_toggle_abilities_unique_combinations: set[CharacterAbility]
     extra_toggle_name_to_abilities: dict[str, CharacterAbility]
-    replaced_rules_memodict: dict[int, Rule]
 
     def __init__(self, chapter: Chapter):
+        super().__init__()
         extra_toggle_abilities_union = CharacterAbility.NONE
         extra_toggle_abilities_unique_combinations: set[CharacterAbility] = set()
         extra_toggle_name_to_abilities: dict[str, CharacterAbility] = {}
@@ -168,13 +119,19 @@ class ExtraToggleRuleReplacer:
                 extra_toggle_name_to_abilities[character_data.name] = character_data.abilities
         self.extra_toggle_abilities_union = extra_toggle_abilities_union
         self.extra_toggle_abilities_unique_combinations = extra_toggle_abilities_unique_combinations
-        self.replaced_rules_memodict = {}
         self.extra_toggle_name_to_abilities = extra_toggle_name_to_abilities
+        self.chapter = chapter
 
     @staticmethod
     def or_extra_toggle(rule: Rule, extra_and_rule: Rule | None = None) -> Or:
         if isinstance(rule, InLevelRule):
             replacement = rule.prepare_for_or_extra_toggle()
+            # If intending to simplify up-front:
+            # simplified = rule.make_simpler_rule()
+            # if simplified is rule:
+            #     replacement = rule.prepare_for_or_extra_toggle()
+            # else:
+            #     return ExtraToggleRuleReplacer.or_extra_toggle(simplified, extra_and_rule)
         else:
             replacement = dataclasses.replace(rule, options=(), filtered_resolution=False)
         if extra_and_rule is None:
@@ -202,93 +159,12 @@ class ExtraToggleRuleReplacer:
             #     )
             # )
 
-    def add_extra_toggle_rules(self, rule_data: TRuleData) -> TRuleData:
-        assert dataclasses.is_dataclass(rule_data)
-        rule = self._recursively_replace_data_rule(rule_data.rule)
-        er_rule = None if rule_data.er_rule is None else self._recursively_replace_data_rule(rule_data.rule)
-        if rule is not rule_data.rule or er_rule is not rule_data.er_rule:
-            return dataclasses.replace(rule_data, rule=rule, er_rule=er_rule)
-        else:
-            return rule_data
+    def _handle(self, rule: Rule, difficulty: Difficulty) -> Rule:
+        # Base logic rules never consider Extras.
+        if difficulty == "base" or not isinstance(rule, InLevelRule):
+            return super()._handle(rule, difficulty)
 
-    def _recursively_replace_data_rule(self, rule: Rule) -> Rule:
-        if isinstance(rule, LogicOptions):
-            potential_replacement = LogicOptions(
-                base=rule.base,  # Base rules never consider Extras.
-                normal=self._recursively_replace_rules(rule.normal),
-                moderate=self._recursively_replace_rules(rule.moderate),
-                hard=self._recursively_replace_rules(rule.hard),
-                options=rule.options,
-                filtered_resolution=rule.filtered_resolution,
-            )
-            if (rule.normal is not potential_replacement.normal
-                    or rule.moderate is not potential_replacement.moderate
-                    or rule.hard is not potential_replacement.hard):
-                replacement = potential_replacement
-            else:
-                replacement = rule
-            self.replaced_rules_memodict[id(rule)] = replacement
-            return replacement
-        else:
-            return self._recursively_replace_rules(rule)
-
-    def _recursively_replace_rules(self, rule: Rule) -> Rule:
-        rule_id = id(rule)
-        if (replacement := self.replaced_rules_memodict.get(rule_id)) is not None:
-            return replacement
-
-        rule_class = type(rule)
-
-        if rule_class is LogicOptions:
-            assert isinstance(rule, LogicOptions)
-            potential_replacement = LogicOptions(
-                base=rule.base,  # Base rules never consider Extras.
-                normal=self._recursively_replace_rules(rule.normal),
-                moderate=self._recursively_replace_rules(rule.moderate),
-                hard=self._recursively_replace_rules(rule.hard),
-                options=rule.options,
-                filtered_resolution=rule.filtered_resolution,
-            )
-            if (rule.normal is not potential_replacement.normal
-                    or rule.moderate is not potential_replacement.moderate
-                    or rule.hard is not potential_replacement.hard):
-                replacement = potential_replacement
-            else:
-                replacement = rule
-        elif isinstance(rule, NestedRule):
-            new_children = []
-            changed = False
-            for child in rule.children:
-                if not isinstance(child, CHILD_RULES_TO_CHECK):
-                    assert isinstance(child, ALLOWED_OTHER_RULES), \
-                        f"Unexpected child rule of type {type(child)}: {child}"
-                    new_children.append(child)
-                else:
-                    new_child = self._recursively_replace_rules(child)
-                    if new_child is not child:
-                        changed = True
-                    new_children.append(new_child)
-            if not changed:
-                replacement = rule
-            else:
-                if rule_class is And:
-                    replacement = And(*new_children,
-                                      options=rule.options, filtered_resolution=rule.filtered_resolution)
-                elif rule_class is Or:
-                    replacement = Or(*new_children,
-                                     options=rule.options, filtered_resolution=rule.filtered_resolution)
-                else:
-                    raise Exception(f"Cannot handle unknown type NestedRule: {rule}")
-        elif isinstance(rule, WrapperRule):
-            if rule_class is Filtered:
-                replacement = Filtered(self._recursively_replace_rules(rule.child),
-                                       options=rule.options, filtered_resolution=rule.filtered_resolution)
-            elif rule_class is WrapperRule:
-                replacement = WrapperRule(self._recursively_replace_rules(rule.child),
-                                          options=rule.options, filtered_resolution=rule.filtered_resolution)
-            else:
-                raise Exception(f"Cannot handle unknown type WrapperRule: {rule}")
-        elif isinstance(rule, HasAbility):
+        if isinstance(rule, HasAbility):
             if isinstance(rule.ability, CharacterAbility):
                 if rule.ability not in self.extra_toggle_abilities_union:
                     replacement = rule
@@ -372,8 +248,14 @@ class ExtraToggleRuleReplacer:
                     # No extra toggle character was found that could satisfy the rule.
                     replacement = rule
         else:
-            assert isinstance(rule, ALLOWED_OTHER_RULES), f"Unexpected rule {rule}"
-            replacement = rule
-
-        self.replaced_rules_memodict[rule_id] = replacement
+            raise ValueError(f"Unexpected InLevelRule {rule}")
         return replacement
+
+    def add_extra_toggle_rules(self, rule_data: TRuleData) -> TRuleData:
+        assert dataclasses.is_dataclass(rule_data)
+        rule = self.replace_top_level_rule(rule_data.rule)
+        er_rule = None if rule_data.er_rule is None else self.replace_top_level_rule(rule_data.er_rule)
+        if rule is not rule_data.rule or er_rule is not rule_data.er_rule:
+            return dataclasses.replace(rule_data, rule=rule, er_rule=er_rule)
+        else:
+            return rule_data

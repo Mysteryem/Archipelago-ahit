@@ -163,16 +163,17 @@ class Chapter:
         object.__setattr__(self, "start_level", start_level)
 
         if self.extra_toggle_characters:
+            # Add `| Has("Extra Toggle")` to rules that can be satisfied by having Extra Toggle.
             extra_toggle_replacer = ExtraToggleRuleReplacer(self)
             for region_name, exits in self.regions.items():
                 self.regions[region_name] = tuple(
-                    extra_toggle_replacer.add_extra_toggle_rules(exit_) for exit_ in exits
+                    extra_toggle_replacer.replace_rule_data(exit_) for exit_ in exits
                 )
             for minikit_name, minikit_data in self.minikits.items():
-                self.minikits[minikit_name] = extra_toggle_replacer.add_extra_toggle_rules(minikit_data)
+                self.minikits[minikit_name] = extra_toggle_replacer.replace_rule_data(minikit_data)
             for ridable_character, ridable_data in self.ridables.items():
-                self.ridables[ridable_character] = extra_toggle_replacer.add_extra_toggle_rules(ridable_data)
-            replaced_power_brick_data = extra_toggle_replacer.add_extra_toggle_rules(self.power_brick)
+                self.ridables[ridable_character] = extra_toggle_replacer.replace_rule_data(ridable_data)
+            replaced_power_brick_data = extra_toggle_replacer.replace_rule_data(self.power_brick)
             object.__setattr__(self, "power_brick", replaced_power_brick_data)
 
         # Automatically add in the Chapter Completion region because it is the same in every Chapter.
