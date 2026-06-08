@@ -160,7 +160,7 @@ RUIN_OF_THE_JEDI = Chapter(
                 # - Dexter Jettstar (jump_distance=0.77)
                 # - Han Solo (jmup_distance=0.84)
                 # - Captain Tarpals (single jump) (jump_distance=0.9051)
-                normal=HasAbility(CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS),
+                normal=CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
             )),
             pickup_name="mk_0",
         ),
