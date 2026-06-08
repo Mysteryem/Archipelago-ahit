@@ -25,10 +25,9 @@ if _DUMP_EXTRACTION_RULE_TO_FILE:
     def json_dump_rule(rule_dict: dict[str, Any], un_nested: bool, owner_name: str, chapter: Chapter):
         un_nested_str = "un_nested" if un_nested else "original"
         file_name = f"{get_file_safe_name(owner_name)}_{un_nested_str}.json"
-        dir_path = os.path.join("output",
-                     "lego_star_wars_tcs",
-                     "rules_dump",
-                     get_file_safe_name(chapter.area.readable_name))
+        # A local git repository, so I can compare changes.
+        dir_path = os.path.join("G:\\", "git_Repos_other", "lsw_tcs_logic_dump", "rules_dump",
+                                get_file_safe_name(chapter.area.readable_name))
         os.makedirs(dir_path, exist_ok=True)
         with open(os.path.join(dir_path, file_name), "w", encoding="utf-8") as f:
             json.dump(rule_dict, f, ensure_ascii=False, indent=2)
