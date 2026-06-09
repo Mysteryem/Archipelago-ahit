@@ -11,10 +11,13 @@ from rule_builder.rules import (
 )
 
 from .extra_toggle import ExtraToggleRuleReplacer
-from .rule_replacement import NestedOptimizerRuleReplacer, NestedAndInLevelRuleSimplifierRuleReplacer
+from .rule_replacement import NestedAndInLevelRuleSimplifierRuleReplacer
 from ..areas import Area
 from ..characters import Character
 from ..levels import Level
+
+
+RULE_OPTIMIZER = NestedAndInLevelRuleSimplifierRuleReplacer()
 
 
 @dataclass(frozen=True)
@@ -169,10 +172,11 @@ class Chapter:
             # 1) Un-nest rules, so that Extra Toggle rules can efficiently apply to And/Or rules.
             # 2) Add Extra Toggle Rules. Special InLevelRules that can be simplified must still be untouched so that it
             #    is possible to tell whether Extra Toggle is a suitable alternative for the rule.
-            # 3) todo: Simplify special InLevelRules and un-nest any that become And/Or rules.
-            rule_optimizer = ExtraToggleRuleReplacer(self)
+            # 3) Simplify special InLevelRules and un-nest any that become And/Or rules, including combining
+            #    HasAny/AllAbilities where appropriate.
+            rule_optimizer = ExtraToggleRuleReplacer(self, RULE_OPTIMIZER)
         else:
-            rule_optimizer = NestedAndInLevelRuleSimplifierRuleReplacer()
+            rule_optimizer = RULE_OPTIMIZER
 
         for region_name, exits in self.regions.items():
             self.regions[region_name] = tuple(

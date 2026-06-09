@@ -39,7 +39,12 @@ class RuleReplacer:
         }
         if dispatch_overrides:
             self._handlers |= dispatch_overrides
-        self.replaced_rules_memodict: dict[tuple[int, Difficulty | None], Rule] = {}
+        self.replaced_rules_memodict = {}
+
+    def purge_memodict(self):
+        """Clear the contents of the memodict. This allows the contents of the memodict to be garbage collected if the
+        replacer is a module-level global."""
+        self.replaced_rules_memodict.clear()
 
     def replace_each_difficulty(
             self,

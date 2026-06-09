@@ -4,7 +4,8 @@ from .episode3 import CHAPTERS as EP3_CHAPTERS
 from .episode4 import CHAPTERS as EP4_CHAPTERS
 from .episode5 import CHAPTERS as EP5_CHAPTERS
 from .episode6 import CHAPTERS as EP6_CHAPTERS
-from .types import Chapter
+from .extra_toggle import PRE_RULE_OPTIMIZER as EXTRA_TOGGLE_PRE_RULE_OPTIMIZER
+from .types import Chapter, RULE_OPTIMIZER
 
 __all__ = [
     "EPISODES",
@@ -28,3 +29,7 @@ CHAPTERS_BY_NUMBERS: dict[int, dict[int, Chapter]] = {
     i: {j: chapter for j, chapter in enumerate(episode, start=1)}
     for i, episode in enumerate(EPISODES, start=1)
 }
+
+# Free up memory used by the rule optimizers.
+RULE_OPTIMIZER.purge_memodict()
+EXTRA_TOGGLE_PRE_RULE_OPTIMIZER.purge_memodict()
