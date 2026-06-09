@@ -114,6 +114,7 @@ class CharacterAbility(IntFlag):
 
     CAN_MELEE = auto()
     # Not to be confused with being able to reflect bolts, which only Jedi can do.
+    # Specifically, this covers characters that can deflect bolts, but cannot shoot bolts, so Droideka is not included.
     CAN_DEFLECT_BOLTS = auto()  # All Jedi, except ghosts, + Captain Tarpals + Grievous' Bodyguard + General Grievous.
 
     ASTROMECH_DROID = auto()  # This character is an Astromech Droid, relevant to Dagobah and sometimes P2's AI.
