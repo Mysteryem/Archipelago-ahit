@@ -27,6 +27,7 @@ TRuleData = TypeVar("TRuleData", bound=RuleData)
 class RuleReplacer:
     current_difficulty_path: Difficulty
     current_found_difficulty: Difficulty | None = None
+    replaced_rules_memodict: dict[tuple[int, Difficulty | None], tuple[Rule, Rule]]
 
     def __init__(self, dispatch_overrides: dict | None = None) -> None:
         self._handlers = {
@@ -112,17 +113,11 @@ class RuleReplacer:
         key = (id(rule), self.current_difficulty_path)
         already_handled = self.replaced_rules_memodict.get(key)
         if already_handled is not None:
-            return already_handled
-        else:
-            replaced = self._handle(rule)
-            if self.current_found_difficulty is None:
-                none_key = (key[0], None)
-                if none_key in self.replaced_rules_memodict:
-                    existing = self.replaced_rules_memodict[none_key]
-                    self.replaced_rules_memodict[key[0], self.current_found_difficulty] = existing
-                    return existing
-            self.replaced_rules_memodict[key[0], self.current_found_difficulty] = replaced
-            return replaced
+            return already_handled[0]
+        to_return = self._handle(rule)
+        # Need to store the rule to prevent garbage collection.
+        self.replaced_rules_memodict[key] = to_return, rule
+        return to_return
 
     def _handle(self, rule: Rule) -> Rule:
         rule_class = type(rule)
