@@ -88,8 +88,7 @@ class ExtraToggleRuleReplacer(RuleReplacer):
         else:
             base = self.pre_replacer.start_replace(rule, difficulty)
             extra_toggle_applied = super().start_replace(base, difficulty)
-            return extra_toggle_applied
-            #return self.post_replacer.start_replace(extra_toggle_applied, difficulty)
+            return self.post_replacer.start_replace(extra_toggle_applied, difficulty)
 
     @staticmethod
     def or_extra_toggle(rule: Rule, extra_and_rule: Rule | None = None, new_rule_first: bool = False) -> Rule:
