@@ -170,7 +170,7 @@ class Chapter:
             # 2) Add Extra Toggle Rules. Special InLevelRules that can be simplified must still be untouched so that it
             #    is possible to tell whether Extra Toggle is a suitable alternative for the rule.
             # 3) todo: Simplify special InLevelRules and un-nest any that become And/Or rules.
-            rule_optimizer = ExtraToggleRuleReplacer(self, NestedOptimizerRuleReplacer())
+            rule_optimizer = ExtraToggleRuleReplacer(self)
         else:
             rule_optimizer = NestedAndInLevelRuleSimplifierRuleReplacer()
 

@@ -13,7 +13,12 @@ from .rules import (
     HasAbilityExceptCharacters,
     HasSingleJumpDistance,
 )
-from .rule_replacement import RuleReplacer, Difficulty
+from .rule_replacement import (
+    RuleReplacer,
+    Difficulty,
+    NestedOptimizerRuleReplacer,
+    NestedAndInLevelRuleSimplifierRuleReplacer,
+)
 from ..extras import Extra
 from ...character_ability import CharacterAbility
 from ...data.items.character_items import NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA
@@ -56,9 +61,10 @@ class ExtraToggleRuleReplacer(RuleReplacer):
     extra_toggle_abilities_unique_combinations: set[CharacterAbility]
     extra_toggle_name_to_abilities: dict[str, CharacterAbility]
     adding_extra_toggle_rules: bool = False
-    base_replacer: RuleReplacer
+    pre_replacer: RuleReplacer
+    post_replacer: RuleReplacer
 
-    def __init__(self, chapter: Chapter, base_replacer: RuleReplacer):
+    def __init__(self, chapter: Chapter):
         super().__init__()
         extra_toggle_abilities_union = CharacterAbility.NONE
         extra_toggle_abilities_unique_combinations: set[CharacterAbility] = set()
@@ -73,14 +79,17 @@ class ExtraToggleRuleReplacer(RuleReplacer):
         self.extra_toggle_abilities_unique_combinations = extra_toggle_abilities_unique_combinations
         self.extra_toggle_name_to_abilities = extra_toggle_name_to_abilities
         self.chapter = chapter
-        self.base_replacer = base_replacer
+        self.pre_replacer = NestedOptimizerRuleReplacer()
+        self.post_replacer = NestedAndInLevelRuleSimplifierRuleReplacer()
 
     def start_replace(self, rule: Rule, difficulty: Difficulty) -> Rule:
         if difficulty == "base":
-            return self.base_replacer.start_replace(rule, difficulty)
+            return self.post_replacer.start_replace(rule, difficulty)
         else:
-            base = self.base_replacer.start_replace(rule, difficulty)
-            return super().start_replace(base, difficulty)
+            base = self.pre_replacer.start_replace(rule, difficulty)
+            extra_toggle_applied = super().start_replace(base, difficulty)
+            return extra_toggle_applied
+            #return self.post_replacer.start_replace(extra_toggle_applied, difficulty)
 
     @staticmethod
     def or_extra_toggle(rule: Rule, extra_and_rule: Rule | None = None, new_rule_first: bool = False) -> Rule:
