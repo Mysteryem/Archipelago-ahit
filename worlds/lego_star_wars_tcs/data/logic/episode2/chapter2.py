@@ -19,6 +19,7 @@ R_LIVING_QUARTERS_BEHIND_FORCE_FIELD = "Living Quarters Behind Force Field"
 R_OUTSIDE_JANGO_CHASE = "Outside Jango Chase"
 R_END_OF_OUTSIDE_JANGO_CHASE = "End Of Outside Jango Chase"
 R_INTERIOR_BEFORE_JANGO_FIGHT = "Interior Before Jango Fight"
+R_SITH_FORCE_DROID_ROOM = "Sith Force Droid Room"
 
 DISCOVERY_ON_KAMINO = Chapter(
     area=Area.KAMINO,
@@ -106,6 +107,14 @@ DISCOVERY_ON_KAMINO = Chapter(
         R_INTERIOR_BEFORE_JANGO_FIGHT: (
             # Force the bricks out of the way, use the panel and then defeat Jango Fett.
             ExitData("Chapter Completion", HasAllAbilities(JEDI | ASTROMECH_PANEL)),
+            ExitData(
+                R_SITH_FORCE_DROID_ROOM,
+                logic_options(
+                    base=CAN_SITH_FORCE,
+                    # Allow using a Yoda ceiling clip to get into the room.
+                    hard=CAN_SITH_FORCE | Character.has_any(Character.YODA, Character.YODA_GHOST),
+                )
+            )
         )
     },
     minikits={
@@ -256,12 +265,11 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="mk_0",
         ),
         "Dark Side Droid Room Minikit": minikit_data(
-            R_INTERIOR_BEFORE_JANGO_FIGHT,
+            R_SITH_FORCE_DROID_ROOM,
             logic_options(
-                base=HasAbility(SITH),
-                # Note: AI P2 will only use Sith Force as a SITH, ignoring Dark Side, so using Dark Side here requires
-                # Moderate logic for the basic 1P2C usage.
-                moderate=CAN_SITH_FORCE,
+                base=CAN_SITH_FORCE,
+                # Yoda's weird collision can grab it through the force field.
+                hard=CAN_SITH_FORCE | Character.has_any(Character.YODA, Character.YODA_GHOST),
             ),
             pickup_name="m_pup1",
         )
