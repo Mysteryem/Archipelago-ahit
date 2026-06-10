@@ -1,12 +1,13 @@
 from rule_builder.rules import And, Or
 
-from ..macros import CAN_SITH_FORCE, CAN_USE_DEFLECT_BOLTS, CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS
+from ..macros import CAN_SITH_FORCE, CAN_USE_DEFLECT_BOLTS, CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS, CAN_USE_SELF_DESTRUCT
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
 from ...characters import Character
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -20,6 +21,7 @@ R_OUTSIDE_JANGO_CHASE = "Outside Jango Chase"
 R_END_OF_OUTSIDE_JANGO_CHASE = "End Of Outside Jango Chase"
 R_INTERIOR_BEFORE_JANGO_FIGHT = "Interior Before Jango Fight"
 R_SITH_FORCE_DROID_ROOM = "Sith Force Droid Room"
+R_JANGO_FIGHT = "Jango Fight"
 
 DISCOVERY_ON_KAMINO = Chapter(
     area=Area.KAMINO,
@@ -106,7 +108,17 @@ DISCOVERY_ON_KAMINO = Chapter(
         ),
         R_INTERIOR_BEFORE_JANGO_FIGHT: (
             # Force the bricks out of the way, use the panel and then defeat Jango Fett.
-            ExitData("Chapter Completion", HasAllAbilities(JEDI | ASTROMECH_PANEL)),
+            ExitData(
+                R_JANGO_FIGHT,
+                logic_options(
+                    base=HasAllAbilities(JEDI | ASTROMECH_PANEL),
+                    # Allow yoda ceiling clip to bypass the door.
+                    hard=Or(
+                        HasAllAbilities(JEDI | ASTROMECH_PANEL),
+                        Character.has_any(Character.YODA, Character.YODA_GHOST),
+                    )
+                ),
+            ),
             ExitData(
                 R_SITH_FORCE_DROID_ROOM,
                 logic_options(
@@ -114,8 +126,29 @@ DISCOVERY_ON_KAMINO = Chapter(
                     # Allow using a Yoda ceiling clip to get into the room.
                     hard=CAN_SITH_FORCE | Character.has_any(Character.YODA, Character.YODA_GHOST),
                 )
-            )
-        )
+            ),
+        ),
+        R_JANGO_FIGHT: (
+            ExitData(
+                "Chapter Completion",
+                logic_options(
+                    # During the first hovering phase, Jango will not fire Rockets, so a Ghost jedi cannot hit him.
+                    # Expect the intended strategy of a Jedi.
+                    base=HasAbility(IS_NON_GHOST_JEDI),
+                    # Allow Blaster characters.
+                    normal=HasAnyAbilities(IS_NON_GHOST_JEDI | BLASTER),
+                    moderate=Or(
+                        HasAnyAbilities(IS_NON_GHOST_JEDI | BLASTER),
+                        # todo?: Also allow Grievous/Bodyguard/Tarpals/Imperial Guard on their own, to deflect bolts
+                        #  into Jango during the first hovering phase?
+                        # Ghost Jedi can hit Jango in the first hovering phase with Super Jedi Slam.
+                        HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM) & Extra.SUPER_JEDI_SLAM.has(),
+                        # Self-destruct will also hit Jango if the only character you have is a passive droid.
+                        CAN_USE_SELF_DESTRUCT,
+                    ),
+                ),
+            ),
+        ),
     },
     minikits={
         "Minikit Above Landing Pad Platform": minikit_data(
