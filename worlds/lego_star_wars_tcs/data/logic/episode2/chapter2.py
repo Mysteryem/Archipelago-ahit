@@ -87,8 +87,8 @@ DISCOVERY_ON_KAMINO = Chapter(
                     moderate=And(
                         # Cross the gap.
                         HasAnyAbilities(HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE),
-                        # Use the panel.
-                        HasAnyAbilities(JEDI | ASTROMECH_PANEL),
+                        # Use the panel to open the elevator door.
+                        HasAllAbilities(JEDI | ASTROMECH_PANEL),
                     ),
                 ),
                 new_level=Level.KAMINO_F,
