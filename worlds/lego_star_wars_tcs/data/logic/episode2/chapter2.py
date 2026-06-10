@@ -90,6 +90,15 @@ DISCOVERY_ON_KAMINO = Chapter(
                         # Use the panel to open the elevator door.
                         HasAllAbilities(JEDI | ASTROMECH_PANEL),
                     ),
+                    hard=And(
+                        # Cross the gap.
+                        HasAnyAbilities(HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE),
+                        # Use the panel, or ceiling clip with Yoda from where the studs are above the elevator door.
+                        Or(
+                            HasAllAbilities(JEDI | ASTROMECH_PANEL),
+                            Character.has_any(Character.YODA, Character.YODA_GHOST),
+                        ),
+                    ),
                 ),
                 new_level=Level.KAMINO_F,
             ),
