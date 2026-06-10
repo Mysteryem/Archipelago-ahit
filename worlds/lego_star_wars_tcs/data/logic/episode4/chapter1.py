@@ -196,7 +196,16 @@ SECRET_PLANS = _helper.make_chapter(
             ExitData(R_VENT_IMPERIALS_INTO_SPACE, HasAbility(IMPERIAL)),
             ExitData(
                 "Chapter Completion",
-                HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL | CAN_PULL_LEVERS),
+                logic_options(
+                    base=HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL | CAN_PULL_LEVERS),
+                    # Allow Yoda ceiling clip into the escape pod. Unlike the other escape pods, where the levers do not
+                    # appear to be usable until the escape pod doors have opened, the astromech panel in the right
+                    # escape pod can be used without opening the escape pod door first.
+                    hard=Or(
+                        HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL | CAN_PULL_LEVERS),
+                        HasAbility(ASTROMECH_PANEL) & Character.has_any(Character.YODA, Character.YODA_GHOST),
+                    ),
+                ),
             ),
         ),
         R_VENT_IMPERIALS_INTO_SPACE: (),
