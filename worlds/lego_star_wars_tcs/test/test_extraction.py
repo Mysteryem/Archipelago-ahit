@@ -22,9 +22,16 @@ _T = TypeVar("_T")
 
 class TestAbilityExtraction(TestCase):
     r: Random
+    extractor: AbilityRequirements
 
     def setUp(self):
         self.r = Random(1)
+        self.extractor = AbilityRequirements(self.r)
+
+    def tearDown(self):
+        # Allow garbage collection. Notably, the extractor maintains a memodict.
+        del self.r
+        del self.extractor
 
     def _random_unique_abilities_gen(self,
                                      min_size: int = 1,
