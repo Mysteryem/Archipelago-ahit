@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from random import Random
-from typing import cast
 
 from rule_builder.rules import Rule, Or, And, True_, WrapperRule
 
@@ -53,8 +52,8 @@ class AbilityRequirements:
             return self.abilities_memodict[key]
 
         if isinstance(rule, Or.Resolved):
-            # cast to work around bugs in PyCharm's type checker.
-            rule = cast(Or.Resolved, rule)
+            # Explicit type hint to work around bugs in PyCharm's type checker.
+            rule: Or.Resolved
 
             # Any one rule must be required.
             # First try to find if there is any rule whose required abilities are already satisfied. If so, then all
@@ -98,8 +97,7 @@ class AbilityRequirements:
             return self._memoize(key, (required, optional & ~required))
 
         if isinstance(rule, And.Resolved):
-            # cast to work around bugs in PyCharm's type checker.
-            rule = cast(And.Resolved, rule)
+            rule: And.Resolved
 
             found = False
             for child in rule.children:
@@ -116,14 +114,12 @@ class AbilityRequirements:
             return self._memoize(key, (required, optional & ~required))
 
         if isinstance(rule, HasAbility.Resolved):
-            # cast to work around bugs in PyCharm's type checker.
-            rule = cast(HasAbility.Resolved, rule)
+            rule: HasAbility.Resolved
 
             return self._memoize(key, (required | CharacterAbility(rule.ability_as_int), optional))
 
         if isinstance(rule, HasAnyAbilities.Resolved):
-            # cast to work around bugs in PyCharm's type checker.
-            rule = cast(HasAnyAbilities.Resolved, rule)
+            rule: HasAnyAbilities.Resolved
 
             abilities = CharacterAbility(rule.abilities_as_int)
             intersection = abilities & required
@@ -145,8 +141,7 @@ class AbilityRequirements:
                 return self._memoize(key, (required | picked_ability, optional | other_abilities))
 
         if isinstance(rule, HasAllAbilities.Resolved):
-            # cast to work around bugs in PyCharm's type checker.
-            rule = cast(HasAllAbilities.Resolved, rule)
+            rule: HasAllAbilities.Resolved
 
             # All abilities are required.
             return self._memoize(key, (CharacterAbility(required | rule.abilities_as_int), optional))
@@ -155,8 +150,7 @@ class AbilityRequirements:
             return self._memoize(key, (required, optional))
 
         if isinstance(rule, WrapperRule.Resolved):
-            # cast to work around bugs in PyCharm's type checker.
-            rule = cast(WrapperRule.Resolved, rule)
+            rule: WrapperRule.Resolved
 
             return self._memoize(key, (self.extract_ability_requirements(rule.child, required, optional)))
 
