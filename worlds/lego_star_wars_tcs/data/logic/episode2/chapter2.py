@@ -149,6 +149,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                 ),
             ),
         ),
+        R_SITH_FORCE_DROID_ROOM: (),
     },
     minikits={
         "Minikit Above Landing Pad Platform": minikit_data(
