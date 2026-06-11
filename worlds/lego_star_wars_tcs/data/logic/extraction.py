@@ -1,7 +1,23 @@
 from dataclasses import dataclass, field
+from collections import Counter
 from random import Random
 
-from rule_builder.rules import Rule, Or, And, True_, WrapperRule
+from rule_builder.rules import (
+    Rule,
+    Or,
+    And,
+    True_,
+    WrapperRule,
+    Has,
+    HasAll,
+    HasAny,
+    HasFromListUnique,
+    HasGroup,
+    HasAnyCount,
+    HasFromList,
+    HasAllCounts,
+    HasGroupUnique,
+)
 
 from .rules import InLevelRule, HasAbility, HasAnyAbilities, HasAllAbilities
 from .rule_replacement import RuleReplacer
@@ -157,3 +173,60 @@ class AbilityRequirements:
         # This rule does not have ability requirements, e.g. it is a Has("Exploding Blaster Bolts"), or a
         # CanReachRegion("region name") or similar.
         return self._memoize(key, None)
+
+
+@dataclass
+class ItemRequirementsExtractor:
+    """Extract the maximum logically relevant counts of item names from resolved rules."""
+
+    items_memodict: dict[Rule.Resolved, Counter[str]] = field(default_factory=dict)
+
+    def _memoize(self, rule: Rule.Resolved, counts: Counter[str]) -> Counter[str]:
+        # Resolved rules are singletons, so an individual resolved rule only needs to be processed at most once.
+        self.items_memodict[rule] = counts
+        return counts
+
+    def extract_item_requirements(self, rule: Rule.Resolved) -> Counter[str]:
+        """Extract the maximum logically relevant counts of item names used by a resolved rule."""
+        existing = self.items_memodict.get(rule)
+        if existing is not None:
+            return existing
+
+        if isinstance(rule, Has.Resolved):
+            rule: Has.Resolved
+            return self._memoize(rule, Counter({rule.item_name: rule.count}))
+
+        if isinstance(rule, (HasAllCounts.Resolved, HasAnyCount.Resolved)):
+            rule: HasAllCounts.Resolved | HasAnyCount.Resolved
+            return self._memoize(rule, Counter(dict(rule.item_counts)))
+
+        if isinstance(rule, (HasFromList.Resolved, HasGroup.Resolved)):
+            rule: HasFromList.Resolved | HasGroup.Resolved
+            # While it is likely that a player could achieve a count of 4 items through 2 of item A and 2 of item B,
+            # up to 4 of item A would still be logically relevant.
+            # The return value from this function could be changed to a tuple[Counter[str], Counter[str]], or similar,
+            # where one Counter specifies the maximum, and the other Counter specifies the minimum.
+            if rule.count == 1:
+                return self._memoize(rule, Counter(rule.item_names))
+            else:
+                return self._memoize(rule, Counter(dict.fromkeys(rule.item_names, rule.count)))
+
+        if isinstance(rule, (HasAny.Resolved, HasAll.Resolved, HasFromListUnique.Resolved, HasGroupUnique.Resolved)):
+            rule: HasAny.Resolved | HasAll.Resolved | HasFromListUnique.Resolved | HasGroupUnique.Resolved
+            return self._memoize(rule, Counter(rule.item_names))
+
+        if isinstance(rule, (And.Resolved, Or.Resolved)):
+            rule: And.Resolved | Or.Resolved
+            requirements = Counter()
+            for child in rule.children:
+                # Union of counters A and B performs element-wise `result[key] = max(A[key], B[key])`.
+                child_requirements = self.extract_item_requirements(child)
+                requirements |= child_requirements
+            return self._memoize(rule, requirements)
+
+        if isinstance(rule, WrapperRule.Resolved):
+            rule: WrapperRule.Resolved
+            return self._memoize(rule, self.extract_item_requirements(rule.child))
+
+
+        return self._memoize(rule, Counter())

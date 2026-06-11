@@ -1,13 +1,29 @@
 import functools
 import operator
+from collections import Counter
 from random import Random
-from typing import TypeVar, Iterable
+from typing import TypeVar, Iterable, ClassVar
 from unittest import TestCase
 
-from rule_builder.rules import Rule, And, Or, Has
+from rule_builder.rules import (
+    Rule,
+    And,
+    Or,
+    Has,
+    HasAll,
+    HasAny,
+    HasFromListUnique,
+    HasGroup,
+    HasAnyCount,
+    HasGroupUnique,
+    HasAllCounts,
+    HasFromList,
+    WrapperRule,
+    True_,
+)
 
 from ..character_ability import CharacterAbility
-from ..data.logic.extraction import AbilityRequirements
+from ..data.logic.extraction import AbilityRequirements, ItemRequirementsExtractor
 from ..data.logic.rules import HasAbility, HasAllAbilities, HasAnyAbilities
 
 
@@ -286,3 +302,125 @@ class TestAbilityExtraction(TestCase):
     # TODO: Test And.Resolved containing Has.Resolved.
     # TODO: Test Or.Resolved containing Has.Resolved, where `required`/`optional` are already set.
     # TODO: Test And.Resolved containing Has.Resolved, where `required`/`optional` are already set.
+
+class TestItemExtraction(TestCase):
+    extractor: ClassVar[ItemRequirementsExtractor]
+
+    item: ClassVar[str] = "item"
+
+    item_counts: ClassVar[tuple[tuple[str, int], ...]] = tuple((f"item{i}", i) for i in range(1, 6))
+    item_counts_counter: ClassVar[Counter[str]] = Counter(dict(item_counts))
+
+    item_names: ClassVar[tuple[str, ...]] = tuple(f"item{i}" for i in range(1, 6))
+    item_names_counter: ClassVar[Counter[str]] = Counter(item_names)
+
+    group: ClassVar[str] = "group"
+
+    item_counts2: ClassVar[tuple[tuple[str, int], ...]] = tuple((f"item{i}", i * 2) for i in range(3, 8))
+    item_counts2_counter: ClassVar[Counter[str]] = Counter(dict(item_counts2))
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.extractor = ItemRequirementsExtractor()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        # Allow garbage collection.
+        del cls.extractor
+
+    def extract(self, rule: Rule.Resolved) -> Counter[str]:
+        return self.extractor.extract_item_requirements(rule)
+
+    def test_has(self):
+        for i in range(1, 6):
+            rule = Has.Resolved(item_name="item", count=i, **_COMMON_ARGS)
+            extracted = self.extract(rule)
+            self.assertEqual(extracted, Counter({"item": i}))
+
+    def _test_item_counts(self, rule: Rule.Resolved):
+        extracted = self.extract(rule)
+        self.assertEqual(extracted, self.item_counts_counter)
+
+    def test_has_all_counts(self):
+        self._test_item_counts(HasAllCounts.Resolved(self.item_counts, **_COMMON_ARGS))
+
+    def test_has_any_count(self):
+        self._test_item_counts(HasAnyCount.Resolved(self.item_counts, **_COMMON_ARGS))
+
+    def _test_item_names_count(self, rule: Rule.Resolved, count: int):
+        extracted = self.extract(rule)
+        expected = Counter({k: v * count for k, v in self.item_names_counter.items()})
+        self.assertEqual(extracted, expected)
+
+    def test_has_from_list(self):
+        for i in range(1, 6):
+            self._test_item_names_count(HasFromList.Resolved(self.item_names, count=i, **_COMMON_ARGS), i)
+
+    def test_has_group(self):
+        for i in range(1, 6):
+            self._test_item_names_count(HasGroup.Resolved(self.group, self.item_names, count=i, **_COMMON_ARGS), i)
+
+    def _test_item_names(self, rule: Rule.Resolved):
+        extracted = self.extract(rule)
+        self.assertEqual(extracted, self.item_names_counter)
+
+    def test_has_any(self):
+        self._test_item_names(HasAny.Resolved(self.item_names, **_COMMON_ARGS))
+
+    def test_has_all(self):
+        self._test_item_names(HasAll.Resolved(self.item_names, **_COMMON_ARGS))
+
+    def test_has_from_list_unique(self):
+        for i in range(1, 6):
+            self._test_item_names(HasFromListUnique.Resolved(self.item_names, count=i, **_COMMON_ARGS))
+
+    def test_has_group_unique(self):
+        for i in range(1, 6):
+            self._test_item_names(HasGroupUnique.Resolved(self.group, self.item_names, count=i, **_COMMON_ARGS))
+
+    def test_wrapper_rule(self):
+        for i in range(1, 6):
+            rule = WrapperRule.Resolved(Has.Resolved(item_name="item", count=i, **_COMMON_ARGS), **_COMMON_ARGS)
+            extracted = self.extract(rule)
+            self.assertEqual(extracted, Counter({"item": i}))
+
+        self._test_item_names(WrapperRule.Resolved(HasAny.Resolved(self.item_names, **_COMMON_ARGS), **_COMMON_ARGS))
+
+        for i in range(1, 6):
+            self._test_item_names(
+                WrapperRule.Resolved(
+                    HasFromListUnique.Resolved(self.item_names, count=i, **_COMMON_ARGS),
+                    **_COMMON_ARGS,
+                )
+            )
+
+    def _test_nested(self, rule_cls: type[And.Resolved] | type[Or.Resolved]):
+        r1 = Has.Resolved(item_name="item2", count=17, **_COMMON_ARGS)
+        r1_counter = Counter({"item2": 17})
+        r2 = HasAllCounts.Resolved(self.item_counts, **_COMMON_ARGS)
+        r2_counter = self.item_counts_counter
+        r3 = HasAnyCount.Resolved(self.item_counts2, **_COMMON_ARGS)
+        r3_counter = self.item_counts2_counter
+
+        rule = rule_cls(children=(r1, r2, r3), **_COMMON_ARGS)
+
+        keys = set().union(r1_counter.keys(), r2_counter.keys(), r3_counter.keys())
+        combined_counts = Counter()
+        for k in keys:
+            combined_counts[k] = max(r1_counter[k], r2_counter[k], r3_counter[k])
+
+        extracted = self.extract(rule)
+        self.assertEqual(extracted, combined_counts)
+
+    def test_or(self):
+        self._test_nested(Or.Resolved)
+
+    def test_and(self):
+        self._test_nested(And.Resolved)
+
+    def test_non_item_rule(self):
+        rule = True_.Resolved(**_COMMON_ARGS)
+        extracted = self.extract(rule)
+        self.assertEqual(extracted, Counter())
