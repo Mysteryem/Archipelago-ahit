@@ -30,6 +30,9 @@ class GenericCharacterData(GenericItemData):
     character: Character
     abilities: CharacterAbility
 
+    def __lt__(self, other: "GenericCharacterData") -> bool:
+        return self.character < other.character
+
 
 @dataclass(frozen=True)
 class MinikitItemData(GenericItemData):

@@ -1,14 +1,18 @@
-from collections import defaultdict
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from BaseClasses import Region, LocationProgressType, Location, Entrance
+from BaseClasses import Region, LocationProgressType, Location
 from rule_builder.rules import Rule, Has, True_, CanReachLocation, And, HasAll, HasFromListUnique
 
 from .constants import GOLD_BRICK_EVENT_NAME
-from .data.areas import Area, PURCHASABLE_NON_POWER_BRICK_EXTRAS
+
+from .data.areas import Area, PURCHASABLE_NON_POWER_BRICK_EXTRAS, VEHICLE_CHAPTERS
 from .data.characters import UnlockMethod, Character
+from .data.items.all_character_items import NORMAL_CHARACTER_TO_ITEM_DATA
+from .data.items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from .data.items.generic_items import NonDataItemName, EPISODE_UNLOCKS
+from .data.items import GenericCharacterData
 from .data.logic import CHAPTERS_BY_NUMBERS
 from .data.logic.rules import HasAnyAbilities, HasAllAbilities
 from .data.logic.types import ExitData, Chapter
@@ -151,6 +155,7 @@ class _RegionBuilder:
         world = self.world
         short_name = chapter.short_name
         rule = chapter.extra_chapter_entrance_rules
+        characters: set[str]
         if world.options.chapter_unlock_requirement.is_characters():
             character_count = world.chapter_required_character_counts[short_name]
             if world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
@@ -161,7 +166,7 @@ class _RegionBuilder:
                     # Remove characters excluded from being included in requirements.
                     characters.difference_update(world.options.chapter_unlock_story_characters_not_required.value)
             elif world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_random_characters:
-                characters = set(world.chapter_random_character_requirements[short_name])
+                characters = {data.name for data in world.chapter_random_character_requirements[short_name]}
             else:
                 world.raise_error(AssertionError,
                                   "Unexpected chapter unlock requirement %s",
@@ -191,7 +196,7 @@ class _RegionBuilder:
         if world.options.episode_unlock_requirement == EpisodeUnlockRequirement.option_episode_item:
             rule &= Has(f"Episode {chapter.episode_number} Unlock")
 
-        return rule, characters,character_count
+        return rule, characters, character_count
 
     def _create_chapter(self, chapter: Chapter) -> Region:
         legacy_chapter = SHORT_NAME_TO_CHAPTER_AREA[chapter.short_name]
@@ -604,8 +609,97 @@ class _RegionBuilder:
         self.world.set_rule(victory, self.make_victory_rule())
 
 
+def determine_random_character_requirements(
+        world: TCSWorld,
+) -> None:
+    """
+    Determine the characters that lock access to chapters when chapters are set to unlock with random characters.
+    :param world:
+    :return:
+    """
+    if world.is_universal_tracker():
+        # Should already be loaded from Universal Tracker.
+        if not world.chapter_random_character_requirements:
+            world.raise_error(Exception, "Random Character requirements for Chapters were not loaded from"
+                                         "slot_data")
+    else:
+        # If Bonus levels become locked by items again, then whether vehicle characters are added to the item pool
+        # would also have to consider the enabled bonus levels.
+        legacy_vehicle_chapter_shortnames = {area.get_short_name() for area in VEHICLE_CHAPTERS}
+        vehicle_chapters_enabled = not legacy_vehicle_chapter_shortnames.isdisjoint(
+            world.enabled_chapters | {world.goal_chapter}
+        )
+
+        if vehicle_chapters_enabled:
+            characters_dict = NORMAL_CHARACTER_TO_ITEM_DATA
+        else:
+            characters_dict = NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
+
+        allowed_characters = [data for data in characters_dict.values() if data.is_sendable]
+
+
+        chapters = sorted(world.enabled_chapters)
+        world.random.shuffle(chapters)
+
+        pool_size = len(chapters) * world.options.chapter_unlock_random_characters_unique_per_chapter.value
+        if pool_size > len(allowed_characters):
+            world.log_warning("The size of the requested pool of random Characters to use in Chapter unlock"
+                              " requirements was %i, but there were only %i unique Characters available, so the size of"
+                              " the pool has been reduced to %i.",
+                              pool_size, len(allowed_characters), len(allowed_characters))
+            pool_size = len(allowed_characters)
+
+        base_pool = allowed_characters
+        world.random.shuffle(base_pool)
+
+        extra_counts = world.chapter_extra_random_character_counts
+        required_counts = world.chapter_required_character_counts
+        # The counts are capped at 9 because displaying the required characters in-game gets squished and difficult to
+        # read.
+        character_count_per_chapter = {chapter: min(extra_counts[chapter] + required_counts[chapter], 9)
+                                       for chapter in chapters}
+        min_pool_size = max(character_count_per_chapter.values())
+        if pool_size < min_pool_size:
+            world.log_warning(
+                "Increased the number of unique Characters used in Chapter unlock requirements to %i from"
+                " %i because at least one Chapter needs %i Characters in its unlock requirements.",
+                min_pool_size, pool_size, min_pool_size)
+            pool_size = min_pool_size
+        pool_size = max(min_pool_size, pool_size)
+        pool = base_pool[:pool_size]
+
+        world.log_debug("Random character pool: %s", pool)
+
+        finished_chapter_to_characters: dict[str, set[GenericCharacterData]] = {}
+
+        for chapter in chapters:
+            count_to_pick = character_count_per_chapter[chapter]
+            finished_chapter_to_characters[chapter] = set(world.random.sample(pool, k=count_to_pick))
+
+        if __debug__:
+            individual_character_counts = Counter(c for characters in finished_chapter_to_characters.values()
+                                                  for c in characters)
+            for character in pool:
+                if character not in individual_character_counts:
+                    individual_character_counts[character] = 0
+            count_counts = Counter(individual_character_counts.values())
+            world.log_debug("Character count counts: %s", sorted(count_counts.items()))
+
+        world.chapter_random_character_requirements = {k: sorted(v) for k, v in
+                                                       finished_chapter_to_characters.items()}
+
+    for characters_list in world.chapter_random_character_requirements.values():
+       for character in characters_list:
+           world.character_chapter_access_counts[character.name] += 1
+
+
 
 def create_regions(world: TCSWorld) -> None:
+    # Chapter entrance rules need to know what characters to require, so the characters need to be determined before the
+    # chapter entrances can be set along with their rules.
+    if world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_random_characters:
+        determine_random_character_requirements(world)
+
     builder = _RegionBuilder(world)
 
     builder.create_episodes()

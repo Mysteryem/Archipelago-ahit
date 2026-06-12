@@ -159,7 +159,7 @@ class LegoStarWarsTCSWorld(World):
     chapters_requiring_alt_characters: set[str]
     chapter_required_character_counts: dict[str, int]
     chapter_extra_random_character_counts: dict[str, int]
-    chapter_random_character_requirements: dict[str, list[str]]
+    chapter_random_character_requirements: dict[str, list[GenericCharacterData]]  # todo: dict[Chapter, list[Character]]
     spoiler_chapter_character_requirements: dict[str, tuple[int, list[str]]]
 
     starting_chapter: ChapterArea = SHORT_NAME_TO_CHAPTER_AREA["1-1"]

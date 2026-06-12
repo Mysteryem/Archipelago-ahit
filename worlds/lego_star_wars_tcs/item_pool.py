@@ -26,9 +26,7 @@ from .item_groups import ability_to_readable_group
 from .levels import (
     CHAPTER_AREA_STORY_CHARACTERS,
     VEHICLE_CHAPTER_SHORTNAMES,
-    POWER_BRICK_REQUIREMENTS,
     SHORT_NAME_TO_CHAPTER_AREA,
-    BONUS_NAME_TO_BONUS_AREA,
     DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
 )
 from .locations import LegoStarWarsTCSShopLocation
@@ -470,75 +468,6 @@ def _create_possible_pool(world: LegoStarWarsTCSWorld) -> dict[str, GenericChara
     return possible_pool_character_items
 
 
-def determine_random_character_requirements(
-        world: LegoStarWarsTCSWorld,
-        possible_pool_character_items: dict[str, GenericCharacterData],
-) -> None:
-    """
-
-    :param world:
-    :param possible_pool_character_items:
-    :return:
-    """
-    if world.is_universal_tracker():
-        # Should already be loaded from Universal Tracker.
-        if not world.chapter_random_character_requirements:
-            world.raise_error(Exception, "Random Character requirements for Chapters were not loaded from"
-                                         "slot_data")
-    else:
-        chapters = sorted(world.enabled_chapters)
-        world.random.shuffle(chapters)
-
-        pool_size = len(chapters) * world.options.chapter_unlock_random_characters_unique_per_chapter.value
-        if pool_size > len(possible_pool_character_items):
-            world.log_warning("The size of the requested pool of random Characters to use in Chapter unlock"
-                              " requirements was %i, but there were only %i unique Characters available, so the size of"
-                              " the pool has been reduced to %i.",
-                              pool_size, len(possible_pool_character_items), len(possible_pool_character_items))
-            pool_size = len(possible_pool_character_items)
-
-        base_pool = sorted(possible_pool_character_items.keys())
-        world.random.shuffle(base_pool)
-
-        extra_counts = world.chapter_extra_random_character_counts
-        required_counts = world.chapter_required_character_counts
-        # The counts are capped at 9 because displaying the required characters in-game gets squished and difficult to
-        # read.
-        character_count_per_chapter = {chapter: min(extra_counts[chapter] + required_counts[chapter], 9)
-                                       for chapter in chapters}
-        min_pool_size = max(character_count_per_chapter.values())
-        if pool_size < min_pool_size:
-            world.log_warning("Increased the number of unique Characters used in Chapter unlock requirements to %i from"
-                              " %i because at least one Chapter needs %i Characters in its unlock requirements.",
-                              min_pool_size, pool_size, min_pool_size)
-            pool_size = min_pool_size
-        pool_size = max(min_pool_size, pool_size)
-        pool = base_pool[:pool_size]
-
-        world.log_debug("Random character pool: %s", pool)
-
-        finished_chapter_to_characters: dict[str, set[str]] = {}
-
-        for chapter in chapters:
-            count_to_pick = character_count_per_chapter[chapter]
-            finished_chapter_to_characters[chapter] = set(world.random.sample(pool, k=count_to_pick))
-
-        if __debug__:
-            individual_character_counts = Counter(c for characters in finished_chapter_to_characters.values()
-                                                  for c in characters)
-            for character in pool:
-                if character not in individual_character_counts:
-                    individual_character_counts[character] = 0
-            count_counts = Counter(individual_character_counts.values())
-            world.log_debug("Character count counts: %s", sorted(count_counts.items()))
-
-        world.chapter_random_character_requirements = {k: sorted(v) for k, v in finished_chapter_to_characters.items()}
-
-    for characters_list in world.chapter_random_character_requirements.values():
-        for character in characters_list:
-            world.character_chapter_access_counts[character] += 1
-
-
 def _create_starting_characters_for_character_locked_chapters(
         world: LegoStarWarsTCSWorld,
         possible_pool_character_items: dict[str, GenericCharacterData],
@@ -605,10 +534,10 @@ def create_starting_characters_for_random_character_locked_chapters(
     """
     starting_chapter = world.starting_chapter
     required_count = world.chapter_required_character_counts[starting_chapter.short_name]
-    characters = world.chapter_random_character_requirements[starting_chapter.short_name].copy()
+    legacy_characters = [data.name for data in world.chapter_random_character_requirements[starting_chapter.short_name]]
 
     _create_starting_characters_for_character_locked_chapters(
-        world, possible_pool_character_items, characters, required_count)
+        world, possible_pool_character_items, legacy_characters, required_count)
 
 
 def create_starting_characters_for_vanilla_character_locked_chapters(
@@ -817,7 +746,6 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
         chapters_unlock_with_characters = True
         pool_required_chapter_unlock_items = []
 
-        determine_random_character_requirements(world, possible_pool_character_items)
         create_starting_characters_for_random_character_locked_chapters(world, possible_pool_character_items)
     elif world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item:
         chapters_unlock_with_characters = False
@@ -886,24 +814,24 @@ def _append_level_access_required_characters(
             # Characters for the starting chapter are created separately.
             continue
         if is_random_characters:
-            characters = world.chapter_random_character_requirements[shortname]
+            legacy_characters = [data.name for data in world.chapter_random_character_requirements[shortname]]
         else:
             # Must be vanilla characters.
             if shortname in world.chapters_requiring_alt_characters:
-                characters = sorted(chapter.alt_character_requirements)
+                legacy_characters = sorted(chapter.alt_character_requirements)
             else:
-                characters = sorted(c for c in chapter.character_requirements if c not in excluded_story_characters)
+                legacy_characters = sorted(c for c in chapter.character_requirements if c not in excluded_story_characters)
 
         # Skip already created characters and excluded characters.
-        for character in characters:
-            assert level_access_character_counts[character] > 0
-            if character not in possible_pool_character_items:
+        for legacy_character in legacy_characters:
+            assert level_access_character_counts[legacy_character] > 0
+            if legacy_character not in possible_pool_character_items:
                 # This character has already been created.
                 continue
-            char = CHARACTERS_AND_VEHICLES_BY_NAME[character]
+            char = CHARACTERS_AND_VEHICLES_BY_NAME[legacy_character]
             abilities_provided |= char.abilities
             pool_required_characters.append(char)
-            del possible_pool_character_items[character]
+            del possible_pool_character_items[legacy_character]
 
     item_pool_ability_requirements.required &= ~abilities_provided
 

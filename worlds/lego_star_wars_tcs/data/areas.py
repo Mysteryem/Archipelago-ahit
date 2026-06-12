@@ -17,6 +17,8 @@ __all__ = [
     "EXTRA_TO_AREA",
     "POWER_BRICK_EXTRAS",
     "BONUS_ROOM_BONUSES",
+    "BONUS_ROOM_VEHICLE_BONUSES",
+    "VEHICLE_CHAPTERS",
 ]
 
 class AreaFlag(IntFlag):
@@ -201,11 +203,14 @@ class Area(IntEnum):
     LOSTTEMPLE =       67, dict(episode_index=-1, area_index=-1, readable_name=      "Indiana Jones Trailer", flags=AreaFlag(0x2c00), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.LOSTTEMPLE_A])
 
 
-BONUS_ROOM_BONUSES = frozenset({
+BONUS_ROOM_VEHICLE_BONUSES = frozenset({
     Area.PODRACE,
     Area.BONUS_GUNSHIP,
-    Area.ANEWHOPE,
     Area.ANAKINSFLIGHT,
+})
+
+BONUS_ROOM_BONUSES = BONUS_ROOM_VEHICLE_BONUSES | frozenset({
+    Area.ANEWHOPE,
     Area.BONUS,
     Area.BONUS2,
     Area.LOSTTEMPLE,
@@ -219,6 +224,18 @@ _TWO_PLAYER_ARCADE_ARES = frozenset({
     Area.NB_KASHYYYK,
     Area.NB_DAGOBAH,
 })
+
+VEHICLE_CHAPTERS = frozenset({
+    Area.PODSPRINT,
+    Area.PURSUIT,
+    Area.GUNSHIP,
+    Area.DOGFIGHT,
+    Area.DEATHSTARBATTLE,
+    Area.HOTHBATTLE,
+    Area.ASTEROIDCHASE,
+    Area.DEATHSTAR2BATTLE,
+})
+
 
 POWER_BRICK_EXTRAS: frozenset[Extra] = frozenset({
     area.extra for area in Area if area.extra is not None
