@@ -1633,7 +1633,7 @@ class LogicDifficulty(ChoiceFromStringExtension):
     - Normal:
       - No glitches expected.
       - Players that have played most of the vanilla game should be able to play with this difficulty.
-      - Expects more platforming that probably wasn't developer intended, but it generally quite obvious and simple.
+      - Expects more platforming that probably wasn't developer intended, but is generally quite obvious and simple.
       - Logic expects the use of Extras, for example:
         - Self Destruct, Exploding Blaster Bolts, and Super Ewok Catapult can be expected for destroying Silver Brick
         objects.
@@ -1690,6 +1690,7 @@ class LogicDifficulty(ChoiceFromStringExtension):
     @property
     def hard_plus(self) -> bool:
         return self.value >= self.option_hard
+
 
 class LogicExpectNonInfiniteTorpedoesPodRacer(Toggle):
     """When enabled, logic can expect making progress in some vehicle levels with only Pod Racers unlocked, by gathering

@@ -1,4 +1,4 @@
-from .characters import Character
+from .characters import Character, UnlockMethod
 
 # The order that characters appear in the characters shop.
 # Indices into this tuple match up with the indices used by the game (unless the game is modded).
@@ -125,10 +125,10 @@ CHARACTER_SHOP_SLOTS: tuple[Character, ...] = (
     Character.IMPERIAL_SHUTTLE,
 )
 
-def _make_unlock_requirement_to_characters():
+def _make_unlock_requirement_to_characters() -> dict[UnlockMethod, list[Character]]:
     requirement_to_characters = {}
     for character in CHARACTER_SHOP_SLOTS:
         requirement_to_characters.setdefault(character.unlock_method, []).append(character)
     return requirement_to_characters
-UNLOCK_REQUIREMENT_TO_CHARACTERS = _make_unlock_requirement_to_characters()
+UNLOCK_REQUIREMENT_TO_CHARACTERS: dict[UnlockMethod, list[Character]] = _make_unlock_requirement_to_characters()
 del _make_unlock_requirement_to_characters

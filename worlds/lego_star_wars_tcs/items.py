@@ -107,27 +107,3 @@ SUPER_GONK_DROID_ABILITIES_VALUE: int = (
     # Abilities provided by non-super Gonk Droid can be skipped.
     & ~CHARACTERS_AND_VEHICLES_BY_NAME["Gonk Droid"].abilities
 ).value
-
-
-def _make_single_jump_distance_relevant_characters_by_jump_distance() -> dict[float, list[str]]:
-    jump_distance_to_characters: dict[float, list[str]] = {}
-    for c in LOGIC_CONSIDERED_CHARACTERS.values():
-        if not isinstance(c, CharacterData):
-            # Vehicles are irrelevant.
-            continue
-        if (HOVER | CAN_DOUBLE_JUMP) & c.abilities != 0:
-            # Double jump and hover characters are always considered to have max jump distance.
-            # Any need for logic beyond how far non-double-jump and non-hover characters can jump is handle separately.
-            continue
-        distance = c.single_jump_distance
-        if distance in jump_distance_to_characters:
-            jump_distance_to_characters[distance].append(c.name)
-        else:
-            jump_distance_to_characters[distance] = [c.name]
-
-    # Sort by jump distance and then return.
-    return dict(sorted(jump_distance_to_characters.items(), key=lambda t: t[0]))
-
-
-SORTED_SINGLE_JUMP_DISTANCE_TO_CHARACTER_NAMES = _make_single_jump_distance_relevant_characters_by_jump_distance()
-del _make_single_jump_distance_relevant_characters_by_jump_distance

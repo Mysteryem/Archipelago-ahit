@@ -1,6 +1,10 @@
+from rule_builder.rules import Or, Rule, True_
+
 from .constants import CharacterAbility
 from .data.areas import Area
 from .data.characters import Character
+from .data.logic.rules import HasAbility, HasAllAbilities
+from .data.logic.macros import CAN_DAMAGE_AT_CLOSE_RANGE, CAN_DESTROY_CLOSE_SILVER_BRICKS
 
 
 class Ridable:
@@ -93,85 +97,59 @@ RIDABLES_BY_NAME = {ridable.user_facing_name: ridable for ridable in _RIDABLES}
 del _RIDABLES
 
 # Most ridables can be reached with only the characters that are needed to complete the chapter in Story.
-RIDABLES_REQUIREMENTS: dict[str, dict[str, tuple[CharacterAbility, ...]]] = {
-    "4-1": {
-        # The car is hidden within Silver Bricks.
-        "Moon Car": (CharacterAbility.BOUNTY_HUNTER,),
-        # The car is at the end of a hallway that needs a Bounty Hunter or Imperial to access.
-        # A Protocol Droid Panel must be used to remove a force field, and a Jedi must be used to spawn the plants that
-        # spawn the Town Car bricks when destroyed.
-        "Town Car": (
-            CharacterAbility.JEDI | CharacterAbility.BOUNTY_HUNTER,
-            CharacterAbility.JEDI | CharacterAbility.IMPERIAL,
-        ),
-    },
-    "LEGO City": {
+# Ridables in chapters either have well-defined requirements (the chapters are no longer using legacy logic), or are
+# always reachable when the chapter is completable, so all that is left here is the Cantina and Bonus Levels.
+RIDABLES_REQUIREMENTS: dict[Area, dict[Character, Rule]] = {
+    Area.BONUS2: {
         # The car is hidden within Silver Bricks, and then needs to be built.
-        "Moon Car": (CharacterAbility.BOUNTY_HUNTER | CharacterAbility.CAN_BUILD_BRICKS,),
+        Character.MOONCAR: CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CharacterAbility.CAN_BUILD_BRICKS),
         # To access the first part, levers need to be pulled, then force is needed to move a part into place, and build
         # bricks is needed to build the final part.
-        "Wookie Flyer": (CharacterAbility.JEDI | CharacterAbility.CAN_BUILD_BRICKS | CharacterAbility.CAN_PULL_LEVERS,),
+        Character.WOOKIEFLYER: HasAllAbilities(CharacterAbility.JEDI | CharacterAbility.CAN_BUILD_BRICKS | CharacterAbility.CAN_PULL_LEVERS),
         # A house needs to be destroyed to reveal the parts and then a Jedi is needed to assemble the AT-ST.
-        "AT-ST": (
-            CharacterAbility.JEDI | CharacterAbility.CAN_MELEE,
-            CharacterAbility.JEDI | CharacterAbility.BLASTER,
-        ),
+        Character.ATST: HasAbility(CharacterAbility.JEDI) & CAN_DAMAGE_AT_CLOSE_RANGE,
         # A house needs to be destroyed to reveal the parts and then the Tractor needs to be built.
-        "Tractor": (
-            CharacterAbility.CAN_MELEE | CharacterAbility.CAN_BUILD_BRICKS,
-            CharacterAbility.BLASTER | CharacterAbility.CAN_BUILD_BRICKS,
-        ),
+        Character.TRACTOR: CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CharacterAbility.CAN_BUILD_BRICKS),
         # Either The AT-ST or a Bounty Hunter can destroy the obstacles in the way of getting to the Landspeeder.
-        "Landspeeder": (
-            CharacterAbility.JEDI | CharacterAbility.CAN_MELEE,
-            CharacterAbility.JEDI | CharacterAbility.BLASTER,
-            CharacterAbility.BOUNTY_HUNTER,
-        ),
+        Character.SPEEDER_LAND: HasAbility(CharacterAbility.JEDI) | CAN_DESTROY_CLOSE_SILVER_BRICKS,
         # There are Dewbacks and Banthas close enough to the fences that there is no requirement to destroy or jump over
         # the fences. The CharacterAbility.CAN_RIDE_VEHICLES that is added to every Ridable location is enough to
         # guarantee that the player has at least one character that can enter LEGO City.
     },
-    "New Town": {
+    Area.BONUS: {
         # The car is hidden within Silver Bricks and then must be built.
-        "Moon Car": (CharacterAbility.BOUNTY_HUNTER | CharacterAbility.CAN_BUILD_BRICKS,),
+        Character.MOONCAR: CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAbility(CharacterAbility.CAN_BUILD_BRICKS),
         # The boat needs fixing.
-        "Lifeboat": (CharacterAbility.CAN_BUILD_BRICKS,),
+        Character.LIFEBOAT: HasAbility(CharacterAbility.CAN_BUILD_BRICKS),
         # The house and bins need destroying, and then the car needs to be built.
-        "Town Car": (
-            CharacterAbility.CAN_MELEE | CharacterAbility.CAN_BUILD_BRICKS,
-            CharacterAbility.BLASTER | CharacterAbility.CAN_BUILD_BRICKS,
-        ),
+        Character.TOWNCAR: CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CharacterAbility.CAN_BUILD_BRICKS),
         # A small building needs to be destroyed, and then the tractor needs to be built.
-        "Tractor": (
-            CharacterAbility.CAN_MELEE | CharacterAbility.CAN_BUILD_BRICKS,
-            CharacterAbility.BLASTER | CharacterAbility.CAN_BUILD_BRICKS,
-        ),
+        Character.TRACTOR: CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CharacterAbility.CAN_BUILD_BRICKS),
         # There is a Tauntaun just barely close enough to the fence that there is no need for a character that can jump
         # or destroy the fences, though all characters that can ride vehicles can also jump.
     },
-    "cantina": {
+    Area.MAP: {
         # There are two cars, one is accessed by destroying garbage cans and then building it, and the other is accessed
         # by pulling a lever.
-        "Cantina Car": (
-            CharacterAbility.CAN_MELEE | CharacterAbility.CAN_BUILD_BRICKS,
-            CharacterAbility.BLASTER | CharacterAbility.CAN_BUILD_BRICKS,
-            CharacterAbility.CAN_PULL_LEVERS,
+        Character.MAPCAR: Or(
+            HasAbility(CharacterAbility.CAN_PULL_LEVERS),
+            CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CharacterAbility.CAN_BUILD_BRICKS),
         )
     }
 }
-assert all(ridable in RIDABLES_BY_NAME
+assert all(ridable.readable_name in RIDABLES_BY_NAME
            for chapter_ridables in RIDABLES_REQUIREMENTS.values()
            for ridable in chapter_ridables)
 
 
-def get_ridable_requirements(area: Area, ridable_name: str) -> tuple[CharacterAbility, ...]:
+def get_ridable_requirements(area: Area, ridable_character: Character) -> Rule:
     # todo: Requiring CAN_RIDE_VEHICLES is not strictly necessary currently because the player is always forced to start
     #  with a Jedi.
-    requirements = RIDABLES_REQUIREMENTS.get(area, {}).get(ridable_name, ())
-    if not requirements:
-        return (CharacterAbility.CAN_RIDE_VEHICLES,)
+    requirements = RIDABLES_REQUIREMENTS.get(area, {}).get(ridable_character, None)
+    if requirements is None:
+        return True_()
     else:
-        return tuple(CharacterAbility.CAN_RIDE_VEHICLES | ability for ability in requirements)
+        return requirements
 
 
 def _make_lookups() -> tuple[dict[Area, list[Ridable]], dict[Area, list[Ridable]]]:

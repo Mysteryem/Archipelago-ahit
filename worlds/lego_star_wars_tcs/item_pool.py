@@ -4,7 +4,8 @@ from functools import reduce
 from operator import or_
 from typing import TYPE_CHECKING, Iterable
 
-from BaseClasses import LocationProgressType, ItemClassification
+from rule_builder.rules import Rule
+from BaseClasses import LocationProgressType, ItemClassification, Entrance, Location
 
 from .constants import (
     progression_deprioritized_skip_balancing,
@@ -12,6 +13,7 @@ from .constants import (
     CHAPTER_SPECIFIC_FLAGS,
     RARE_AND_USEFUL_ABILITIES,
 )
+from .data.logic.extraction import AbilityRequirements as AbilityRequirementsExtractor
 from .items import (
     CHARACTERS_AND_VEHICLES_BY_NAME,
     GenericCharacterData,
@@ -94,8 +96,6 @@ class ItemPoolAbilityRequirements:
     starting: CharacterAbility = CharacterAbility.NONE
     """Abilities that the player will be starting with."""
 
-    _updated_for_chapter_requirements: bool = False
-
     def get_logically_irrelevant(self) -> CharacterAbility:
         """
         Get abilities that are logically irrelevant for items in the item pool. In slots with few chapters enabled, some
@@ -106,40 +106,6 @@ class ItemPoolAbilityRequirements:
         #  no longer being mutated once abilities are provided, so that it is easier to see what abilities had to be
         #  provided by the item pool?
         return ~(self.required | self.optional)
-
-    def update_for_starting_abilities(self, starting_abilities: CharacterAbility) -> None:
-        """
-        Remove abilities present on characters in the player's starting inventory.
-        If an ability is provided by starting inventory, then it does not need to be provided by the item pool.
-        :param starting_abilities:
-        :return:
-        """
-        assert self._updated_for_chapter_requirements, \
-            "Chapter ability requirements should have been processed before starting abilities."
-        self.required &= ~starting_abilities
-        self.optional &= ~starting_abilities
-        self.starting = starting_abilities
-
-    def update_for_chapter_ability_requirements(self, world: LegoStarWarsTCSWorld) -> None:
-        """
-        Update the ability requirements for the enabled chapters.
-        :param world:
-        """
-        assert not self._updated_for_chapter_requirements, \
-            "Already updated for chapter ability requirements, this is a bug."
-        for chapter in sorted(world.enabled_chapters):
-            chapter_obj = SHORT_NAME_TO_CHAPTER_AREA[chapter]
-            # The item pool must provide the abilities required to complete the chapter.
-            # While it is possible for characters that satisfy the alt requirements to be picked when picking characters
-            # to create that are necessary to unlock a chapter, for simplicity, it is assumed that the main ability
-            # requirements for every chapter must be supplied by the item pool.
-            self.required |= chapter_obj.completion_main_ability_requirements
-            # Alternative requirements that swap out a common ability for a rarer ability are relevant to logic, but
-            # are not required to be included in the item pool.
-            alt_requirements = chapter_obj.completion_alt_ability_requirements
-            if alt_requirements:
-                self.optional |= alt_requirements
-        self._updated_for_chapter_requirements = True
 
 
 class ItemCreator:
@@ -786,55 +752,44 @@ def create_starting_characters_for_needed_starting_chapter_abilities(
 
 def determine_item_pool_abilities(
         world: LegoStarWarsTCSWorld,
-        chapters_with_locations: set[str]
 ) -> ItemPoolAbilityRequirements:
-    # Determine what abilities must be supplied by the item pool for all locations to be reachable with all items in
-    # the item pool.
-    required_character_abilities_in_pool = CharacterAbility.NONE
+    """Determine what abilities must be supplied by the item pool for all locations to be reachable with all items in
+    the item pool."""
+
+    spots: list[Location | Entrance] = [
+        # Sorting is not required, but is a deterministic generation safeguard if there is a mistake that has caused
+        # location/entrance creation order to become nondeterministic.
+        *sorted(world.get_locations(), key=lambda loc: loc.name),
+        *sorted(world.get_entrances(), key=lambda ent: ent.name),
+    ]
+    seen_rules: set[Rule.Resolved] = set()
+    unique_rules: list[Rule.Resolved] = []
+    for spot in spots:
+        rule = spot.access_rule
+        if rule is Location.access_rule or rule is Entrance.access_rule or rule in seen_rules:
+            continue
+        assert isinstance(rule, Rule.Resolved), f"{spot} is using a rule that is not using Rule Builder ({rule})"
+        unique_rules.append(rule)
+    world.random.shuffle(unique_rules)
+
+    # Get all the abilities provided by starting characters.
+    starting_abilities = world.get_starting_inventory_abilities()
+
+    required_character_abilities_including_starting = starting_abilities
     optional_character_abilities = CharacterAbility.NONE
-    # `chapters_with_locations` is a `set`, so sort for deterministic results from the `world.random` usage.
-    for shortname in sorted(chapters_with_locations):
-        power_brick_abilities = POWER_BRICK_REQUIREMENTS[shortname][1]
-        if power_brick_abilities is not None:
-            if isinstance(power_brick_abilities, tuple):
-                at_least_one_already_required = False
-                for abilities in power_brick_abilities:
-                    if abilities in required_character_abilities_in_pool:
-                        at_least_one_already_required = True
-                    # Mark the abilities as optional. They will be included in logic, but won't necessarily be
-                    # guaranteed to be provided by the item pool.
-                    optional_character_abilities |= abilities
+    extractor = AbilityRequirementsExtractor(world.random)
+    for rule in unique_rules:
+        extracted = extractor.extract_ability_requirements(rule,
+                                                           required_character_abilities_including_starting,
+                                                           optional_character_abilities)
+        if extracted is not None:
+            # Update the abilities.
+            required_character_abilities_including_starting = extracted[0]
+            optional_character_abilities = extracted[1]
 
-                if not at_least_one_already_required:
-                    # Pick any one of the abilities to be required to be provided by the item pool.
-                    picked = world.random.choice(power_brick_abilities)
-                    required_character_abilities_in_pool |= picked
-            else:
-                required_character_abilities_in_pool |= power_brick_abilities
-        if world.options.enable_minikit_locations.value:
-            for requirements in SHORT_NAME_TO_CHAPTER_AREA[shortname].all_minikits_ability_requirements:
-                required_character_abilities_in_pool |= requirements
-    for bonus_name in world.enabled_bonuses:
-        area = BONUS_NAME_TO_BONUS_AREA[bonus_name]
-        required_character_abilities_in_pool |= area.completion_ability_requirements
-    for _area_name, ridable_spots in world.ridesanity_spots.items():
-        for _spot, any_ridable_ability_requirements in ridable_spots:
-            if any_ridable_ability_requirements:
-                if len(any_ridable_ability_requirements) == 1:
-                    required_character_abilities_in_pool |= any_ridable_ability_requirements[0]
-                else:
-                    at_least_one_already_required = False
-                    for ridable_ability_requirements in any_ridable_ability_requirements:
-                        if ridable_ability_requirements in required_character_abilities_in_pool:
-                            at_least_one_already_required = True
-                        # Mark the abilities as optional. They will be included in logic, but won't necessarily be
-                        # guaranteed to be provided by the item pool.
-                        optional_character_abilities |= ridable_ability_requirements
+    # Get the abilities that are required, but are not provided by starting characters.
+    required_character_abilities_in_pool = required_character_abilities_including_starting & ~starting_abilities
 
-                    if not at_least_one_already_required:
-                        # Pick any one of the abilities to be required to be provided by the item pool.
-                        picked = world.random.choice(any_ridable_ability_requirements)
-                        required_character_abilities_in_pool |= picked
     return ItemPoolAbilityRequirements(required_character_abilities_in_pool, optional_character_abilities)
 
 
@@ -880,21 +835,15 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
     if world.options.episode_unlock_requirement == "episode_item":
         world.push_precollected(world.create_item(f"Episode {world.starting_episode} Unlock"))
 
-    item_pool_ability_requirements = determine_item_pool_abilities(world, chapters_with_locations)
-
-    item_pool_ability_requirements.update_for_chapter_ability_requirements(world)
+    # Determine what abilities need to be fulfilled by the item pool for all locations and entrances to be reachable, as
+    # well as abilities that are not required, but could still be logically relevant.
+    item_pool_ability_requirements = determine_item_pool_abilities(world)
 
     if chapters_unlock_with_characters:
         # Unary `+` (__pos__) creates a new Counter with counts <= 0 removed.
         level_access_character_counts = +world.character_chapter_access_counts
     else:
         level_access_character_counts = Counter()
-
-    # Gather the abilities of all items in starting inventory, so that they can be removed from other created items,
-    # improving generation performance.
-    starting_abilities = world.get_starting_inventory_abilities()
-
-    item_pool_ability_requirements.update_for_starting_abilities(starting_abilities)
 
     return _create_items(
         world,

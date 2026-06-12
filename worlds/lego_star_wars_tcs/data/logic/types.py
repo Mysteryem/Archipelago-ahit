@@ -307,7 +307,9 @@ def _make_legacy_chapter(
 
     regions: dict[str, tuple[ExitData, ...]] = {
         start_region: (
-            ExitData("Chapter Completion", completion_rule),
+            # Legacy chapters expect being able to complete the chapter before even entering the chapter, so no rule is
+            # needed on the Chapter Completion region.
+            ExitData("Chapter Completion"),
             ExitData("Minikits", minikits_rule),
         ),
         "Minikits": tuple(ExitData(level, new_level=Level[level.upper()]) for level in minikit_level_region_names)}
@@ -334,7 +336,8 @@ def _make_legacy_chapter(
         minikits=minikits_data,
         power_brick=LocationData(start_region, power_brick_rule),
         ridables=ridables_data,
-        extra_chapter_entrance_rules=extra_chapter_entrance_rules,
+        # Legacy chapters expect being able to complete the chapter before even entering the chapter.
+        extra_chapter_entrance_rules=extra_chapter_entrance_rules & completion_rule,
     )
 
 
@@ -361,8 +364,8 @@ def make_legacy_chapter(
     chapter_ridables = CHAPTER_TO_RIDABLES.get(area, [])
     ridables: dict[Character, Rule] = {}
     for ridable in chapter_ridables:
-        requirements = get_ridable_requirements(area, ridable.user_facing_name)
-        ridables[ridable.character] = Or(*map(HasAllAbilities, requirements))
+        requirements = get_ridable_requirements(area, ridable.character)
+        ridables[ridable.character] = requirements
 
     return _make_legacy_chapter(
         episode_number=legacy_area.episode,

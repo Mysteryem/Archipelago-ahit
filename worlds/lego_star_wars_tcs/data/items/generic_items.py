@@ -43,6 +43,15 @@ CHAPTER_TO_CHAPTER_UNLOCK_ITEM = {
     for episode in range(1, 7)
 }
 
+EPISODE_UNLOCKS = {
+    1: NonDataItemName.EPISODE_1_UNLOCK,
+    2: NonDataItemName.EPISODE_2_UNLOCK,
+    3: NonDataItemName.EPISODE_3_UNLOCK,
+    4: NonDataItemName.EPISODE_4_UNLOCK,
+    5: NonDataItemName.EPISODE_5_UNLOCK,
+    6: NonDataItemName.EPISODE_6_UNLOCK,
+}
+
 def _generic(code: int | None, name: str) -> GenericItemData:
     # Ensure any StrEnum is replaced with str.
     return GenericItemData(code + GENERIC_ITEMS_BASE if code is not None else None, str(name))
@@ -74,4 +83,7 @@ GENERIC_DATA: list[GenericItemData] = [
     _generic(550, NonDataItemName.POWER_UP),
 
     _generic(560, NonDataItemName.SILVER_STUD),
+    _generic(561, NonDataItemName.GOLD_STUD),
+    _generic(562, NonDataItemName.BLUE_STUD),
+    _generic(563, NonDataItemName.PURPLE_STUD),
 ]
