@@ -278,7 +278,7 @@ class _RegionBuilder:
                 self._exclude_location(true_jedi_location)
             if create_gold_bricks:
                 # True Jedi Gold Brick event.
-                true_jedi_event = world.add_gold_brick_event(f"{true_jedi_name} - Gold Brick", completion_name)
+                true_jedi_event = world.add_gold_brick_event(f"{true_jedi_name} - Gold Brick", completion_region)
                 world.set_rule(true_jedi_event, legacy_rule)
 
         # Power Brick Location.
