@@ -471,11 +471,13 @@ def _create_possible_pool(world: LegoStarWarsTCSWorld) -> dict[str, GenericChara
 def _create_starting_characters_for_character_locked_chapters(
         world: LegoStarWarsTCSWorld,
         possible_pool_character_items: dict[str, GenericCharacterData],
-        starting_chapter_characters: list[str],
+        starting_chapter_characters: list[GenericCharacterData],
         starting_chapter_required_count: int,
 ) -> None:
     starting_chapter = world.starting_chapter
     assert starting_chapter_required_count <= len(starting_chapter_characters)
+    skipped: list[GenericCharacterData]
+    picked: list[GenericCharacterData]
     if starting_chapter_required_count == len(starting_chapter_characters):
         # All characters are needed.
         picked = starting_chapter_characters
@@ -488,14 +490,13 @@ def _create_starting_characters_for_character_locked_chapters(
         skipped = []
         # Ignore any alternate, or irrelevant, ability requirements by only considering the main requirements.
         main_ability_requirements = starting_chapter.completion_main_ability_requirements
-        for char in starting_chapter_characters:
-            character_data = CHARACTERS_AND_VEHICLES_BY_NAME[char]
+        for character_data in starting_chapter_characters:
             relevant_character_abilities = character_data.abilities & main_ability_requirements
             if relevant_character_abilities not in seen_abilities:
                 seen_abilities |= relevant_character_abilities
-                picked.append(char)
+                picked.append(character_data)
             else:
-                skipped.append(char)
+                skipped.append(character_data)
         if starting_chapter_required_count > len(picked):
             # More characters are needed than those with relevant, unique abilities, so pick additional characters from
             # those that were skipped due to having only duplicated abilities.
@@ -506,17 +507,17 @@ def _create_starting_characters_for_character_locked_chapters(
         # TODO?: Try the alt ability requirements too?
 
     # TODO: Do the picked characters need to be set somewhere? Check where else world.starting_chapter is used.
-    for name in picked:
-        world.push_precollected(world.create_item(name))
-        del possible_pool_character_items[name]
+    for character_data in picked:
+        world.push_precollected(world.create_item(character_data.name))
+        del possible_pool_character_items[character_data.name]
 
-    for name in skipped:
+    for character_data in skipped:
         # The skipped characters can be considered to no longer give access to the starting chapter, which could change
         # their classifications if they get created.
-        world.character_chapter_access_counts[name] -= 1
+        world.character_chapter_access_counts[character_data.name] -= 1
         # print(f"Reducing count of chapters locked by {name} because the starting chapter will be unlocked by {picked}"
         #       f" instead")
-        assert world.character_chapter_access_counts[name] >= 0
+        assert world.character_chapter_access_counts[character_data.name] >= 0
 
 
 def create_starting_characters_for_random_character_locked_chapters(
@@ -534,7 +535,7 @@ def create_starting_characters_for_random_character_locked_chapters(
     """
     starting_chapter = world.starting_chapter
     required_count = world.chapter_required_character_counts[starting_chapter.short_name]
-    legacy_characters = [data.name for data in world.chapter_random_character_requirements[starting_chapter.short_name]]
+    legacy_characters = world.chapter_random_character_requirements[starting_chapter.short_name].copy()
 
     _create_starting_characters_for_character_locked_chapters(
         world, possible_pool_character_items, legacy_characters, required_count)
