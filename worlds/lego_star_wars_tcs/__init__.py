@@ -176,7 +176,6 @@ class LegoStarWarsTCSWorld(World):
     character_unlock_location_count: int = 0
     goal_excluded_character_unlock_location_count: int = 0
 
-    ridesanity_spots: dict[str, list[tuple[Location | Entrance, tuple[CharacterAbility, ...]]]]
     ridesanity_location_count: int = 0
 
     def __init__(self, multiworld: MultiWorld, player: int):
@@ -188,7 +187,6 @@ class LegoStarWarsTCSWorld(World):
         self.enabled_bonuses = set()
         self.character_chapter_access_counts = Counter()
         self.short_name_to_boss_character = {}
-        self.ridesanity_spots = {}
         self.chapters_requiring_alt_characters = set()
         self.chapter_required_character_counts = {}
         self.spoiler_chapter_character_requirements = {}

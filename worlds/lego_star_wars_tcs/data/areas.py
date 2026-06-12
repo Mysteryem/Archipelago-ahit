@@ -125,6 +125,12 @@ class Area(IntEnum):
     def get_completion_name(self):
         return self.prefix_name("Completion")
 
+    def get_short_name(self):
+        """This is a legacy method, and should be considered deprecated."""
+        if not self.is_chapter():
+            raise Exception(f"{self} is not a chapter.")
+        return f"{self.episode_index + 1}-{self.area_index + 1}"
+
     NEGOTIATIONS =      0, dict(episode_index= 0, area_index= 0, readable_name=               "Negotiations", flags=AreaFlag(0x0010), story_true_jedi=31000, free_play_true_jedi= 64000, extra=             Extra.SUPER_GONK, levels=[Level.EP1_FAILEDNEG_INTRO1, Level.EP1_FAILEDNEG_INTRO2, Level.NEGOTIATIONS_A, Level.NEGOTIATIONS_B, Level.NEGOTIATIONS_C, Level.FAILEDNEG_OUTRO, Level.NEGOTIATIONS_STATUS])
     GUNGAN =            1, dict(episode_index= 0, area_index= 1, readable_name=          "Invasion Of Naboo", flags=AreaFlag(0x0010), story_true_jedi=44000, free_play_true_jedi= 52000, extra=              Extra.POO_MONEY, levels=[Level.GUNGAN_INTRO1, Level.GUNGAN_INTRO2, Level.GUNGAN_A, Level.GUNGAN_B, Level.GUNGAN_C, Level.GUNGAN_E, Level.GUNGAN_OUTRO2, Level.GUNGAN_STATUS])
     PALACERESCUE =      2, dict(episode_index= 0, area_index= 2, readable_name=          "Escape From Naboo", flags=AreaFlag(0x0010), story_true_jedi=48000, free_play_true_jedi= 60000, extra=  Extra.WALKIE_TALKIE_DISABLE, levels=[Level.RESCUE_INTRO1, Level.RESCUE_INTRO2, Level.RESCUE_INTRO4, Level.RESCUE_A, Level.RESCUE_B, Level.RESCUE_C, Level.RESCUE_E, Level.RESCUE_OUTRO, Level.RESCUE_STATUS])

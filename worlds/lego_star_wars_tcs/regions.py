@@ -525,39 +525,41 @@ class _RegionBuilder:
         cantina_car_data = _RidableData(Area.MAP, self.cantina, get_ridable_requirements(Area.MAP, cantina_car))
         self.ridable_character_regions[cantina_car] = [cantina_car_data]
 
-        ridesanity_spots: defaultdict[str, list[tuple[Location | Entrance, Rule]]]
-        ridesanity_spots = defaultdict(list)
-        for ridable, areas_list in self.ridable_character_regions.items():
+        for ridable, ridable_data_list in self.ridable_character_regions.items():
             world.ridesanity_location_count += 1
             ridable_location_name = ridable.get_ridesanity_location_name()
             is_excluded_goal_chapter_location = False
-            if len(areas_list) == 0:
+            if len(ridable_data_list) == 0:
                 # There is only one region where this ridable can be found, so the ridable location can go directly in
                 # that region.
-                area_short_name, area_region = areas_list[0]
+                ridable_data = ridable_data_list[0]
+
+                area = ridable_data.area
+                area_region = ridable_data.region
+                ridable_rule = ridable_data.entrance_rule
+
                 ridable_location = world.add_location(ridable_location_name, area_region)
-                # If there are any rules, they will be set on the location.
-                requirements = get_ridable_requirements(area_short_name, ridable)
-                ridesanity_spots[area_short_name].append((ridable_location, requirements))
-                is_excluded_goal_chapter_location = area_region == excluded_goal_region
+                world.set_rule(ridable_location, ridable_rule)
+                is_excluded_goal_chapter_location = area.is_chapter() and area.get_short_name() == world.goal_chapter
             else:
-                # There are multiple regions this ridable can be found in, so create a new region just for this location
-                # and
+                # There are multiple regions this ridable can be found in, so create a new region just for this
+                # location and connect each region this ridable is found in, to this new region.
                 ridable_region = world.create_region(ridable_location_name)
-                for area_short_name, area_region in areas_list:
-                    entrance = area_region.connect(ridable_region)
-                    # If there are any rules, they will be set on the entrance.
-                    requirements = get_ridable_requirements(area_short_name, ridable)
-                    ridesanity_spots[area_short_name].append((entrance, requirements))
-                    if area_region == excluded_goal_region:
+                for ridable_data in ridable_data_list:
+                    area = ridable_data.area
+                    area_region = ridable_data.region
+                    ridable_rule = ridable_data.entrance_rule
+
+                    if area.is_chapter() and area.get_short_name() == world.goal_chapter:
                         is_excluded_goal_chapter_location = True
+                    area_region.connect(ridable_region, rule=ridable_rule)
                 ridable_location = world.add_location(ridable_location_name, ridable_region)
+
             if is_excluded_goal_chapter_location:
                 # If the location can be accessed through the Goal Chapter that has excluded locations, exclude the
                 # location, even if it could be accessed from elsewhere. This prevents the possibility of the Goal
                 # Chapter from locking access to locations.
                 ridable_location.progress_type = LocationProgressType.EXCLUDED
-        world.ridesanity_spots.update(ridesanity_spots)
 
     def create_all_episodes_character_purchases(self) -> None:
         world = self.world
