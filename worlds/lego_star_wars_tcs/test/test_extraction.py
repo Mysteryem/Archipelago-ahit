@@ -42,7 +42,8 @@ class TestAbilityExtraction(TestCase):
 
     def setUp(self):
         self.r = Random(1)
-        self.extractor = AbilityRequirements(self.r)
+        # Override all costs to be the same to induce more randomness.
+        self.extractor = AbilityRequirements(self.r, ability_cost_overrides=dict.fromkeys(CharacterAbility, 0))
 
     def tearDown(self):
         # Allow garbage collection. Notably, the extractor maintains a memodict.
@@ -128,6 +129,18 @@ class TestAbilityExtraction(TestCase):
                           "The required and optional abilities should equal the input abilities.")
             self.assertIs(required & optional, CharacterAbility.NONE,
                           "There should be no abilities in common between the required and optional abilities.")
+
+    def test_extract_has_any_abilities_fixed_costs(self) -> None:
+        """Test that ability costs determine"""
+        rule = HasAnyAbilities.Resolved(~CharacterAbility.NONE, **_COMMON_ARGS)
+        all_same_costs = dict.fromkeys(CharacterAbility, 1)
+        for ability in CharacterAbility:
+            extractor = AbilityRequirements(self.r, ability_cost_overrides=all_same_costs | {ability: 0})
+            requirements = extractor.extract_ability_requirements(rule)
+            self.assertIsNotNone(requirements)
+            required, optional = requirements
+            self.assertIs(required, ability)
+            self.assertIs(optional, ~ability)
 
     def test_extract_has_any_abilities_existing_required_intersection(self) -> None:
         """Test that if any of the abilities, of a HasAnyAbilities.Resolved rule, are already required, then that

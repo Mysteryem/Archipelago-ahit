@@ -21,6 +21,8 @@ from rule_builder.rules import (
 
 from .rules import InLevelRule, HasAbility, HasAnyAbilities, HasAllAbilities
 from .rule_replacement import RuleReplacer
+from ..items.character_items import NORMAL_CHARACTER_DATA
+from ..items.vehicle_items import VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from ...character_ability import CharacterAbility
 
 
@@ -39,13 +41,109 @@ class ExtractionRuleReplacer(RuleReplacer):
         return super()._handle(rule)
 
 
+def _make_default_ability_costs() -> dict[CharacterAbility, int]:
+    """Make ability costs based on ability frequency. Vehicle and non-vehicle abilities are calculated separately."""
+    non_vehicle_abilities_counter = Counter()
+    for character_data in NORMAL_CHARACTER_DATA:
+        non_vehicle_abilities_counter.update(character_data.abilities)
+    non_vehicle_abilities_max = max(non_vehicle_abilities_counter.values())
+
+    vehicle_abilities_counter = Counter()
+    for character_data in VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA.values():
+        vehicle_abilities_counter.update(character_data.abilities)
+    # All vehicles are...vehicles, which is an irrelevant cost to consider.
+    del vehicle_abilities_counter[CharacterAbility.IS_A_VEHICLE]
+    vehicle_abilities_max = max(vehicle_abilities_counter.values())
+
+    return {
+        # + 1 so that the lowest cost is 1 instead of zero
+        **{k: non_vehicle_abilities_max - v + 1 for k, v in non_vehicle_abilities_counter.items()},
+        **{k: vehicle_abilities_max - v + 1 for k, v in vehicle_abilities_counter.items()},
+        # Re-add the removed IS_A_VEHICLE ability with a cost of zero.
+        CharacterAbility.IS_A_VEHICLE: 0,
+    }
+
+
+DEFAULT_ABILITY_COSTS = _make_default_ability_costs()
+# The below comment may be out-of-date, but is enough to give a rough overview.
+# DEFAULT_ABILITY_COSTS: dict[CharacterAbility, int] = {
+#     # Vehicle abilities are calculated separately.
+#     VEHICLE_TOW: 17,
+#     VEHICLE_TIE: 16,
+#     VEHICLE_BLASTER: 1,
+#     IS_A_VEHICLE: 0,
+#
+#     # 2 Characters
+#     JETPACK: 119,
+#     CAN_HIGH_JUMP_SLAM: 119,
+#     WEAPON_EWOK: 119,
+#
+#     # 3 Characters
+#     ASTROMECH_DROID: 118,
+#
+#     # 4 Characters
+#     SITH: 117,
+#     PROTOCOL_PANEL: 117,
+#     HIGH_JUMP: 117,
+#
+#     # 5 Characters
+#     HOVER: 116,
+#     ASTROMECH_PANEL: 116,
+#
+#     # 6 Characters
+#     WEAPON_ZAPPER: 115,
+#     SHORTIE: 115,
+#
+#     # 8 Characters
+#     BOUNTY_HUNTER: 113,
+#
+#     # 15 Characters
+#     CAN_WEAR_HAT_AND_DOUBLE_JUMP: 106,
+#     CAN_SELF_DESTRUCT: 106,
+#
+#     IMPERIAL: 102,
+#     IS_NON_GHOST_JEDI: 97,
+#     CAN_TRIPLE_JUMP_GREAT_DISTANCE: 95,
+#     JEDI: 94,
+#     CAN_WEAR_HAT_AND_GRAPPLE: 93,
+#     CAN_DEFLECT_BOLTS: 92,
+#     CAN_DOUBLE_JUMP: 90,
+#     CAN_FLOP_JUMP: 84,
+#     CAN_WEAR_HAT: 75,
+#     GRAPPLE: 56,
+#     BLASTER: 49,
+#     CAN_JUMP_DISTANCE_0_92: 43,
+#     CAN_JUMP_0_44: 39,
+#     CAN_MELEE: 39,
+#     CAN_JUMP_DISTANCE_0_84: 20,
+#     RUN_SPEED_1_18_OR_HIGHER: 18,
+#     CAN_PULL_LEVERS: 13,
+#     CAN_BUILD_BRICKS: 12,
+#     # All characters that can push objects also can ride vehicles, and vice-versa, so these use the same flag for better
+#     # performance.
+#     CAN_RIDE_VEHICLES: 9,
+#     # CAN_PUSH_OBJECTS: 9,
+#     CAN_AGGRAVATE_ENEMIES: 9,
+#     CAN_JUMP_HEIGHT_0_37: 6,
+#     CAN_JUMP_DISTANCE_0_69: 6,
+#     CAN_BARELY_JUMP: 3,
+#     RUN_SPEED_0_9_OR_HIGHER: 1,
+# }
+
+
 # todo: can `required` abilities and `optional` abilities always get combined, and then do `optional &= ~required` at
 #  the and?
 @dataclass
 class AbilityRequirements:
     random: Random
+    ability_cost_overrides: dict[CharacterAbility, int] = field(default_factory=dict)
     abilities_memodict: dict[tuple[Rule.Resolved, CharacterAbility], tuple[CharacterAbility, CharacterAbility] | None] \
         = field(default_factory=dict)
+    ability_costs: dict[CharacterAbility, int] = field(init=False)
+    
+    def __post_init__(self):
+        # Ensure there is a default cost for every ability and then merge in any overrides.
+        self.ability_costs = DEFAULT_ABILITY_COSTS | self.ability_cost_overrides
 
     def _memoize(self,
                  key: tuple[Rule.Resolved, CharacterAbility],
@@ -53,6 +151,14 @@ class AbilityRequirements:
                  ) -> tuple[CharacterAbility, CharacterAbility] | None:
         self.abilities_memodict[key] = result
         return result
+    
+    def _get_ability_cost(self, abilities: CharacterAbility):
+        if abilities in self.ability_costs:
+            return self.ability_costs[abilities]
+        # Individual abilities are guaranteed to be present.
+        cost = sum(map(self.ability_costs.__getitem__, abilities))
+        self.ability_costs[abilities] = cost
+        return cost
 
     # todo: Is the `optional` argument even necessary? It is only ever combined with currently, so would not be
     #  necessary.
@@ -99,12 +205,10 @@ class AbilityRequirements:
                         found_requirements.append(requirements)
             if not found_requirements:
                 return self._memoize(key, None)
-            # Find the child with the smallest number of new bits that are required.
+            # Find the child with the lowest 'cost'.
             # Shuffle first, so that, if there is a tie, the tie is resolved randomly.
-            # todo?: Assign a cost to each ability (rarer abilities have a higher cost) and pick the required abilities
-            #  with the lowest cost instead?
             self.random.shuffle(found_requirements)
-            found_requirements.sort(key=lambda t: (t[0] & ~required).bit_count())
+            found_requirements.sort(key=lambda t: self._get_ability_cost(t[0] & ~required))
             first = found_requirements[0]
             required |= first[0]
             optional |= first[1]
@@ -148,8 +252,12 @@ class AbilityRequirements:
                 # This rule would not already be satisfied by the currently required abilities.
                 # todo: Should we prefer picking an ability that is already in `optional` to promote to `required`, or
                 #  prefer an ability that is in neither `optional` nor `required`?
-                # Pick an ability used by this rule at random.
-                picked_ability = self.random.choice(list(abilities))
+                # Pick the lowest cost ability used by this rule.
+                # Shuffle first for randomness in any tie breaks.
+                abilities_list = list(abilities)
+                self.random.shuffle(abilities_list)
+                # Individual abilities are guaranteed to exist in .ability_costs, so access it directly.
+                picked_ability: CharacterAbility = min(abilities, key=self.ability_costs.__getitem__)
                 # Remove the picked ability from the other abilities.
                 other_abilities = abilities & ~picked_ability
                 # Remove the picked ability from the optional abilities (if present)
