@@ -2,7 +2,7 @@ from collections import defaultdict
 from unittest import TestCase
 
 from ..items import LOGIC_CONSIDERED_CHARACTERS
-from ..character_ability import CharacterAbility, IMPLIED_ABILITIES, ABILITY_REDUCTIONS, COMBINATION_ABILITY_REDUCTIONS
+from ..character_ability import *
 
 
 class TestAbilities(TestCase):
@@ -211,3 +211,147 @@ class TestAbilities(TestCase):
         for ability in ABILITY_REDUCTIONS.keys():
             self.assertLessEqual(ability.bit_count(), last_bits)
             last_bits = ability.bit_count()
+
+    def test_optimize_and_has_any(self):
+        cases: list[tuple[set[CharacterAbility], set[CharacterAbility], str]] = [
+            ({BOUNTY_HUNTER, BOUNTY_HUNTER},
+             {BOUNTY_HUNTER},
+             "Duplicates are deduplicated"),
+
+            ({BOUNTY_HUNTER | ASTROMECH_PANEL, BOUNTY_HUNTER | ASTROMECH_PANEL},
+             {BOUNTY_HUNTER | ASTROMECH_PANEL},
+             "Duplicates are deduplicated"),
+
+            ({BOUNTY_HUNTER, GRAPPLE},
+             {BOUNTY_HUNTER},
+             "Whenever BOUNTY_HUNTER is satisfied, GRAPPLE will also be satisfied"),
+
+            ({BOUNTY_HUNTER | GRAPPLE},
+             {GRAPPLE},
+             "Standalone HasAnyAbilities simplify_or optimization applies"),
+
+            ({BOUNTY_HUNTER | ASTROMECH_PANEL, GRAPPLE | ASTROMECH_PANEL},
+             {BOUNTY_HUNTER | ASTROMECH_PANEL},
+             "Whenever BOUNTY_HUNTER | ASTROMECH_PANEL is satisfied, GRAPPLE | ASTROMECH_PANEL will also be satisfied"),
+
+            ({BOUNTY_HUNTER | ASTROMECH_PANEL | JEDI, GRAPPLE | ASTROMECH_PANEL},
+             {BOUNTY_HUNTER | ASTROMECH_PANEL | JEDI, GRAPPLE | ASTROMECH_PANEL},
+             "No optimisation possible"),
+
+            ({BOUNTY_HUNTER, JEDI, HIGH_JUMP},
+             {BOUNTY_HUNTER, JEDI, HIGH_JUMP},
+             "No optimisation possible"),
+
+            ({BOUNTY_HUNTER | JEDI, GRAPPLE | CAN_DOUBLE_JUMP},
+             {BOUNTY_HUNTER | JEDI},
+             "GRAPPLE is implied by BOUNTY_HUNTER, and CAN_DOUBLE_JUMP is implied by JEDI"),
+
+            ({BOUNTY_HUNTER | JEDI, GRAPPLE | CAN_DOUBLE_JUMP | CAN_MELEE},
+             {BOUNTY_HUNTER | JEDI},
+             "GRAPPLE is implied by BOUNTY_HUNTER, CAN_DOUBLE_JUMP is implied by JEDI, and CAN_MELEE is implied by"
+             " both"),
+
+            ({BOUNTY_HUNTER | JEDI | HIGH_JUMP, CAN_HIGH_JUMP_SLAM},
+             {CAN_HIGH_JUMP_SLAM},
+             "CAN_HIGH_JUMP_SLAM is implied by HIGH_JUMP, so for CAN_HIGH_JUMP_SLAM to be satisfied,"
+             " BOUNTY_HUNTER | JEDI | HIGH_JUMP will also always be satisfied"),
+        ]
+        for and_has_any, expected, name in cases:
+            with self.subTest(name, and_has_any=and_has_any):
+                optimized = CharacterAbility.optimize_and_has_any_abilities(and_has_any)
+                self.assertEqual(optimized, expected)
+
+    def test_optimize_ar_has_all(self):
+        cases: list[tuple[set[CharacterAbility], set[CharacterAbility], str]] = [
+            ({BOUNTY_HUNTER, BOUNTY_HUNTER},
+             {BOUNTY_HUNTER},
+             "Duplicates are deduplicated"),
+
+            ({BOUNTY_HUNTER | ASTROMECH_PANEL, BOUNTY_HUNTER | ASTROMECH_PANEL},
+             {BOUNTY_HUNTER | ASTROMECH_PANEL},
+             "Duplicates are deduplicated"),
+
+            ({BOUNTY_HUNTER, GRAPPLE},
+             {GRAPPLE},
+             "Whenever BOUNTY_HUNTER is satisfied, GRAPPLE will also be satisfied"),
+
+            ({BOUNTY_HUNTER | GRAPPLE},
+             {BOUNTY_HUNTER},
+             "Standalone HasAnyAbilities simplify_and optimization applies"),
+
+            ({BOUNTY_HUNTER | ASTROMECH_PANEL, GRAPPLE | ASTROMECH_PANEL},
+             {GRAPPLE | ASTROMECH_PANEL},
+             "Whenever BOUNTY_HUNTER & ASTROMECH_PANEL is satisfied, GRAPPLE & ASTROMECH_PANEL will also be satisfied"),
+
+            ({BOUNTY_HUNTER | ASTROMECH_PANEL | JEDI, GRAPPLE | ASTROMECH_PANEL},
+             {GRAPPLE | ASTROMECH_PANEL},
+             "Whenever BOUNTY_HUNTER & ASTROMECH_PANEL & JEDI is satisfied, GRAPPLE & ASTROMECH_PANEL will also be"
+             " satisfied"),
+
+            ({BOUNTY_HUNTER, JEDI, HIGH_JUMP},
+             {BOUNTY_HUNTER, JEDI, HIGH_JUMP}, #should become CAN_DOUBLE_JUMP?
+             "No optimisation possible"),
+
+            ({BOUNTY_HUNTER | JEDI, GRAPPLE | CAN_DOUBLE_JUMP},
+             {GRAPPLE | CAN_DOUBLE_JUMP},
+             "GRAPPLE is implied by BOUNTY_HUNTER, and CAN_DOUBLE_JUMP is implied by JEDI"),
+
+            ({BOUNTY_HUNTER | JEDI, GRAPPLE | CAN_DOUBLE_JUMP | CAN_MELEE},
+             {GRAPPLE | CAN_DOUBLE_JUMP | CAN_MELEE},
+             "GRAPPLE is implied by BOUNTY_HUNTER, CAN_DOUBLE_JUMP is implied by JEDI, and CAN_MELEE is implied by"
+             " both"),
+
+            ({BOUNTY_HUNTER | JEDI | HIGH_JUMP, CAN_HIGH_JUMP_SLAM},
+             {BOUNTY_HUNTER | JEDI | HIGH_JUMP, CAN_HIGH_JUMP_SLAM},
+             "No optimisation possible"),
+        ]
+        for or_has_all, expected, name in cases:
+            with self.subTest(name, or_has_all=or_has_all):
+                optimized = CharacterAbility.optimize_or_has_all_abilities(or_has_all)
+                self.assertEqual(optimized, expected)
+
+    def test_convert_or_has_all_to_and_has_any(self):
+        cases: list[tuple[list[CharacterAbility], set[CharacterAbility], str]] = [
+            ([BOUNTY_HUNTER | JEDI | HIGH_JUMP],
+             {JEDI, BOUNTY_HUNTER, HIGH_JUMP},
+             "1"),
+            ([BOUNTY_HUNTER, JEDI, HIGH_JUMP],
+             {BOUNTY_HUNTER | CAN_DOUBLE_JUMP},
+             "2"),
+            ([BOUNTY_HUNTER | JEDI | HIGH_JUMP, CAN_HIGH_JUMP_SLAM],
+             {JEDI | CAN_HIGH_JUMP_SLAM, BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM, HIGH_JUMP},
+             "3"),
+            ([BLASTER, WEAPON_EWOK | CAN_DOUBLE_JUMP],
+             {BLASTER | CAN_DOUBLE_JUMP, BLASTER | WEAPON_EWOK},
+             "4"),
+            ([BLASTER | CAN_BUILD_BRICKS, WEAPON_EWOK | CAN_DOUBLE_JUMP],
+             {CAN_BUILD_BRICKS, BLASTER | CAN_DOUBLE_JUMP, BLASTER | WEAPON_EWOK},
+             "5"),
+        ]
+        for or_has_all, expected, name in cases:
+            with self.subTest(name, or_has_all=or_has_all):
+                and_has_any = CharacterAbility.convert_or_has_all_to_and_has_any(*or_has_all)
+                self.assertEqual(and_has_any, expected)
+
+    def test_convert_and_has_any_to_or_has_all(self):
+        cases: list[tuple[list[CharacterAbility], set[CharacterAbility], str]] = [
+            ([BOUNTY_HUNTER | JEDI | HIGH_JUMP],
+             {BOUNTY_HUNTER, CAN_DOUBLE_JUMP},
+             "1"),
+            ([BOUNTY_HUNTER, JEDI, HIGH_JUMP],
+             {BOUNTY_HUNTER | HIGH_JUMP | JEDI},
+             "2"),
+            ([BOUNTY_HUNTER | JEDI | HIGH_JUMP, CAN_HIGH_JUMP_SLAM],
+             {CAN_HIGH_JUMP_SLAM},
+             "3"),
+            ([BLASTER, WEAPON_EWOK | CAN_DOUBLE_JUMP],
+             {BLASTER | WEAPON_EWOK, BLASTER | CAN_DOUBLE_JUMP},
+             "4"),
+            ([BLASTER | CAN_BUILD_BRICKS, WEAPON_EWOK | CAN_DOUBLE_JUMP],
+             {WEAPON_EWOK, CAN_BUILD_BRICKS | CAN_DOUBLE_JUMP, BLASTER | CAN_DOUBLE_JUMP},
+             "5"),
+        ]
+        for and_has_any, expected, name in cases:
+            with self.subTest(name, or_has_all=and_has_any):
+                and_has_any = CharacterAbility.convert_and_has_any_to_or_has_all(*and_has_any)
+                self.assertEqual(and_has_any, expected)

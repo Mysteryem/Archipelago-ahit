@@ -209,6 +209,158 @@ class CharacterAbility(IntFlag):
             return COMBINATION_ABILITY_REDUCTIONS[simplified]
         return simplified
 
+    def expand_to_implied(self) -> "CharacterAbility":
+        """Fully expand this ability to include all implied bits."""
+        expanded = self
+        for ability in self:
+            expanded |= IMPLIED_ABILITIES[ability]
+        return expanded
+
+    def expand_to_implied_by(self) -> "CharacterAbility":
+        """Fully expand this ability to include all bits that imply its contained bits."""
+        expanded = self
+        for ability in self:
+            expanded |= IMPLIED_BY_ABILITIES[ability]
+        return expanded
+
+    @staticmethod
+    def optimize_and_has_any_abilities(and_any_abilities: "set[CharacterAbility]") -> "set[CharacterAbility]":
+        """
+        Optimize the abilities within an `And(*HasAnyAbilities(abilities) for abilities in and_any_abilities)` by
+        removing redundant HasAllAbilities.
+
+        :param and_any_abilities:
+        :return:
+        """
+        # Expand abilities to include all abilities that imply the given abilities, to allow discarding unneeded
+        # abilities.
+        # For example, And(HasAnyAbilities(BOUNTY_HUNTER | ASTROMECH_PANEL), HasAnyAbilities(GRAPPLE | ASTROMECH_PANEL))
+        # can be reduced to just HasAnyAbilities(BOUNTY_HUNTER | ASTROMECH_PANEL) because GRAPPLE is implied by
+        # BOUNTY_HUNTER.
+        expanded_and_any_abilities = {c.expand_to_implied_by() for c in and_any_abilities}
+
+        # Discard all any_abilities that contain other any_abilities.
+        by_smallest_bit_count = sorted(expanded_and_any_abilities, key=CharacterAbility.bit_count)
+        contained_any_abilities_removed: list[CharacterAbility] = []
+        while by_smallest_bit_count:
+            # Pop from the end to get largest bits first.
+            largest_any_abilities = by_smallest_bit_count.pop()
+            # If `largest_any_abilities` contains another any_abilities, then `largest_any_abilities` is pointless
+            # because that other any_abilities also needs to be satisfied for the rule to return True, and when that
+            # other any_abilities is satisfied, `largest_any_abilities` is always also satisfied.
+            # Only abilities with smaller bit counts can be contained within `largest_any_abilities`, so checking can
+            # stop once an any_abilities with the same bit count is found.
+            current_bit_count = largest_any_abilities.bit_count()
+            for other_any_abilities in by_smallest_bit_count:
+                if other_any_abilities.bit_count() == current_bit_count:
+                    # The other any_abilities are sorted by bit count, so if the iteration has reached the same bit
+                    # count as `largest_any_abilities`, then the iteration can stop because the
+                    # `expanded_and_any_abilities` is a set, so any any_abilities with the same bits cannot be the same
+                    # any_abilities.
+                    contained_any_abilities_removed.append(largest_any_abilities)
+                    break
+                if other_any_abilities in largest_any_abilities:
+                    # `largest_any_abilities` contains `other_any_abilities`, so satisfying `other_any_abilities` will
+                    # always also satisfy `largest_any_abilities`, so `largest_any_abilities` can be discarded.
+                    break
+            else:
+                # No break, so `largest_any_abilities` did not contain any other any_abilities.
+                contained_any_abilities_removed.append(largest_any_abilities)
+        # Return after optimizing for HasAnyAbilities
+        return set(map(CharacterAbility.simplify_or, contained_any_abilities_removed))
+
+    @staticmethod
+    def convert_or_has_all_to_and_has_any(*or_all_abilities: "CharacterAbility") -> "set[CharacterAbility]":
+        """
+        Convert `Or(*HasAllAbilities(abilities) for abilities in or_all_abilities)` into
+        `And(*HasAnyAbilities(?) for ? in ?)`.
+
+        This is effectively converting DNF -> CNF, but with CharacterAbility-specific optimizations.
+        :param or_all_abilities:
+        :return:
+        """
+        # reverse=False to reduce the number of times abilities are combined.
+        or_all_abilities = sorted(set(or_all_abilities), key=CharacterAbility.bit_count)
+        and_any_abilities: set[CharacterAbility] = {CharacterAbility.NONE}
+        for all_abilities in or_all_abilities:
+            updated_and_any_abilities = set()
+            for ability in all_abilities.simplify_and():
+                for existing_ability in and_any_abilities:
+                    updated_and_any_abilities.add((ability | existing_ability).simplify_or())
+            and_any_abilities = updated_and_any_abilities
+        # Return after optimizing for HasAnyAbilities
+        return CharacterAbility.optimize_and_has_any_abilities(and_any_abilities)
+
+    @staticmethod
+    def optimize_or_has_all_abilities(or_all_abilities: "set[CharacterAbility]") -> "set[CharacterAbility]":
+        """
+        Optimize the abilities within an `Or(*HasAllAbilities(abilities) for abilities in or_all_abilities)` by removing
+        redundant HasAllAbilities.
+
+        :param or_all_abilities:
+        :return:
+        """
+        # Expand abilities to include all implied abilities, to allow discarding unneeded abilities.
+        # For example, Or(HasAllAbilities(BOUNTY_HUNTER | ASTROMECH_PANEL), HasAllAbilities(GRAPPLE | ASTROMECH_PANEL))
+        # can be reduced to just HasAllAbilities(GRAPPLE | ASTROMECH_PANEL) because BOUNTY_HUNTER implies GRAPPLE.
+        expanded_or_all_abilities = {c.expand_to_implied() for c in or_all_abilities}
+
+        # Discard all all_abilities that contain other all_abilities.
+        by_smallest_bit_count = sorted(expanded_or_all_abilities, key=CharacterAbility.bit_count)
+        contained_all_abilities_removed: list[CharacterAbility] = []
+        while by_smallest_bit_count:
+            # Pop from the end to get largest bits first.
+            largest_all_abilities = by_smallest_bit_count.pop()
+            # If another all_abilities is contained within this ability, then this `largest_all_abilities` is pointless.
+            # Only abilities with smaller bit counts can be contained within `largest_all_abilities`, so checking can
+            # stop once an all_abilities with the same bit count is found.
+            current_bit_count = largest_all_abilities.bit_count()
+            for other_all_abilities in by_smallest_bit_count:
+                if other_all_abilities.bit_count() == current_bit_count:
+                    # The other all_abilities are sorted by bit count, so if the iteration has reached the same bit
+                    # count as `largest_all_abilities`, then the iteration can stop because the
+                    # `expanded_or_all_abilities` is a set, so any all_abilities with the same bits cannot be the same
+                    # all_abilities.
+                    contained_all_abilities_removed.append(largest_all_abilities)
+                    break
+                if other_all_abilities in largest_all_abilities:
+                    # `other_all_abilities` is contained within `largest_all_abilities`, so `other_all_abilities` will
+                    # always be satisfied before `largest_all_abilities`, so `largest_all_abilities` can be discarded.
+                    break
+            else:
+                # No break, so no other all_abilities were contained within `largest_all_abilities`.
+                contained_all_abilities_removed.append(largest_all_abilities)
+        # Return after optimizing for HasAllAbilities
+        return set(map(CharacterAbility.simplify_and, contained_all_abilities_removed))
+
+    @staticmethod
+    def convert_and_has_any_to_or_has_all(*and_any_abilities: "CharacterAbility") -> "set[CharacterAbility]":
+        """
+        Convert `And(*(HasAnyAbilities(abilities) for abilities in and_any_required))` into
+        `Or(*HasAllAbilities(?) for ? in ?)`.
+
+        This is useful for figuring out the abilities required to go from region A to region B by following entrances,
+        or could be used to optimize an And() rule.
+
+        This is effectively converting CNF -> DNF, but with CharacterAbility-specific optimizations
+        :param and_any_abilities:
+        :return:
+        """
+        # Sort so that individual bits, that are therefore always required, are combined first.
+        and_any_abilities = sorted(set(and_any_abilities), key=CharacterAbility.bit_count)
+        # Or(*HasAllAbilities(?) for ? in ?)
+        or_all_abilities: set[CharacterAbility] = {CharacterAbility.NONE}
+        for any_abilities in and_any_abilities:
+            updated_or_all_abilities: set[CharacterAbility] = set()
+            # Simplify first to potentially reduce the number of bits iterated.
+            for ability in any_abilities.simplify_or():
+                for all_abilities in or_all_abilities:
+                    # Simplify to remove abilities implied by another ability within the same all_abilities.
+                    # Because `updated_or_all_abilities` is a set, this can sometimes deduplicate elements.
+                    updated_or_all_abilities.add((all_abilities | ability).simplify_and())
+            or_all_abilities = updated_or_all_abilities
+        return CharacterAbility.optimize_or_has_all_abilities(or_all_abilities)
+
 
 # Workaround for Python 3.10 support. Iterating Flag instances was only added in Python 3.11.
 # There is probably a better way to do this, but it will get the job done.
