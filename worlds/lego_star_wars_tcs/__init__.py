@@ -561,7 +561,7 @@ class LegoStarWarsTCSWorld(World):
             # Convert character names to IDs. This reduces slot_data storage/memory usage size, and is easier to
             # interpret from the PopTracker pack.
             optional_options["chapter_random_character_requirements"] = {
-                chapter: [self.item_name_to_id[c] for c in characters]
+                chapter: [c.code for c in characters]
                 for chapter, characters in self.chapter_random_character_requirements.items()
             }
             optional_options["chapter_required_character_counts"] = self.chapter_required_character_counts
