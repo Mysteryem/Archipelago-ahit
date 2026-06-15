@@ -27,6 +27,12 @@ R_MAUL_BOSS_ROOM = "Maul Boss Room"
 DARTH_MAUL = Chapter(
     area=Area.MAUL,
     start_region=R_SPAWN,
+    intended_completion_path=(
+        R_HANGAR,
+        R_TOWER_ROOM,
+        R_ENERGY_COLUMNS_ROOM,
+        R_MAUL_BOSS_ROOM,
+    ),
     regions={
         R_SPAWN: (
             ExitData(
