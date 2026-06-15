@@ -609,8 +609,6 @@ def _create_starting_characters_for_character_locked_chapters(
             picked.extend(skipped[:extra_needed])
             skipped = skipped[extra_needed:]
 
-        # TODO?: Try the alt ability requirements too?
-
     # TODO: Do the picked characters need to be set somewhere? Check where else world.starting_chapter is used.
     for character_data in picked:
         world.push_precollected(world.create_item(character_data.name))
