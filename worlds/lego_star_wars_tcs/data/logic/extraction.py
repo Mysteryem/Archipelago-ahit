@@ -17,6 +17,7 @@ from rule_builder.rules import (
     HasFromList,
     HasAllCounts,
     HasGroupUnique,
+    CanReachRegion,
 )
 
 from .rules import InLevelRule, HasAbility, HasAnyAbilities, HasAllAbilities
@@ -338,3 +339,188 @@ class ItemRequirementsExtractor:
 
 
         return self._memoize(rule, Counter())
+
+
+@dataclass
+class DNFAbilityRequirementsExtractor:
+    """Extract requirements in `Or(*HasAllAbilities(?) for ? in ?)` form."""
+    cnf_extractor: "CNFAbilityRequirementsExtractor"
+    abilities_memodict: dict[Rule.Resolved, set[CharacterAbility] | None]
+    ignore_can_reach_region: bool
+
+    def __init__(self, ignore_can_reach_region: bool, cnf_extractor: "CNFAbilityRequirementsExtractor | None" = None):
+        self.ignore_can_reach_region = ignore_can_reach_region
+        self.abilities_memodict = {}
+        if cnf_extractor is None:
+            self.cnf_extractor = CNFAbilityRequirementsExtractor(ignore_can_reach_region, self)
+        else:
+            self.cnf_extractor = cnf_extractor
+
+    def _memoize(self,
+                 rule: Rule.Resolved,
+                 and_has_any_abilities: set[CharacterAbility] | None
+                 ) -> set[CharacterAbility] | None:
+        # Resolved rules are singletons, so an individual resolved rule only needs to be processed at most once.
+        self.abilities_memodict[rule] = and_has_any_abilities
+        return and_has_any_abilities
+
+    def extract_ability_requirements(self, rule: Rule.Resolved) -> set[CharacterAbility] | None:
+        existing = self.abilities_memodict.get(rule)
+        if existing is not None:
+            return existing
+
+        if isinstance(rule, Or.Resolved):
+            # Explicit type hint to work around bugs in PyCharm's type checker.
+            rule: Or.Resolved
+
+            or_has_all_requirements: set[CharacterAbility] = set()
+            found = False
+            for child in rule.children:
+                requirements = self.extract_ability_requirements(child)
+                if requirements is not None:
+                    found = True
+                    or_has_all_requirements.update(requirements)
+            if not or_has_all_requirements and not found:
+                return self._memoize(rule, None)
+
+            return self._memoize(rule, CharacterAbility.optimize_or_has_all_abilities(or_has_all_requirements))
+
+        if isinstance(rule, And.Resolved):
+            rule: And.Resolved
+
+            and_has_any_requirements: set[CharacterAbility] = set()
+            for child in rule.children:
+                cnf_requirements = self.cnf_extractor.extract_ability_requirements(child)
+                if cnf_requirements is None:
+                    # This And rule cannot be satisfied with abilities alone.
+                    return self._memoize(rule, None)
+                and_has_any_requirements.update(and_has_any_requirements)
+            return self._memoize(rule, CharacterAbility.convert_and_has_any_to_or_has_all(*and_has_any_requirements))
+
+        if isinstance(rule, HasAbility.Resolved):
+            rule: HasAbility.Resolved
+
+            return self._memoize(rule, {CharacterAbility(rule.ability_as_int)})
+
+        if isinstance(rule, HasAnyAbilities.Resolved):
+            rule: HasAnyAbilities.Resolved
+
+            abilities = CharacterAbility(rule.abilities_as_int)
+            as_or_has_all_abilities = CharacterAbility.convert_and_has_any_to_or_has_all(abilities)
+
+            return self._memoize(rule, as_or_has_all_abilities)
+
+        if isinstance(rule, HasAllAbilities.Resolved):
+            rule: HasAllAbilities.Resolved
+
+            # All abilities are required.
+            # HasAbilities(abilities) is the same as Or(HasAbilities(abilities)).
+            return self._memoize(rule, {CharacterAbility(rule.abilities_as_int)})
+
+        if isinstance(rule, True_.Resolved):
+            return self._memoize(rule, set())
+
+        if isinstance(rule, WrapperRule.Resolved):
+            rule: WrapperRule.Resolved
+
+            return self._memoize(rule, self.extract_ability_requirements(rule.child))
+
+        if self.ignore_can_reach_region and isinstance(rule, CanReachRegion.Resolved):
+            return self._memoize(rule, set())
+
+        # This rule does not have ability requirements, e.g. it is a Has("Exploding Blaster Bolts"), or a
+        # CanReachRegion("region name") or similar.
+        return self._memoize(rule, None)
+
+
+
+class CNFAbilityRequirementsExtractor:
+    """Extract requirements in `And(*HasAnyAbilities(?) for ? in ?)` form."""
+    dnf_extractor: DNFAbilityRequirementsExtractor
+    abilities_memodict: dict[Rule.Resolved, set[CharacterAbility] | None]
+    ignore_can_reach_region: bool
+
+    def __init__(self, ignore_can_reach_region: bool, dnf_extractor: DNFAbilityRequirementsExtractor | None = None):
+        self.ignore_can_reach_region = ignore_can_reach_region
+        self.abilities_memodict = {}
+        if dnf_extractor is None:
+            self.dnf_extractor = DNFAbilityRequirementsExtractor(ignore_can_reach_region, self)
+        else:
+            self.dnf_extractor = dnf_extractor
+
+
+    def _memoize(self,
+                 rule: Rule.Resolved,
+                 and_has_any_abilities: set[CharacterAbility] | None
+                 ) -> set[CharacterAbility] | None:
+        # Resolved rules are singletons, so an individual resolved rule only needs to be processed at most once.
+        self.abilities_memodict[rule] = and_has_any_abilities
+        return and_has_any_abilities
+
+    def extract_ability_requirements(self, rule: Rule.Resolved) -> set[CharacterAbility] | None:
+        existing = self.abilities_memodict.get(rule)
+        if existing is not None:
+            return existing
+
+        if isinstance(rule, Or.Resolved):
+            # Explicit type hint to work around bugs in PyCharm's type checker.
+            rule: Or.Resolved
+
+            or_has_any_requirements: set[CharacterAbility] = set()
+            found = False
+            for child in rule.children:
+                cnf_requirements = self.dnf_extractor.extract_ability_requirements(child)
+                if cnf_requirements is not None:
+                    or_has_any_requirements.update(cnf_requirements)
+                    # The requirements may be empty signifying that the rule is true without abilities. This needs to be
+                    # tracked because an empty Or() returns false, like `any([])`
+                    found = True
+            if not or_has_any_requirements and not found:
+                return self._memoize(rule, None)
+            return self._memoize(rule, CharacterAbility.convert_or_has_all_to_and_has_any(*or_has_any_requirements))
+
+        if isinstance(rule, And.Resolved):
+            rule: And.Resolved
+
+            and_has_any_requirements: set[CharacterAbility] = set()
+            for child in rule.children:
+                requirements = self.extract_ability_requirements(child)
+                if requirements is None:
+                    # This And rule cannot be satisfied with abilities alone.
+                    return self._memoize(rule, None)
+                and_has_any_requirements.update(requirements)
+            return self._memoize(rule, CharacterAbility.optimize_and_has_any_abilities(and_has_any_requirements))
+
+        if isinstance(rule, HasAbility.Resolved):
+            rule: HasAbility.Resolved
+
+            return self._memoize(rule, {CharacterAbility(rule.ability_as_int)})
+
+        if isinstance(rule, HasAnyAbilities.Resolved):
+            rule: HasAnyAbilities.Resolved
+
+            # HasAnyAbilities(abilities) is the same as And(HasAnyAbilities(abilities)).
+            return self._memoize(rule, {CharacterAbility(rule.abilities_as_int)})
+
+        if isinstance(rule, HasAllAbilities.Resolved):
+            rule: HasAllAbilities.Resolved
+
+            abilities = CharacterAbility(rule.abilities_as_int)
+            as_and_has_any_abilities = CharacterAbility.convert_or_has_all_to_and_has_any(abilities)
+
+            return self._memoize(rule, as_and_has_any_abilities)
+
+        if isinstance(rule, True_.Resolved):
+            return self._memoize(rule, set())
+
+        if isinstance(rule, WrapperRule.Resolved):
+            rule: WrapperRule.Resolved
+
+            return self._memoize(rule, self.extract_ability_requirements(rule.child))
+
+        if self.ignore_can_reach_region and isinstance(rule, CanReachRegion.Resolved):
+            return self._memoize(rule, set())
+
+        # This rule does not have ability requirements, e.g. it is a Has("Exploding Blaster Bolts"), or a
+        # CanReachRegion("region name") or similar.
+        return self._memoize(rule, None)

@@ -15,10 +15,17 @@ del _MANIFEST
 # Logic version, used for Universal Tracker compatibility across patch versions.
 UT_LOGIC_VERSION = 1
 
-# todo: VEHICLE_TOW can probably be included in the future too.
-# todo: GHOST can probably be included in the future too.
-# todo: PROTOCOL_DROID_PANEL can probably be included in the future too.
-RARE_AND_USEFUL_ABILITIES = ASTROMECH_PANEL | BOUNTY_HUNTER | HIGH_JUMP | SHORTIE | SITH | PROTOCOL_PANEL | HOVER
+RARE_AND_USEFUL_ABILITIES = (
+    ASTROMECH_PANEL
+    | BOUNTY_HUNTER
+    | HIGH_JUMP
+    | SHORTIE
+    | SITH
+    | PROTOCOL_PANEL
+    | HOVER
+    | VEHICLE_TIE
+    | VEHICLE_TOW
+)
 
 CHAPTER_SPECIFIC_FLAGS = (
         CAN_WEAR_HAT_AND_GRAPPLE

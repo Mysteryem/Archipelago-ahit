@@ -5,7 +5,7 @@ from operator import or_
 from typing import TYPE_CHECKING, Iterable
 
 from rule_builder.rules import Rule
-from BaseClasses import LocationProgressType, ItemClassification, Entrance, Location
+from BaseClasses import LocationProgressType, ItemClassification, Entrance, Location, Region
 
 from .constants import (
     progression_deprioritized_skip_balancing,
@@ -13,7 +13,14 @@ from .constants import (
     CHAPTER_SPECIFIC_FLAGS,
     RARE_AND_USEFUL_ABILITIES,
 )
-from .data.logic.extraction import AbilityRequirements as AbilityRequirementsExtractor
+from .data.items.all_character_items import NORMAL_CHARACTER_TO_ITEM_DATA
+from .data.logic import CHAPTERS_BY_NUMBERS
+from .data.logic.extraction import (
+    AbilityRequirements as AbilityRequirementsExtractor,
+    CNFAbilityRequirementsExtractor,
+    DEFAULT_ABILITY_COSTS,
+)
+from .data.logic.types import Chapter
 from .items import (
     CHARACTERS_AND_VEHICLES_BY_NAME,
     GenericCharacterData,
@@ -468,33 +475,131 @@ def _create_possible_pool(world: LegoStarWarsTCSWorld) -> dict[str, GenericChara
     return possible_pool_character_items
 
 
+def _get_chapter_completion_ability_requirements(
+        world: LegoStarWarsTCSWorld,
+        chapter: Chapter
+) -> set[CharacterAbility]:
+    area = chapter.area
+
+    start_region = world.get_region(area.prefix_name(chapter.start_region))
+    completion_region = world.get_region(area.prefix_name("Chapter Completion"))
+
+    path: list[Entrance] = []
+    if chapter.intended_completion_path:
+        # Trust that the path visits every logically required region.
+        ignore_can_reach_region = True
+        current_region = start_region
+        already_visited: dict[str, Region] = {area.prefix_name(chapter.start_region): start_region}
+        for internal_region_name in chapter.intended_completion_path:
+            region_name = area.prefix_name(internal_region_name)
+            if region_name in already_visited:
+                # Jump back to an already visited region.
+                current_region = already_visited[region_name]
+                continue
+            exit_: Entrance
+            for exit_ in current_region.exits:
+                connected_region = exit_.connected_region
+                if connected_region is None:
+                    raise Exception(f"Entrance {exit_} has no connected region.")
+                if connected_region.name == region_name:
+                    current_region = connected_region
+                    already_visited[connected_region.name] = connected_region
+                    path.append(exit_)
+                    break
+            else:
+                raise Exception(f"Could not find the entrance connecting {current_region.name} to {region_name}")
+    else:
+        ignore_can_reach_region = False
+        reverse_path: list[Entrance] = []
+        current_region = completion_region
+        while current_region:
+            entrances = current_region.entrances
+            if len(entrances) != 1:
+                raise ValueError(f"Expected 1 entrance connecting to {current_region}, but got {list(entrances)}")
+            current_region = entrances[0].parent_region
+            if current_region is None:
+                raise Exception(f"Entrance {entrances[0]} has no parent region.")
+            reverse_path.append(entrances[0])
+            if current_region == start_region:
+                break
+        path = list(reversed(reverse_path))
+
+    extractor = CNFAbilityRequirementsExtractor(ignore_can_reach_region)
+    extra_chapter_entrance_rule = chapter.extra_chapter_entrance_rules.resolve(world)
+    extra_entrance_requirements = extractor.extract_ability_requirements(extra_chapter_entrance_rule)
+    if extra_entrance_requirements is None:
+        raise Exception(f"No valid extra_chapter_entrance_rules ability requirements for {chapter.name}")
+    and_has_any_abilities: set[CharacterAbility] = extra_entrance_requirements
+
+    for entrance in path:
+        rule = entrance.access_rule
+        if not isinstance(rule, Rule.Resolved):
+            raise Exception(f"Entrance {entrance} does not have a Rule Builder rule set.")
+        entrance_and_has_any_abilities = extractor.extract_ability_requirements(rule)
+        if entrance_and_has_any_abilities is None:
+            raise Exception(f"Entrance {entrance} does not have any ability-only requirements that satisfy it.")
+        and_has_any_abilities.update(entrance_and_has_any_abilities)
+
+    # Get all the abilities provided by starting characters, so that these abilities can be removed from requirements.
+    starting_abilities = world.get_starting_inventory_abilities()
+    expanded_starting_abilities = starting_abilities.expand_to_implied()
+
+    # If any bits are already provided by starting characters, then the HasAnyAbilities would return True from the
+    # start, so only has_any_abilities with no intersection are needed.
+    and_has_any_abilities_starting_removed = {c for c in and_has_any_abilities if c & expanded_starting_abilities == 0}
+
+    optimized_and_has_any_abilities = CharacterAbility.optimize_and_has_any_abilities(
+        and_has_any_abilities_starting_removed
+    )
+    return CharacterAbility.convert_and_has_any_to_or_has_all(*optimized_and_has_any_abilities)
+
+
 def _create_starting_characters_for_character_locked_chapters(
         world: LegoStarWarsTCSWorld,
         possible_pool_character_items: dict[str, GenericCharacterData],
         starting_chapter_characters: list[GenericCharacterData],
         starting_chapter_required_count: int,
-) -> None:
-    starting_chapter = world.starting_chapter
+        starting_chapter_ability_requirements: set[CharacterAbility],
+) -> set[CharacterAbility]:
     assert starting_chapter_required_count <= len(starting_chapter_characters)
     skipped: list[GenericCharacterData]
     picked: list[GenericCharacterData]
+    missing_requirements = starting_chapter_ability_requirements
     if starting_chapter_required_count == len(starting_chapter_characters):
         # All characters are needed.
         picked = starting_chapter_characters
         skipped = []
+        # Update missing ability requirements.
+        picked_character_abilities = reduce(or_, (character_data.abilities for character_data in picked))
+        mask = ~picked_character_abilities
+        missing_requirements = {c & mask for c in missing_requirements}
+        missing_requirements.discard(CharacterAbility.NONE)
+        missing_requirements = CharacterAbility.optimize_or_has_all_abilities(missing_requirements)
     else:
         # First reduce the characters to those that provide unique, relevant abilities.
         world.random.shuffle(starting_chapter_characters)
         seen_abilities = CharacterAbility.NONE
+
+        def sort_func(c: CharacterAbility) -> int:
+            return sum(map(DEFAULT_ABILITY_COSTS.__getitem__, c))
+
+        main_ability_requirements = min(missing_requirements, key=sort_func)
+
         picked = []
         skipped = []
-        # Ignore any alternate, or irrelevant, ability requirements by only considering the main requirements.
-        main_ability_requirements = starting_chapter.completion_main_ability_requirements
         for character_data in starting_chapter_characters:
             relevant_character_abilities = character_data.abilities & main_ability_requirements
             if relevant_character_abilities not in seen_abilities:
                 seen_abilities |= relevant_character_abilities
                 picked.append(character_data)
+                # Update the abilities requirements to remove abilities provided by this character.
+                abilities_mask = ~character_data.abilities
+                missing_requirements = {c & abilities_mask for c in missing_requirements}
+                # Re-optimize to account for abilities that have been removed from individual has_all_abilities.
+                missing_requirements = CharacterAbility.optimize_or_has_all_abilities(missing_requirements)
+                main_ability_requirements = min(missing_requirements, key=sort_func)
+                if main_ability_requirements is CharacterAbility.NONE:
+                    missing_requirements = set()
             else:
                 skipped.append(character_data)
         if starting_chapter_required_count > len(picked):
@@ -519,11 +624,14 @@ def _create_starting_characters_for_character_locked_chapters(
         #       f" instead")
         assert world.character_chapter_access_counts[character_data.name] >= 0
 
+    return missing_requirements
+
 
 def create_starting_characters_for_random_character_locked_chapters(
         world: LegoStarWarsTCSWorld,
         possible_pool_character_items: dict[str, GenericCharacterData],
-) -> None:
+        starting_chapter_ability_requirements: set[CharacterAbility],
+) -> set[CharacterAbility]:
     """
     Create and precollect the characters the player should start with when chapters are locked by needing Random
     Characters.
@@ -531,20 +639,23 @@ def create_starting_characters_for_random_character_locked_chapters(
     This tries to pick as few characters as possible, but enough such that the starting chapter can be completed.
     :param world:
     :param possible_pool_character_items:
-    :return:
+    :param starting_chapter_ability_requirements:
+    :return: Still missing starting chapter ability requirements as
+    `Or(*(HasAllAbilities(abilities) for abilities in return_value))`
     """
     starting_chapter = world.starting_chapter
     required_count = world.chapter_required_character_counts[starting_chapter.short_name]
     legacy_characters = world.chapter_random_character_requirements[starting_chapter.short_name].copy()
 
-    _create_starting_characters_for_character_locked_chapters(
-        world, possible_pool_character_items, legacy_characters, required_count)
+    return _create_starting_characters_for_character_locked_chapters(
+        world, possible_pool_character_items, legacy_characters, required_count, starting_chapter_ability_requirements)
 
 
 def create_starting_characters_for_vanilla_character_locked_chapters(
         world: LegoStarWarsTCSWorld,
         possible_pool_character_items: dict[str, GenericCharacterData],
-) -> None:
+        starting_chapter_ability_requirements: set[CharacterAbility],
+) -> set[CharacterAbility]:
     """
     Create and precollect the characters the player should start with when chapters are locked by needing Vanilla
     Characters.
@@ -552,24 +663,28 @@ def create_starting_characters_for_vanilla_character_locked_chapters(
     This tries to pick as few characters as possible, but enough such that the starting chapter can be completed.
     :param world:
     :param possible_pool_character_items:
-    :return:
+    :param starting_chapter_ability_requirements: Ability requirements in
+    `Or(*HasAllAbilities(abilities) for abilities in starting_chapter_ability_requirements)` format.
+    :return: Still missing starting chapter ability requirements as
+    `Or(*(HasAllAbilities(abilities) for abilities in return_value))`.
     """
     not_required = world.options.chapter_unlock_story_characters_not_required.value
 
-    starting_chapter = world.starting_chapter
+    legacy_starting_chapter = world.starting_chapter
+    starting_chapter = CHAPTERS_BY_NUMBERS[legacy_starting_chapter.episode][legacy_starting_chapter.number_in_episode]
     required_count = world.chapter_required_character_counts[starting_chapter.short_name]
 
     # Add characters necessary to unlock, *and complete* the starting chapter into starting inventory.
     if starting_chapter.short_name in world.chapters_requiring_alt_characters:
-        characters_set = starting_chapter.alt_character_requirements
+        characters_set = starting_chapter.purchase_characters
     else:
-        characters_set = starting_chapter.character_requirements
+        characters_set = starting_chapter.story_characters
     # The story character names are a `set`, so sort before iterating to get a deterministic iteration order.
     # Also filter out characters that have been excluded from requirements.
-    characters = sorted(char for char in characters_set if char not in not_required)
+    characters = sorted(NORMAL_CHARACTER_TO_ITEM_DATA[char] for char in characters_set if char not in not_required)
 
-    _create_starting_characters_for_character_locked_chapters(
-        world, possible_pool_character_items, characters, required_count)
+    return _create_starting_characters_for_character_locked_chapters(
+        world, possible_pool_character_items, characters, required_count, starting_chapter_ability_requirements)
 
 
 def pick_characters_to_fulfil_abilities(
@@ -637,13 +752,20 @@ def pick_characters_to_fulfil_abilities(
 def create_starting_characters_for_needed_starting_chapter_abilities(
         world: LegoStarWarsTCSWorld,
         possible_pool_character_items: dict[str, GenericCharacterData],
+        missing_starting_chapter_ability_requirements: set[CharacterAbility],
 ) -> None:
     """
 
     :param world:
     :param possible_pool_character_items:
+    :param missing_starting_chapter_ability_requirements: Missing abilities in
+    `Or(*HasAllAbilities(abilities) for abilities in missing_starting_chapter_ability_requirements)` format.
     :return:
     """
+    if not missing_starting_chapter_ability_requirements:
+        # No abilities are missing so there is nothing to do.
+        return
+
     # Get the abilities the player is currently starting with.
     starting_abilities = world.get_starting_inventory_abilities()
 
@@ -651,33 +773,59 @@ def create_starting_characters_for_needed_starting_chapter_abilities(
     # alt requirements have already been fulfilled and fewer characters get picked to fulfil the alt requirements.
     starting_chapter_entrance_abilities = world.starting_chapter.completion_main_ability_requirements
 
-    picked_characters = pick_characters_to_fulfil_abilities(
-        world,
-        starting_chapter_entrance_abilities,
-        possible_pool_character_items.copy(),
-        starting_abilities,
-    )
+    # Remove all has_all_abilities containing rare/useful abilities
+    non_rare_has_all_abilities = {
+        has_all_abilities for has_all_abilities in missing_starting_chapter_ability_requirements
+        if has_all_abilities & RARE_AND_USEFUL_ABILITIES == 0
+    }
+    if non_rare_has_all_abilities:
+        or_has_all_abilities = non_rare_has_all_abilities
+    else:
+        or_has_all_abilities = missing_starting_chapter_ability_requirements
 
-    # Also try the alt abilities, if they exist, and they don't contain any rare or useful abilities that are not
-    # required by the main abilities.
-    alt_abilities = world.starting_chapter.completion_alt_ability_requirements
-    if alt_abilities:
-        alt_abilities &= ~starting_abilities
-        unique_alt_abilities = alt_abilities & ~starting_chapter_entrance_abilities
-        if not any(ability in RARE_AND_USEFUL_ABILITIES for ability in unique_alt_abilities):
-            alt_picked_characters = pick_characters_to_fulfil_abilities(
-                world,
-                alt_abilities,
-                possible_pool_character_items.copy(),
-                starting_abilities,
-            )
-            # Use the alt characters if fewer were picked.
-            if len(alt_picked_characters) < len(picked_characters):
-                picked_characters = alt_picked_characters
+    all_abilities_and_costs = {
+        has_all_abilities: sum(map(DEFAULT_ABILITY_COSTS.__getitem__, has_all_abilities))
+        for has_all_abilities in or_has_all_abilities
+    }
+    min_cost = min(all_abilities_and_costs.values())
+    bounty_hunter_cost = DEFAULT_ABILITY_COSTS[CharacterAbility.BOUNTY_HUNTER]
+    # Filter out has_all_abilities much more costly than the others.
+    or_has_all_abilities = {has_all_abilities for has_all_abilities, cost in all_abilities_and_costs.items()
+                            if cost - min_cost < bounty_hunter_cost}
+
+    # Compute character picks for each has_all_abilities.
+    all_picks: dict[CharacterAbility, list[GenericCharacterData]] = {}
+    for has_all_abilities in or_has_all_abilities:
+        picked_characters = pick_characters_to_fulfil_abilities(
+            world,
+            starting_chapter_entrance_abilities,
+            possible_pool_character_items.copy(),
+            starting_abilities,
+        )
+        all_picks[has_all_abilities] = picked_characters
+
+    # Pick randomly from the abilities that produced the fewest characters.
+    min_character_count = min(map(len, all_picks.values()))
+    final_picks = sorted(
+        ((has_all_abilities, characters) for has_all_abilities, characters in all_picks.items()
+        if len(characters) == min_character_count), key=lambda t: t[0]
+    )
+    picked_characters = world.random.choice(final_picks)[1]
 
     for character in picked_characters:
         world.push_precollected(world.create_item(character.name))
         del possible_pool_character_items[character.name]
+
+    updated_starting_abilities = world.get_starting_inventory_abilities()
+    for has_all_abilities in missing_starting_chapter_ability_requirements:
+        if has_all_abilities in updated_starting_abilities:
+            break
+    else:
+        missing = {has_all_abilities & ~updated_starting_abilities
+                   for has_all_abilities in missing_starting_chapter_ability_requirements}
+        raise Exception(f"Not all required starting chapter abilities were fulfilled. Missing"
+                        f" Or(*HasAllAbilities(...) for ... in ...):\n\t{missing!r}")
+
 
 
 def determine_item_pool_abilities(
@@ -734,12 +882,22 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
 
     possible_pool_character_items = _create_possible_pool(world)
 
+    legacy_starting_chapter = world.starting_chapter
+    starting_chapter = CHAPTERS_BY_NUMBERS[legacy_starting_chapter.episode][legacy_starting_chapter.number_in_episode]
+    starting_chapter_ability_requirements = _get_chapter_completion_ability_requirements(world, starting_chapter)
+    if not starting_chapter_ability_requirements:
+        raise Exception(f"Did not get any ability-only requirements for completing {starting_chapter.name}.")
+
     pool_required_chapter_unlock_items: list[str]
     if world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
         chapters_unlock_with_characters = True
         pool_required_chapter_unlock_items = []
 
-        create_starting_characters_for_vanilla_character_locked_chapters(world, possible_pool_character_items)
+        missing_starting_ability_requirements = create_starting_characters_for_vanilla_character_locked_chapters(
+            world,
+            possible_pool_character_items,
+            starting_chapter_ability_requirements,
+        )
         # If the alt characters are created, or not all Story characters are created, there may be abilities that still
         # need to be fulfilled by additional starting characters, so
         # `create_starting_characters_for_needed_starting_chapter_abilities()` will be called even in this case.
@@ -747,7 +905,11 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
         chapters_unlock_with_characters = True
         pool_required_chapter_unlock_items = []
 
-        create_starting_characters_for_random_character_locked_chapters(world, possible_pool_character_items)
+        missing_starting_ability_requirements = create_starting_characters_for_random_character_locked_chapters(
+            world,
+            possible_pool_character_items,
+            starting_chapter_ability_requirements,
+        )
     elif world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item:
         chapters_unlock_with_characters = False
         starting_chapter_short_name = world.starting_chapter.short_name
@@ -755,10 +917,15 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
         pool_required_chapter_unlock_items = [f"{short_name} Unlock" for short_name in sorted(world.enabled_chapters)
                                               if short_name != starting_chapter_short_name]
         del starting_chapter_short_name
+        missing_starting_ability_requirements = starting_chapter_ability_requirements
     else:
         raise Exception(f"Unexpected Chapter Unlock Requirement {world.options.chapter_unlock_requirement}")
 
-    create_starting_characters_for_needed_starting_chapter_abilities(world, possible_pool_character_items)
+    create_starting_characters_for_needed_starting_chapter_abilities(
+        world,
+        possible_pool_character_items,
+        missing_starting_ability_requirements,
+    )
 
     # Create the starting Episode Unlock item if Episode Unlock items are required to access chapters within an Episode.
     if world.options.episode_unlock_requirement == "episode_item":

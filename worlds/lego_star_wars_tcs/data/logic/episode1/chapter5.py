@@ -31,6 +31,15 @@ R_HANGAR = "Hangar"
 RETAKE_THEED_PALACE = Chapter(
     area=Area.RETAKEPALACE,
     start_region=R_SPAWN,
+    intended_completion_path=(
+        R_INSIDE_PALACE,
+        R_AFTER_COLLAPSED_FLOOR_IN_PALACE,
+        R_COURTYARD,
+        R_COURTYARD_AFTER_DESTROYED_BRIDGE,
+        R_ROOFTOPS,
+        R_DINING_HALL,
+        R_HANGAR,
+    ),
     regions={
         R_SPAWN: (
             ExitData(

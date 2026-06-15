@@ -110,6 +110,7 @@ class ChapterHelper:
             # TODO: Add wip_true_jedi_rule
             ridables: dict[Character, LocationData] | None = None,
             extra_chapter_entrance_rules: Rule | None = None,
+            intended_completion_path: tuple[str, ...] = (),
     ):
         if ridables is None:
             ridables = {}
@@ -124,6 +125,7 @@ class ChapterHelper:
             ridables=ridables,
             extra_chapter_entrance_rules=extra_chapter_entrance_rules,
             regions_in_can_reach=self._regions_used_in_can_reach,
+            intended_completion_path=intended_completion_path,
         )
 
 
@@ -134,6 +136,11 @@ class Chapter:
     regions: dict[str, tuple[ExitData, ...]]
     minikits: dict[str, MinikitData]
     power_brick: LocationData
+    intended_completion_path: tuple[str, ...] = ()
+    """The intended traversal route through the chapter. This is used to determine what abilities are required to
+    complete the chapter, based on extracting abilities from the entrance rules, and any extra_chapter_entrance_rules.
+    
+    The start region and Chapter Completion region are implicit."""
 
     # TODO: Add wip_true_jedi_rule
     ridables: dict[Character, LocationData] = field(default_factory=dict)

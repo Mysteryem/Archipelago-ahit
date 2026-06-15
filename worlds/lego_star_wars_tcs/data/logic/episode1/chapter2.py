@@ -26,6 +26,17 @@ R_SWAMP_BEFORE_WATER = "Swamp Before Water"
 INVASION_OF_NABOO = Chapter(
     area=Area.GUNGAN,
     start_region=R_FOREST_SPAWN,
+    intended_completion_path=(
+        R_AFTER_FIRST_FALLEN_TREE,
+        R_AFTER_CRASHED_MTT,
+        R_CLIFF_FACE_RUINS_ENTRANCE,
+        R_CLIFF_FACE_RUINS_COLLAPSING_DEBRIS_SECTION,
+        R_CLIFF_FACE_RUINS_PAST_COLLAPSING_DEBRIS,
+        R_CLIFF_FACE_RUINS_END_PLATFORM,
+        R_SWAMP_RUINS_ENTRANCE,
+        R_SWAMP_RUINS,
+        R_SWAMP_BEFORE_WATER,
+    ),
     regions={
         R_FOREST_SPAWN: (
             # Expert logic could get past the tree without a jedi.
