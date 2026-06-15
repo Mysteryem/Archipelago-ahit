@@ -93,18 +93,27 @@ class Area(IntEnum):
 
     def get_story_characters(self) -> "frozenset[Character]":
         # Lazy import to prevent circular import.
-        from . import characters
-        return characters.AREA_TO_STORY_CHARACTERS.get(self, frozenset())
+        global _AREA_TO_STORY_CHARACTERS
+        if not _AREA_TO_STORY_CHARACTERS:
+            from .characters import AREA_TO_STORY_CHARACTERS as _AREA_TO_STORY_CHARACTERS
+            assert _AREA_TO_STORY_CHARACTERS, "_AREA_TO_STORY_CHARACTERS must not be empty"
+        return _AREA_TO_STORY_CHARACTERS.get(self, frozenset())
 
     def get_purchase_characters(self) -> "frozenset[Character]":
         # Lazy import to prevent circular import.
-        from . import characters
-        return characters.AREA_TO_PURCHASE_CHARACTERS.get(self, frozenset())
+        global _AREA_TO_PURCHASE_CHARACTERS
+        if not _AREA_TO_PURCHASE_CHARACTERS:
+            from .characters import AREA_TO_PURCHASE_CHARACTERS as _AREA_TO_PURCHASE_CHARACTERS
+            assert _AREA_TO_PURCHASE_CHARACTERS, "_AREA_TO_PURCHASE_CHARACTERS must not be empty"
+        return _AREA_TO_PURCHASE_CHARACTERS.get(self, frozenset())
 
     def get_extra_toggle_characters(self) -> "frozenset[Character]":
         # Lazy import to prevent circular import.
-        from . import characters
-        return characters.AREA_TO_EXTRA_TOGGLE_CHARACTERS.get(self, frozenset())
+        global _AREA_TO_EXTRA_TOGGLE_CHARACTERS
+        if not _AREA_TO_EXTRA_TOGGLE_CHARACTERS:
+            from .characters import AREA_TO_EXTRA_TOGGLE_CHARACTERS as _AREA_TO_EXTRA_TOGGLE_CHARACTERS
+            assert _AREA_TO_EXTRA_TOGGLE_CHARACTERS, "_AREA_TO_EXTRA_TOGGLE_CHARACTERS must not be empty"
+        return _AREA_TO_EXTRA_TOGGLE_CHARACTERS.get(self, frozenset())
 
     def is_chapter(self):
         return self.area_index in range(0, 6)
@@ -210,6 +219,12 @@ class Area(IntEnum):
     NB_DAGOBAH =       65, dict(episode_index=-1, area_index=-1, readable_name=                    "Dagobah", flags=AreaFlag(0x2804), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.NB_DAGOBAH_A, Level.NB_DAGOBAH_STATUS])
     MAP =              66, dict(episode_index=-1, area_index=-1, readable_name=                          "?", flags=AreaFlag(0x0048), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.MAP])
     LOSTTEMPLE =       67, dict(episode_index=-1, area_index=-1, readable_name=      "Indiana Jones Trailer", flags=AreaFlag(0x2c00), story_true_jedi=    0, free_play_true_jedi=     0, extra=                         None, levels=[Level.LOSTTEMPLE_A])
+
+
+# Lazy imports set these when they are empty.
+_AREA_TO_STORY_CHARACTERS: "dict[Area, frozenset[Character]]" = {}
+_AREA_TO_PURCHASE_CHARACTERS: "dict[Area, frozenset[Character]]" = {}
+_AREA_TO_EXTRA_TOGGLE_CHARACTERS: "dict[Area, frozenset[Character]]" = {}
 
 
 BONUS_ROOM_VEHICLE_BONUSES = frozenset({
