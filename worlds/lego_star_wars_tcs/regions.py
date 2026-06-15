@@ -517,12 +517,12 @@ class _RegionBuilder:
     def create_ridesanity_locations(self) -> None:
         world = self.world
 
-        excluded_goal_region: Region | None
+        excluded_goal_area: Area | None
         if (world.goal_chapter
                 and world.options.goal_chapter_locations_mode.value == GoalChapterLocationsMode.option_excluded):
-            excluded_goal_region = world.get_region(SHORT_NAME_TO_CHAPTER_AREA[world.goal_chapter].name)
+            excluded_goal_area = Area.from_short_name(world.goal_chapter)
         else:
-            excluded_goal_region = None
+            excluded_goal_area = None
 
         # Add the Cantina Car ridable found in the Cantina itself, it cannot be found anywhere else.
         cantina_car = Character.MAPCAR
@@ -545,7 +545,7 @@ class _RegionBuilder:
 
                 ridable_location = world.add_location(ridable_location_name, area_region)
                 world.set_rule(ridable_location, ridable_rule)
-                is_excluded_goal_chapter_location = area.is_chapter() and area.get_short_name() == world.goal_chapter
+                is_excluded_goal_chapter_location = area == excluded_goal_area
             else:
                 # There are multiple regions this ridable can be found in, so create a new region just for this
                 # location and connect each region this ridable is found in, to this new region.
@@ -555,7 +555,7 @@ class _RegionBuilder:
                     area_region = ridable_data.region
                     ridable_rule = ridable_data.entrance_rule
 
-                    if area.is_chapter() and area.get_short_name() == world.goal_chapter:
+                    if area == excluded_goal_area:
                         is_excluded_goal_chapter_location = True
                     area_region.connect(ridable_region, rule=ridable_rule)
                 ridable_location = world.add_location(ridable_location_name, ridable_region)

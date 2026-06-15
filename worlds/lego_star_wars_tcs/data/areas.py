@@ -133,6 +133,15 @@ class Area(IntEnum):
             raise Exception(f"{self} is not a chapter.")
         return f"{self.episode_index + 1}-{self.area_index + 1}"
 
+    @staticmethod
+    def from_episode_chapter(episode: int, chapter: int) -> "Area":
+        return EPISODE_AREA_LOOKUP[episode][chapter]
+
+    @staticmethod
+    def from_short_name(short_name: str) -> "Area":
+        """This method is deprecated as code should move to using Area objects directly, instead of using short names"""
+        return _LEGACY_CHAPTER_SHORT_NAME_TO_AREA[short_name]
+
     NEGOTIATIONS =      0, dict(episode_index= 0, area_index= 0, readable_name=               "Negotiations", flags=AreaFlag(0x0010), story_true_jedi=31000, free_play_true_jedi= 64000, extra=             Extra.SUPER_GONK, levels=[Level.EP1_FAILEDNEG_INTRO1, Level.EP1_FAILEDNEG_INTRO2, Level.NEGOTIATIONS_A, Level.NEGOTIATIONS_B, Level.NEGOTIATIONS_C, Level.FAILEDNEG_OUTRO, Level.NEGOTIATIONS_STATUS])
     GUNGAN =            1, dict(episode_index= 0, area_index= 1, readable_name=          "Invasion Of Naboo", flags=AreaFlag(0x0010), story_true_jedi=44000, free_play_true_jedi= 52000, extra=              Extra.POO_MONEY, levels=[Level.GUNGAN_INTRO1, Level.GUNGAN_INTRO2, Level.GUNGAN_A, Level.GUNGAN_B, Level.GUNGAN_C, Level.GUNGAN_E, Level.GUNGAN_OUTRO2, Level.GUNGAN_STATUS])
     PALACERESCUE =      2, dict(episode_index= 0, area_index= 2, readable_name=          "Escape From Naboo", flags=AreaFlag(0x0010), story_true_jedi=48000, free_play_true_jedi= 60000, extra=  Extra.WALKIE_TALKIE_DISABLE, levels=[Level.RESCUE_INTRO1, Level.RESCUE_INTRO2, Level.RESCUE_INTRO4, Level.RESCUE_A, Level.RESCUE_B, Level.RESCUE_C, Level.RESCUE_E, Level.RESCUE_OUTRO, Level.RESCUE_STATUS])
@@ -262,3 +271,4 @@ def make_episode_area_lookup() -> dict[int, dict[int, Area]]:
 
 EPISODE_AREA_LOOKUP: dict[int, dict[int, Area]] = make_episode_area_lookup()
 del make_episode_area_lookup
+_LEGACY_CHAPTER_SHORT_NAME_TO_AREA: dict[str, Area] = {area.get_short_name(): area for area in Area if area.is_chapter()}
