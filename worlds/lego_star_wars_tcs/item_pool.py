@@ -845,6 +845,7 @@ def determine_item_pool_abilities(
         if rule is Location.access_rule or rule is Entrance.access_rule or rule in seen_rules:
             continue
         assert isinstance(rule, Rule.Resolved), f"{spot} is using a rule that is not using Rule Builder ({rule})"
+        seen_rules.add(rule)
         unique_rules.append(rule)
     world.random.shuffle(unique_rules)
 
