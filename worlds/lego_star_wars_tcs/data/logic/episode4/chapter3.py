@@ -337,7 +337,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                         HasAbility(CAN_DOUBLE_JUMP) & CAN_DAMAGE_AT_CLOSE_RANGE,
                     )
                     # Droideka and General Grievous are too big to fit in the door of the Millennium Falcon.
-                ) & HasAnyCharacterExcept(Character.DROID_TRIFIGHTER, Character.GENERAL_GRIEVOUS),
+                ) & HasAnyCharacterExcept(Character.DROIDEKA, Character.GENERAL_GRIEVOUS),
             ),
         ),
     },

@@ -507,6 +507,10 @@ class HasAbilityExceptCharacters(InLevelRule, game=GAME_NAME):
                 except_characters_abilities |= NORMAL_CHARACTER_TO_ITEM_DATA[character].abilities
             elif character not in EXTRA_TOGGLE_CHARACTER_TO_ITEM_DATA:
                 raise KeyError(f"No item data found for Character {character!r} found.")
+        if (CharacterAbility.ALL_VEHICLE_ABILITIES & except_characters_abilities
+                and (~CharacterAbility.ALL_VEHICLE_ABILITIES) & except_characters_abilities):
+            raise ValueError(f"The characters to except from the rule cannot be both vehicle and non-vehicle"
+                             f" characters, but got {sorted(except_characters)}")
 
         usable_implied_by_abilities_to_characters: dict[CharacterAbility, set[Character]]
         include_characters: set[Character] = set()
