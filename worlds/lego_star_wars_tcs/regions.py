@@ -401,12 +401,12 @@ class _RegionBuilder:
     def create_story_character_unlock_locations(self) -> None:
         world = self.world
 
-        excluded_goal_region: Region | None
+        excluded_character_locations: frozenset[Character]
         if (world.goal_chapter
                 and world.options.goal_chapter_locations_mode.value == GoalChapterLocationsMode.option_excluded):
-            excluded_goal_region = world.get_region(SHORT_NAME_TO_CHAPTER_AREA[world.goal_chapter].name)
+            excluded_character_locations = Area.from_short_name(world.goal_chapter).get_story_characters()
         else:
-            excluded_goal_region = None
+            excluded_character_locations = frozenset()
 
         for character, parent_regions in self.story_character_unlock_regions.items():
             loc_name = character.get_level_completion_unlock_location_name()
@@ -415,11 +415,6 @@ class _RegionBuilder:
                 # The location is only accessed from 1 region, so put the location in that region. This slightly
                 # improves logic performance.
                 character_location = world.add_location(loc_name, parent_region)
-                if parent_region == excluded_goal_region:
-                    # The location is only accessed through the Goal Chapter which has its locations excluded, so this
-                    # chapter completion character unlock location should also be excluded.
-                    character_location.progress_type = LocationProgressType.EXCLUDED
-                    world.goal_excluded_character_unlock_location_count += 1
             else:
                 # The location is accessed from multiple regions, so put the location in its own region that those
                 # regions can be connected to.
@@ -431,7 +426,7 @@ class _RegionBuilder:
                 # Playthrough Paths are enabled in the generator's host.yaml), so that the route the Playthrough used to
                 # reach the location is clear.
                 world.topology_present = True
-            if excluded_goal_region is not None and excluded_goal_region in parent_regions:
+            if character in excluded_character_locations:
                 # If the location can be accessed through the Goal Chapter that has excluded locations, exclude the
                 # location, even if it could be accessed from elsewhere. This prevents the possibility of the Goal
                 # Chapter from locking access to locations.
