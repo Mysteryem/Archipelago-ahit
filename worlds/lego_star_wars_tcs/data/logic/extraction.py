@@ -145,8 +145,6 @@ class AbilityRequirements:
     ability_cost_overrides: dict[CharacterAbility, int] = field(default_factory=dict)
     abilities_memodict: dict[AbilityRequirementsKey, AbilityRequirementsValue] = field(default_factory=dict)
     ability_costs: dict[CharacterAbility, int] = field(init=False)
-
-    other_requirements_only: AbilityRequirementsValue = (CharacterAbility.NONE, CharacterAbility.NONE, True)
     
     def __post_init__(self):
         # Ensure there is a default cost for every ability and then merge in any overrides.
@@ -299,7 +297,7 @@ class AbilityRequirements:
         # This rule does not have ability requirements, e.g. it is a Has("Exploding Blaster Bolts"), or a
         # CanReachRegion("region name") or similar.
         # Note that it is not expected to see a False_ rule within an And or Or rule, only on its own.
-        return self._memoize(key, self.other_requirements_only)
+        return self._memoize(key, (required, optional, True))
 
 
 @dataclass
