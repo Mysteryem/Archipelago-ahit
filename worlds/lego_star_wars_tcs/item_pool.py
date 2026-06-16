@@ -561,7 +561,9 @@ def _create_starting_characters_for_character_locked_chapters(
         starting_chapter_required_count: int,
         starting_chapter_ability_requirements: set[CharacterAbility],
 ) -> set[CharacterAbility]:
-    assert starting_chapter_required_count <= len(starting_chapter_characters)
+    if starting_chapter_required_count > len(starting_chapter_characters):
+        raise Exception(f"Too many starting_chapter_characters required for {world.starting_chapter}. Required"
+                        f" {starting_chapter_required_count}, but only {len(starting_chapter_characters)} exist.")
     skipped: list[GenericCharacterData]
     picked: list[GenericCharacterData]
     missing_requirements = starting_chapter_ability_requirements
