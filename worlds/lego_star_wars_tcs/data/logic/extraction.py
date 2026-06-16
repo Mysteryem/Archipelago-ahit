@@ -57,9 +57,10 @@ def _make_default_ability_costs() -> dict[CharacterAbility, int]:
     vehicle_abilities_max = max(vehicle_abilities_counter.values())
 
     return {
+        # ** 2 so that the cost increases more as abilities get rarer.
         # + 1 so that the lowest cost is 1 instead of zero
-        **{k: non_vehicle_abilities_max - v + 1 for k, v in non_vehicle_abilities_counter.items()},
-        **{k: vehicle_abilities_max - v + 1 for k, v in vehicle_abilities_counter.items()},
+        **{k: non_vehicle_abilities_max - v ** 2 + 1 for k, v in non_vehicle_abilities_counter.items()},
+        **{k: vehicle_abilities_max - v ** 2 + 1 for k, v in vehicle_abilities_counter.items()},
         # Re-add the removed IS_A_VEHICLE ability with a cost of zero.
         CharacterAbility.IS_A_VEHICLE: 0,
     }
@@ -69,65 +70,65 @@ DEFAULT_ABILITY_COSTS = _make_default_ability_costs()
 # The below comment may be out-of-date, but is enough to give a rough overview.
 # DEFAULT_ABILITY_COSTS: dict[CharacterAbility, int] = {
 #     # Vehicle abilities are calculated separately.
-#     VEHICLE_TOW: 17,
-#     VEHICLE_TIE: 16,
+#     VEHICLE_TOW: 257,
+#     VEHICLE_TIE: 226,
 #     VEHICLE_BLASTER: 1,
 #     IS_A_VEHICLE: 0,
 #
 #     # 2 Characters
-#     JETPACK: 119,
-#     CAN_HIGH_JUMP_SLAM: 119,
-#     WEAPON_EWOK: 119,
+#     JETPACK: 13925,
+#     CAN_HIGH_JUMP_SLAM: 13925,
+#     WEAPON_EWOK: 13925,
 #
 #     # 3 Characters
-#     ASTROMECH_DROID: 118,
+#     ASTROMECH_DROID: 13690,
 #
 #     # 4 Characters
-#     SITH: 117,
-#     PROTOCOL_PANEL: 117,
-#     HIGH_JUMP: 117,
+#     SITH: 13457,
+#     PROTOCOL_PANEL: 13457,
+#     HIGH_JUMP: 13457,
 #
 #     # 5 Characters
-#     HOVER: 116,
-#     ASTROMECH_PANEL: 116,
+#     HOVER: 13226,
+#     ASTROMECH_PANEL: 13226,
 #
 #     # 6 Characters
-#     WEAPON_ZAPPER: 115,
-#     SHORTIE: 115,
+#     WEAPON_ZAPPER: 12997,
+#     SHORTIE: 12997,
 #
 #     # 8 Characters
-#     BOUNTY_HUNTER: 113,
+#     BOUNTY_HUNTER: 12545,
 #
 #     # 15 Characters
-#     CAN_WEAR_HAT_AND_DOUBLE_JUMP: 106,
-#     CAN_SELF_DESTRUCT: 106,
+#     CAN_WEAR_HAT_AND_DOUBLE_JUMP: 11026,
+#     CAN_SELF_DESTRUCT: 11026,
 #
-#     IMPERIAL: 102,
-#     IS_NON_GHOST_JEDI: 97,
-#     CAN_TRIPLE_JUMP_GREAT_DISTANCE: 95,
-#     JEDI: 94,
-#     CAN_WEAR_HAT_AND_GRAPPLE: 93,
-#     CAN_DEFLECT_BOLTS: 92,
-#     CAN_DOUBLE_JUMP: 90,
-#     CAN_FLOP_JUMP: 84,
-#     CAN_WEAR_HAT: 75,
-#     GRAPPLE: 56,
-#     BLASTER: 49,
-#     CAN_JUMP_DISTANCE_0_92: 43,
-#     CAN_JUMP_0_44: 39,
-#     CAN_MELEE: 39,
-#     CAN_JUMP_DISTANCE_0_84: 20,
-#     RUN_SPEED_1_18_OR_HIGHER: 18,
-#     CAN_PULL_LEVERS: 13,
-#     CAN_BUILD_BRICKS: 12,
+#     IMPERIAL: 10202,
+#     IS_NON_GHOST_JEDI: 9217,
+#     CAN_TRIPLE_JUMP_GREAT_DISTANCE: 8837,
+#     JEDI: 8650,
+#     CAN_WEAR_HAT_AND_GRAPPLE: 8465,
+#     CAN_DEFLECT_BOLTS: 8282,
+#     CAN_DOUBLE_JUMP: 7922,
+#     CAN_FLOP_JUMP: 6890,
+#     CAN_WEAR_HAT: 5477,
+#     GRAPPLE: 3026,
+#     BLASTER: 2305,
+#     CAN_JUMP_DISTANCE_0_92: 1765,
+#     CAN_JUMP_0_44: 1445,
+#     CAN_MELEE: 1445,
+#     CAN_JUMP_DISTANCE_0_84: 362,
+#     RUN_SPEED_1_18_OR_HIGHER: 290,
+#     CAN_PULL_LEVERS: 145,
+#     CAN_BUILD_BRICKS: 122,
 #     # All characters that can push objects also can ride vehicles, and vice-versa, so these use the same flag for better
 #     # performance.
-#     CAN_RIDE_VEHICLES: 9,
-#     # CAN_PUSH_OBJECTS: 9,
-#     CAN_AGGRAVATE_ENEMIES: 9,
-#     CAN_JUMP_HEIGHT_0_37: 6,
-#     CAN_JUMP_DISTANCE_0_69: 6,
-#     CAN_BARELY_JUMP: 3,
+#     CAN_RIDE_VEHICLES: 65,
+#     # CAN_PUSH_OBJECTS: 65,
+#     CAN_AGGRAVATE_ENEMIES: 65,
+#     CAN_JUMP_HEIGHT_0_37: 26,
+#     CAN_JUMP_DISTANCE_0_69: 26,
+#     CAN_BARELY_JUMP: 5,
 #     RUN_SPEED_0_9_OR_HIGHER: 1,
 # }
 
