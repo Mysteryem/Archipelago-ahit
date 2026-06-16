@@ -40,16 +40,19 @@ class Extra(IntEnum):
         self.purchase_cost = initializer["purchase_cost"]
 
     def get_purchase_location_name(self) -> str:
+        area = self.get_area()
+        if area.is_chapter():
+            return area.prefix_name(f"Purchase {self.readable_name}")
+        else:
+            return f"Purchase {self.readable_name}"
+
+    def get_area(self) -> "Area":
         global _EXTRA_TO_AREA
         if not _EXTRA_TO_AREA:
             # Lazy import to prevent circular import.
             from . import areas
             _EXTRA_TO_AREA = areas.EXTRA_TO_AREA
-        area = _EXTRA_TO_AREA[self]
-        if area.is_chapter():
-            return area.prefix_name(f"Purchase {self.readable_name}")
-        else:
-            return f"Purchase {self.readable_name}"
+        return _EXTRA_TO_AREA[self]
 
     def check_can_use_in_rules(self):
         if self.purchase_cost is None or self in _SCORE_MULTIPLIERS:
