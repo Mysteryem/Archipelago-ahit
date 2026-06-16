@@ -573,8 +573,11 @@ def _create_starting_characters_for_character_locked_chapters(
         picked_character_abilities = reduce(or_, (character_data.abilities for character_data in picked))
         mask = ~picked_character_abilities
         missing_requirements = {c & mask for c in missing_requirements}
-        missing_requirements.discard(CharacterAbility.NONE)
-        missing_requirements = CharacterAbility.optimize_or_has_all_abilities(missing_requirements)
+        if CharacterAbility.NONE in missing_requirements:
+            # At least one of the HasAllAbilities has been satisfied, so the others can be discarded.
+            missing_requirements = set()
+        else:
+            missing_requirements = CharacterAbility.optimize_or_has_all_abilities(missing_requirements)
     else:
         # First reduce the characters to those that provide unique, relevant abilities.
         world.random.shuffle(starting_chapter_characters)
@@ -597,9 +600,12 @@ def _create_starting_characters_for_character_locked_chapters(
                 missing_requirements = {c & abilities_mask for c in missing_requirements}
                 # Re-optimize to account for abilities that have been removed from individual has_all_abilities.
                 missing_requirements = CharacterAbility.optimize_or_has_all_abilities(missing_requirements)
-                main_ability_requirements = min(missing_requirements, key=sort_func)
-                if main_ability_requirements is CharacterAbility.NONE:
+                if CharacterAbility.NONE in missing_requirements:
+                    # At least one of the HasAllAbilities has been satisfied, so the others can be discarded.
                     missing_requirements = set()
+                    main_ability_requirements = CharacterAbility.NONE
+                else:
+                    main_ability_requirements = min(missing_requirements, key=sort_func)
             else:
                 skipped.append(character_data)
         if starting_chapter_required_count > len(picked):
