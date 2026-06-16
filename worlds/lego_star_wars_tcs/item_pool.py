@@ -1631,6 +1631,10 @@ def _create_items(
     # characters, improving logic performance.
     world.starting_character_abilities = item_pool_ability_requirements.starting
 
+    # The abilities that need to be fulfilled by the item pool, retrieved, before modification, to double-check that all
+    # required abilities are accounted for.
+    required_abilities_to_fulfil = item_pool_ability_requirements.required
+
     pool_required_characters: list[GenericCharacterData] = []
     # Append characters that are required to access levels, updating `item_pool_ability_requirements` as characters are
     # appended.
@@ -1649,9 +1653,6 @@ def _create_items(
 
     non_required_characters = list(possible_pool_character_items.values())
 
-    # The abilities that need to be fulfilled by the item pool, retrieved, before modification, to double-check that all
-    # required abilities are accounted for.
-    required_abilities_to_fulfil = item_pool_ability_requirements.required
     assert item_pool_ability_requirements.required is CharacterAbility.NONE, \
            "There are required abilities remaining that have not been fulfilled."
     assert required_abilities_to_fulfil in reduce(
