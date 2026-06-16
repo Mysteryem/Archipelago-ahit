@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from BaseClasses import Region, LocationProgressType, Location
 from rule_builder.rules import Rule, Has, True_, CanReachLocation, And, HasAll, HasFromListUnique
+from rule_builder.options import OptionFilter
 
 from .constants import GOLD_BRICK_EVENT_NAME
 
@@ -25,7 +26,7 @@ from .levels import (
     ChapterArea,
     DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
 )
-from .options import GoalChapterLocationsMode, ChapterUnlockRequirement, EpisodeUnlockRequirement
+from .options import GoalChapterLocationsMode, ChapterUnlockRequirement, EpisodeUnlockRequirement, EasierTrueJedi
 from .ridables import (
     BONUS_TO_RIDABLES,
     get_ridable_requirements,
@@ -106,7 +107,8 @@ class _RegionBuilder:
             abilities_rule =  HasAnyAbilities(main_ability_requirements)
 
         if legacy_chapter.short_name in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI:
-            return abilities_rule & Has(NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value)
+            return abilities_rule & (Has(NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value)
+                                     | OptionFilter(EasierTrueJedi, EasierTrueJedi.option_true))
         else:
             return abilities_rule
 
