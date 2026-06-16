@@ -651,8 +651,8 @@ def _create_starting_characters_for_character_locked_chapters(
         # The skipped characters can be considered to no longer give access to the starting chapter, which could change
         # their classifications if they get created.
         world.character_chapter_access_counts[character_data.name] -= 1
-        # print(f"Reducing count of chapters locked by {name} because the starting chapter will be unlocked by {picked}"
-        #       f" instead")
+        # print(f"Reducing count of chapters locked by {character_data.name} because the starting chapter will be"
+        #       f" unlocked by {picked} instead")
         assert world.character_chapter_access_counts[character_data.name] >= 0
 
     return missing_requirements
@@ -850,6 +850,7 @@ def create_starting_characters_for_needed_starting_chapter_abilities(
     updated_starting_abilities = world.get_starting_inventory_abilities()
     for has_all_abilities in missing_starting_chapter_ability_requirements:
         if has_all_abilities in updated_starting_abilities:
+            # Found a has_all_abilities that has been satisfied, so the needed starting chapter abilities have been met.
             break
     else:
         missing = {has_all_abilities & ~updated_starting_abilities
@@ -1655,7 +1656,7 @@ def _create_items(
            "There are required abilities remaining that have not been fulfilled."
     assert required_abilities_to_fulfil in reduce(
         or_, (data.abilities for data in pool_required_characters), CharacterAbility.NONE), \
-        "The abilities of the required characters are not a subset of the required abilities."
+        "The required abilities are not a subset of the abilities of the required characters."
 
     # Get the required, and non-required extras.
     pool_required_extras, non_required_extras = prepare_extras(world)
