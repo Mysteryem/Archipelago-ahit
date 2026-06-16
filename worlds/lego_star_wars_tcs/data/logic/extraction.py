@@ -133,24 +133,29 @@ DEFAULT_ABILITY_COSTS = _make_default_ability_costs()
 # }
 
 
+AbilityRequirementsKey = tuple[Rule.Resolved, CharacterAbility, bool]
+AbilityRequirementsValue = tuple[CharacterAbility, CharacterAbility, bool]
+
+
 # todo: can `required` abilities and `optional` abilities always get combined, and then do `optional &= ~required` at
 #  the and?
 @dataclass
 class AbilityRequirements:
     random: Random
     ability_cost_overrides: dict[CharacterAbility, int] = field(default_factory=dict)
-    abilities_memodict: dict[tuple[Rule.Resolved, CharacterAbility], tuple[CharacterAbility, CharacterAbility] | None] \
-        = field(default_factory=dict)
+    abilities_memodict: dict[AbilityRequirementsKey, AbilityRequirementsValue] = field(default_factory=dict)
     ability_costs: dict[CharacterAbility, int] = field(init=False)
+
+    other_requirements_only: AbilityRequirementsValue = (CharacterAbility.NONE, CharacterAbility.NONE, True)
     
     def __post_init__(self):
         # Ensure there is a default cost for every ability and then merge in any overrides.
         self.ability_costs = DEFAULT_ABILITY_COSTS | self.ability_cost_overrides
 
     def _memoize(self,
-                 key: tuple[Rule.Resolved, CharacterAbility],
-                 result: tuple[CharacterAbility, CharacterAbility] | None,
-                 ) -> tuple[CharacterAbility, CharacterAbility] | None:
+                 key: AbilityRequirementsKey,
+                 result: AbilityRequirementsValue,
+                 ) -> AbilityRequirementsValue:
         self.abilities_memodict[key] = result
         return result
     
@@ -169,9 +174,10 @@ class AbilityRequirements:
             rule: Rule.Resolved,
             required: CharacterAbility = CharacterAbility.NONE,
             optional: CharacterAbility = CharacterAbility.NONE,
-    ) -> tuple[CharacterAbility, CharacterAbility] | None:
+            has_other_requirements: bool = False,
+    ) -> AbilityRequirementsValue:
         # Resolved rules are singletons, so if a resolved rule is used in multiple places, it is the same instance.
-        key = rule, required
+        key = rule, required, has_other_requirements
         if key in self.abilities_memodict:
             return self.abilities_memodict[key]
 
@@ -182,63 +188,70 @@ class AbilityRequirements:
             # Any one rule must be required.
             # First try to find if there is any rule whose required abilities are already satisfied. If so, then all
             # abilities used by the child rules are optional, besides those that are already in `required`.
-            found_requirements: list[tuple[CharacterAbility, CharacterAbility]] = []
+            found_requirements: list[AbilityRequirementsValue] = []
             child_iter = iter(rule.children)
             for child in child_iter:
-                requirements = self.extract_ability_requirements(child, required, optional)
-                if requirements is not None:
-                    if requirements[0] in required:
-                        # This child is already satisfied by the required abilities, so the whole rule is satisfied by
-                        # the abilities.
-                        # Mark everything as optional.
-                        optional |= requirements[1]
-                        # And the requirements from already processed children.
-                        for required_for_child_but_optional_for_parent, optional_requirement in found_requirements:
-                            optional |= required_for_child_but_optional_for_parent | optional_requirement
-                        # And the requirements from the remaining children.
-                        for remaining_child in child_iter:
-                            # todo: Does it matter that `optional` has already been modified?
-                            requirements = self.extract_ability_requirements(remaining_child, required, optional)
-                            if requirements is not None:
-                                optional |= requirements[0] | requirements[1]
-                        # Remove required abilities from optional abilities before returning.
-                        return self._memoize(key, (required, optional & ~required))
-                    else:
-                        found_requirements.append(requirements)
+                requirements = self.extract_ability_requirements(child, required, optional, has_other_requirements)
+                if not has_other_requirements and requirements[2]:
+                    # The caller does not have non-ability requirements, but this child does.
+                    # Even if this child's abilities are already satisfied, there is no way to tell if the full child
+                    # rule is already satisfied.
+                    found_requirements.append(requirements)
+                elif requirements[0] in required:
+                    # This child is already satisfied by the required abilities, so the whole rule is satisfied by
+                    # the abilities.
+                    # Mark everything as optional.
+                    optional |= requirements[1]
+                    # And the requirements from already processed children.
+                    for required_for_child_but_optional_for_parent, optional_requirement, _ in found_requirements:
+                        optional |= required_for_child_but_optional_for_parent | optional_requirement
+                    # And the requirements from the remaining children.
+                    for remaining_child in child_iter:
+                        # todo: Does it matter that `optional` has already been modified?
+                        requirements = self.extract_ability_requirements(remaining_child, required, optional, has_other_requirements)
+                        optional |= requirements[0] | requirements[1]
+                    # Remove required abilities from optional abilities before returning.
+                    return self._memoize(key, (required, optional & ~required, has_other_requirements))
+                else:
+                    found_requirements.append(requirements)
             if not found_requirements:
-                return self._memoize(key, None)
-            # Find the child with the lowest 'cost'.
+                raise Exception("Or() rule is empty.")
+            # Find the child with the lowest 'cost', preferring children that can be satisfied by only abilities.
             # Shuffle first, so that, if there is a tie, the tie is resolved randomly.
             self.random.shuffle(found_requirements)
-            found_requirements.sort(key=lambda t: self._get_ability_cost(t[0] & ~required))
+            if not has_other_requirements:
+                # Prefer rules without non-ability requirements.
+                found_requirements.sort(key=lambda t: (t[2], self._get_ability_cost(t[0] & ~required)))
+            else:
+                found_requirements.sort(key=lambda t: self._get_ability_cost(t[0] & ~required))
             first = found_requirements[0]
             required |= first[0]
             optional |= first[1]
-            for required_for_child_but_optional_for_parent, optional_requirement in found_requirements[1:]:
+            or_has_other_requirements = first[2]
+            for required_for_child_but_optional_for_parent, optional_requirement, _ in found_requirements[1:]:
                 optional |= required_for_child_but_optional_for_parent | optional_requirement
-            return self._memoize(key, (required, optional & ~required))
+            return self._memoize(
+                key, (required, optional & ~required, has_other_requirements or or_has_other_requirements))
 
         if isinstance(rule, And.Resolved):
             rule: And.Resolved
 
-            found = False
+            and_has_other_requirements = False
             for child in rule.children:
-                requirements = self.extract_ability_requirements(child, required, optional)
-                if requirements is not None:
-                    found = True
-                    # Union the abilities.
-                    required |= requirements[0]
-                    optional |= requirements[1]
-            if not found:
-                # No parts of this rule require abilities.
-                return self._memoize(key, None)
+                requirements = self.extract_ability_requirements(child, required, optional, has_other_requirements)
+                # Union the abilities.
+                required |= requirements[0]
+                optional |= requirements[1]
+                if requirements[2]:
+                    and_has_other_requirements = True
             # Remove all required abilities from the optional abilities before returning.
-            return self._memoize(key, (required, optional & ~required))
+            return self._memoize(
+                key, (required, optional & ~required, has_other_requirements or and_has_other_requirements))
 
         if isinstance(rule, HasAbility.Resolved):
             rule: HasAbility.Resolved
 
-            return self._memoize(key, (required | CharacterAbility(rule.ability_as_int), optional))
+            return self._memoize(key, (required | CharacterAbility(rule.ability_as_int), optional, has_other_requirements))
 
         if isinstance(rule, HasAnyAbilities.Resolved):
             rule: HasAnyAbilities.Resolved
@@ -249,7 +262,7 @@ class AbilityRequirements:
                 # This rule would already be satisfied by the currently required abilities.
                 # Find other abilities present in this rule that are not already required, and mark them as optional.
                 other_abilities = abilities & ~required
-                return self._memoize(key, (required, optional | other_abilities))
+                return self._memoize(key, (required, optional | other_abilities, has_other_requirements))
             else:
                 # This rule would not already be satisfied by the currently required abilities.
                 # todo: Should we prefer picking an ability that is already in `optional` to promote to `required`, or
@@ -264,25 +277,29 @@ class AbilityRequirements:
                 other_abilities = abilities & ~picked_ability
                 # Remove the picked ability from the optional abilities (if present)
                 optional &= ~picked_ability
-                return self._memoize(key, (required | picked_ability, optional | other_abilities))
+                return self._memoize(
+                    key, (required | picked_ability, optional | other_abilities, has_other_requirements))
 
         if isinstance(rule, HasAllAbilities.Resolved):
             rule: HasAllAbilities.Resolved
 
             # All abilities are required.
-            return self._memoize(key, (CharacterAbility(required | rule.abilities_as_int), optional))
+            return self._memoize(
+                key, (CharacterAbility(required | rule.abilities_as_int), optional, has_other_requirements))
 
         if isinstance(rule, True_.Resolved):
-            return self._memoize(key, (required, optional))
+            return self._memoize(key, (required, optional, has_other_requirements))
 
         if isinstance(rule, WrapperRule.Resolved):
             rule: WrapperRule.Resolved
 
-            return self._memoize(key, (self.extract_ability_requirements(rule.child, required, optional)))
+            return self._memoize(
+                key, (self.extract_ability_requirements(rule.child, required, optional, has_other_requirements)))
 
         # This rule does not have ability requirements, e.g. it is a Has("Exploding Blaster Bolts"), or a
         # CanReachRegion("region name") or similar.
-        return self._memoize(key, None)
+        # Note that it is not expected to see a False_ rule within an And or Or rule, only on its own.
+        return self._memoize(key, self.other_requirements_only)
 
 
 @dataclass

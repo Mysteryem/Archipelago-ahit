@@ -892,10 +892,9 @@ def determine_item_pool_abilities(
         extracted = extractor.extract_ability_requirements(rule,
                                                            required_character_abilities_including_starting,
                                                            optional_character_abilities)
-        if extracted is not None:
-            # Update the abilities.
-            required_character_abilities_including_starting = extracted[0]
-            optional_character_abilities = extracted[1]
+        # Update the abilities.
+        required_character_abilities_including_starting = extracted[0]
+        optional_character_abilities = extracted[1]
 
     # Get the abilities that are required, but are not provided by starting characters.
     required_character_abilities_in_pool = required_character_abilities_including_starting & ~starting_abilities

@@ -81,7 +81,7 @@ class TestAbilityExtraction(TestCase):
                            rule: Rule.Resolved,
                            required: CharacterAbility = CharacterAbility.NONE,
                            optional: CharacterAbility = CharacterAbility.NONE,
-                           ) -> tuple[CharacterAbility, CharacterAbility] | None:
+                           ) -> tuple[CharacterAbility, CharacterAbility, bool]:
         return AbilityRequirements(self.r).extract_ability_requirements(rule, required, optional)
 
     def test_extract_has_ability(self) -> None:
@@ -89,9 +89,9 @@ class TestAbilityExtraction(TestCase):
         for ability in CharacterAbility:
             rule = HasAbility.Resolved(ability, **_COMMON_ARGS)
             requirements = self._extract_abilities(rule)
-            self.assertIsNotNone(requirements)
             self.assertIs(requirements[0], ability)
             self.assertIs(requirements[1], CharacterAbility.NONE)
+            self.assertFalse(requirements[2])
 
     def test_extract_has_ability_existing_required(self) -> None:
         """Test that existing required/optional abilities are preserved."""
@@ -99,9 +99,9 @@ class TestAbilityExtraction(TestCase):
             rule = HasAbility.Resolved(ability, **_COMMON_ARGS)
             existing_optional = ~ability
             requirements = self._extract_abilities(rule, optional=existing_optional)
-            self.assertIsNotNone(requirements)
             self.assertIs(requirements[0], ability)
             self.assertIs(requirements[1], existing_optional)
+            self.assertFalse(requirements[2])
 
     def test_extract_has_all_abilities(self) -> None:
         """Test that all abilities of a HasAllAbilities.Resolved rule are extracted as 'required'."""
@@ -110,9 +110,9 @@ class TestAbilityExtraction(TestCase):
             abilities = CharacterAbility(sum(picks))
             rule = HasAllAbilities.Resolved(abilities, **_COMMON_ARGS)
             requirements = self._extract_abilities(rule)
-            self.assertIsNotNone(requirements)
             self.assertIs(requirements[0], abilities)
             self.assertIs(requirements[1], CharacterAbility.NONE)
+            self.assertFalse(requirements[2])
 
     def test_extract_has_any_abilities(self) -> None:
         """Test that one ability of a HasAnyAbilities.Resolved rule is extracted as 'required', and the remaining
@@ -122,13 +122,13 @@ class TestAbilityExtraction(TestCase):
             abilities = CharacterAbility(sum(picks))
             rule = HasAnyAbilities.Resolved(abilities, **_COMMON_ARGS)
             requirements = self._extract_abilities(rule)
-            self.assertIsNotNone(requirements)
-            required, optional = requirements
+            required, optional, has_other_requirements = requirements
             self.assertEqual(required.bit_count(), 1, "The required abilities should be a single ability.")
             self.assertIs(required | optional, abilities,
                           "The required and optional abilities should equal the input abilities.")
             self.assertIs(required & optional, CharacterAbility.NONE,
                           "There should be no abilities in common between the required and optional abilities.")
+            self.assertFalse(has_other_requirements)
 
     def test_extract_has_any_abilities_fixed_costs(self) -> None:
         """Test that ability costs determine"""
@@ -137,10 +137,10 @@ class TestAbilityExtraction(TestCase):
         for ability in CharacterAbility:
             extractor = AbilityRequirements(self.r, ability_cost_overrides=all_same_costs | {ability: 0})
             requirements = extractor.extract_ability_requirements(rule)
-            self.assertIsNotNone(requirements)
-            required, optional = requirements
+            required, optional, has_other_requirements = requirements
             self.assertIs(required, ability)
             self.assertIs(optional, ~ability)
+            self.assertFalse(has_other_requirements)
 
     def test_extract_has_any_abilities_existing_required_intersection(self) -> None:
         """Test that if any of the abilities, of a HasAnyAbilities.Resolved rule, are already required, then that
@@ -152,8 +152,7 @@ class TestAbilityExtraction(TestCase):
             # Pick an ability to mark as already required.
             already_required = self.r.choice(picks)
             requirements = self._extract_abilities(rule, required=already_required)
-            self.assertIsNotNone(requirements)
-            required, optional = requirements
+            required, optional, has_other_requirements = requirements
             self.assertIs(required, already_required,
                           "The required abilities should match the abilities that were already required.")
             self.assertIs(optional, abilities & ~already_required)
@@ -161,6 +160,7 @@ class TestAbilityExtraction(TestCase):
                           "The required and optional abilities should equal the input abilities.")
             self.assertIs(required & optional, CharacterAbility.NONE,
                           "There should be no abilities in common between the required and optional abilities.")
+            self.assertFalse(has_other_requirements)
 
     def test_extract_has_any_abilities_existing_required_no_intersection(self) -> None:
         """Test that if any of the abilities, of a HasAnyAbilities.Resolved rule, are already required, then that
@@ -174,13 +174,13 @@ class TestAbilityExtraction(TestCase):
             # Pick an ability not in `abilities` to mark as already required.
             already_required = self.r.choice(list(~abilities))
             requirements = self._extract_abilities(rule, required=already_required)
-            self.assertIsNotNone(requirements)
-            required, optional = requirements
+            required, optional, has_other_requirements = requirements
             self.assertEqual(required.bit_count(), 2, "The required abilities should be two abilities.")
             self.assertIs(required | optional, abilities | already_required,
                           "The required and optional abilities should equal the input abilities.")
             self.assertIs(required & optional, CharacterAbility.NONE,
                           "There should be no abilities in common between the required and optional abilities.")
+            self.assertFalse(has_other_requirements)
 
     def test_extract_or_simple(self) -> None:
         for picks in self._random_unique_abilities_gen():
@@ -188,13 +188,13 @@ class TestAbilityExtraction(TestCase):
             abilities = CharacterAbility(sum(picks))
             rule = Or.Resolved(tuple(HasAbility.Resolved(pick, **_COMMON_ARGS) for pick in abilities), **_COMMON_ARGS)
             requirements = self._extract_abilities(rule)
-            self.assertIsNotNone(requirements)
-            required, optional = requirements
+            required, optional, has_other_requirements = requirements
             self.assertEqual(required.bit_count(), 1, "The required abilities should be a single ability.")
             self.assertIs(required | optional, abilities,
                           "The required and optional abilities should equal the input abilities.")
             self.assertIs(required & optional, CharacterAbility.NONE,
                           "There should be no abilities in common between the required and optional abilities.")
+            self.assertFalse(has_other_requirements)
 
     def test_extract_and_simple(self) -> None:
         for picks in self._random_unique_abilities_gen():
@@ -202,9 +202,9 @@ class TestAbilityExtraction(TestCase):
             abilities = CharacterAbility(sum(picks))
             rule = And.Resolved(tuple(HasAbility.Resolved(pick, **_COMMON_ARGS) for pick in abilities), **_COMMON_ARGS)
             requirements = self._extract_abilities(rule)
-            self.assertIsNotNone(requirements)
             self.assertIs(requirements[0], abilities)
             self.assertIs(requirements[1], CharacterAbility.NONE)
+            self.assertFalse(requirements[2])
 
     def test_extract_and_nested_and(self):
         min_batch_size = 2
@@ -225,9 +225,9 @@ class TestAbilityExtraction(TestCase):
             abilities = CharacterAbility(sum(picks))
             rule = And.Resolved(tuple(and_rules), **_COMMON_ARGS)
             requirements = self._extract_abilities(rule)
-            self.assertIsNotNone(requirements)
             self.assertIs(requirements[0], abilities)
             self.assertIs(requirements[1], CharacterAbility.NONE)
+            self.assertFalse(requirements[2])
 
     def test_extract_or_nested_and(self):
         min_batch_size = 2
@@ -246,7 +246,7 @@ class TestAbilityExtraction(TestCase):
             # Construct the rule.
             rule = Or.Resolved(tuple(and_rules), **_COMMON_ARGS)
             requirements = self._extract_abilities(rule)
-            required, optional = requirements
+            required, optional, has_other_requirements = requirements
 
             possible_required_abilities = {functools.reduce(operator.or_, batch) for batch in batches}
             self.assertEqual(len(batches), len(possible_required_abilities))
@@ -260,6 +260,7 @@ class TestAbilityExtraction(TestCase):
                           "The required and optional abilities should equal the input abilities.")
             self.assertIs(required & optional, CharacterAbility.NONE,
                           "There should be no abilities in common between the required and optional abilities.")
+            self.assertFalse(has_other_requirements)
 
     def test_extract_or_nested_and_already_required(self):
         min_batch_size = 2
@@ -280,7 +281,7 @@ class TestAbilityExtraction(TestCase):
             # Construct the rule.
             rule = Or.Resolved(tuple(and_rules), **_COMMON_ARGS)
             requirements = self._extract_abilities(rule, required=already_required)
-            required, optional = requirements
+            required, optional, has_other_requirements = requirements
 
             possible_required_abilities = {functools.reduce(operator.or_, batch) for batch in batches}
             self.assertEqual(len(batches), len(possible_required_abilities))
@@ -294,6 +295,7 @@ class TestAbilityExtraction(TestCase):
                           "The required and optional abilities should equal the input abilities.")
             self.assertIs(required & optional, CharacterAbility.NONE,
                           "There should be no abilities in common between the required and optional abilities.")
+            self.assertFalse(has_other_requirements)
 
     def test_extract_or_has_ability_and_has(self) -> None:
         for ability in CharacterAbility:
@@ -301,16 +303,18 @@ class TestAbilityExtraction(TestCase):
             rule2 = Has.Resolved("item", **_COMMON_ARGS)
             rule = Or.Resolved((rule1, rule2), **_COMMON_ARGS)
             requirements = self._extract_abilities(rule)
-            self.assertIsNotNone(requirements)
             self.assertIs(requirements[0], ability)
             self.assertIs(requirements[1], CharacterAbility.NONE)
+            self.assertFalse(requirements[2])
 
     def test_extract_or_no_abilities(self) -> None:
         rule1 = Has.Resolved("item", **_COMMON_ARGS)
         rule2 = Has.Resolved("other item", **_COMMON_ARGS)
         rule = Or.Resolved((rule1, rule2), **_COMMON_ARGS)
         requirements = self._extract_abilities(rule)
-        self.assertIsNone(requirements)
+        self.assertIs(requirements[0], CharacterAbility.NONE)
+        self.assertIs(requirements[1], CharacterAbility.NONE)
+        self.assertTrue(requirements[2])
 
     # TODO: Test And.Resolved containing Has.Resolved.
     # TODO: Test Or.Resolved containing Has.Resolved, where `required`/`optional` are already set.
