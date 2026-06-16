@@ -612,8 +612,19 @@ def _create_starting_characters_for_character_locked_chapters(
             # More characters are needed than those with relevant, unique abilities, so pick additional characters from
             # those that were skipped due to having only duplicated abilities.
             extra_needed = starting_chapter_required_count - len(picked)
-            picked.extend(skipped[:extra_needed])
+            picked_from_skipped = skipped[:extra_needed]
+            picked.extend(picked_from_skipped)
             skipped = skipped[extra_needed:]
+            # These characters could have abilities used in some of the ability requirements that were more expensive,
+            # and therefore not chosen as the `main_ability_requirements`, so update the missing requirements for these
+            # characters' abilities.
+            combined_abilities = reduce(or_,
+                                        (character_data.abilities for character_data in picked_from_skipped),
+                                        CharacterAbility.NONE)
+            abilities_mask = ~combined_abilities
+            missing_requirements = {c & abilities_mask for c in missing_requirements}
+            # Re-optimize to account for abilities that have been removed from individual has_all_abilities.
+            missing_requirements = CharacterAbility.optimize_or_has_all_abilities(missing_requirements)
 
     # TODO: Do the picked characters need to be set somewhere? Check where else world.starting_chapter is used.
     for character_data in picked:
