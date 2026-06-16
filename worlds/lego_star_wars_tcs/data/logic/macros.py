@@ -60,6 +60,7 @@ CAN_SITH_FORCE = logic_options(
 CAN_DESTROY_CLOSE_SILVER_BRICKS = logic_options(
     base=HasAbility(BOUNTY_HUNTER),
     normal=Or(
+        HasAbility(BOUNTY_HUNTER),
         CAN_USE_SELF_DESTRUCT,
         Extra.EXPLODING_BLASTER_BOLTS.has() & HasAnyAbilities(BLASTER | WEAPON_EWOK),
         Extra.SUPER_EWOK_CATAPULT.has() & HasAbility(WEAPON_EWOK),
