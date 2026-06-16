@@ -52,22 +52,14 @@ debug_logger = logging.getLogger("TCS Debug")
 
 # If a game does not have any fake item names defined, then one of these could be picked as the fake item name.
 VERY_FAKE_TCS_ITEM_NAMES = (
-    # Misspellings.
-    # "Gank Droid",
-    # "DK Droid",
-    # "Captain Tadpoles",
-    "Darth Mall",
-    "Django Fett",
-    "Ki-Adi Mandi",
-    "Shaaak Ti",
-    "Count Douku",
-    "R2-Q6",
-    "Milenium Falcon",
-    # Other.
-    "Greedo Shot First",
+    "Not the droids you're looking for",
+    "100 Minikits (real)",
     # Fake characters.
     "Anakin Skywalker (Jedi Master)",
-    "Qui-Gon Jinn (Episode 3)",
+    "Qui-Gon Jinn (Episode III)",
+    "Clone (Episode I)",
+    "Luke Skywalker (Episode III)",
+    "Matt the Radar Technician",
 )
 
 
@@ -77,7 +69,7 @@ VERY_FAKE_TCS_ITEM_NAMES = (
 FAKE_TRAP_NAMES[GAME_NAME] = VERY_FAKE_TCS_ITEM_NAMES + (
     # Fake characters.
     "Battle Droid (Sergeant)",
-    "Clone (Episode 3, Commander)",
+    "Clone (Episode III, Commander)",
     "Rebel Guard",
     "Rebel Spy",
     "Bothan Spy",
@@ -92,7 +84,6 @@ FAKE_TRAP_NAMES[GAME_NAME] = VERY_FAKE_TCS_ITEM_NAMES + (
     # "Royal Trooper",
     # Characters that go by a different name in-game.
     "Destroyer Droid",
-    "Padme",
     "Boba Fett (Child)",
     "Darth Sidious",
     "Obi-Wan Kenobi (Ghost)",
