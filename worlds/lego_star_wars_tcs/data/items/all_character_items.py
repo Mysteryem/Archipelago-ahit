@@ -8,6 +8,7 @@ __all__ = [
     "CHARACTER_TO_ITEM_DATA",
     "NORMAL_CHARACTER_TO_ITEM_DATA",
     "EXTRA_TOGGLE_CHARACTER_TO_ITEM_DATA",
+    "SENDABLE_CHARACTER_TO_ITEM_DATA",
 ]
 
 CHARACTER_TO_ITEM_DATA: dict[Character, GenericCharacterData] = {
@@ -30,3 +31,7 @@ Extra Toggle characters. These characters are never collected into a CollectionS
 check for the Extra Toggle item being collected into a CollectionState if Extra Toggle could satisfy those rules in the
 current Area.
 """
+
+SENDABLE_CHARACTER_TO_ITEM_DATA: dict[Character, GenericCharacterData] = {
+    k: v for k, v in NORMAL_CHARACTER_TO_ITEM_DATA.items() if v.is_sendable
+}
