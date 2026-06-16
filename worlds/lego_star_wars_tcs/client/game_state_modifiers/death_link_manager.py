@@ -17,14 +17,8 @@ from ..events import (
     OnPlayerCharacterIdChangeEvent,
 )
 from ..type_aliases import TCSContext
-from ...levels import (
-    AREA_ID_TO_CHAPTER_AREA,
-    VEHICLE_CHAPTER_SHORTNAMES,
-    AREA_ID_TO_BONUS_AREA,
-    VEHICLE_BONUS_AREA_NAMES,
-    SHORT_NAME_TO_CHAPTER_AREA,
-    BONUS_NAME_TO_BONUS_AREA,
-)
+
+from ...data.areas import Area
 
 logger = logging.getLogger("Client")
 debug_logger = logging.getLogger("TCS Debug")
@@ -52,16 +46,16 @@ CHEAT_FLAGS_STARTING_DEATH_COUNT = 0x2000
 PLAYER_CHARACTER_POINTERS_ARRAY_ADDRESS = 0x93d810
 
 
-VEHICLE_AMNESTY_AREA_IDS = frozenset({
-    SHORT_NAME_TO_CHAPTER_AREA["2-1"].area_id,
-    SHORT_NAME_TO_CHAPTER_AREA["2-5"].area_id,
-    SHORT_NAME_TO_CHAPTER_AREA["4-6"].area_id,
-    SHORT_NAME_TO_CHAPTER_AREA["5-1"].area_id,
-    SHORT_NAME_TO_CHAPTER_AREA["5-3"].area_id,
-    SHORT_NAME_TO_CHAPTER_AREA["6-6"].area_id,
-    BONUS_NAME_TO_BONUS_AREA["Mos Espa Pod Race (Original)"].area_id,
-    BONUS_NAME_TO_BONUS_AREA["Anakin's Flight"].area_id,
-    BONUS_NAME_TO_BONUS_AREA["Gunship Cavalry (Original)"].area_id,
+_VEHICLE_AMNESTY_AREAS = frozenset({
+    Area.PURSUIT,
+    Area.GUNSHIP,
+    Area.DEATHSTARBATTLE,
+    Area.HOTHBATTLE,
+    Area.ASTEROIDCHASE,
+    Area.DEATHSTAR2BATTLE,
+    Area.PODRACE,
+    Area.ANAKINSFLIGHT,
+    Area.BONUS_GUNSHIP,
 })
 
 
@@ -310,21 +304,24 @@ class DeathLinkManager(ClientComponent):
     @staticmethod
     def _get_kill_state_to_set(ctx: TCSContext) -> CharacterActionState:
         area_id = CURRENT_AREA_ADDRESS.get(ctx)
-        area = AREA_ID_TO_CHAPTER_AREA.get(area_id)
-        is_vehicle_or_unknown: bool
+        area = Area(area_id) if area_id in Area else None
+
         if area is None:
-            bonus_area = AREA_ID_TO_BONUS_AREA.get(area_id)
-            # if `bonus_area` is also None, then the player is somewhere that the apworld does not have information
-            # about currently, e.g. an Episode's Minikit Bonus or 2-player Arcade.
-            is_vehicle_or_unknown = bonus_area is None or bonus_area.name in VEHICLE_BONUS_AREA_NAMES
-        else:
-            is_vehicle_or_unknown = area.short_name in VEHICLE_CHAPTER_SHORTNAMES
-        if is_vehicle_or_unknown:
-            # Many of the vehicle levels ignore THROWN_BY_FORCE_LIGHTNING_OR_CHOKE_.
+            # This should mean there is currently no Area. I am not sure if this can happen.
+            if area_id != -1:
+                # This should not happen unless the memory read is garbage for some reason.
+                debug_logger.warning("Got unknown Area ID %i when trying to determine kill state to set.", area_id)
             return CharacterActionState.DOOMED
-        else:
+
+        if area.is_vehicle_area():
+            # Many of the vehicle levels ignore DIE_AIR.
+            return CharacterActionState.DOOMED
+        elif area is Area.MAP or area.is_chapter():
             # It is more pleasing for the character's parts to have physics instead of disappearing through the floor.
             return CharacterActionState.DIE_AIR
+        else:
+            # If the current Area is anywhere else, just use DOOMED because most other areas have not been tested.
+            return CharacterActionState.DOOMED
 
     async def _kill_player_controlled_characters(self, ctx: TCSContext) -> bool:
         kill_state = DeathLinkManager._get_kill_state_to_set(ctx)
@@ -399,6 +396,7 @@ class DeathLinkManager(ClientComponent):
         #  Ideas:
         #  f"{alias name} crashed their {vehicle name}"
         #  f"{alias name} lost their studs"
+        #  f"{alias name} broke their {character name} minifigure"
         #  f"Caused by {alias name}'s {character name}"
         #  Special messages for when both P1 and P2 are player controlled?
         #  f"{alias name}'s P{player number} crashed their {vehicle name}"
@@ -552,7 +550,7 @@ class DeathLinkManager(ClientComponent):
         self._last_area_death_count = 999_999_999
         self.waiting_for_respawn = False
         debug_logger.info("Reset expected death count to 0 upon area change.")
-        self.current_area_uses_vehicle_amnesty = event.new_area_data_id in VEHICLE_AMNESTY_AREA_IDS
+        self.current_area_uses_vehicle_amnesty = event.new_area_data_id in _VEHICLE_AMNESTY_AREAS
 
     @subscribe_event
     def on_character_id_change(self, event: OnPlayerCharacterIdChangeEvent):
