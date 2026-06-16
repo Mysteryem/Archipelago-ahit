@@ -62,6 +62,15 @@ class Extra(IntEnum):
         self.check_can_use_in_rules()
         return Has(self.readable_name)
 
+    def is_purchasable(self) -> bool:
+        return self.purchase_cost is not None
+
+    def get_shop_slot_byte(self) -> int:
+        return self // 8
+
+    def get_shop_slot_mask(self) -> int:
+        return 1 << (self % 8)
+
     @staticmethod
     def has_all(*extras: "Extra") -> Has | HasAll | True_:
         if not extras:
