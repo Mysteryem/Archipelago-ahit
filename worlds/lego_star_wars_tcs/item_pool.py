@@ -579,52 +579,63 @@ def _create_starting_characters_for_character_locked_chapters(
         else:
             missing_requirements = CharacterAbility.optimize_or_has_all_abilities(missing_requirements)
     else:
-        # First reduce the characters to those that provide unique, relevant abilities.
         world.random.shuffle(starting_chapter_characters)
-        seen_abilities = CharacterAbility.NONE
 
         def sort_func(c: CharacterAbility) -> int:
             return sum(map(DEFAULT_ABILITY_COSTS.__getitem__, c))
 
-        main_ability_requirements = min(missing_requirements, key=sort_func)
-
         picked = []
-        skipped = []
-        for character_data in starting_chapter_characters:
-            relevant_character_abilities = character_data.abilities & main_ability_requirements
-            if relevant_character_abilities not in seen_abilities:
-                seen_abilities |= relevant_character_abilities
-                picked.append(character_data)
-                # Update the abilities requirements to remove abilities provided by this character.
-                abilities_mask = ~character_data.abilities
-                missing_requirements = {c & abilities_mask for c in missing_requirements}
-                # Re-optimize to account for abilities that have been removed from individual has_all_abilities.
-                missing_requirements = CharacterAbility.optimize_or_has_all_abilities(missing_requirements)
-                if CharacterAbility.NONE in missing_requirements:
-                    # At least one of the HasAllAbilities has been satisfied, so the others can be discarded.
-                    missing_requirements = set()
-                    main_ability_requirements = CharacterAbility.NONE
+        needed_characters = starting_chapter_required_count
+        characters_to_pick_from = starting_chapter_characters.copy()
+        ability_requirements_by_cost = sorted(missing_requirements, key=sort_func)
+        while needed_characters > 0:
+            # Iteration through `ability_requirements_by_cost` restarts after picking each character with matching
+            # abilities because the order of `ability_requirements_by_cost` could change.
+            for has_all_abilities in ability_requirements_by_cost:
+                # Iterate in reverse because popping from near the end is more efficient that popping from near the
+                # start.
+                for i, character_data in enumerate(reversed(characters_to_pick_from), start=1):
+                    if character_data.abilities & has_all_abilities != 0:
+                        # Found a character with matching abilities.
+                        picked_index = -i
+                        break
                 else:
-                    main_ability_requirements = min(missing_requirements, key=sort_func)
+                    # Could not find a character with matching abilities.
+                    # Continue to try the next ability requirements.
+                    continue
+                # Propagate the break from finding a character with matching abilities.
+                break
             else:
-                skipped.append(character_data)
-        if starting_chapter_required_count > len(picked):
-            # More characters are needed than those with relevant, unique abilities, so pick additional characters from
-            # those that were skipped due to having only duplicated abilities.
-            extra_needed = starting_chapter_required_count - len(picked)
-            picked_from_skipped = skipped[:extra_needed]
-            picked.extend(picked_from_skipped)
-            skipped = skipped[extra_needed:]
-            # These characters could have abilities used in some of the ability requirements that were more expensive,
-            # and therefore not chosen as the `main_ability_requirements`, so update the missing requirements for these
-            # characters' abilities.
-            combined_abilities = reduce(or_,
-                                        (character_data.abilities for character_data in picked_from_skipped),
-                                        CharacterAbility.NONE)
-            abilities_mask = ~combined_abilities
+                # No break, so not a single character was found matching any of the requirements, so just pick
+                # characters the number of needed characters.
+                picked_characters = characters_to_pick_from[:needed_characters]
+                assert len(picked_characters) == needed_characters
+                picked.extend(picked_characters)
+                skipped = characters_to_pick_from[needed_characters:]
+                # del characters_to_pick_from[-needed_characters:]
+                # needed_characters = 0
+                # Break the while loop now that all characters have been picked.
+                break
+
+            # A character with abilities matching one of the requirements was found.
+            # This code could be placed within the innermost loop, but it makes the control-flow more difficult to read.
+            picked_character = characters_to_pick_from.pop(picked_index)
+            picked.append(picked_character)
+            needed_characters -= 1
+
+            # Update the missing requirements for the abilities of the picked character.
+            abilities_mask = ~picked_character.abilities
             missing_requirements = {c & abilities_mask for c in missing_requirements}
             # Re-optimize to account for abilities that have been removed from individual has_all_abilities.
             missing_requirements = CharacterAbility.optimize_or_has_all_abilities(missing_requirements)
+            if CharacterAbility.NONE in missing_requirements:
+                # At least one of the HasAllAbilities has been satisfied, so the others can be discarded.
+                missing_requirements = set()
+                ability_requirements_by_cost = []
+            else:
+                ability_requirements_by_cost = sorted(missing_requirements, key=sort_func)
+        else:
+            skipped = characters_to_pick_from
 
     # TODO: Do the picked characters need to be set somewhere? Check where else world.starting_chapter is used.
     for character_data in picked:
