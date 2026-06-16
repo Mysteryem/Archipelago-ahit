@@ -127,6 +127,9 @@ class Area(IntEnum):
     def is_bonus_room_bonus(self):
         return self in BONUS_ROOM_BONUSES
 
+    def is_vehicle_area(self):
+        return AreaFlag.VEHICLE_AREA in self.flags
+
     def prefix_name(self, name: str):
         return f"{self.readable_name} - {name}"
 
