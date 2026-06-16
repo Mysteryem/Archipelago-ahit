@@ -712,7 +712,8 @@ def create_starting_characters_for_vanilla_character_locked_chapters(
         characters_set = starting_chapter.story_characters
     # The story character names are a `set`, so sort before iterating to get a deterministic iteration order.
     # Also filter out characters that have been excluded from requirements.
-    characters = sorted(NORMAL_CHARACTER_TO_ITEM_DATA[char] for char in characters_set if char not in not_required)
+    characters = sorted(NORMAL_CHARACTER_TO_ITEM_DATA[char] for char in characters_set
+                        if char.readable_name not in not_required)
 
     return _create_starting_characters_for_character_locked_chapters(
         world, possible_pool_character_items, characters, required_count, starting_chapter_ability_requirements)
