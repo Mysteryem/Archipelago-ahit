@@ -579,14 +579,17 @@ def _create_starting_characters_for_character_locked_chapters(
         else:
             missing_requirements = CharacterAbility.optimize_or_has_all_abilities(missing_requirements)
     else:
-        world.random.shuffle(starting_chapter_characters)
+        characters_to_pick_from = starting_chapter_characters.copy()
+        world.random.shuffle(characters_to_pick_from)
+        # Sort so that characters that potentially lock access to the least chapters are at the end, and are therefore
+        # most likely to be picked because iteration
+        characters_to_pick_from.sort(key=lambda data: world.character_chapter_access_counts[data.name], reverse=True)
 
         def sort_func(c: CharacterAbility) -> int:
             return sum(map(DEFAULT_ABILITY_COSTS.__getitem__, c))
 
         picked = []
         needed_characters = starting_chapter_required_count
-        characters_to_pick_from = starting_chapter_characters.copy()
         ability_requirements_by_cost = sorted(missing_requirements, key=sort_func)
         while needed_characters > 0:
             # Iteration through `ability_requirements_by_cost` restarts after picking each character with matching
