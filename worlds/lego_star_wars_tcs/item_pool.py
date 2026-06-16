@@ -773,15 +773,14 @@ def create_starting_characters_for_needed_starting_chapter_abilities(
     # Get the abilities the player is currently starting with.
     starting_abilities = world.get_starting_inventory_abilities()
 
-    # Only give enough characters to fulfil the main requirements of the starting chapter, unless all rarer, required
-    # alt requirements have already been fulfilled and fewer characters get picked to fulfil the alt requirements.
-    starting_chapter_entrance_abilities = world.starting_chapter.completion_main_ability_requirements
-
-    # Remove all has_all_abilities containing rare/useful abilities
+    # Find all has_all_abilities without rare/useful abilities and prefer picking from those.
     non_rare_has_all_abilities = {
         has_all_abilities for has_all_abilities in missing_starting_chapter_ability_requirements
         if has_all_abilities & RARE_AND_USEFUL_ABILITIES == 0
     }
+    assert all(abilities & starting_abilities == 0 for abilities in missing_starting_chapter_ability_requirements), \
+    ("Missing abilities should not have any abilities in common with the starting abilities because then the abilities"
+     " are not missing")
     if non_rare_has_all_abilities:
         or_has_all_abilities = non_rare_has_all_abilities
     else:
@@ -802,7 +801,7 @@ def create_starting_characters_for_needed_starting_chapter_abilities(
     for has_all_abilities in or_has_all_abilities:
         picked_characters = pick_characters_to_fulfil_abilities(
             world,
-            starting_chapter_entrance_abilities,
+            has_all_abilities,
             possible_pool_character_items.copy(),
             starting_abilities,
         )
