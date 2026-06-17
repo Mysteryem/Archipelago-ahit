@@ -16,7 +16,7 @@ from ...data.items import MinikitItemData
 from ...data.items.generic_items import GENERIC_DATA
 
 
-MINIKIT_ITEMS: Mapping[ApItemId, int] = cast(dict[ApItemId, int], {
+_MINIKIT_ITEMS: Mapping[ApItemId, int] = cast(dict[ApItemId, int], {
     item.code: item.bundle_size for item in GENERIC_DATA if isinstance(item, MinikitItemData)
 })
 
@@ -25,9 +25,9 @@ _BONUS_ROOM_BONUS_NAME_TO_AREA: Mapping[str, Area] = {
 }
 
 
-logger = logging.getLogger("Client")
+_LOGGER = logging.getLogger("Client")
 
-EPISODE_NUMBER_TO_EPISODE_TEXT = {
+_EPISODE_NUMBER_TO_EPISODE_TEXT = {
     1: TextId.EPISODE_1_NAME,
     2: TextId.EPISODE_2_NAME,
     3: TextId.EPISODE_3_NAME,
@@ -37,14 +37,14 @@ EPISODE_NUMBER_TO_EPISODE_TEXT = {
 }
 
 
-GOAL_TEXT_CYCLE_COOLDOWN_NS = int(2e9)  # 2s
-GoalKeys = Literal["Minikits", "Bosses", "Areas", "Kyber Bricks", "Goal Chapter"]
+_GOAL_TEXT_CYCLE_COOLDOWN_NS = int(2e9)  # 2s
+_GoalKeys = Literal["Minikits", "Bosses", "Areas", "Kyber Bricks", "Goal Chapter"]
 
 _NO_GOAL_CHAPTER = -1
 
 
 class GoalManager(ClientComponent):
-    receivable_ap_ids = MINIKIT_ITEMS
+    receivable_ap_ids = _MINIKIT_ITEMS
 
     _goal_text_needs_update: bool = True
 
@@ -73,9 +73,9 @@ class GoalManager(ClientComponent):
 
     goal_chapter_area_id: int = 999_999_999  # Set by an option and read from slot data.
 
-    _paused_goal_strings: dict[GoalKeys, str]
-    _paused_goal_string_key_cycle: Iterator[GoalKeys]
-    _last_paused_goal_string_cycle_key: GoalKeys | None = None
+    _paused_goal_strings: dict[_GoalKeys, str]
+    _paused_goal_string_key_cycle: Iterator[_GoalKeys]
+    _last_paused_goal_string_cycle_key: _GoalKeys | None = None
     _last_paused_goal_string_cycle: int = -1
 
     def __init__(self):
@@ -149,7 +149,7 @@ class GoalManager(ClientComponent):
                     area = Area.from_short_name(chapter)
                     boss = Boss.from_area(area)
                     if boss is None:
-                        logger.error(f"Could not find the boss for boss chapter {chapter} (area {area!r})")
+                        _LOGGER.error(f"Could not find the boss for boss chapter {chapter} (area {area!r})")
                         continue
                     if self.goal_bosses_anakin_as_vader and boss is Boss.ANAKIN:
                         boss_name = Boss.VADER_TRAP.readable_name
@@ -382,7 +382,7 @@ class GoalManager(ClientComponent):
                     text_to_append += ". "
             if defeated_boss_strings:
                 text_to_append += "Defeated " + ", ".join(defeated_boss_strings)
-            episode_text_id = EPISODE_NUMBER_TO_EPISODE_TEXT[episode]
+            episode_text_id = _EPISODE_NUMBER_TO_EPISODE_TEXT[episode]
             ctx.text_replacer.suffix_custom_string(episode_text_id, text_to_append)
 
     @subscribe_event
@@ -402,7 +402,7 @@ class GoalManager(ClientComponent):
             return
 
         now = monotonic_ns()
-        if now > self._last_paused_goal_string_cycle + GOAL_TEXT_CYCLE_COOLDOWN_NS:
+        if now > self._last_paused_goal_string_cycle + _GOAL_TEXT_CYCLE_COOLDOWN_NS:
             next_paused_key = next(self._paused_goal_string_key_cycle)
             event.context.text_replacer.suffix_custom_string(TextId.PAUSED, self._paused_goal_strings[next_paused_key])
             self._last_paused_goal_string_cycle = now
