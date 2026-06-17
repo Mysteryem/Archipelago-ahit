@@ -116,7 +116,7 @@ class Area(IntEnum):
         return _AREA_TO_EXTRA_TOGGLE_CHARACTERS.get(self, frozenset())
 
     def is_chapter(self):
-        return self.area_index in range(0, 6)
+        return 0 <= self.area_index <= 5
 
     def is_character_bonus(self):
         return self.area_index == 7
