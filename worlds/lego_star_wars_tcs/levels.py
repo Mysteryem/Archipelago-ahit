@@ -763,7 +763,7 @@ BONUS_AREAS = [
     # No gold brick for watching the trailer, but it does unlock the shop slot for purchasing Indiana Jones in vanilla
     # todo: Add the Purchase Indiana Jones location.
     # It looks like the unfinished Indiana Jones level would have been Area 67, though this is inaccessible.
-    BonusArea("Indiana Jones: Trailer", 0x86e505, (), 0x0, -1, 67, gold_brick=False)
+    BonusArea("Indiana Jones Trailer", 0x86e505, (), 0x0, -1, 67, gold_brick=False)
 ]
 BONUS_NAME_TO_BONUS_AREA = {bonus.name: bonus for bonus in BONUS_AREAS}
 

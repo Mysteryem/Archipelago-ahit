@@ -1,18 +1,28 @@
 import logging
 from itertools import cycle
 from time import monotonic_ns
-from typing import Mapping, Literal, Iterator
+from typing import Mapping, Literal, Iterator, cast
 
 from .text_replacer import TextId
 from ..common_addresses import CantinaRoom, CustomSaveFlags1, GameState1
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
-from ..type_aliases import TCSContext, AreaId
-from ...items import MINIKITS_BY_COUNT
-from ...levels import SHORT_NAME_TO_CHAPTER_AREA, AREA_ID_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
+from ..type_aliases import TCSContext, AreaId, ApItemId
 from ...options import OnlyUniqueBossesCountTowardsGoal, MinikitGoalCompletionMethod
 from . import ClientComponent
 
-MINIKIT_ITEMS: Mapping[int, int] = {item.code: count for count, item in MINIKITS_BY_COUNT.items()}
+from ...data.areas import Area, BONUS_ROOM_BONUSES
+from ...data.bosses import Boss
+from ...data.items import MinikitItemData
+from ...data.items.generic_items import GENERIC_DATA
+
+
+MINIKIT_ITEMS: Mapping[ApItemId, int] = cast(dict[ApItemId, int], {
+    item.code: item.bundle_size for item in GENERIC_DATA if isinstance(item, MinikitItemData)
+})
+
+_BONUS_ROOM_BONUS_NAME_TO_AREA: Mapping[str, Area] = {
+    area.readable_name: area for area in BONUS_ROOM_BONUSES
+}
 
 
 logger = logging.getLogger("Client")
@@ -124,7 +134,7 @@ class GoalManager(ClientComponent):
             self.goal_bosses_count = goal_bosses_count
             self.goal_bosses_count = slot_data["defeat_bosses_goal_amount"]
             enabled_boss_chapters = set(slot_data["enabled_bosses"])
-            self.enabled_boss_chapters = {SHORT_NAME_TO_CHAPTER_AREA[chapter].area_id
+            self.enabled_boss_chapters = {Area.from_short_name(chapter)
                                           for chapter in enabled_boss_chapters}
             only_unique_bosses_count = slot_data["only_unique_bosses_count"]
             self.goal_bosses_must_be_unique = (
@@ -136,19 +146,24 @@ class GoalManager(ClientComponent):
                 unique_bosses: dict[str, set[AreaId]] = {}
                 unique_bosses_to_chapters: dict[str, list[str]] = {}
                 for chapter in enabled_boss_chapters:
-                    area = SHORT_NAME_TO_CHAPTER_AREA[chapter]
-                    boss = area.boss
-                    if self.goal_bosses_anakin_as_vader and boss == "Anakin Skywalker":
-                        boss = "Darth Vader"
-                    unique_bosses.setdefault(boss, set()).add(area.area_id)
-                    unique_bosses_to_chapters.setdefault(boss, []).append(area.short_name)
+                    area = Area.from_short_name(chapter)
+                    boss = Boss.from_area(area)
+                    if boss is None:
+                        logger.error(f"Could not find the boss for boss chapter {chapter} (area {area!r})")
+                        continue
+                    if self.goal_bosses_anakin_as_vader and boss is Boss.ANAKIN:
+                        boss_name = Boss.VADER_TRAP.readable_name
+                    else:
+                        boss_name = boss.readable_name
+                    unique_bosses.setdefault(boss_name, set()).add(area)
+                    unique_bosses_to_chapters.setdefault(boss_name, []).append(area.get_short_name())
                 self.enabled_unique_bosses = unique_bosses
                 sorted_bosses = sorted(unique_bosses_to_chapters.items(), key=lambda t: min(t[1]))
                 boss_strings = []
-                for boss, chapters in sorted_bosses:
+                for boss_name, chapters in sorted_bosses:
                     chapters.sort()
                     chapters_string = ", ".join(chapters)
-                    boss_string = f"{boss} ({chapters_string})"
+                    boss_string = f"{boss_name} ({chapters_string})"
                     boss_strings.append(boss_string)
 
                 if len(boss_strings) == 1:
@@ -190,11 +205,11 @@ class GoalManager(ClientComponent):
             if slot_data["enable_bonus_locations"]:
                 enabled_bonus_level_count = 0
                 for name in slot_data["enabled_bonuses"]:
-                    bonus_area = BONUS_NAME_TO_BONUS_AREA[name]
-                    if not bonus_area.gold_brick:
+                    bonus_area = _BONUS_ROOM_BONUS_NAME_TO_AREA[name]
+                    if not bonus_area.has_gold_brick():
                         continue
                     enabled_bonus_level_count += 1
-                    goal_areas_relevant_bonus_area_ids.add(bonus_area.area_id)
+                    goal_areas_relevant_bonus_area_ids.add(bonus_area)
                 total_level_count = enabled_chapter_count + enabled_bonus_level_count
                 areas_goal_info_text = (f"{self.goal_areas_count}/{total_level_count} levels (Chapters and/or Bonus"
                                         f" levels) need to be completed to goal.")
@@ -214,7 +229,7 @@ class GoalManager(ClientComponent):
         else:
             goal_chapter = slot_data["goal_chapter"]
             if goal_chapter:
-                self.goal_chapter_area_id = SHORT_NAME_TO_CHAPTER_AREA[goal_chapter].area_id
+                self.goal_chapter_area_id = Area.from_short_name(goal_chapter)
             else:
                 # No goal chapter required.
                 self.goal_chapter_area_id = _NO_GOAL_CHAPTER
@@ -225,8 +240,7 @@ class GoalManager(ClientComponent):
 
         if self.goal_chapter_area_id != _NO_GOAL_CHAPTER:
             if has_sub_goals:
-                goal_area = AREA_ID_TO_CHAPTER_AREA[self.goal_chapter_area_id]
-                shortname = goal_area.short_name
+                shortname = Area(self.goal_chapter_area_id).get_short_name()
 
                 hints_page_3_goal_info_texts.append(
                     f"Once {shortname}'s usual requirements and all other goal requirements are completed,"
@@ -300,11 +314,11 @@ class GoalManager(ClientComponent):
             goal_strings["Kyber Bricks"] = suffix_message + kyber_bricks_goal
 
         if self.goal_chapter_area_id != _NO_GOAL_CHAPTER:
-            area = AREA_ID_TO_CHAPTER_AREA[self.goal_chapter_area_id]
+            area = Area(self.goal_chapter_area_id)
             if self.sub_goals_complete:
-                goal_strings["Goal Chapter"] = f" - Final Goal: Complete {area.short_name}"
+                goal_strings["Goal Chapter"] = f" - Final Goal: Complete {area.get_short_name()}"
             else:
-                goal_strings["Goal Chapter"] = f" - Final Goal: Unlock and complete {area.short_name}"
+                goal_strings["Goal Chapter"] = f" - Final Goal: Unlock and complete {area.get_short_name()}"
 
         if len(goal_strings) > 1:
             # Add a " [x/total]" string to the end of each goal string to help make it clearer to the user that there
@@ -337,16 +351,17 @@ class GoalManager(ClientComponent):
             for boss, area_ids in self.enabled_unique_bosses.items():
                 defeated = not area_ids.isdisjoint(completed_area_ids)
                 for area_id in area_ids:
-                    area = AREA_ID_TO_CHAPTER_AREA[area_id]
+                    area = Area(area_id)
                     # Anakin could count as Darth Vader, so use the boss name from self.enabled_unique_bosses instead of
                     # area.unique_boss_name.
-                    bosses_per_episode[area.episode].append(
-                        (area.number_in_episode, f"{boss} ({area.short_name})", defeated))
+                    bosses_per_episode[area.episode_index + 1].append(
+                        (area.area_index + 1, f"{boss} ({area.get_short_name()})", defeated))
         else:
             for area_id in self.enabled_boss_chapters:
                 defeated = area_id in completed_area_ids
-                area = AREA_ID_TO_CHAPTER_AREA[area_id]
-                bosses_per_episode[area.episode].append((area.number_in_episode, area.unique_boss_name, defeated))
+                area = Area(area_id)
+                boss_name = Boss.from_area(area).readable_name
+                bosses_per_episode[area.episode_index + 1].append((area.area_index + 1, boss_name, defeated))
 
         for episode, bosses in bosses_per_episode.items():
             if not bosses:
