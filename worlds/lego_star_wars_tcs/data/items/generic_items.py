@@ -87,3 +87,6 @@ GENERIC_DATA: list[GenericItemData] = [
     _generic(562, NonDataItemName.BLUE_STUD),
     _generic(563, NonDataItemName.PURPLE_STUD),
 ]
+GENERIC_DATA_BY_NAME: dict[str, GenericItemData] = {
+    data.name: data for data in GENERIC_DATA
+}
