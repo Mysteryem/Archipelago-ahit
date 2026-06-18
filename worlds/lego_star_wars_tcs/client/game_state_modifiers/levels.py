@@ -24,14 +24,13 @@ from ...data.items import GenericItemData
 from ...data.items.generic_items import EPISODE_UNLOCKS, GENERIC_DATA_BY_NAME, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
 
 
-debug_logger = logging.getLogger("TCS Debug")
+_DEBUG_LOGGER = logging.getLogger("TCS Debug")
 
 # Changes according to what Area door the player is stand in front of. It is 0xFF while in the rest of the Cantina, away
 # from an Area door.
-CURRENT_AREA_DOOR_ADDRESS = 0x8795c0  # _last_hub_area
+_CURRENT_AREA_DOOR_ADDRESS = 0x8795c0  # _last_hub_area
 
-AREA_DATA_STORY_TRUE_JEDI_REQUIREMENT = UintField(0x8c)
-AREA_DATA_FREE_PLAY_TRUE_JEDI_REQUIREMENT = UintField(0x90)
+_AREA_DATA_FREE_PLAY_TRUE_JEDI_REQUIREMENT = UintField(0x90)
 
 # For simplicity, the client locks the Goal Chapter by requiring a fake item that does not exist, so that no special
 # handling is needed for unlocking the Goal Chapter.
@@ -46,7 +45,7 @@ _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[_SUB_GOAL_SPECIAL_ID] = GenericItemData(_SUB_
 
 
 @dataclass
-class RemainingChapterItemRequirements:
+class _RemainingChapterItemRequirements:
     """
     Represents the remaining requirements to unlock a chapter.
     """
@@ -123,7 +122,7 @@ class RemainingChapterItemRequirements:
 
 class UnlockedChapterManager(ClientComponent):
     ap_item_id_to_dependent_game_chapters: dict[int, list[Area]]
-    remaining_chapter_item_requirements: dict[Area, RemainingChapterItemRequirements]
+    remaining_chapter_item_requirements: dict[Area, _RemainingChapterItemRequirements]
 
     unlocked_chapters_per_episode: dict[int, set[Area]]
     should_unlock_all_episodes_shop_slots: Callable[[TCSContext], bool] = staticmethod(lambda _ctx: False)
@@ -257,7 +256,7 @@ class UnlockedChapterManager(ClientComponent):
 
         self.unlocked_chapters_per_episode = {i: set() for i in enabled_episodes}
         item_id_to_chapter_area: dict[int, list[Area]] = {}
-        remaining_chapter_item_requirements: dict[Area, RemainingChapterItemRequirements] = {}
+        remaining_chapter_item_requirements: dict[Area, _RemainingChapterItemRequirements] = {}
 
         if goal_chapter := slot_data.get("goal_chapter"):
             assert isinstance(goal_chapter, str)
@@ -265,7 +264,7 @@ class UnlockedChapterManager(ClientComponent):
             # Add the requirement for the fake sub-goals item to the Goal Chapter so that it will only unlock once all
             # sub-goals have been completed.
             item_id_to_chapter_area[_SUB_GOAL_SPECIAL_ID] = [goal_area]
-            remaining_requirements = RemainingChapterItemRequirements(item_ids_hard_remaining={_SUB_GOAL_SPECIAL_ID})
+            remaining_requirements = _RemainingChapterItemRequirements(item_ids_hard_remaining={_SUB_GOAL_SPECIAL_ID})
             remaining_chapter_item_requirements[goal_area] = remaining_requirements
             self.goal_chapter_area = goal_area
             self.enabled_chapter_areas.add(goal_area)
@@ -345,7 +344,7 @@ class UnlockedChapterManager(ClientComponent):
             if chapter_area in remaining_chapter_item_requirements:
                 remaining_requirements = remaining_chapter_item_requirements[chapter_area]
             else:
-                remaining_requirements = RemainingChapterItemRequirements()
+                remaining_requirements = _RemainingChapterItemRequirements()
                 remaining_chapter_item_requirements[chapter_area] = remaining_requirements
             assert remaining_requirements.count_remaining == 0, "Count should not be set"
             assert len(remaining_requirements.item_ids_count_remaining) == 0, "Count item IDs set should be empty"
@@ -368,8 +367,8 @@ class UnlockedChapterManager(ClientComponent):
 
         for dependent_area in dependent_chapters:
             if dependent_area not in self.remaining_chapter_item_requirements:
-                debug_logger.info("Would have removed %s from %s requirements, but it has already been unlocked.",
-                                  _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area)
+                _DEBUG_LOGGER.info("Would have removed %s from %s requirements, but it has already been unlocked.",
+                                   _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area)
                 continue
             remaining_requirements = self.remaining_chapter_item_requirements[dependent_area]
             assert remaining_requirements
@@ -377,13 +376,13 @@ class UnlockedChapterManager(ClientComponent):
                 # Consider a Chapter that requires an Episode Unlock and any 1 of 4 different Characters, once the first
                 # Character of that 4 has been received, that part of the unlock requirements is completed, but the
                 # Episode Unlock is still missing, so the chapter is not unlocked yet.
-                debug_logger.info("Would have removed %s from %s requirements, but the relevant part of the"
-                                  " requirements has already been completed.",
-                                  _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area)
+                _DEBUG_LOGGER.info("Would have removed %s from %s requirements, but the relevant part of the"
+                                   " requirements has already been completed.",
+                                   _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area)
                 continue
             remaining_requirements.remove(ap_item_id)
-            debug_logger.info("Removed %s from %s requirements",
-                              _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area)
+            _DEBUG_LOGGER.info("Removed %s from %s requirements",
+                               _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area)
             if not remaining_requirements:
                 self._unlock_chapter(dependent_area)
                 # Display a message when the goal chapter is unlocked, but try to avoid telling the user if they are
@@ -402,7 +401,7 @@ class UnlockedChapterManager(ClientComponent):
 
     def _unlock_chapter(self, chapter_area: Area):
         self.unlocked_chapters_per_episode[chapter_area.get_chapter_episode()].add(chapter_area)
-        debug_logger.info("Unlocked chapter %s (%s)", chapter_area.name, chapter_area.get_short_name())
+        _DEBUG_LOGGER.info("Unlocked chapter %s (%s)", chapter_area.name, chapter_area.get_short_name())
 
     @subscribe_event
     async def update_game_state(self, event: OnGameWatcherTickEvent) -> None:
@@ -431,7 +430,7 @@ class UnlockedChapterManager(ClientComponent):
                 unlocked_areas_in_room = self.unlocked_chapters_per_episode[cantina_room]
                 if unlocked_areas_in_room:
                     # There are unlocked chapters in this room.
-                    area_id_of_door_the_player_is_in_front_of = ctx.read_uchar(CURRENT_AREA_DOOR_ADDRESS)
+                    area_id_of_door_the_player_is_in_front_of = ctx.read_uchar(_CURRENT_AREA_DOOR_ADDRESS)
                     if area_id_of_door_the_player_is_in_front_of in Area:
                         area = Area(area_id_of_door_the_player_is_in_front_of)
                         if not area.is_chapter():
@@ -492,7 +491,7 @@ class UnlockedChapterManager(ClientComponent):
             current_p_area_data = CURRENT_P_AREA_DATA_ADDRESS.get(ctx)
 
             if current_p_area_data == 0:
-                # debug_logger.info("Current AreaData pointer is NULL. Nothing to do.")
+                # _DEBUG_LOGGER.info("Current AreaData pointer is NULL. Nothing to do.")
                 return
 
             current_area_id = AREA_DATA_ID.get(ctx, current_p_area_data)
@@ -500,7 +499,7 @@ class UnlockedChapterManager(ClientComponent):
 
             if current_area is None or not current_area.is_chapter():
                 # The current area is not a chapter area, so there is nothing to do.
-                debug_logger.info("The current area has ID %i, which is not a chapter Area", current_area_id)
+                _DEBUG_LOGGER.info("The current area has ID %i, which is not a chapter Area", current_area_id)
                 return
             chapter_area = current_area
 
@@ -519,8 +518,8 @@ class UnlockedChapterManager(ClientComponent):
                 multiplier //= 2
             true_jedi_requirement *= multiplier
 
-        AREA_DATA_FREE_PLAY_TRUE_JEDI_REQUIREMENT.set(ctx, current_p_area_data, true_jedi_requirement)
-        debug_logger.info("Set the True Jedi requirement for %s to %i", chapter_area.name, true_jedi_requirement)
+        _AREA_DATA_FREE_PLAY_TRUE_JEDI_REQUIREMENT.set(ctx, current_p_area_data, true_jedi_requirement)
+        _DEBUG_LOGGER.info("Set the True Jedi requirement for %s to %i", chapter_area.name, true_jedi_requirement)
 
     @subscribe_event
     def on_area_change(self, event: OnAreaChangeEvent):
@@ -533,12 +532,12 @@ class UnlockedChapterManager(ClientComponent):
             current_area = None
         self.current_area = current_area
         if current_area is None:
-            # debug_logger.info("Current AreaData pointer is NULL. Nothing to do.")
+            # _DEBUG_LOGGER.info("Current AreaData pointer is NULL. Nothing to do.")
             return
 
         if not current_area.is_chapter():
             # The current area is not a chapter area, so there is nothing to do.
-            debug_logger.info("The current area is %s, which is not a chapter Area", repr(current_area))
+            _DEBUG_LOGGER.info("The current area is %s, which is not a chapter Area", repr(current_area))
             return
 
         self._set_current_area_true_jedi_requirement(event.context, event.new_p_area_data, current_area)
