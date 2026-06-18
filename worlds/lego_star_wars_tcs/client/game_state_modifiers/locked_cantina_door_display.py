@@ -9,9 +9,7 @@ from ..common_addresses import CantinaRoom, player_character_entity_iter
 from ..events import subscribe_event, OnGameWatcherTickEvent, OnLevelChangeEvent, OnReceiveSlotDataEvent
 
 from ...data.areas import Area, EPISODE_AREA_LOOKUP
-
-
-LEVEL_ID_CANTINA = 325
+from ...data.levels import Level
 
 
 # Technically this is the feet position
@@ -40,8 +38,7 @@ AREA_DATA_SIZE = 0x9c
 AREA_DATA_NAME_ID = UShortField(0x78)
 """.NameId of AREADATA_s, the localisation text ID of the area."""
 
-EPISODE_1_ENDING_AREA_ID = 7
-AREA_ID_TO_USE = EPISODE_1_ENDING_AREA_ID
+AREA_TO_USE = Area.E1ENDING
 
 
 @dataclass(frozen=True)
@@ -175,15 +172,15 @@ class LockedCantinaDoorDisplay(ClientComponent):
         # the Cantina, so do not have a localised Text ID assigned to their name in vanilla, meaning it can be freely
         # overridden as needed.
         a_data_list_addr = A_DATA_LIST_PTR.get(event.context)
-        episode_1_ending_area_data_addr = a_data_list_addr + AREA_DATA_SIZE * AREA_ID_TO_USE
+        episode_1_ending_area_data_addr = a_data_list_addr + AREA_DATA_SIZE * AREA_TO_USE
         AREA_DATA_NAME_ID.set(event.context, episode_1_ending_area_data_addr, TextId.WII_MOTION_CONTROL_HINT_1)
 
         # Initialise active state based on the current level ID.
-        self.active = event.context.current_level_id == LEVEL_ID_CANTINA
+        self.active = event.context.current_level_id == Level.MAP
 
     @subscribe_event
     def on_level_change(self, event: OnLevelChangeEvent):
-        self.active = event.new_level_id == LEVEL_ID_CANTINA
+        self.active = event.new_level_id == Level.MAP
 
     @staticmethod
     def _write_text(ctx: TCSContext, text: str):
@@ -251,7 +248,7 @@ class LockedCantinaDoorDisplay(ClientComponent):
                 has_drawn = False
         if has_drawn:
             # Set the area ID used by the game to display
-            HUB_AREA.set(ctx, AREA_ID_TO_USE)
+            HUB_AREA.set(ctx, AREA_TO_USE)
             # Set/refresh the timer.
             HUB_AREA_TIME.set(ctx, 1.1)
             self.is_drawing = True
@@ -278,7 +275,7 @@ class LockedCantinaDoorDisplay(ClientComponent):
                 HUB_AREA_TIME.set(ctx, 0.0)
             return
 
-        if HUB_AREA.get(ctx) not in (-1, AREA_ID_TO_USE):
+        if HUB_AREA.get(ctx) not in (-1, AREA_TO_USE):
             # Area door text other than our own is currently on-screen.
             return
 
