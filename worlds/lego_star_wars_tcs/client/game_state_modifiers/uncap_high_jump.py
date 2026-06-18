@@ -3,7 +3,7 @@ from ..events import subscribe_event, OnAreaChangeEvent, OnReceiveSlotDataEvent
 from ..type_aliases import TCSContext
 
 
-HIGH_JUMP_CAP = StaticFloat(0x802d94)
+_HIGH_JUMP_CAP = StaticFloat(0x802d94)
 
 
 class UncapHighJump(ClientComponent):
@@ -11,7 +11,7 @@ class UncapHighJump(ClientComponent):
 
     def adjust_high_jump_cap(self, ctx: TCSContext):
         if self.uncap_high_jump:
-            HIGH_JUMP_CAP.set(ctx, 1.14)
+            _HIGH_JUMP_CAP.set(ctx, 1.14)
 
     @subscribe_event
     def on_receive_slot_data(self, event: OnReceiveSlotDataEvent):
