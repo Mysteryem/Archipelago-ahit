@@ -43,7 +43,7 @@ CHAPTER_TO_CHAPTER_UNLOCK_ITEM = {
     for episode in range(1, 7)
 }
 
-EPISODE_UNLOCKS = {
+EPISODE_UNLOCKS: dict[int, NonDataItemName] = {
     1: NonDataItemName.EPISODE_1_UNLOCK,
     2: NonDataItemName.EPISODE_2_UNLOCK,
     3: NonDataItemName.EPISODE_3_UNLOCK,

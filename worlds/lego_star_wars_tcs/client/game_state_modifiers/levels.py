@@ -13,21 +13,18 @@ from ..common_addresses import (
     ChallengeMode,
     AREA_DATA_ID,
 )
-from ..type_aliases import TCSContext, AreaId
-from ...items import ITEM_DATA_BY_NAME, ITEM_DATA_BY_ID, GenericItemData
-from ...levels import (
-    ChapterArea,
-    CHAPTER_AREAS,
-    SHORT_NAME_TO_CHAPTER_AREA,
-    AREA_ID_TO_CHAPTER_AREA,
-    DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
-)
+from ..type_aliases import TCSContext
+from ...items import ITEM_DATA_BY_ID
+from ...levels import DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI
 from ... import options
+
+from ...data.areas import Area, ALL_CHAPTER_AREAS
+from ...data.characters import Character
+from ...data.items import GenericItemData
+from ...data.items.generic_items import EPISODE_UNLOCKS, GENERIC_DATA_BY_NAME, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
 
 
 debug_logger = logging.getLogger("TCS Debug")
-
-ALL_CHAPTER_AREA_IDS_SET = frozenset({area.area_id for area in CHAPTER_AREAS})
 
 # Changes according to what Area door the player is stand in front of. It is 0xFF while in the rest of the Cantina, away
 # from an Area door.
@@ -125,32 +122,31 @@ class RemainingChapterItemRequirements:
 
 
 class UnlockedChapterManager(ClientComponent):
-    ap_item_id_to_dependent_game_chapters: dict[int, list[str]]
-    remaining_chapter_item_requirements: dict[str, RemainingChapterItemRequirements]
+    ap_item_id_to_dependent_game_chapters: dict[int, list[Area]]
+    remaining_chapter_item_requirements: dict[Area, RemainingChapterItemRequirements]
 
-    unlocked_chapters_per_episode: dict[int, set[AreaId]]
+    unlocked_chapters_per_episode: dict[int, set[Area]]
     should_unlock_all_episodes_shop_slots: Callable[[TCSContext], bool] = staticmethod(lambda _ctx: False)
 
-    enabled_chapter_area_ids: set[int]
+    enabled_chapter_areas: set[Area]
     enabled_episodes: set[int]
-    chapters_using_alt_characters: set[str]
-    characters_excluded_from_unlocking_chapters: set[str]
-    per_chapter_required_character_count: dict[str, int]
-    random_character_chapter_requirements: dict[str, list[str]]
+    chapters_using_alt_characters: set[Area]
+    characters_excluded_from_unlocking_chapters: set[Character]
+    per_chapter_required_character_count: dict[Area, int]
+    random_character_chapter_requirements: dict[Area, list[Character]]
 
     easy_true_jedi: bool = False
     scale_true_jedi_with_score_multipliers: bool = False
-    goal_chapter: str = ""
-    goal_chapter_area_id: int = -1
+    goal_chapter_area: Area | None
 
-    last_area_door: ChapterArea | None = None
-    current_area_id: int = -1
+    last_area_door: Area | None = None
+    current_area: Area | None = None
 
     def __init__(self) -> None:
         self.ap_item_id_to_dependent_game_chapters = {}
         self.remaining_chapter_item_requirements = {}
         self.unlocked_chapters_per_episode = {}
-        self.enabled_chapter_area_ids = set()
+        self.enabled_chapter_areas = set()
         self.chapters_using_alt_characters = set()
         self.characters_excluded_from_unlocking_chapters = set()
         self.per_chapter_required_character_count = {}
@@ -160,10 +156,10 @@ class UnlockedChapterManager(ClientComponent):
         slot_data = event.slot_data
         ctx = event.context
 
-        enabled_chapters = slot_data["enabled_chapters"]
-        enabled_episodes = slot_data["enabled_episodes"]
-        episode_unlock_requirement = slot_data["episode_unlock_requirement"]
-        all_episodes_character_purchase_requirements = slot_data["all_episodes_character_purchase_requirements"]
+        enabled_chapters: list[str] = slot_data["enabled_chapters"]
+        enabled_episodes: list[int] = slot_data["enabled_episodes"]
+        episode_unlock_requirement: int = slot_data["episode_unlock_requirement"]
+        all_episodes_character_purchase_requirements: int = slot_data["all_episodes_character_purchase_requirements"]
         all_episodes_purchases_enabled = bool(slot_data["enable_all_episodes_purchases"])
 
         # In older multiworlds, easier true jedi is never enabled because the option did not exist.
@@ -192,30 +188,39 @@ class UnlockedChapterManager(ClientComponent):
         )
 
         if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_random_characters:
+            from_slot_data: dict[str, list[str]] = slot_data["chapter_random_character_requirements"]
             self.random_character_chapter_requirements = {
-                chapter: [ITEM_DATA_BY_ID[c].name for c in characters]
-                for chapter, characters in slot_data["chapter_random_character_requirements"].items()
+                Area.from_short_name(chapter_short_name): list(map(Character.from_sendable_name, character_names))
+                for chapter_short_name, character_names in from_slot_data.items()
             }
         else:
             self.random_character_chapter_requirements = {}
 
         num_enabled_episodes = len(enabled_episodes)
 
-        self.enabled_chapter_area_ids = {SHORT_NAME_TO_CHAPTER_AREA[chapter_shortname].area_id
-                                         for chapter_shortname in enabled_chapters}
+        self.enabled_chapter_areas = set(map(
+            Area.from_short_name,
+            enabled_chapters
+        ))
 
         # In older multiworlds, all characters were required, alt characters could not be chosen, and characters could
         # not be excluded from requirements.
         if event.generator_version < (1, 4, 0):
-            self.per_chapter_required_character_count = dict.fromkeys(enabled_chapters, 999_999_999)
+            self.per_chapter_required_character_count = dict.fromkeys(self.enabled_chapter_areas, 999_999_999)
             self.chapters_using_alt_characters = set()
             self.characters_excluded_from_unlocking_chapters = set()
         else:
-            self.per_chapter_required_character_count = slot_data.get("chapter_required_character_counts", {})
-            self.chapters_using_alt_characters = set(slot_data.get("chapters_requiring_alt_characters", ()))
-            self.characters_excluded_from_unlocking_chapters = set(
+            from_slot_data: dict[str, int] = slot_data.get("chapter_required_character_counts", {})
+            converted_to_areas = {Area.from_short_name(k): v for k, v in from_slot_data.items()}
+            self.per_chapter_required_character_count = converted_to_areas
+            self.chapters_using_alt_characters = set(map(
+                Area.from_short_name,
+                slot_data.get("chapters_requiring_alt_characters", ())
+            ))
+            self.characters_excluded_from_unlocking_chapters = set(map(
+                Character.from_sendable_name,
                 slot_data.get("chapter_unlock_characters_not_required", ())
-            )
+            ))
 
         if len(enabled_chapters) == 1:
             chapters_text = enabled_chapters[0]
@@ -251,41 +256,44 @@ class UnlockedChapterManager(ClientComponent):
                                    f" {all_episodes_character_purchase_requirements}")
 
         self.unlocked_chapters_per_episode = {i: set() for i in enabled_episodes}
-        item_id_to_chapter_area_short_name: dict[int, list[str]] = {}
-        remaining_chapter_item_requirements: dict[str, RemainingChapterItemRequirements] = {}
+        item_id_to_chapter_area: dict[int, list[Area]] = {}
+        remaining_chapter_item_requirements: dict[Area, RemainingChapterItemRequirements] = {}
 
         if goal_chapter := slot_data.get("goal_chapter"):
+            assert isinstance(goal_chapter, str)
+            goal_area = Area.from_short_name(goal_chapter)
             # Add the requirement for the fake sub-goals item to the Goal Chapter so that it will only unlock once all
             # sub-goals have been completed.
-            item_id_to_chapter_area_short_name[_SUB_GOAL_SPECIAL_ID] = [goal_chapter]
+            item_id_to_chapter_area[_SUB_GOAL_SPECIAL_ID] = [goal_area]
             remaining_requirements = RemainingChapterItemRequirements(item_ids_hard_remaining={_SUB_GOAL_SPECIAL_ID})
-            remaining_chapter_item_requirements[goal_chapter] = remaining_requirements
-            self.goal_chapter = goal_chapter
-            self.goal_chapter_area_id = SHORT_NAME_TO_CHAPTER_AREA[goal_chapter].area_id
-            self.enabled_chapter_area_ids.add(self.goal_chapter_area_id)
+            remaining_chapter_item_requirements[goal_area] = remaining_requirements
+            self.goal_chapter_area = goal_area
+            self.enabled_chapter_areas.add(goal_area)
 
-        for chapter_area in CHAPTER_AREAS:
-            if chapter_area.area_id not in self.enabled_chapter_area_ids:
+        for chapter_area in ALL_CHAPTER_AREAS:
+            if chapter_area not in self.enabled_chapter_areas:
                 continue
-            short_name = chapter_area.short_name
 
-            unique_count_required_items: list[str] = []
+            unique_count_required_items: list[int] = []
             unique_count_required: int = 0
-            always_required_items: list[str]
+            always_required_items: list[int]
             if chapter_unlock_requirement_is_characters:
+                character_requirements: list[Character]
                 if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_vanilla_characters:
-                    if short_name in self.chapters_using_alt_characters:
-                        character_requirements = list(chapter_area.alt_character_requirements)
+                    if chapter_area in self.chapters_using_alt_characters:
+                        character_requirements_set = chapter_area.get_purchase_characters()
                     else:
-                        character_requirements = list(chapter_area.character_requirements)
+                        character_requirements_set = chapter_area.get_story_characters()
                     # Filter out excluded characters.
-                    character_requirements = [c for c in character_requirements
-                                              if c not in self.characters_excluded_from_unlocking_chapters]
-                    count_required = self.per_chapter_required_character_count[short_name]
+                    character_requirements = sorted(
+                        character_requirements_set.difference(self.characters_excluded_from_unlocking_chapters),
+                        key=lambda c: c.readable_name,
+                    )
+                    count_required = self.per_chapter_required_character_count[chapter_area]
                 else:
                     assert chapter_unlock_requirement == options.ChapterUnlockRequirement.option_random_characters
-                    count_required = self.per_chapter_required_character_count[short_name]
-                    character_requirements = self.random_character_chapter_requirements[short_name]
+                    count_required = self.per_chapter_required_character_count[chapter_area]
+                    character_requirements = self.random_character_chapter_requirements[chapter_area]
                 # Older versions do not provide a count in slot data, and instead assume all are required by setting the
                 # count_required to 999_999_999.
                 assert count_required <= len(character_requirements) or event.generator_version < (1, 4, 0), \
@@ -299,54 +307,56 @@ class UnlockedChapterManager(ClientComponent):
                     # All are required.
                     always_required_items = list(character_requirements)
             elif chapter_unlock_requirement == options.ChapterUnlockRequirement.option_chapter_item:
-                always_required_items = [f"{short_name} Unlock"]
+                unlock_item_name = CHAPTER_TO_CHAPTER_UNLOCK_ITEM[chapter_area]
+                unlock_item_data = GENERIC_DATA_BY_NAME[unlock_item_name]
+                unlock_item_code = unlock_item_data.code
+                assert unlock_item_code is not None
+                always_required_items = [unlock_item_code]
             else:
                 raise ValueError(f"Unexpected ChapterUnlockRequirement with value {chapter_unlock_requirement}")
 
             episode = chapter_area.episode
             if episode_unlock_requirement == options.EpisodeUnlockRequirement.option_episode_item:
-                always_required_items.append(f"Episode {episode} Unlock")
+                unlock_item_name = EPISODE_UNLOCKS[episode]
+                unlock_item_data = GENERIC_DATA_BY_NAME[unlock_item_name]
+                unlock_item_code = unlock_item_data.code
+                assert unlock_item_code is not None
+                always_required_items.append(unlock_item_code)
             elif episode_unlock_requirement == options.EpisodeUnlockRequirement.option_open:
                 pass
             else:
                 raise RuntimeError(f"Unexpected EpisodeUnlockRequirement: {episode_unlock_requirement}")
 
-            # Convert item names into item IDs, and register the chapter shortname as depending on
+            # Convert item names into item IDs, and register the chapter area as depending on
             # these item IDs.
-            unique_count_required_codes: set[int] = set()
-            for item_name in unique_count_required_items:
-                item_code = ITEM_DATA_BY_NAME[item_name].code
-                assert item_code != -1
-                item_id_to_chapter_area_short_name.setdefault(item_code, []).append(short_name)
-                assert item_code not in unique_count_required_items
-                unique_count_required_codes.add(item_code)
+            unique_count_required_codes: set[int] = set(unique_count_required_items)
+            assert len(unique_count_required_items) == len(unique_count_required_codes)
+            for item_code in unique_count_required_items:
+                item_id_to_chapter_area.setdefault(item_code, []).append(chapter_area)
 
-            always_required_codes: set[int] = set()
-            for item_name in always_required_items:
-                item_code = ITEM_DATA_BY_NAME[item_name].code
-                assert item_code != -1
-                item_id_to_chapter_area_short_name.setdefault(item_code, []).append(short_name)
-                assert item_code not in always_required_codes
-                always_required_codes.add(item_code)
+            always_required_codes: set[int] = set(always_required_items)
+            assert len(always_required_items) == len(always_required_codes)
+            for item_code in always_required_items:
+                item_id_to_chapter_area.setdefault(item_code, []).append(chapter_area)
 
             assert unique_count_required_codes.isdisjoint(always_required_codes), \
                 "Items should not be both always, and sometimes, required"
 
-            if short_name in remaining_chapter_item_requirements:
-                remaining_requirements = remaining_chapter_item_requirements[short_name]
+            if chapter_area in remaining_chapter_item_requirements:
+                remaining_requirements = remaining_chapter_item_requirements[chapter_area]
             else:
                 remaining_requirements = RemainingChapterItemRequirements()
-                remaining_chapter_item_requirements[short_name] = remaining_requirements
+                remaining_chapter_item_requirements[chapter_area] = remaining_requirements
             assert remaining_requirements.count_remaining == 0, "Count should not be set"
             assert len(remaining_requirements.item_ids_count_remaining) == 0, "Count item IDs set should be empty"
             remaining_requirements.count_remaining += unique_count_required
             remaining_requirements.item_ids_count_remaining.update(unique_count_required_codes)
             remaining_requirements.item_ids_hard_remaining.update(always_required_codes)
-            assert remaining_requirements, f"There should be some requirements for {short_name}"
+            assert remaining_requirements, f"There should be some requirements for {chapter_area!r}"
 
-        self.ap_item_id_to_dependent_game_chapters = item_id_to_chapter_area_short_name
+        self.ap_item_id_to_dependent_game_chapters = item_id_to_chapter_area
         self.remaining_chapter_item_requirements = remaining_chapter_item_requirements
-        self.enabled_episodes = {AREA_ID_TO_CHAPTER_AREA[area_id].episode for area_id in self.enabled_chapter_area_ids}
+        self.enabled_episodes = {area.get_chapter_episode() for area in self.enabled_chapter_areas}
 
     def on_sub_goal_completion(self, ctx: TCSContext):
         self.on_character_or_chapter_or_episode_unlocked(ctx, _SUB_GOAL_SPECIAL_ID)
@@ -356,12 +366,12 @@ class UnlockedChapterManager(ClientComponent):
         if dependent_chapters is None:
             return
 
-        for dependent_area_short_name in dependent_chapters:
-            if dependent_area_short_name not in self.remaining_chapter_item_requirements:
+        for dependent_area in dependent_chapters:
+            if dependent_area not in self.remaining_chapter_item_requirements:
                 debug_logger.info("Would have removed %s from %s requirements, but it has already been unlocked.",
-                                  _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area_short_name)
+                                  _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area)
                 continue
-            remaining_requirements = self.remaining_chapter_item_requirements[dependent_area_short_name]
+            remaining_requirements = self.remaining_chapter_item_requirements[dependent_area]
             assert remaining_requirements
             if ap_item_id not in remaining_requirements:
                 # Consider a Chapter that requires an Episode Unlock and any 1 of 4 different Characters, once the first
@@ -369,30 +379,30 @@ class UnlockedChapterManager(ClientComponent):
                 # Episode Unlock is still missing, so the chapter is not unlocked yet.
                 debug_logger.info("Would have removed %s from %s requirements, but the relevant part of the"
                                   " requirements has already been completed.",
-                                  _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area_short_name)
+                                  _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area)
                 continue
             remaining_requirements.remove(ap_item_id)
             debug_logger.info("Removed %s from %s requirements",
-                              _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area_short_name)
+                              _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[ap_item_id].name, dependent_area)
             if not remaining_requirements:
-                self.unlock_chapter(SHORT_NAME_TO_CHAPTER_AREA[dependent_area_short_name])
+                self._unlock_chapter(dependent_area)
                 # Display a message when the goal chapter is unlocked, but try to avoid telling the user if they are
                 # connecting to a slot where the goal chapter is already completed.
-                if (dependent_area_short_name == self.goal_chapter
+                if (dependent_area == self.goal_chapter_area
                         and not ctx.finished_game
-                        and self.goal_chapter_area_id not in ctx.free_play_completion_checker.completed_free_play):
-                    msg = f"> Goal Chapter {self.goal_chapter} Unlocked! <"
+                        and self.goal_chapter_area not in ctx.free_play_completion_checker.completed_free_play):
+                    msg = f"> Goal Chapter {self.goal_chapter_area.get_short_name()} Unlocked! <"
                     # todo: This is something that would benefit from being able to control how long a message is
                     #  displayed for.
                     # Display the message twice because of its importance.
                     ctx.text_display.priority_messages(msg, msg)
-                del self.remaining_chapter_item_requirements[dependent_area_short_name]
+                del self.remaining_chapter_item_requirements[dependent_area]
 
         del self.ap_item_id_to_dependent_game_chapters[ap_item_id]
 
-    def unlock_chapter(self, chapter_area: ChapterArea):
-        self.unlocked_chapters_per_episode[chapter_area.episode].add(chapter_area.area_id)
-        debug_logger.info("Unlocked chapter %s (%s)", chapter_area.name, chapter_area.short_name)
+    def _unlock_chapter(self, chapter_area: Area):
+        self.unlocked_chapters_per_episode[chapter_area.get_chapter_episode()].add(chapter_area)
+        debug_logger.info("Unlocked chapter %s (%s)", chapter_area.name, chapter_area.get_short_name())
 
     @subscribe_event
     async def update_game_state(self, event: OnGameWatcherTickEvent) -> None:
@@ -410,7 +420,7 @@ class UnlockedChapterManager(ClientComponent):
             # purchases in the shop.
             # To work around this, all Story mode completions are temporarily set when all Episode Unlocks have been
             # acquired and the player has selected one of the 'all episodes' characters for purchase in the shop.
-            temporary_story_completion = ALL_CHAPTER_AREA_IDS_SET
+            temporary_story_completion = ALL_CHAPTER_AREAS
         else:
             temporary_story_completion = set()
             # If the player is in an Episode's room, and inside a Chapter door with the Chapter door's menu open, grant
@@ -422,13 +432,18 @@ class UnlockedChapterManager(ClientComponent):
                 if unlocked_areas_in_room:
                     # There are unlocked chapters in this room.
                     area_id_of_door_the_player_is_in_front_of = ctx.read_uchar(CURRENT_AREA_DOOR_ADDRESS)
-                    area = AREA_ID_TO_CHAPTER_AREA.get(area_id_of_door_the_player_is_in_front_of)
-                    if area is not None and area.area_id in unlocked_areas_in_room:
+                    if area_id_of_door_the_player_is_in_front_of in Area:
+                        area = Area(area_id_of_door_the_player_is_in_front_of)
+                        if not area.is_chapter():
+                            area = None
+                    else:
+                        area = None
+                    if area is not None and area in unlocked_areas_in_room:
                         # The player is standing in front of, or within a chapter door that is unlocked.
                         if ctx.read_uchar(OPENED_MENU_DEPTH_ADDRESS) > 0:
                             # The player has a menu open (hopefully the menu within the chapter door.
-                            temporary_story_completion = {area.area_id}
-                            if self.last_area_door is not area:
+                            temporary_story_completion = {area}
+                            if self.last_area_door != area:
                                 # Force the selection in the menu to "Free Play" instead of "Story" or "Challenge".
                                 # This is only done when the ChapterArea changes, so that users can still choose "Story"
                                 # or "Challenge" if they really want to (not currently useful).
@@ -439,41 +454,40 @@ class UnlockedChapterManager(ClientComponent):
 
             # If the player is in a chapter, grant temporary Story mode completion so that they can Save and Exit to the
             # Cantina.
-            current_area_id = self.current_area_id
-            if current_area_id in AREA_ID_TO_CHAPTER_AREA:
-                temporary_story_completion |= {current_area_id}
+            current_area = self.current_area
+            if current_area is not None and current_area.is_chapter():
+                temporary_story_completion |= {current_area}
 
         completed_free_play = ctx.free_play_completion_checker.completed_free_play
 
         # 36 writes on each game state update is undesirable, but necessary to easily allow for temporarily completing
         # Story modes.
-        for area in CHAPTER_AREAS:
-            area_id = area.area_id
-            enabled = area_id in self.enabled_chapter_area_ids
-            if enabled and area_id in completed_free_play:
+        for area in ALL_CHAPTER_AREAS:
+            enabled = area in self.enabled_chapter_areas
+            if enabled and area in completed_free_play:
                 # Set the chapter as unlocked and Story mode completed because Free Play has been completed.
                 # The second bit in the third byte is custom to the AP client and signifies that Free Play has been
                 # completed.
-                ctx.write_bytes(area.address, b"\x03\x01", 2)
-            elif area_id in temporary_story_completion:
+                ctx.write_bytes(area.save_data_address, b"\x03\x01", 2)
+            elif area in temporary_story_completion:
                 # Set the chapter as unlocked and Story mode completed because Story mode for this chapter needs to be
                 # temporarily set as completed for some purpose.
-                ctx.write_bytes(area.address, b"\x01\x01", 2)
-            elif area_id not in self.enabled_chapter_area_ids:
+                ctx.write_bytes(area.save_data_address, b"\x01\x01", 2)
+            elif area not in self.enabled_chapter_areas:
                 # Set the chapter as locked, with Story mode incomplete.
-                ctx.write_bytes(area.address, b"\x00\x00", 2)
+                ctx.write_bytes(area.save_data_address, b"\x00\x00", 2)
             else:
-                if enabled and area_id in self.unlocked_chapters_per_episode[area.episode]:
+                if enabled and area in self.unlocked_chapters_per_episode[area.get_chapter_episode()]:
                     # Set the chapter as unlocked, but with Story mode incomplete because Free Play has not been
                     # completed. This prevents characters being for sale in the shop without completing Free Play for
                     # the chapter that unlocks those shop slots.
-                    ctx.write_bytes(area.address, b"\x01\x00", 2)
+                    ctx.write_bytes(area.save_data_address, b"\x01\x00", 2)
                 else:
                     # Set the chapter as locked, with Story mode incomplete.
-                    ctx.write_bytes(area.address, b"\x00\x00", 2)
+                    ctx.write_bytes(area.save_data_address, b"\x00\x00", 2)
 
     def _set_current_area_true_jedi_requirement(self, ctx: TCSContext, current_p_area_data: int | None = None,
-                                                chapter_area: ChapterArea | None = None):
+                                                chapter_area: Area | None = None):
         if current_p_area_data is None or chapter_area is None:
             current_p_area_data = CURRENT_P_AREA_DATA_ADDRESS.get(ctx)
 
@@ -482,23 +496,24 @@ class UnlockedChapterManager(ClientComponent):
                 return
 
             current_area_id = AREA_DATA_ID.get(ctx, current_p_area_data)
-            chapter_area = AREA_ID_TO_CHAPTER_AREA.get(current_area_id)
+            current_area = Area(current_area_id) if current_area_id in Area else None
 
-            if chapter_area is None:
+            if current_area is None or not current_area.is_chapter():
                 # The current area is not a chapter area, so there is nothing to do.
                 debug_logger.info("The current area has ID %i, which is not a chapter Area", current_area_id)
                 return
+            chapter_area = current_area
 
         if self.easy_true_jedi:
-            true_jedi_requirement = chapter_area.story_true_jedi_requirement
+            true_jedi_requirement = chapter_area.story_true_jedi
         else:
-            true_jedi_requirement = chapter_area.free_play_true_jedi_requirement
+            true_jedi_requirement = chapter_area.free_play_true_jedi
 
         if self.scale_true_jedi_with_score_multipliers:
             multiplier = ctx.acquired_generic.current_score_multiplier
             if (not self.easy_true_jedi
                     and multiplier >= 2
-                    and chapter_area.short_name in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI):
+                    and chapter_area.get_short_name() in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI):
                 # The chapter has a difficult or impossible True Jedi without the use of Score x2, so remove Score x2
                 # from the multiplier.
                 multiplier //= 2
@@ -512,42 +527,44 @@ class UnlockedChapterManager(ClientComponent):
         ctx = event.context
 
         current_area_id = event.new_area_data_id
-        self.current_area_id = current_area_id
-        if current_area_id == -1:
+        if current_area_id in Area:
+            current_area = Area(current_area_id)
+        else:
+            current_area = None
+        self.current_area = current_area
+        if current_area is None:
             # debug_logger.info("Current AreaData pointer is NULL. Nothing to do.")
             return
-        chapter_area = AREA_ID_TO_CHAPTER_AREA.get(current_area_id)
 
-        if chapter_area is None:
+        if not current_area.is_chapter():
             # The current area is not a chapter area, so there is nothing to do.
-            debug_logger.info("The current area has ID %i, which is not a chapter Area", current_area_id)
+            debug_logger.info("The current area is %s, which is not a chapter Area", repr(current_area))
             return
 
-        self._set_current_area_true_jedi_requirement(event.context, event.new_p_area_data, chapter_area)
-        # Check if the player is in a chapter.
-        if current_area_id in AREA_ID_TO_CHAPTER_AREA:
-            if not IS_CHARACTER_SWAPPING_ENABLED.get(ctx):
-                # The player must be in Story, Superstory or a Bounty Hunter Mission.
-                # todo: Find a way to tell apart Story, Superstory and Bounty Hunter Missions while in the level itself.
-                #  Currently, the client can only tell them apart on the 'status' screen.
+        self._set_current_area_true_jedi_requirement(event.context, event.new_p_area_data, current_area)
+        # Check that the chapter is being played in Free Play.
+        if not IS_CHARACTER_SWAPPING_ENABLED.get(ctx):
+            # The player must be in Story, Superstory or a Bounty Hunter Mission.
+            # todo: Find a way to tell apart Story, Superstory and Bounty Hunter Missions while in the level itself.
+            #  Currently, the client can only tell them apart on the 'status' screen.
+            ctx.text_display.priority_messages("Chapters should only be played in Free Play",
+                                               "Other modes are not currently part of the randomizer.")
+        else:
+            if not ChallengeMode.NO_CHALLENGE.is_set(ctx):
+                # The player is in Challenge mode.
                 ctx.text_display.priority_messages("Chapters should only be played in Free Play",
-                                                   "Other modes are not currently part of the randomizer.")
-            else:
-                if not ChallengeMode.NO_CHALLENGE.is_set(ctx):
-                    # The player is in Challenge mode.
-                    ctx.text_display.priority_messages("Chapters should only be played in Free Play",
-                                                       "Challenge mode is not currently part of the randomizer")
+                                                   "Challenge mode is not currently part of the randomizer")
 
-    def is_chapter_enabled(self, chapter: ChapterArea):
-        return chapter.area_id in self.enabled_chapter_area_ids
+    def is_chapter_enabled(self, chapter: Area):
+        return chapter in self.enabled_chapter_areas
 
-    def is_chapter_unlocked(self, chapter: ChapterArea):
-        return chapter.area_id in self.unlocked_chapters_per_episode[chapter.episode]
+    def is_chapter_unlocked(self, chapter: Area):
+        return chapter in self.unlocked_chapters_per_episode[chapter.get_chapter_episode()]
 
-    def format_locked_chapter_requirements(self, chapter: ChapterArea) -> str:
-        remaining = self.remaining_chapter_item_requirements.get(chapter.short_name)
+    def format_locked_chapter_requirements(self, chapter: Area) -> str:
+        remaining = self.remaining_chapter_item_requirements.get(chapter)
         if remaining:
-            return remaining.format_remaining_chapter_requirements(chapter.name)
+            return remaining.format_remaining_chapter_requirements(chapter.readable_name)
         else:
             return ""
 

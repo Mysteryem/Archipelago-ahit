@@ -7,7 +7,8 @@ from .text_replacer import TextId
 from ..common import NuVecField, StaticFloat, StaticInt, StaticUint, UShortField, TCSContext
 from ..common_addresses import CantinaRoom, player_character_entity_iter
 from ..events import subscribe_event, OnGameWatcherTickEvent, OnLevelChangeEvent, OnReceiveSlotDataEvent
-from ...levels import SHORT_NAME_TO_CHAPTER_AREA, EPISODE_TO_CHAPTER_AREAS
+
+from ...data.areas import Area, EPISODE_AREA_LOOKUP
 
 
 LEVEL_ID_CANTINA = 325
@@ -199,38 +200,39 @@ class LockedCantinaDoorDisplay(ClientComponent):
             # potentially modified by other parts of the client)
             return False
 
-        enabled_chapters = [chapter for chapter in EPISODE_TO_CHAPTER_AREAS[episode]
-                            if chapter_manager.is_chapter_enabled(chapter)]
+        enabled_chapters = [chapter_area for chapter_area in EPISODE_AREA_LOOKUP[episode].values()
+                            if chapter_manager.is_chapter_enabled(chapter_area)]
         if len(enabled_chapters) == 0:
             self._write_text(ctx, f"Error: Episode {episode} is locked, but no enabled Chapters in the Episode"
                                   f" were found.")
         elif len(enabled_chapters) == 1:
             self._write_text(ctx, chapter_manager.format_locked_chapter_requirements(enabled_chapters[0]))
         elif len(enabled_chapters) == 2:
-            self._write_text(ctx, f"Unlock either {enabled_chapters[0].name} or {enabled_chapters[1].name}")
+            self._write_text(ctx, f"Unlock either {enabled_chapters[0].readable_name}"
+                                  f" or {enabled_chapters[1].readable_name}")
         else:
-            names = [chapter.name for chapter in enabled_chapters]
+            names = [chapter.readable_name for chapter in enabled_chapters]
             self._write_text(ctx, f"Unlock any of {', '.join(names[:-1])} or {names[-1]}")
         return True
 
-    def _draw_chapter_info(self, ctx: TCSContext, short_name: str) -> bool:
-        chapter = SHORT_NAME_TO_CHAPTER_AREA[short_name]
+    def _draw_chapter_info(self, ctx: TCSContext, chapter_area: Area) -> bool:
         chapter_manager = ctx.unlocked_chapter_manager
-        if not chapter_manager.is_chapter_enabled(chapter):
-            self._write_text(ctx, f"{chapter.name} ({chapter.short_name}) is not enabled")
+        if not chapter_manager.is_chapter_enabled(chapter_area):
+            self._write_text(ctx, f"{chapter_area.readable_name} ({chapter_area.get_short_name()}) is not enabled")
             return True
 
-        if chapter_manager.is_chapter_unlocked(chapter):
+        if chapter_manager.is_chapter_unlocked(chapter_area):
             # The chapter is already unlocked, and should be displaying the vanilla Chapter door info (with text
             # potentially modified by other parts of the client).
             return False
 
-        to_write = chapter_manager.format_locked_chapter_requirements(chapter)
+        to_write = chapter_manager.format_locked_chapter_requirements(chapter_area)
         if to_write:
             self._write_text(ctx, to_write)
             return True
         else:
-            self._write_text(ctx, f"Error: {chapter.name} is locked, but its requirements could not be found")
+            self._write_text(ctx, f"Error: {chapter_area.readable_name} is locked, but its requirements could not be"
+                                  f" found")
             return False
 
     def _draw_info(self, ctx: TCSContext, room_id: CantinaRoom, door_name: str) -> None:
@@ -243,8 +245,8 @@ class LockedCantinaDoorDisplay(ClientComponent):
         else:
             episode = room
             if len(door_name) == 1 and ("1" <= door_name <= "6"):
-                short_name = f"{episode}-{door_name}"
-                has_drawn = self._draw_chapter_info(ctx, short_name)
+                chapter_area = EPISODE_AREA_LOOKUP[episode][int(door_name)]
+                has_drawn = self._draw_chapter_info(ctx, chapter_area)
             else:
                 has_drawn = False
         if has_drawn:

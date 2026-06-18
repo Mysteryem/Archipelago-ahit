@@ -19,6 +19,7 @@ __all__ = [
     "BONUS_ROOM_BONUSES",
     "BONUS_ROOM_VEHICLE_BONUSES",
     "VEHICLE_CHAPTERS",
+    "ALL_CHAPTER_AREAS",
 ]
 
 class AreaFlag(IntFlag):
@@ -52,6 +53,10 @@ class AreaInitializer(TypedDict):
     levels: list[Level]
 
 
+_AREA_SAVE_DATA_START = 0x86e114
+_AREA_SAVE_DATA_SIZE = 0xc
+
+
 # noinspection LongLine
 class Area(IntEnum):
     episode_index: int
@@ -62,6 +67,7 @@ class Area(IntEnum):
     free_play_true_jedi: int
     extra: Extra | None
     levels: tuple[Level, ...]
+    save_data_address: int
 
     def __new__(cls, *args, **kwargs):
         obj = int.__new__(cls, args[0])
@@ -80,6 +86,7 @@ class Area(IntEnum):
         self.free_play_true_jedi = area_initializer["free_play_true_jedi"]
         self.extra = area_initializer["extra"]
         self.levels = tuple(area_initializer["levels"])
+        self.save_data_address = _AREA_SAVE_DATA_START + self * _AREA_SAVE_DATA_SIZE
 
     def get_first_playable_level(self) -> Level | None:
         return next(filter(Level.is_playable, self.levels), None)
@@ -117,6 +124,16 @@ class Area(IntEnum):
 
     def is_chapter(self):
         return 0 <= self.area_index <= 5
+
+    def get_chapter_episode(self) -> int:
+        if not self.is_chapter():
+            raise Exception(f"{self} is not a chapter.")
+        return self.episode_index + 1
+
+    def get_chapter_number_in_episode(self) -> int:
+        if not self.is_chapter():
+            raise Exception(f"{self} is not a chapter.")
+        return self.area_index + 1
 
     def is_character_bonus(self):
         return self.area_index == 7
@@ -266,6 +283,9 @@ VEHICLE_CHAPTERS = frozenset({
     Area.DEATHSTAR2BATTLE,
 })
 
+ALL_CHAPTER_AREAS = frozenset({area for area in Area if area.is_chapter()})
+assert VEHICLE_CHAPTERS < ALL_CHAPTER_AREAS
+
 
 POWER_BRICK_EXTRAS: frozenset[Extra] = frozenset({
     area.extra for area in Area if area.extra is not None
@@ -292,4 +312,4 @@ def make_episode_area_lookup() -> dict[int, dict[int, Area]]:
 
 EPISODE_AREA_LOOKUP: dict[int, dict[int, Area]] = make_episode_area_lookup()
 del make_episode_area_lookup
-_LEGACY_CHAPTER_SHORT_NAME_TO_AREA: dict[str, Area] = {area.get_short_name(): area for area in Area if area.is_chapter()}
+_LEGACY_CHAPTER_SHORT_NAME_TO_AREA: dict[str, Area] = {area.get_short_name(): area for area in ALL_CHAPTER_AREAS}

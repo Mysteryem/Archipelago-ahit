@@ -152,6 +152,10 @@ class Character(IntEnum):
         else:
             return HasAny(*[c.readable_name for c in characters])
 
+    @staticmethod
+    def from_sendable_name(sendable_name: str) -> "Character":
+        return _NAME_TO_SENDABLE_CHARACTER[sendable_name]
+
 
     # There is no extractor for this data because of a significant number of edits needing to be made due to duplicates
     # and invalid identifiers. Most of the extractable data from characters is not really usable individually and needs
@@ -544,3 +548,4 @@ EXTRA_TOGGLE_LOGIC_RELEVANT_CHARACTERS = {
     and c not in _MINIKIT_BONUS_EXTRA_TOGGLE_CHARACTERS
 }
 ALL_SENDABLE_CHARACTERS = {c for c in ALL_LOGIC_RELEVANT_CHARACTERS if c.is_sendable()}
+_NAME_TO_SENDABLE_CHARACTER = {c.readable_name: c for c in ALL_SENDABLE_CHARACTERS}
