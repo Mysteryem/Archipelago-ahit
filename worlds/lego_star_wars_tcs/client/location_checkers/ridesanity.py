@@ -1,18 +1,20 @@
 from . import ClientComponent
-from ..common import AREA_ID_CANTINA
 from ..common_addresses import CURRENT_AREA_ADDRESS
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnAreaChangeEvent, OnPlayerCharacterIdChangeEvent
-from ..type_aliases import AreaId, ApLocationId, CharacterId, TCSContext
-from ...levels import SHORT_NAME_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
+from ..type_aliases import ApLocationId, TCSContext
 from ...locations import LOCATION_NAME_TO_ID
-from ...ridables import CHAPTER_TO_RIDABLES, BONUS_TO_RIDABLES, RIDABLES_BY_NAME
+from ...ridables import BONUS_TO_RIDABLES
 
 from ...options import GoalChapterLocationsMode
 
+from ...data.areas import Area, BONUS_ROOM_BONUSES
+from ...data.characters import Character
+from ...data.logic import CHAPTERS_BY_SHORT_NAME
+
 
 class RidesanityChecker(ClientComponent):
-    ridables_by_area: dict[AreaId, dict[CharacterId, ApLocationId]]
-    current_area_id: AreaId = -1
+    ridables_by_area: dict[Area, dict[Character, ApLocationId]]
+    current_area: Area | None = None
     locations_to_send: set[ApLocationId]
 
     def __init__(self):
@@ -36,36 +38,45 @@ class RidesanityChecker(ClientComponent):
         goal_chapter_locations_mode = event.slot_data.get("goal_chapter_locations_mode",
                                                           GoalChapterLocationsMode.option_normal)
         goal_locations_removed = goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
-        goal_chapter = event.slot_data.get("goal_chapter")
+        goal_chapter_short_name: str | None = event.slot_data.get("goal_chapter")
+        if goal_chapter_short_name:
+            goal_chapter = Area.from_short_name(goal_chapter_short_name)
+        else:
+            goal_chapter = None
 
         for bonus_name in event.slot_data["enabled_bonuses"]:
             if bonus_name not in BONUS_TO_RIDABLES:
                 # No ridables in this bonus.
                 continue
-            area_id = BONUS_NAME_TO_BONUS_AREA[bonus_name].area_id
-            self.ridables_by_area[area_id] = {
-                ridable.character_id: LOCATION_NAME_TO_ID[ridable.location_name]
+            area = next(area for area in BONUS_ROOM_BONUSES if area.readable_name == bonus_name)
+            self.ridables_by_area[area] = {
+                ridable.character: LOCATION_NAME_TO_ID[ridable.character.get_ridesanity_location_name()]
                 for ridable in BONUS_TO_RIDABLES[bonus_name]
             }
         for short_name in event.slot_data["enabled_chapters"]:
-            if short_name not in CHAPTER_TO_RIDABLES:
+            chapter = CHAPTERS_BY_SHORT_NAME[short_name]
+            ridables = chapter.ridables
+            if not ridables:
                 # No ridables in this chapter.
                 continue
-            if short_name == goal_chapter and goal_locations_removed:
+            area = chapter.area
+            if area is goal_chapter and goal_locations_removed:
                 # The Goal Chapter, with locations removed, should not send Ridesanity checks.
                 continue
-            area_id = SHORT_NAME_TO_CHAPTER_AREA[short_name].area_id
-            self.ridables_by_area[area_id] = {
-                ridable.character_id: LOCATION_NAME_TO_ID[ridable.location_name]
-                for ridable in CHAPTER_TO_RIDABLES[short_name]
+            self.ridables_by_area[area] = {
+                character: LOCATION_NAME_TO_ID[character.get_ridesanity_location_name()]
+                for character in ridables.keys()
             }
 
-        cantina_car = RIDABLES_BY_NAME["Cantina Car"]
-        self.ridables_by_area[AREA_ID_CANTINA] = {
-            cantina_car.character_id: LOCATION_NAME_TO_ID[cantina_car.location_name],
+        self.ridables_by_area[Area.MAP] = {
+            Character.MAPCAR: LOCATION_NAME_TO_ID[Character.MAPCAR.get_ridesanity_location_name()],
         }
 
-        self.current_area_id = CURRENT_AREA_ADDRESS.get(event.context)
+        current_area_id = CURRENT_AREA_ADDRESS.get(event.context)
+        if current_area_id in Area:
+            self.current_area = Area(current_area_id)
+        else:
+            self.current_area = None
 
         # If the player is currently riding a character that should send a check, they can just stop riding and then
         # start riding again for the check to send, so don't bother checking the current character IDs of the players.
@@ -73,13 +84,20 @@ class RidesanityChecker(ClientComponent):
     @subscribe_event
     async def on_area_change(self, event: OnAreaChangeEvent):
         # Update which ids we are currently checking for. (or just update a `self` attribute that stores the area ID.
-        self.current_area_id = event.new_area_data_id
+        if event.new_area_data_id in Area:
+            self.current_area = Area(event.new_area_data_id)
+        else:
+            self.current_area = None
 
     @subscribe_event
     async def on_player_character_id_change(self, event: OnPlayerCharacterIdChangeEvent):
         # Check for the player being one of the ridable characters that should send a check and update a `self`
         # attribute of locations to send.
-        ridables = self.ridables_by_area.get(self.current_area_id, {})
+        current_area = self.current_area
+        if current_area is None:
+            return
+
+        ridables: dict[Character, ApLocationId] = self.ridables_by_area.get(current_area, {})
 
         if not ridables:
             return
