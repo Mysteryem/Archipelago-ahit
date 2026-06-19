@@ -91,9 +91,13 @@ class Area(IntEnum):
     def get_first_playable_level(self) -> Level | None:
         return next(filter(Level.is_playable, self.levels), None)
 
-    def get_status_level(self) -> Level | None:
-        # Status levels are last when present, so iterate in reverse.
-        return next(filter(Level.is_status, reversed(self.levels)), None)
+    def get_status_level(self) -> Level:
+        # Status levels are last when present.
+        status_level = self.levels[-1]
+        if status_level.is_status():
+            return status_level
+        else:
+            raise Exception(f"{self!r} does not have a status level")
 
     def get_playable_levels(self) -> list[Level]:
         return list(filter(Level.is_playable, self.levels))

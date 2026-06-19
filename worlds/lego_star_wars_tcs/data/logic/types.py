@@ -224,10 +224,7 @@ class Chapter:
                         region_queue.append((exit_data.to_region, region_level))
 
         # Automatically set the Level of the Chapter Completion region to the status level of this area.
-        status_level = self.area.get_status_level()
-        if status_level is None:
-            raise Exception(f"Status level for {self.name} is None")
-        region_to_level["Chapter Completion"] = status_level
+        region_to_level["Chapter Completion"] = self.area.get_status_level()
 
         # Check that there exists a path to each region from self.start_region.
         for region_name in self.regions:
