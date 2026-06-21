@@ -29,7 +29,7 @@ from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEP
 from .location_checkers.free_play_completion import FreePlayChapterCompletionChecker
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
 from .location_checkers.ridesanity import RidesanityChecker
-from .location_checkers.true_jedi_and_minikits import TrueJediAndPowerBrickAndMinikitChecker
+from .location_checkers.true_jedi_and_minikits_gold_brick import TrueJediAndPowerBrickAndMinikitBrickChecker
 from .location_checkers.shop_purchases import PurchasedExtrasChecker, PurchasedCharactersChecker
 from .events import (
     EventManager,
@@ -382,7 +382,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
     # Location checkers.
     free_play_completion_checker: FreePlayChapterCompletionChecker
-    true_jedi_and_power_brick_and_minikit_checker: TrueJediAndPowerBrickAndMinikitChecker
+    true_jedi_and_power_brick_and_minikit_brick_checker: TrueJediAndPowerBrickAndMinikitBrickChecker
     purchased_extras_checker: PurchasedExtrasChecker
     purchased_characters_checker: PurchasedCharactersChecker
     bonus_area_completion_checker: BonusAreaCompletionChecker
@@ -448,7 +448,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         self.unlocked_chapter_manager = UnlockedChapterManager()
         self.free_play_completion_checker = FreePlayChapterCompletionChecker()
-        self.true_jedi_and_power_brick_and_minikit_checker = TrueJediAndPowerBrickAndMinikitChecker()
+        self.true_jedi_and_power_brick_and_minikit_brick_checker = TrueJediAndPowerBrickAndMinikitBrickChecker()
         self.purchased_extras_checker = PurchasedExtrasChecker()
         self.purchased_characters_checker = PurchasedCharactersChecker()
         self.bonus_area_completion_checker = BonusAreaCompletionChecker()
@@ -727,7 +727,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 new_values = set(value)
                 new_values.difference_update(previous_value)
                 if new_values:
-                    self.true_jedi_and_power_brick_and_minikit_checker.update_from_datastorage(
+                    self.true_jedi_and_power_brick_and_minikit_brick_checker.update_from_datastorage(
                         self, new_true_jedi_area_ids=new_values)
             elif self._is_datastorage_key(key, COMPLETED_10_MINIKITS_KEY_PREFIX):
                 value = args["value"] or ()
@@ -735,7 +735,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 new_values = set(value)
                 new_values.difference_update(previous_value)
                 if new_values:
-                    self.true_jedi_and_power_brick_and_minikit_checker.update_from_datastorage(
+                    self.true_jedi_and_power_brick_and_minikit_brick_checker.update_from_datastorage(
                         self, new_minikits_gold_brick_area_ids=new_values)
             elif self._is_datastorage_key(key, COMPLETED_BONUSES_KEY_PREFIX):
                 value = args["value"] or ()
@@ -750,7 +750,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 new_values = set(value)
                 new_values.difference_update(previous_value)
                 if new_values:
-                    self.true_jedi_and_power_brick_and_minikit_checker.update_from_datastorage(
+                    self.true_jedi_and_power_brick_and_minikit_brick_checker.update_from_datastorage(
                         self, new_power_brick_area_ids=new_values)
             elif self._is_datastorage_key(key, MINIKIT_GOAL_SUBMITTED_PREFIX):
                 value = args["value"]
@@ -764,18 +764,18 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 self.free_play_completion_checker.update_from_datastorage(self, completed_free_play)
             completed_true_jedi = keys.get(self._get_datastorage_key(COMPLETED_TRUE_JEDI_KEY_PREFIX))
             if completed_true_jedi:
-                self.true_jedi_and_power_brick_and_minikit_checker.update_from_datastorage(
+                self.true_jedi_and_power_brick_and_minikit_brick_checker.update_from_datastorage(
                     self, new_true_jedi_area_ids=completed_true_jedi)
             completed_10_minikits = keys.get(self._get_datastorage_key(COMPLETED_10_MINIKITS_KEY_PREFIX))
             if completed_10_minikits:
-                self.true_jedi_and_power_brick_and_minikit_checker.update_from_datastorage(
+                self.true_jedi_and_power_brick_and_minikit_brick_checker.update_from_datastorage(
                     self, new_minikits_gold_brick_area_ids=completed_10_minikits)
             completed_bonuses = keys.get(self._get_datastorage_key(COMPLETED_BONUSES_KEY_PREFIX))
             if completed_bonuses:
                 self.bonus_area_completion_checker.update_from_datastorage(self, completed_bonuses)
             collected_power_bricks = keys.get(self._get_datastorage_key(COLLECTED_POWER_BRICKS_KEY_PREFIX))
             if collected_power_bricks:
-                self.true_jedi_and_power_brick_and_minikit_checker.update_from_datastorage(
+                self.true_jedi_and_power_brick_and_minikit_brick_checker.update_from_datastorage(
                     self, new_power_brick_area_ids=collected_power_bricks)
             completed_minikit_goal = keys.get(self._get_datastorage_key(MINIKIT_GOAL_SUBMITTED_PREFIX))
             if completed_minikit_goal:
@@ -1419,7 +1419,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.current_cantina_room = CantinaRoom.UNKNOWN
 
         self.free_play_completion_checker = FreePlayChapterCompletionChecker()
-        self.true_jedi_and_power_brick_and_minikit_checker = TrueJediAndPowerBrickAndMinikitChecker()
+        self.true_jedi_and_power_brick_and_minikit_brick_checker = TrueJediAndPowerBrickAndMinikitBrickChecker()
         self.purchased_extras_checker = PurchasedExtrasChecker()
         self.purchased_characters_checker = PurchasedCharactersChecker()
         self.bonus_area_completion_checker = BonusAreaCompletionChecker()
@@ -1716,9 +1716,9 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                         # True Jedi and Minikit counts (deprecated) in the save data do not need to be checked often,
                         # but the in-level True Jedi and Minikit counts (deprecated) do need to be checked often.
                         if in_game_watcher_tick_count % 20 == 0:
-                            await ctx.true_jedi_and_power_brick_and_minikit_checker.check_save_data(
+                            await ctx.true_jedi_and_power_brick_and_minikit_brick_checker.check_save_data(
                                 ctx, new_location_checks)
-                        await ctx.true_jedi_and_power_brick_and_minikit_checker.check_current_area(
+                        await ctx.true_jedi_and_power_brick_and_minikit_brick_checker.check_current_area(
                             ctx, new_location_checks)
 
                         # Purchases do not need to be checked often.
