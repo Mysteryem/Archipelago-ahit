@@ -28,6 +28,7 @@ from .client_text import ClientText, clean_string
 from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from .location_checkers.free_play_completion import FreePlayChapterCompletionChecker
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
+from .location_checkers.minikits import MinikitChecker
 from .location_checkers.ridesanity import RidesanityChecker
 from .location_checkers.true_jedi_and_minikits_gold_brick import TrueJediAndPowerBrickAndMinikitBrickChecker
 from .location_checkers.shop_purchases import PurchasedExtrasChecker, PurchasedCharactersChecker
@@ -383,6 +384,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     # Location checkers.
     free_play_completion_checker: FreePlayChapterCompletionChecker
     true_jedi_and_power_brick_and_minikit_brick_checker: TrueJediAndPowerBrickAndMinikitBrickChecker
+    minikit_checker: MinikitChecker
     purchased_extras_checker: PurchasedExtrasChecker
     purchased_characters_checker: PurchasedCharactersChecker
     bonus_area_completion_checker: BonusAreaCompletionChecker
@@ -449,6 +451,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.unlocked_chapter_manager = UnlockedChapterManager()
         self.free_play_completion_checker = FreePlayChapterCompletionChecker()
         self.true_jedi_and_power_brick_and_minikit_brick_checker = TrueJediAndPowerBrickAndMinikitBrickChecker()
+        self.minikit_checker = MinikitChecker()
         self.purchased_extras_checker = PurchasedExtrasChecker()
         self.purchased_characters_checker = PurchasedCharactersChecker()
         self.bonus_area_completion_checker = BonusAreaCompletionChecker()
@@ -1420,6 +1423,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         self.free_play_completion_checker = FreePlayChapterCompletionChecker()
         self.true_jedi_and_power_brick_and_minikit_brick_checker = TrueJediAndPowerBrickAndMinikitBrickChecker()
+        self.minikit_checker = MinikitChecker()
         self.purchased_extras_checker = PurchasedExtrasChecker()
         self.purchased_characters_checker = PurchasedCharactersChecker()
         self.bonus_area_completion_checker = BonusAreaCompletionChecker()
@@ -1713,13 +1717,18 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                         # through the status screen faster than we're polling the game to check for free play!)
                         await ctx.free_play_completion_checker.check_completion(ctx, new_location_checks)
 
-                        # True Jedi and Minikit counts (deprecated) in the save data do not need to be checked often,
-                        # but the in-level True Jedi and Minikit counts (deprecated) do need to be checked often.
+                        # True Jedi and Minikit gold brick in the save data do not need to be checked often.
                         if in_game_watcher_tick_count % 20 == 0:
                             await ctx.true_jedi_and_power_brick_and_minikit_brick_checker.check_save_data(
                                 ctx, new_location_checks)
                         await ctx.true_jedi_and_power_brick_and_minikit_brick_checker.check_current_area(
                             ctx, new_location_checks)
+
+                        # The Minikit checker needs to check frequently for in-area minikits, but handles this itself.
+                        # The checked minikits are stored, so the minikit checker does not need to be frequently polled
+                        # for locations to send.
+                        if in_game_watcher_tick_count % 20 == 0:
+                            await ctx.minikit_checker.check_minikits(ctx, new_location_checks)
 
                         # Purchases do not need to be checked often.
                         if in_game_watcher_tick_count % 10 == 0:
