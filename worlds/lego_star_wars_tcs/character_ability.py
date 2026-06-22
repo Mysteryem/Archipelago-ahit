@@ -150,6 +150,9 @@ class CharacterAbility(IntFlag):
     #     else:
     #         return NotImplemented
 
+    def to_readable_list(self) -> str:
+        return ", ".join(ability.name for ability in self)
+
     def simplify_and(self) -> "CharacterAbility":
         """
         JEDI and CAN_BUILD_BRICKS -> JEDI because JEDI implies CAN_BUILD_BRICKS.

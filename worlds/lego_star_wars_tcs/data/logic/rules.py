@@ -5,6 +5,7 @@ from typing import ClassVar, Iterable, TYPE_CHECKING, Any, Self, AbstractSet
 from typing_extensions import override
 
 from BaseClasses import CollectionState
+from NetUtils import JSONMessagePart
 from rule_builder.field_resolvers import FieldResolver, resolve_field
 from rule_builder.options import OptionFilter
 from rule_builder.rules import (
@@ -97,10 +98,36 @@ class HasAbility(InLevelRule, game=GAME_NAME):
         ability_as_int: int
         skip_cache: ClassVar[bool] = True
 
+        @property
+        def _ability_name(self) -> str:
+            return CharacterAbility(self.ability_as_int).name
+
         @override
         def _evaluate(self, state: CollectionState) -> bool:
             # != 0 is faster than calling bool().
             return state.prog_items[self.player]["COMBINED_ABILITIES"] & self.ability_as_int != 0
+
+        @override
+        def explain_json(self, state: CollectionState | None = None) -> list[JSONMessagePart]:
+            verb = "Missing Ability " if state and not self(state) else "Has Ability "
+            messages: list[JSONMessagePart] = [{"type": "text", "text": verb}]
+            if state:
+                color = "green" if self(state) else "salmon"
+                messages.append({"type": "color", "color": color, "text": self._ability_name})
+            else:
+                messages.append({"type": "item_name", "flags": 0b001, "text": self._ability_name, "player": self.player})
+            return messages
+
+        @override
+        def explain_str(self, state: CollectionState | None = None) -> str:
+            if state is None:
+                return str(self)
+            prefix = "Has Ability" if self(state) else "Missing Ability"
+            return f"{prefix} {self._ability_name}"
+
+        @override
+        def __str__(self) -> str:
+            return f"Has Ability {self._ability_name}"
 
 
 @dataclasses.dataclass
@@ -132,6 +159,67 @@ class HasAllAbilities(InLevelRule, game=GAME_NAME):
         @override
         def _evaluate(self, state: CollectionState) -> bool:
             return state.prog_items[self.player]["COMBINED_ABILITIES"] & self.abilities_as_int == self.abilities_as_int
+
+        @override
+        def explain_json(self, state: CollectionState | None = None) -> list[JSONMessagePart]:
+            abilities = CharacterAbility(self.abilities_as_int)
+            messages: list[JSONMessagePart]
+            if state is None:
+                messages = [
+                    {"type": "text", "text": "Has "},
+                    {"type": "color", "color": "cyan", "text": "all"},
+                    {"type": "text", "text": " of abilities ("},
+                ]
+                for i, ability in enumerate(abilities):
+                    if i > 0:
+                        messages.append({"type": "text", "text": ", "})
+                    messages.append({"type": "item_name", "flags": 0b001, "text": ability.name, "player": self.player})
+                messages.append({"type": "text", "text": ")"})
+                return messages
+
+            state_abilities = CharacterAbility(state.prog_items[self.player]["COMBINED_ABILITIES"])
+            found = abilities & state_abilities
+            missing = abilities & ~state_abilities
+            messages = [
+                {"type": "text", "text": "Has " if not missing else "Missing "},
+                {"type": "color", "color": "cyan", "text": "all" if not missing else "some"},
+                {"type": "text", "text": " of abilities ("},
+            ]
+            if found:
+                messages.append({"type": "text", "text": "Found: "})
+                for i, ability in enumerate(found):
+                    if i > 0:
+                        messages.append({"type": "text", "text": ", "})
+                    messages.append({"type": "color", "color": "green", "text": ability.name})
+                if missing:
+                    messages.append({"type": "text", "text": "; "})
+
+            if missing:
+                messages.append({"type": "text", "text": "Missing: "})
+                for i, ability in enumerate(missing):
+                    if i > 0:
+                        messages.append({"type": "text", "text": ", "})
+                    messages.append({"type": "color", "color": "salmon", "text": ability.name})
+            messages.append({"type": "text", "text": ")"})
+            return messages
+
+        @override
+        def explain_str(self, state: CollectionState | None = None) -> str:
+            if state is None:
+                return str(self)
+            abilities = CharacterAbility(self.abilities_as_int)
+            state_abilities = CharacterAbility(state.prog_items[self.player]["COMBINED_ABILITIES"])
+            found = abilities & state_abilities
+            missing = abilities & ~state_abilities
+            prefix = "Has all abilities" if self(state) else "Missing some abilities"
+            found_str = f"Found: {found.to_readable_list()}" if found else ""
+            missing_str = f"Missing: {missing.to_readable_list()}" if missing else ""
+            infix = "; " if found and missing else ""
+            return f"{prefix} of ({found_str}{infix}{missing_str})"
+
+        @override
+        def __str__(self) -> str:
+            return f"Has all of abilities ({CharacterAbility(self.abilities_as_int).to_readable_list()})"
 
     def __and__(self, other: "Rule[Any] | Iterable[OptionFilter] | OptionFilter") -> "Rule[TWorld]":
         if isinstance(other, OptionFilter):
@@ -185,6 +273,67 @@ class HasAnyAbilities(InLevelRule, game=GAME_NAME):
         @override
         def _evaluate(self, state: CollectionState) -> bool:
             return state.prog_items[self.player]["COMBINED_ABILITIES"] & self.abilities_as_int != 0
+
+        @override
+        def explain_json(self, state: CollectionState | None = None) -> list[JSONMessagePart]:
+            abilities = CharacterAbility(self.abilities_as_int)
+            messages: list[JSONMessagePart]
+            if state is None:
+                messages = [
+                    {"type": "text", "text": "Has "},
+                    {"type": "color", "color": "cyan", "text": "any"},
+                    {"type": "text", "text": " of abilities ("},
+                ]
+                for i, ability in enumerate(abilities):
+                    if i > 0:
+                        messages.append({"type": "text", "text": ", "})
+                    messages.append({"type": "item_name", "flags": 0b001, "text": ability.name, "player": self.player})
+                messages.append({"type": "text", "text": ")"})
+                return messages
+
+            state_abilities = CharacterAbility(state.prog_items[self.player]["COMBINED_ABILITIES"])
+            found = abilities & state_abilities
+            missing = abilities & ~state_abilities
+            messages = [
+                {"type": "text", "text": "Has " if found else "Missing "},
+                {"type": "color", "color": "cyan", "text": "some" if found else "all"},
+                {"type": "text", "text": " of abilities ("},
+            ]
+            if found:
+                messages.append({"type": "text", "text": "Found: "})
+                for i, ability in enumerate(found):
+                    if i > 0:
+                        messages.append({"type": "text", "text": ", "})
+                    messages.append({"type": "color", "color": "green", "text": ability.name})
+                if missing:
+                    messages.append({"type": "text", "text": "; "})
+
+            if missing:
+                messages.append({"type": "text", "text": "Missing: "})
+                for i, ability in enumerate(missing):
+                    if i > 0:
+                        messages.append({"type": "text", "text": ", "})
+                    messages.append({"type": "color", "color": "salmon", "text": ability.name})
+            messages.append({"type": "text", "text": ")"})
+            return messages
+
+        @override
+        def explain_str(self, state: CollectionState | None = None) -> str:
+            if state is None:
+                return str(self)
+            abilities = CharacterAbility(self.abilities_as_int)
+            state_abilities = CharacterAbility(state.prog_items[self.player]["COMBINED_ABILITIES"])
+            found = abilities & state_abilities
+            missing = abilities & ~state_abilities
+            prefix = "Has some abilities" if self(state) else "Missing all abilities"
+            found_str = f"Found: {found.to_readable_list()}" if found else ""
+            missing_str = f"Missing: {missing.to_readable_list()}" if missing else ""
+            infix = "; " if found and missing else ""
+            return f"{prefix} of ({found_str}{infix}{missing_str})"
+
+        @override
+        def __str__(self) -> str:
+            return f"Has any of abilities ({CharacterAbility(self.abilities_as_int).to_readable_list()})"
 
 
 @dataclasses.dataclass
