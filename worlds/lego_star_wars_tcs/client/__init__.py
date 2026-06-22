@@ -1721,27 +1721,29 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                         if in_game_watcher_tick_count % 20 == 0:
                             await ctx.true_jedi_and_power_brick_and_minikit_brick_checker.check_save_data(
                                 ctx, new_location_checks)
-                        await ctx.true_jedi_and_power_brick_and_minikit_brick_checker.check_current_area(
-                            ctx, new_location_checks)
+                        if in_game_watcher_tick_count % 10 == 1:
+                            await ctx.true_jedi_and_power_brick_and_minikit_brick_checker.check_current_area(
+                                ctx, new_location_checks)
 
                         # The Minikit checker needs to check frequently for in-area minikits, but handles this itself.
                         # The checked minikits are stored, so the minikit checker does not need to be frequently polled
                         # for locations to send.
-                        if in_game_watcher_tick_count % 20 == 0:
+                        if in_game_watcher_tick_count % 20 == 2:
                             await ctx.minikit_checker.check_minikits(ctx, new_location_checks)
 
                         # Purchases do not need to be checked often.
-                        if in_game_watcher_tick_count % 10 == 0:
+                        if in_game_watcher_tick_count % 10 == 3:
                             await ctx.purchased_extras_checker.check_extra_purchases(ctx, new_location_checks)
                             await ctx.purchased_characters_checker.check_extra_purchases(ctx, new_location_checks)
 
                         # Bonus level completion is read from the save data, so does not need to be checked often.
-                        if in_game_watcher_tick_count % 20 == 0:
+                        if in_game_watcher_tick_count % 20 == 4:
                             await ctx.bonus_area_completion_checker.check_completion(ctx, new_location_checks)
 
                         # New Ridesanity checks are prepared to be sent by other event callbacks, so Ridesanity is cheap
                         # to check for new locations.
-                        await ctx.ridesanity_checker.check_ridesanity(ctx, new_location_checks)
+                        if in_game_watcher_tick_count % 10 == 5:
+                            await ctx.ridesanity_checker.check_ridesanity(ctx, new_location_checks)
 
                         # Send newly cleared locations to the server, if there are any.
                         actually_new_location_checks = await ctx.check_locations(new_location_checks)
