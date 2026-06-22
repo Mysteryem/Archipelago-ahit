@@ -11,10 +11,8 @@ from rule_builder.options import OptionFilter
 from rule_builder.rules import (
     False_,
     Filtered,
-    Has,
     HasAll,
     HasAny,
-    HasFromListUnique,
     Rule,
     True_,
     TWorld,
@@ -32,15 +30,12 @@ from ..items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA, S
 from ..items.vehicle_items import VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from ...character_ability import CharacterAbility, IMPLIED_BY_ABILITIES
 from ...constants import GAME_NAME
-from ...options import ChapterUnlockRequirement, EpisodeUnlockRequirement
 
 
 if TYPE_CHECKING:
     from ... import LegoStarWarsTCSWorld
-    from .types import Chapter
 else:
     LegoStarWarsTCSWorld = TWorld
-    Chapter = object
 
 
 def _caching_enabled(world: LegoStarWarsTCSWorld):
