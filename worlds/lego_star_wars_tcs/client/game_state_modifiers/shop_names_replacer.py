@@ -332,11 +332,11 @@ class ShopNamesReplacer(ClientComponent):
     def _replace_extras_names_with_shop_checks(self, ctx: TCSContext):
         # Replace Extras names with what they unlock.
         text_replacer = ctx.text_replacer
-        power_brick_checker = ctx.true_jedi_and_power_brick_and_minikit_checker
-        unfound_power_bricks_by_area_id = power_brick_checker.remaining_power_bricks_by_area_id
+        power_brick_checker = ctx.true_jedi_and_power_brick_and_minikit_brick_checker
+        unfound_power_bricks_by_area = power_brick_checker.remaining_power_bricks_by_area
         for extra, name in self._cached_extras_shop_slot_names.items():
             area = extra.get_area()
-            if area in unfound_power_bricks_by_area_id:
+            if area in unfound_power_bricks_by_area:
                 # The shop slot for this Extra is not unlocked yet, so skip replacing the name of the Extra in the
                 # shop. The shop says "Locked" for locked Extra purchases, but other parts of the game also display
                 # the names of the Extras, so only changing the names of the unlocked slots means that information
