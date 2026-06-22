@@ -11,6 +11,7 @@ __all__ = [
     "EPISODES",
     "CHAPTERS_BY_SHORT_NAME",
     "CHAPTERS_BY_NUMBERS",
+    "ALL_CHAPTERS",
 ]
 
 EPISODES = (
@@ -29,6 +30,14 @@ CHAPTERS_BY_NUMBERS: dict[int, dict[int, Chapter]] = {
     i: {j: chapter for j, chapter in enumerate(episode, start=1)}
     for i, episode in enumerate(EPISODES, start=1)
 }
+ALL_CHAPTERS: tuple[Chapter, ...] = (
+    *EP1_CHAPTERS,
+    *EP2_CHAPTERS,
+    *EP3_CHAPTERS,
+    *EP4_CHAPTERS,
+    *EP5_CHAPTERS,
+    *EP6_CHAPTERS,
+)
 
 # Free up memory used by the rule optimizers.
 RULE_OPTIMIZER.purge_memodict()
