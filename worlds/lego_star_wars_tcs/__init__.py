@@ -1,6 +1,5 @@
 import logging
 from collections import Counter
-from functools import partial
 from typing import Mapping, Any, NoReturn, Callable, ClassVar, TextIO
 
 from BaseClasses import (
@@ -17,7 +16,7 @@ from Options import OptionError
 from rule_builder.rules import Rule, Has
 from worlds.AutoWorld import WebWorld, World
 from worlds.LauncherComponents import components, Component, launch_subprocess, Type
-from worlds.generic.Rules import set_rule, add_rule, CollectionRule
+from worlds.generic.Rules import CollectionRule
 
 from . import constants, regions, item_pool
 from .constants import (
@@ -78,10 +77,6 @@ from .option_resolution.common import resolve_options
 from .ridables import RIDABLES_REQUIREMENTS
 from .item_groups import ITEM_GROUPS, REVERSE_READABLE_ABILITY_TO_ABILITY
 from .location_groups import LOCATION_GROUPS
-
-
-add_or_rule = partial(add_rule, combine="or")
-SpotRuleApplier = Callable[[Location | Entrance, CollectionRule], None]
 
 
 def launch_client(*args: str):
