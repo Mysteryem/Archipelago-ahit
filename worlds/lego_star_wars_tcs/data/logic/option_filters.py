@@ -147,19 +147,23 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
             # Not a necessary optimisation, but saves having to create extra intermediary LogicOptions instances.
             if isinstance(rule, LogicOptions):
                 if reverse_order:
-                    return LogicOptions(
-                        op(rule.base, self.base),
-                        op(rule.normal, self.normal),
-                        op(rule.moderate, self.moderate),
-                        op(rule.hard, self.hard),
-                    )
+                    first_args = (rule.base, rule.normal, rule.moderate, rule.hard)
+                    second_args = (self.base, self.normal, self.moderate, self.hard)
                 else:
-                    return LogicOptions(
-                        op(self.base, rule.base),
-                        op(self.normal, rule.normal),
-                        op(self.moderate, rule.moderate),
-                        op(self.hard, rule.hard),
-                    )
+                    first_args = (self.base, self.normal, self.moderate, self.hard)
+                    second_args = (rule.base, rule.normal, rule.moderate, rule.hard)
+                applied = []
+                last_first_arg = None
+                last_second_arg = None
+                last_applied = None
+                for first_arg, second_arg in zip(first_args, second_args):
+                    # If the arguments have not changed, use the previous result.
+                    if first_arg is not last_first_arg or second_arg is not last_second_arg:
+                        last_applied = op(first_arg, second_arg)
+                    applied.append(last_applied)
+                    last_first_arg = first_arg
+                    last_second_arg = second_arg
+                return LogicOptions(*applied)
             else:
                 # Apply to all.
                 apply_to = "base+"
