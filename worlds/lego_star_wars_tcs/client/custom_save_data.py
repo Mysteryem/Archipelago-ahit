@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 
 from .type_aliases import TCSContext
 
@@ -58,6 +58,76 @@ _LEVELS_WITHOUT_MINIKITS: list[Level] = _make_levels_free_space()
 del _make_levels_free_space
 
 CUSTOM_SAVE_DATA_SECTION_SIZE = SAVE_DATA_MINIKITS_ELEMENT_SIZE
+
+_CUSTOM_SAVE_FLAGS_1_ADDRESS = 0x86e506
+
+
+class CustomSaveFlags1(IntFlag):
+    """
+    There are two unused bytes in the save data after the byte that stores whether the Indiana Jones trailer has been
+    watched.
+    BYTE1_AFTER_INDIANA_JONES_TRAILER = 0x86e506
+    BYTE2_AFTER_INDIANA_JONES_TRAILER = 0x86e507
+
+    The client uses these two bytes for storing up to 16 flags.
+    """
+    MINIKIT_GOAL_COMPLETE = 0x1
+    DEATH_LINK_ENABLED = 0x2
+    AUTO_COLLECT_PICKUPS_ENABLED = 0x4
+    AUTO_COLLECT_PICKUPS_VEHICLES_ONLY = 0x8
+    FIELD_5 = 0x10  # Could be DEFEAT_BOSSES_GOAL_COMPLETE to reduce memory reading once the goal is complete.
+    FIELD_6 = 0x20
+    FIELD_7 = 0x40
+    FIELD_8 = 0x80
+    FIELD_9 = 0x100
+    FIELD_10 = 0x200
+    FIELD_11 = 0x400
+    FIELD_12 = 0x800
+    FIELD_13 = 0x1000
+    FIELD_14 = 0x2000
+    FIELD_15 = 0x4000
+    FIELD_16 = 0x8000
+
+    def is_set(self, ctx: TCSContext) -> bool:
+        v: int = self.value
+        if v <= 0xFF:
+            addr = _CUSTOM_SAVE_FLAGS_1_ADDRESS
+        else:
+            v = v >> 8
+            addr = _CUSTOM_SAVE_FLAGS_1_ADDRESS + 1
+
+        return (ctx.read_uchar(addr) & v) != 0
+
+    def set(self, ctx: TCSContext):
+        v: int = self.value
+        if v <= 0xFF:
+            addr = _CUSTOM_SAVE_FLAGS_1_ADDRESS
+        else:
+            v = v >> 8
+            addr = _CUSTOM_SAVE_FLAGS_1_ADDRESS + 1
+
+        b = ctx.read_uchar(addr)
+        if not (b & v):
+            ctx.write_byte(_CUSTOM_SAVE_FLAGS_1_ADDRESS, b | v)
+
+    def unset(self, ctx: TCSContext):
+        v: int = self.value
+        if v <= 0xFF:
+            addr = _CUSTOM_SAVE_FLAGS_1_ADDRESS
+        else:
+            v = v >> 8
+            addr = _CUSTOM_SAVE_FLAGS_1_ADDRESS + 1
+
+        b = ctx.read_uchar(addr)
+        if b & v:
+            ctx.write_byte(_CUSTOM_SAVE_FLAGS_1_ADDRESS, b & ~v)
+
+    def set_bool(self, ctx: TCSContext, b: bool):
+        if b:
+            self.set(ctx)
+        else:
+            self.unset(ctx)
+
 
 class CustomSaveDataSections(IntEnum):
     SLOT_NAME = 0

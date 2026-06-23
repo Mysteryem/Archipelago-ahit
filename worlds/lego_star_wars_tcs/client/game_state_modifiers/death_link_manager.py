@@ -8,7 +8,8 @@ from Utils import async_start
 from . import ClientComponent
 from .studs import give_studs
 from ..common import StaticUint, FloatField
-from ..common_addresses import CURRENT_AREA_ADDRESS, player_character_entity_iter, CustomSaveFlags1
+from ..common_addresses import CURRENT_AREA_ADDRESS, player_character_entity_iter
+from ..custom_save_data import CustomSaveFlags1
 from ..events import (
     subscribe_event,
     OnReceiveSlotDataEvent,

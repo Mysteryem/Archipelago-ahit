@@ -4,7 +4,8 @@ from time import monotonic_ns
 from typing import Mapping, Literal, Iterator, cast
 
 from .text_replacer import TextId
-from ..common_addresses import CantinaRoom, CustomSaveFlags1, GameState1
+from ..common_addresses import CantinaRoom, GameState1
+from ..custom_save_data import CustomSaveFlags1
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
 from ..type_aliases import TCSContext, AreaId, ApItemId
 from ...options import OnlyUniqueBossesCountTowardsGoal, MinikitGoalCompletionMethod

@@ -1,7 +1,7 @@
 from enum import IntFlag
 
 from ..common import ClientComponent, StaticPointer, UintField
-from ..common_addresses import CustomSaveFlags1
+from ..custom_save_data import CustomSaveFlags1
 from ..events import subscribe_event, OnReceiveSlotDataEvent
 from ..type_aliases import TCSContext
 from ...options import AutoCollectSpawnedPickups
