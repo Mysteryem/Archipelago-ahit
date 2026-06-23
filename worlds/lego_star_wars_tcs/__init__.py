@@ -78,6 +78,12 @@ from .ridables import RIDABLES_REQUIREMENTS
 from .item_groups import ITEM_GROUPS, REVERSE_READABLE_ABILITY_TO_ABILITY
 from .location_groups import LOCATION_GROUPS
 
+from .data.levels import SAVE_DATA_MINIKITS_ELEMENT_SIZE
+
+# 1 byte to write the length
+SLOT_NAME_MAX_BYTES = SAVE_DATA_MINIKITS_ELEMENT_SIZE - 1
+MULTIWORLD_SEED_NAME_MAX_BYTES = SAVE_DATA_MINIKITS_ELEMENT_SIZE - 1
+
 
 def launch_client(*args: str):
     # Lazy import. Generation does not need to even load client modules, it would just be a waste of memory.
@@ -226,7 +232,43 @@ class LegoStarWarsTCSWorld(World):
         else:
             super().set_rule(spot, rule)
 
+    @classmethod
+    def stage_assert_generate(cls, multiworld: MultiWorld) -> None:
+        # Check that the multiworld seed name can fit in the unused section of the game's save-data that the seed name
+        # has been designated to.
+        seed_name_byte_count = len(multiworld.seed_name.encode('utf-8'))
+        if seed_name_byte_count > MULTIWORLD_SEED_NAME_MAX_BYTES:
+            # While Archipelago does not place a bound on the maximum length of a seed name, Archipelago generates a
+            # seed name, from the multiworld seed. The generated seed name is usually up to 20 numeric characters,
+            # though webhost generations prepend a "W".
+            # This should never happen in a real generation unless the generator has been modified to accept custom seed
+            # names or to otherwise use the multiworld seed as the seed name.
+            # Technically, unit test generations could specify custom seed names that surpass this number of bytes, but
+            # stage_assert_generate would not be run there anyway.
+            raise OptionError(f"The multiworld seed name ('{multiworld.seed_name}') is too large for Lego Star Wars:"
+                              f" The Complete Saga. Lego Star Wars: The Complete Saga requires that the multiworld seed"
+                              f" name encodes to no more than {MULTIWORLD_SEED_NAME_MAX_BYTES} bytes, but"
+                              f" '{multiworld.seed_name}' encodes to {seed_name_byte_count} bytes.")
+        # I can't imagine this ever happening, but it would cause issues with the client if it did.
+        if seed_name_byte_count == 0:
+            raise OptionError(f"An empty multiworld seed name was set. This would break the Lego Star Wars: The"
+                              f" Complete Saga client, so generation cannot continue.")
+
+
     def generate_early(self) -> None:
+        # Check that the player's name can fit in the unused section of the game's save-data that the player's name has
+        # been designated to.
+        name_byte_count = len(self.player_name.encode("utf-8"))
+        if name_byte_count > SLOT_NAME_MAX_BYTES:
+            # This should never happen currently, because player names are limited to a maximum of 16 utf-8 characters,
+            # which can be up to 4 bytes each, so up to 64 bytes.
+            self.option_error("Player name is too large. Lego Star Wars TCS restricts player names to a maximum"
+                              " of %i bytes, but '%s' encodes to %i bytes.",
+                              SLOT_NAME_MAX_BYTES, self.player_name, name_byte_count)
+        # I can't imagine this ever happening, but it would cause issues with the client if it did.
+        if name_byte_count == 0:
+            self.option_error("An empty player name was set. This would break the Lego Star Wars: The Complete Saga"
+                              " client, so generation cannot continue.")
         resolve_options(self)
 
     def evaluate_effective_item(self,

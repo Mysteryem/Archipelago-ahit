@@ -26,6 +26,7 @@ from ..levels import SHORT_NAME_TO_CHAPTER_AREA, CHAPTER_AREAS, ChapterArea
 from ..locations import LOCATION_NAME_TO_ID
 from .client_text import ClientText, clean_string
 from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
+from .custom_save_data import CustomSaveDataSections, CUSTOM_SAVE_DATA_SECTION_SIZE
 from .location_checkers.free_play_completion import FreePlayChapterCompletionChecker
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
 from .location_checkers.minikits import MinikitChecker
@@ -566,13 +567,12 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
         return True
 
-    def _validate_seed_name_against_save_data(self, new_seed_name: str) -> tuple[bool, bytes | None]:
-        save_data_seed_name_hash = self.read_seed_name_hash()
-        server_seed_name_hash = self.hash_seed_name(new_seed_name)
-        debug_logger.info("Seed hash from save file is %s", save_data_seed_name_hash)
-        debug_logger.info("Seed hash from server is %s", server_seed_name_hash)
-        if save_data_seed_name_hash is not None:
-            if server_seed_name_hash != save_data_seed_name_hash:
+    def _validate_seed_name_against_save_data(self, new_seed_name: str) -> tuple[bool, str | None]:
+        save_data_seed_name = self.read_seed_name_from_save_data()
+        debug_logger.info("Seed name from save file is %s", save_data_seed_name)
+        debug_logger.info("Seed name from server is %s", new_seed_name)
+        if save_data_seed_name is not None:
+            if new_seed_name != save_data_seed_name:
                 Utils.async_start(self.disconnect())
                 logger.info("Connection aborted: The server's seed does not match the save file's seed.")
                 self.last_connected_seed_name = None
@@ -580,7 +580,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 return False, None
             else:
                 return True, None
-        return True, server_seed_name_hash
+        return True, new_seed_name
 
     def _read_slot_data(self, slot_data: dict[str, typing.Any], first_time_setup: bool):
         # The connection to the server is assumed to be OK by this point, so slot_data can now be used to adjust client
@@ -631,7 +631,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             new_seed_name = args["seed_name"]
 
             if self.is_in_game():
-                ok, _server_seed_hash = self._validate_seed_name_against_save_data(new_seed_name)
+                ok, _server_seed_name = self._validate_seed_name_against_save_data(new_seed_name)
                 if not ok:
                     return
 
@@ -666,14 +666,14 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 logger.error("Error: slot_data missing from Connected message, something is probably broken.")
 
             # It is assumed that the player must be loaded into a save file or a new game at this point.
-            ok, server_seed_hash_to_write = self._validate_seed_name_against_save_data(self.last_connected_seed_name)
+            ok, server_seed_name_to_write = self._validate_seed_name_against_save_data(self.last_connected_seed_name)
             if not ok:
                 self.seed_name = None
                 self.last_connected_seed_name = None
                 return
 
-            if server_seed_hash_to_write is not None:
-                self.write_seed_name_hash(self.last_connected_seed_name)
+            if server_seed_name_to_write is not None:
+                self.write_seed_name(server_seed_name_to_write)
 
             new_slot = self.auth
 
@@ -1043,75 +1043,21 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             hashed = bytes(range(16))
         return hashed
 
-    def write_seed_name_hash(self, seed_name: str):
-        hashed = self.hash_seed_name(seed_name)
-        assert len(hashed) == 16
+    def write_seed_name(self, seed_name: str):
+        assert not self.is_seed_name_set(), "Error: The multiworld seed name is already set into the save-data."
+        CustomSaveDataSections.MULTIWORLD_SEED_NAME.write_utf8_string(self, seed_name)
 
-        # The normally unused 4 bytes for the first area are being used to store the expected item index, so start from
-        # the second area.
-        areas = CHAPTER_AREAS[UNUSED_AREA_DWORD_SEED_NAME_HASH_AREAS]
-        parts = [hashed[i * 4:i * 4 + 4] for i in range(4)]
-        for part, area in zip(parts, areas, strict=True):
-            address = area.address + area.UNUSED_CHALLENGE_BEST_TIME_OFFSET
+    def read_seed_name_from_save_data(self) -> str | None:
+        seed_name = CustomSaveDataSections.MULTIWORLD_SEED_NAME.read_utf8_string(self)
+        return seed_name if seed_name else None
 
-            if __debug__:
-                # Ensure the bytes have not already been written to.
-                existing_bytes = self.read_bytes(address, 4)
-                assert existing_bytes == ChapterArea.UNUSED_CHALLENGE_BEST_TIME_VALUE, (
-                    f"The unused bytes the seed hash is being written to at area {area.short_name} are not their"
-                    f" expected value of {ChapterArea.UNUSED_CHALLENGE_BEST_TIME_VALUE!r}, instead found"
-                    f" {existing_bytes!r}"
-                )
-
-            # Write the bytes for this part of the hashed seed name.
-            assert len(part) == 4
-            self.write_bytes(address, part, 4)
-
-    def read_seed_name_hash(self) -> bytes | None:
-        areas = CHAPTER_AREAS[UNUSED_AREA_DWORD_SEED_NAME_HASH_AREAS]
-        hashed = b""
-        for area in areas:
-            address = area.address + area.UNUSED_CHALLENGE_BEST_TIME_OFFSET
-            hashed += self.read_bytes(address, 4)
-        if hashed == ChapterArea.UNUSED_CHALLENGE_BEST_TIME_VALUE * 4:
-            return None
-        else:
-            return hashed
-
-    def is_seed_name_hash_set(self) -> bool:
-        # There is no more efficient way to check this, without forcing the first 4 bytes of seed hashes to not match
-        # the default unused value in the save data, then only the first 4 bytes would need to be checked.
-        return self.read_seed_name_hash() is not None
+    def is_seed_name_set(self) -> bool:
+        return not CustomSaveDataSections.MULTIWORLD_SEED_NAME.is_utf8_string_empty(self)
 
     def write_slot_name(self, name: str) -> None:
-        assert len(name) <= 16, "Error: Slot name to write is too long, this should not happen."
-        encoded_name = name.encode("utf-8")
-        # Each UTF-8 character encodes to no more than 4 bytes.
-        assert len(encoded_name) <= 64, "Error: Slot name to write encodes to too many bytes, this should not happen."
-        # pad with 0xFF bytes. 0xFF never appears in UTF-8.
-        if len(encoded_name) < 64:
-            encoded_name += b"\xFF" * (64 - len(encoded_name))
-        assert len(encoded_name) == 64
-        areas = CHAPTER_AREAS[UNUSED_AREA_DWORD_SLOT_NAME_AREAS]
-        parts = [encoded_name[i * 4: i * 4 + 4] for i in range(16)]
-        for part, area in zip(parts, areas, strict=True):
-            address = area.address + area.UNUSED_CHALLENGE_BEST_TIME_OFFSET
-
-            if __debug__:
-                # Ensure the bytes have not already been written to.
-                existing_bytes = self.read_bytes(address, 4)
-                assert existing_bytes == ChapterArea.UNUSED_CHALLENGE_BEST_TIME_VALUE, (
-                    f"The unused bytes the slot name is being written to at area {area.short_name} are not their"
-                    f" expected value of {ChapterArea.UNUSED_CHALLENGE_BEST_TIME_VALUE!r}, instead found"
-                    f" {existing_bytes!r}"
-                )
-
-            # Write the bytes for this part of the encoded name.
-            assert len(part) == 4
-            self.write_bytes(address, part, 4)
-            if b"\xFF" in part:
-                # Writing can stop once there are padding bytes in a part that was written.
-                break
+        # Ensure the bytes have not already been written to.
+        assert not self.is_slot_name_set(), "Error: The slot name is already set into the save-data."
+        CustomSaveDataSections.SLOT_NAME.write_utf8_string(self, name)
 
     def read_slot_name(self) -> str | None:
         """
@@ -1122,37 +1068,14 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         :return: The slot name in the current save file, or None if no slot name has been written to the current save
         file.
         """
-        areas = CHAPTER_AREAS[UNUSED_AREA_DWORD_SLOT_NAME_AREAS]
-        encoded_name = b""
-        for area in areas:
-            address = area.address + area.UNUSED_CHALLENGE_BEST_TIME_OFFSET
-            read_bytes = self.read_bytes(address, 4)
-            encoded_name += read_bytes
-            if b"\xFF" in read_bytes:
-                # Reading can stop once there are padding bytes in a part that was read.
-                break
-        if encoded_name == ChapterArea.UNUSED_CHALLENGE_BEST_TIME_VALUE * 16:
-            # The default value of the unused bytes is fortunately invalid UTF-8, so it is not possible for a slot name
-            # to produce the same bytes as the default values.
-            return None
-        # Strip any \xFF padding and return the decoded string.
-        debug_logger.info(f"Read slot_name bytes as {[hex(x)[2:] for x in encoded_name]}")
-        return encoded_name.partition(b"\xFF")[0].decode("utf-8")
+        slot_name = CustomSaveDataSections.SLOT_NAME.read_utf8_string(self)
+        return slot_name if slot_name else None
 
     def is_slot_name_set(self) -> bool:
         """
         Return whether the current save data has a slot name set.
-
-        More efficient than checking `self.read_slot_name is not None`.
         """
-        areas = CHAPTER_AREAS[UNUSED_AREA_DWORD_SLOT_NAME_AREAS]
-        # Only the first unused bytes need to be checked.
-        area = areas[0]
-        address = area.address + area.UNUSED_CHALLENGE_BEST_TIME_OFFSET
-        read_bytes = self.read_bytes(address, 4)
-        # The default value is not valid UTF-8, so the default value is not possible to be part of a slot name, so
-        # if the default value is found, then the slot name has not been set and vice versa.
-        return read_bytes != ChapterArea.UNUSED_CHALLENGE_BEST_TIME_VALUE
+        return CustomSaveDataSections.SLOT_NAME.is_utf8_string_empty(self)
 
     def is_connected_to_server(self):
         return self.server is not None and not self.server.socket.closed
@@ -1550,9 +1473,9 @@ async def game_watcher_check_save_file(ctx: LegoStarWarsTheCompleteSagaContext,
                 if last_slot_name is not None and ctx.read_slot_name() is None:
                     logger.info("Copied the last connected slot name to the new save file.")
                     ctx.write_slot_name(last_slot_name)
-                if last_seed_name is not None and ctx.read_seed_name_hash() is None:
-                    logger.info("Copied the last connected multiworld seed hash to the new save file.")
-                    ctx.write_seed_name_hash(last_seed_name)
+                if last_seed_name is not None and ctx.read_seed_name_from_save_data() is None:
+                    logger.info("Copied the last connected multiworld seed name to the new save file.")
+                    ctx.write_seed_name(last_seed_name)
                 # The save file is new, so run first-time setup.
                 ctx.ap_first_time_setup()
             else:
@@ -1561,7 +1484,7 @@ async def game_watcher_check_save_file(ctx: LegoStarWarsTheCompleteSagaContext,
                 # But if the player tries to load into a save file for a different seed/slot, then they need
                 # to be disconnected.
                 if (last_seed_name is not None
-                        and ctx.hash_seed_name(last_seed_name) != ctx.read_seed_name_hash()):
+                        and last_seed_name != ctx.read_seed_name_from_save_data()):
                     if ctx.slot:
                         logger.info("Disconnecting from the server because the newly loaded save file's"
                                     " seed does not match the connected multiworld's seed.")
@@ -1586,8 +1509,8 @@ async def game_watcher_check_save_file(ctx: LegoStarWarsTheCompleteSagaContext,
                 if not ctx.is_slot_name_set():
                     ctx.write_slot_name(slot_name)
                     logger.info("Restored slot name in save data after save data was rolled back to before it was set")
-                if not ctx.is_seed_name_hash_set():
-                    ctx.write_seed_name_hash(seed_name)
+                if not ctx.is_seed_name_set():
+                    ctx.write_seed_name(seed_name)
                     logger.info("Restored seed name hash in save data after save data was rolled back to before it was"
                                 " set")
     ctx.last_loaded_save_file = current_save_file

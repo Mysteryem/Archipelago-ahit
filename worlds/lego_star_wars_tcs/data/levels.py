@@ -3,6 +3,7 @@ from enum import IntEnum, IntFlag
 __all__ = [
     "LevelFlag",
     "Level",
+    "SAVE_DATA_MINIKITS_ELEMENT_SIZE",
 ]
 
 
@@ -43,8 +44,15 @@ class LevelFlag(IntFlag):
     UNKNOWN0x80000000 = 0x80000000
 
 
+_SAVE_DATA_MINIKITS_ARRAY = 0x8668f9
+# 10 * 8 bytes of null terminated strings, plus two bytes for the count of minikits in the array of strings, and two
+# additional bytes of unknown use
+SAVE_DATA_MINIKITS_ELEMENT_SIZE = 0x8 * 10 + 0x2 + 0x2
+
+
 class Level(IntEnum):
     flags: LevelFlag
+    minikits_save_data_addr: int
 
     def __new__(cls, *args, **kwargs):
         obj = int.__new__(cls, args[0])
@@ -53,6 +61,7 @@ class Level(IntEnum):
 
     def __init__(self, _id, flags: LevelFlag):
         self.flags = flags
+        self.minikits_save_data_addr = _SAVE_DATA_MINIKITS_ARRAY + SAVE_DATA_MINIKITS_ELEMENT_SIZE * self
 
     def is_status(self) -> bool:
         return LevelFlag.STATUS_LEVEL in self.flags
