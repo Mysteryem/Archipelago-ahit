@@ -2,8 +2,8 @@ from enum import IntEnum, IntFlag
 
 from .type_aliases import TCSContext
 
-from ..data.areas import Area
 from ..data.levels import Level, SAVE_DATA_MINIKITS_ELEMENT_SIZE
+from ..data.logic import ALL_CHAPTERS
 
 # Comments explaining save data structure assume the following import:
 # from ctypes import *
@@ -50,7 +50,7 @@ from ..data.levels import Level, SAVE_DATA_MINIKITS_ELEMENT_SIZE
 
 
 def _make_levels_free_space() -> list[Level]:
-    levels_with_minikits = set().union(*(area.get_playable_levels() for area in Area))
+    levels_with_minikits = set().union(*(chapter.level_minikits.keys() for chapter in ALL_CHAPTERS))
     levels_without_minikits = [level for level in Level if level not in levels_with_minikits]
     return levels_without_minikits
 
