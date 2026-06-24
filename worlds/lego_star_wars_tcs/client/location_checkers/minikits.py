@@ -4,10 +4,10 @@ import logging
 from . import ClientComponent
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnAreaChangeEvent, OnGameWatcherTickEvent
 from ..type_aliases import TCSContext, ApLocationId
-from ...locations import LOCATION_NAME_TO_ID
 
 from ...data.areas import Area, ALL_CHAPTER_AREAS
 from ...data.levels import Level
+from ...data.locations import LOCATION_NAME_TO_ID
 from ...data.logic import ALL_CHAPTERS
 
 _CURRENT_AREA_NEW_MINIKITS_ARRAY = 0x955ff0

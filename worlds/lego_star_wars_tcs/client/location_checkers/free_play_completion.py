@@ -3,7 +3,6 @@ from enum import IntFlag
 from typing import Iterable
 
 from ..events import subscribe_event, OnReceiveSlotDataEvent
-from ...locations import LOCATION_NAME_TO_ID
 from ..type_aliases import ApLocationId, TCSContext
 from ..common import ClientComponent, StaticUint
 from ..common_addresses import ChallengeMode
@@ -12,6 +11,7 @@ from ...options import GoalChapterLocationsMode
 
 from ...data.areas import Area, ALL_CHAPTER_AREAS
 from ...data.levels import Level
+from ...data.locations import LOCATION_NAME_TO_ID
 
 
 _DEBUG_LOGGER = logging.getLogger("TCS Debug")

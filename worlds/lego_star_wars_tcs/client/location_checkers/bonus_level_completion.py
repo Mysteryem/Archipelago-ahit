@@ -4,9 +4,9 @@ from typing import Iterable
 from ..common import ClientComponent, UCharField, StaticUChar
 from ..events import subscribe_event, OnReceiveSlotDataEvent
 from ..type_aliases import MemoryAddress, ApLocationId, TCSContext, AreaId
-from ...locations import LOCATION_NAME_TO_ID
 
 from ...data.areas import Area, BONUS_ROOM_BONUSES
+from ...data.locations import LOCATION_NAME_TO_ID
 
 
 _DEBUG_LOGGER = logging.getLogger("TCS Debug")

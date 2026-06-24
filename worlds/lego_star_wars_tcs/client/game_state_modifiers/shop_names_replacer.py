@@ -17,10 +17,10 @@ from ..events import (
 from ..client_text import ClientText, clean_string
 from ..type_aliases import ApLocationId, TCSContext
 from ...constants import GAME_NAME
-from ...locations import LOCATION_NAME_TO_ID
 
 from ...data.extras import Extra
 from ...data.levels import Level
+from ...data.locations import LOCATION_NAME_TO_ID
 from ...data.shop import CHARACTER_SHOP_SLOTS
 
 

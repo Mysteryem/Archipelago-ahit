@@ -3,7 +3,7 @@ from unittest import TestCase
 from ..constants import CharacterAbility
 from ..items import ITEM_DATA_BY_NAME, CHARACTERS_AND_VEHICLES_BY_NAME
 from ..levels import CHAPTER_AREAS, BONUS_AREAS
-from ..locations import LOCATION_NAME_TO_ID
+from ..data.locations import LOCATION_NAME_TO_ID
 
 
 class TestLevels(TestCase):

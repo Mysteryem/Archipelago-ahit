@@ -6,9 +6,9 @@ from ..common_addresses import CURRENT_AREA_ADDRESS
 from ..common import UCharField
 from ..events import subscribe_event, OnReceiveSlotDataEvent
 from ..type_aliases import TCSContext
-from ...locations import LOCATION_NAME_TO_ID
 
 from ...data.areas import Area
+from ...data.locations import LOCATION_NAME_TO_ID
 from ...data.logic import ALL_CHAPTERS
 
 _LOGGER = logging.getLogger()

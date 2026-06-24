@@ -22,8 +22,7 @@ from CommonClient import server_loop, gui_enabled, get_base_parser
 
 from .. import options, TCSUniversalTrackerAPWorldVersionMismatchError
 from ..constants import GAME_NAME, AP_WORLD_VERSION
-from ..levels import SHORT_NAME_TO_CHAPTER_AREA, CHAPTER_AREAS, ChapterArea
-from ..locations import LOCATION_NAME_TO_ID
+from ..levels import SHORT_NAME_TO_CHAPTER_AREA, ChapterArea
 from .client_text import ClientText, clean_string
 from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from .custom_save_data import CustomSaveDataSections, CUSTOM_SAVE_DATA_SECTION_SIZE
@@ -61,6 +60,8 @@ from .game_state_modifiers.level_specific_fixes import LevelSpecificFixes
 from .game_state_modifiers.patches import apply_game_patches
 from .game_state_modifiers.auto_collect_pickups import AutoCollectPickups
 from .game_version_check import get_game_version, GameVersion, gog_to_steam
+
+from ..data.locations import LOCATION_NAME_TO_ID
 
 
 # Universal Tracker client integration.

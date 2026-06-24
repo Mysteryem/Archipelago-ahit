@@ -2,13 +2,13 @@ from . import ClientComponent
 from ..common_addresses import CURRENT_AREA_ADDRESS
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnAreaChangeEvent, OnPlayerCharacterIdChangeEvent
 from ..type_aliases import ApLocationId, TCSContext
-from ...locations import LOCATION_NAME_TO_ID
 from ...ridables import BONUS_TO_RIDABLES
 
 from ...options import GoalChapterLocationsMode
 
 from ...data.areas import Area, BONUS_ROOM_BONUSES
 from ...data.characters import Character
+from ...data.locations import LOCATION_NAME_TO_ID
 from ...data.logic import CHAPTERS_BY_SHORT_NAME
 
 

@@ -57,7 +57,7 @@ LEVEL_COMPLETION = {
 }
 
 # TODO: Copied from the manual world's datapackage, to be reworked.
-LOCATION_NAME_TO_ID = {
+LEGACY_LOCATION_NAME_TO_ID = {
     "Purchase Gonk Droid": 1,
     "Purchase PK Droid": 2,
     "Purchase Battle Droid (1-1)": 3,

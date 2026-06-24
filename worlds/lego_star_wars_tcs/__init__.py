@@ -26,8 +26,6 @@ from .constants import (
     CHAPTER_SPECIFIC_FLAGS,
     progression_deprioritized_skip_balancing,
 )
-from .data.characters import Character
-from .data.locations import LOCATION_NAME_TO_ID
 from .items import (
     ITEM_NAME_TO_ID,
     LegoStarWarsTCSItem,
@@ -76,9 +74,10 @@ from .options import (
 from .option_resolution.common import resolve_options
 from .ridables import RIDABLES_REQUIREMENTS
 from .item_groups import ITEM_GROUPS, REVERSE_READABLE_ABILITY_TO_ABILITY
-from .location_groups import LOCATION_GROUPS
 
+from .data.characters import Character
 from .data.levels import SAVE_DATA_MINIKITS_ELEMENT_SIZE
+from .data.locations import LOCATION_NAME_TO_ID, LOCATION_GROUPS
 
 # 1 byte to write the length
 SLOT_NAME_MAX_BYTES = SAVE_DATA_MINIKITS_ELEMENT_SIZE - 1

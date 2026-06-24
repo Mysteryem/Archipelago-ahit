@@ -1,17 +1,17 @@
 from .levels import SHORT_NAME_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
-from .locations import LOCATION_NAME_TO_ID
+from .locations import LEGACY_LOCATION_NAME_TO_ID
 
 
-LOCATION_ID_TO_NAME = {v: k for k, v in LOCATION_NAME_TO_ID.items()}
-assert len(LOCATION_ID_TO_NAME) == len(LOCATION_NAME_TO_ID)
+LOCATION_ID_TO_NAME = {v: k for k, v in LEGACY_LOCATION_NAME_TO_ID.items()}
+assert len(LOCATION_ID_TO_NAME) == len(LEGACY_LOCATION_NAME_TO_ID)
 
 
 def _locations_from_indices(start_inclusive: int, end_inclusive: int) -> set[str]:
     return {LOCATION_ID_TO_NAME[i] for i in range(start_inclusive, end_inclusive + 1)}
 
 
-LOCATION_GROUPS: dict[str, set[str]] = {
-    "Purchases": {name for name in LOCATION_NAME_TO_ID.keys() if name.startswith("Purchase")},
+LEGACY_LOCATION_GROUPS: dict[str, set[str]] = {
+    "Purchases": {name for name in LEGACY_LOCATION_NAME_TO_ID.keys() if name.startswith("Purchase")},
     "True Jedi": _locations_from_indices(110, 145),
     "Chapter Completions": _locations_from_indices(506, 541),
     "Bonuses": _locations_from_indices(547, 554),

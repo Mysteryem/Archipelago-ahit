@@ -2,9 +2,9 @@ import abc
 
 from ..common_addresses import CHARACTERS_SHOP_START, EXTRAS_SHOP_START
 from ..type_aliases import MemoryAddress, MemoryOffset, BitMask, ApLocationId, TCSContext
-from ...locations import LOCATION_NAME_TO_ID
 
 from ...data.extras import Extra
+from ...data.locations import LOCATION_NAME_TO_ID
 from ...data.shop import CHARACTER_SHOP_SLOTS
 
 
