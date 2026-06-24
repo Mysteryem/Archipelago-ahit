@@ -13,7 +13,7 @@ from ..common_addresses import (
     ChallengeMode,
     AREA_DATA_ID,
 )
-from ..type_aliases import TCSContext
+from ..type_aliases import TCSContext, ApItemId
 from ...items import ITEM_DATA_BY_ID
 from ...levels import DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI
 from ... import options
@@ -21,6 +21,7 @@ from ... import options
 from ...data.areas import Area, ALL_CHAPTER_AREAS
 from ...data.characters import Character
 from ...data.items import GenericItemData
+from ...data.items.all_character_items import CODE_TO_ITEM_DATA as CODE_TO_CHARACTER_DATA
 from ...data.items.generic_items import EPISODE_UNLOCKS, GENERIC_DATA_BY_NAME, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
 
 
@@ -187,10 +188,11 @@ class UnlockedChapterManager(ClientComponent):
         )
 
         if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_random_characters:
-            from_slot_data: dict[str, list[str]] = slot_data["chapter_random_character_requirements"]
+            from_slot_data: dict[str, list[ApItemId]] = slot_data["chapter_random_character_requirements"]
             self.random_character_chapter_requirements = {
-                Area.from_short_name(chapter_short_name): list(map(Character.from_sendable_name, character_names))
-                for chapter_short_name, character_names in from_slot_data.items()
+                Area.from_short_name(chapter_short_name): [CODE_TO_CHARACTER_DATA[code].character
+                                                           for code in character_codes]
+                for chapter_short_name, character_codes in from_slot_data.items()
             }
         else:
             self.random_character_chapter_requirements = {}

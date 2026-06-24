@@ -1,3 +1,5 @@
+from typing import cast
+
 from .character_items import NON_VEHICLE_CHARACTER_TO_ITEM_DATA, NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from .vehicle_items import ALL_VEHICLE_CHARACTER_TO_ITEM_DATA, VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from . import GenericCharacterData
@@ -9,6 +11,7 @@ __all__ = [
     "NORMAL_CHARACTER_TO_ITEM_DATA",
     "EXTRA_TOGGLE_CHARACTER_TO_ITEM_DATA",
     "SENDABLE_CHARACTER_TO_ITEM_DATA",
+    "CODE_TO_ITEM_DATA",
 ]
 
 CHARACTER_TO_ITEM_DATA: dict[Character, GenericCharacterData] = {
@@ -35,3 +38,7 @@ current Area.
 SENDABLE_CHARACTER_TO_ITEM_DATA: dict[Character, GenericCharacterData] = {
     k: v for k, v in NORMAL_CHARACTER_TO_ITEM_DATA.items() if v.is_sendable
 }
+
+CODE_TO_ITEM_DATA: dict[int, GenericCharacterData] = cast(dict[int, GenericCharacterData], {
+    v.code: v for v in SENDABLE_CHARACTER_TO_ITEM_DATA.values()
+})
