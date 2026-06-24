@@ -147,10 +147,12 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             ExitData(
                 R_AFTER_STORMTROOPER_GATE_IMPERIAL_EXIT,
                 HasAbility(IMPERIAL),
+                new_level=Level.MOSEISLEY_B,
             ),
             ExitData(
                 R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT,
                 HasAbility(PROTOCOL_PANEL),
+                new_level=Level.MOSEISLEY_B,
             ),
         ),
         R_AFTER_STORMTROOPER_GATE_IMPERIAL_EXIT: (
