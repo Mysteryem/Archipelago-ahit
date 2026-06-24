@@ -71,18 +71,20 @@ _LEVEL_MINIKITS_BYTES_TO_AP_IDS: dict[bytes, ApLocationId] = {
 class MinikitChecker(ClientComponent):
     _on_tick_active: bool = False
     _checked_locations: set[int]
-    _enabled_chapter_levels: set[Level]
+    _enabled_chapter_levels_with_minikits: set[Level]
     _initial_save_data_check_done: bool = False
 
     def __init__(self):
         self._checked_locations = set()
-        self._enabled_chapter_levels = set()
+        self._enabled_chapter_levels_with_minikits = set()
 
     @subscribe_event
     def on_receive_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         for short_name in event.slot_data["enabled_chapters"]:
             area = Area.from_short_name(short_name)
-            self._enabled_chapter_levels.update(area.get_playable_levels())
+            self._enabled_chapter_levels_with_minikits.update(area.get_playable_levels())
+        # Not all levels contain minikits.
+        self._enabled_chapter_levels_with_minikits.intersection_update(_PER_LEVEL_MINIKITS_TO_AP_IDS)
 
     @subscribe_event
     async def on_area_change(self, event: OnAreaChangeEvent) -> None:
@@ -101,7 +103,7 @@ class MinikitChecker(ClientComponent):
         self._check_current_area_new_minikits(event.context)
 
     def _check_save_data_minikits(self, ctx: TCSContext) -> None:
-        for level in self._enabled_chapter_levels:
+        for level in self._enabled_chapter_levels_with_minikits:
             minikit_to_ap_id = _PER_LEVEL_MINIKITS_TO_AP_IDS[level]
             sub_array_addr = _SAVE_DATA_MINIKITS_ARRAY + _SAVE_DATA_MINIKITS_ELEMENT_SIZE * level
             minikits_bytes_array = ctx.read_bytes(sub_array_addr, _SAVE_DATA_MINIKITS_RELEVANT_ELEMENT_SIZE)
