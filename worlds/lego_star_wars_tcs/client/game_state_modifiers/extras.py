@@ -141,7 +141,7 @@ class AcquiredExtras(ItemReceiver):
             if is_enabled:
                 custom_save_data_array[extra.get_shop_slot_byte()] |= extra.get_shop_slot_mask()
         base_addr = CustomSaveDataSections.CUSTOM_SAVE_FLAGS2.get_address()
-        ctx.write_bytes(base_addr, custom_save_data_array, len(custom_save_data_array))
+        ctx.write_bytes(base_addr, bytes(custom_save_data_array), len(custom_save_data_array))
 
     @subscribe_event
     async def update_game_state(self, event: OnGameWatcherTickEvent):
