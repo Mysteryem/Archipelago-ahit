@@ -21,7 +21,7 @@ from ... import options
 from ...data.areas import Area, ALL_CHAPTER_AREAS
 from ...data.characters import Character
 from ...data.items import GenericItemData
-from ...data.items.all_character_items import CODE_TO_ITEM_DATA as CODE_TO_CHARACTER_DATA
+from ...data.items.all_character_items import CODE_TO_ITEM_DATA as CODE_TO_CHARACTER_DATA, CHARACTER_TO_ITEM_DATA
 from ...data.items.generic_items import EPISODE_UNLOCKS, GENERIC_DATA_BY_NAME, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
 
 
@@ -295,18 +295,26 @@ class UnlockedChapterManager(ClientComponent):
                     assert chapter_unlock_requirement == options.ChapterUnlockRequirement.option_random_characters
                     count_required = self.per_chapter_required_character_count[chapter_area]
                     character_requirements = self.random_character_chapter_requirements[chapter_area]
+
+                # Convert characters to item codes.
+                character_code_requirements: list[int] = []
+                for character in character_requirements:
+                    code = CHARACTER_TO_ITEM_DATA[character].code
+                    assert code is not None
+                    character_code_requirements.append(code)
+
                 # Older versions do not provide a count in slot data, and instead assume all are required by setting the
                 # count_required to 999_999_999.
-                assert count_required <= len(character_requirements) or event.generator_version < (1, 4, 0), \
+                assert count_required <= len(character_code_requirements) or event.generator_version < (1, 4, 0), \
                     "Required counts should never be larger than the maximum possible"
-                if count_required < len(character_requirements):
+                if count_required < len(character_code_requirements):
                     # Not all are required.
-                    unique_count_required_items.extend(character_requirements)
+                    unique_count_required_items.extend(character_code_requirements)
                     unique_count_required = count_required
                     always_required_items = []
                 else:
                     # All are required.
-                    always_required_items = list(character_requirements)
+                    always_required_items = list(character_code_requirements)
             elif chapter_unlock_requirement == options.ChapterUnlockRequirement.option_chapter_item:
                 unlock_item_name = CHAPTER_TO_CHAPTER_UNLOCK_ITEM[chapter_area]
                 unlock_item_data = GENERIC_DATA_BY_NAME[unlock_item_name]
