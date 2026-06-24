@@ -77,7 +77,8 @@ _STATUS_LEVEL_TO_AREA: dict[Level, Area] = {
     area.get_status_level(): area for area in ALL_CHAPTER_AREAS
 }
 _STATUS_LEVEL_TO_AP_ID: dict[Level, ApLocationId] = {
-    status_level: LOCATION_NAME_TO_ID[area.get_completion_name()] for status_level, area in _STATUS_LEVEL_TO_AREA
+    status_level: LOCATION_NAME_TO_ID[area.get_completion_name()]
+    for status_level, area in _STATUS_LEVEL_TO_AREA.items()
 }
 
 
