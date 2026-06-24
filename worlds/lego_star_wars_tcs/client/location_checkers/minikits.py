@@ -10,6 +10,8 @@ from ...data.levels import Level
 from ...data.locations import LOCATION_NAME_TO_ID
 from ...data.logic import ALL_CHAPTERS
 
+_MINIKIT_EMPTY_NAME = b"\x00" * 8
+
 _CURRENT_AREA_NEW_MINIKITS_ARRAY = 0x955ff0
 _CURRENT_AREA_NEW_MINIKITS_ELEMENT_SIZE = 0xc
 _CURRENT_AREA_NEW_MINIKITS_RELEVANT_ELEMENT_SIZE = 0xa  # The last two bytes are unknown and appear to always be zero.
@@ -108,9 +110,13 @@ class MinikitChecker(ClientComponent):
             sub_array_addr = _SAVE_DATA_MINIKITS_ARRAY + _SAVE_DATA_MINIKITS_ELEMENT_SIZE * level
             minikits_bytes_array = ctx.read_bytes(sub_array_addr, _SAVE_DATA_MINIKITS_RELEVANT_ELEMENT_SIZE)
             minikit_bytes: bytes
+            if minikits_bytes_array == _SAVE_DATA_MINIKITS_EMPTY_ELEMENT:
+                # The entire array is empty, so skip and check the next Level.
+                continue
             for minikit_bytes in struct.iter_unpack(b"8s", minikits_bytes_array):
-                if minikit_bytes == _SAVE_DATA_MINIKITS_EMPTY_ELEMENT:
-                    # There is no need to iterate any further.
+                if minikit_bytes == _MINIKIT_EMPTY_NAME:
+                    # There is no need to iterate any further because minikit names are inserted into the earliest free
+                    # space in the array.
                     break
                 if minikit_bytes not in minikit_to_ap_id:
                     _LOGGER.error("Could not find AP location id for minikit %r. Report this as a bug.", minikit_bytes)
