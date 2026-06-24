@@ -452,7 +452,7 @@ class _RegionBuilder:
             gold_bricks_required = legacy_area.gold_bricks_required
             if gold_bricks_required == 0:
                 # No Gold Bricks are required to watch the Indy Trailer, so put it in the Bonuses region directly.
-                assert legacy_area.name == "Indiana Jones: Trailer"
+                assert legacy_area.name == "Indiana Jones Trailer"
                 world.add_location(Area(legacy_area.area_id).get_completion_name(), bonuses)
             else:
                 gold_brick_costs.setdefault(gold_bricks_required, []).append(legacy_area)
