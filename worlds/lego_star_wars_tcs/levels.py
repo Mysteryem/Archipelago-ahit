@@ -25,7 +25,7 @@ from .constants import (
     IS_A_VEHICLE,
     CHAPTER_SPECIFIC_FLAGS,
 )
-from .data.areas import EPISODE_AREA_LOOKUP
+from .data.areas import EPISODE_AREA_LOOKUP, Area
 from .data.characters import AREA_TO_PURCHASE_CHARACTERS, Character
 from .items import CHARACTERS_AND_VEHICLES_BY_NAME
 
@@ -718,7 +718,7 @@ CHAPTER_AREAS = [
 #  Character/Minikit bonuses.
 BONUS_AREAS = [
     # Could require: "Anakin's Pod"
-    BonusArea("Mos Espa Pod Race (Original)", 0x86e144, (30, 31, 32), 0x1, 35, 4, gold_bricks_required=10),
+    BonusArea(Area.PODRACE.readable_name, 0x86e144, (30, 31, 32), 0x1, 35, 4, gold_bricks_required=10),
     # There are a number of test levels in LEVELS.TXT that seem to not be counted, so the level IDs for Anakin's Flight
     # do not match what is expected:
     # Intro = 327
@@ -729,13 +729,13 @@ BONUS_AREAS = [
     # Outro2 = 332
     # Status = 333
     # Could require: "Naboo Starfighter"
-    BonusArea("Anakin's Flight", 0x86e3cc, (328, 329, 330), 0x1, 333, 58, gold_bricks_required=30),
+    BonusArea(Area.ANAKINSFLIGHT.readable_name, 0x86e3cc, (328, 329, 330), 0x1, 333, 58, gold_bricks_required=30),
     # Could require: "Republic Gunship"
-    BonusArea("Gunship Cavalry (Original)", 0x86e1c8, (96, 97), 0x1, 98, 15, gold_bricks_required=10),
+    BonusArea(Area.BONUS_GUNSHIP.readable_name, 0x86e1c8, (96, 97), 0x1, 98, 15, gold_bricks_required=10),
     # Note: The base address may be incorrect/I do not know what the base address is supposed to be.
     # Could require: "Darth Vader" + "Stormtrooper" + "C-3PO"
-    BonusArea("A New Hope (Bonus Level)", 0x86e269, (148, 149), 0x8, 150, 29, gold_bricks_required=20),
-    BonusArea("LEGO City", 0x86e3d8, (310,), 0x1, 311, 59,
+    BonusArea(Area.ANEWHOPE.readable_name, 0x86e269, (148, 149), 0x8, 150, 29, gold_bricks_required=20),
+    BonusArea(Area.BONUS2.readable_name, 0x86e3d8, (310,), 0x1, 311, 59,
               gold_bricks_required=10,
               completion_ability_requirements=(
                       JEDI
@@ -746,7 +746,7 @@ BONUS_AREAS = [
                       | CAN_MELEE
                       | CAN_RIDE_VEHICLES
               )),
-    BonusArea("New Town", 0x86e3c0, (308,), 0x1, 309, 57,
+    BonusArea(Area.BONUS.readable_name, 0x86e3c0, (308,), 0x1, 309, 57,
               gold_bricks_required=50,
               completion_ability_requirements=(
                       JEDI
@@ -763,7 +763,7 @@ BONUS_AREAS = [
     # No gold brick for watching the trailer, but it does unlock the shop slot for purchasing Indiana Jones in vanilla
     # todo: Add the Purchase Indiana Jones location.
     # It looks like the unfinished Indiana Jones level would have been Area 67, though this is inaccessible.
-    BonusArea("Indiana Jones Trailer", 0x86e505, (), 0x0, -1, 67, gold_brick=False)
+    BonusArea(Area.LOSTTEMPLE.readable_name, 0x86e505, (), 0x0, -1, 67, gold_brick=False)
 ]
 BONUS_NAME_TO_BONUS_AREA = {bonus.name: bonus for bonus in BONUS_AREAS}
 
@@ -789,9 +789,9 @@ STATUS_LEVEL_IDS = (
 AREA_ID_TO_BONUS_AREA = {area.area_id: area for area in BONUS_AREAS}
 
 VEHICLE_BONUS_AREA_NAMES: frozenset[str] = frozenset({
-    "Mos Espa Pod Race (Original)",
-    "Anakin's Flight",
-    "Gunship Cavalry (Original)",
+    Area.PODRACE.readable_name,
+    Area.ANAKINSFLIGHT.readable_name,
+    Area.BONUS_GUNSHIP.readable_name,
 })
 
 assert all(name in BONUS_NAME_TO_BONUS_AREA for name in VEHICLE_BONUS_AREA_NAMES)
