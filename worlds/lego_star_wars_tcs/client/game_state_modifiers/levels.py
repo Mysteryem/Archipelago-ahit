@@ -316,7 +316,7 @@ class UnlockedChapterManager(ClientComponent):
             else:
                 raise ValueError(f"Unexpected ChapterUnlockRequirement with value {chapter_unlock_requirement}")
 
-            episode = chapter_area.episode
+            episode = chapter_area.get_chapter_episode()
             if episode_unlock_requirement == options.EpisodeUnlockRequirement.option_episode_item:
                 unlock_item_name = EPISODE_UNLOCKS[episode]
                 unlock_item_data = GENERIC_DATA_BY_NAME[unlock_item_name]
