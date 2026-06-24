@@ -21,7 +21,7 @@ _CURRENT_AREA_NEW_MINIKITS_ARRAY_SIZE = (_CURRENT_AREA_NEW_MINIKITS_ELEMENT_SIZE
 _CURRENT_AREA_NEW_MINIKITS_EMPTY_ELEMENT = b"\x00" * _CURRENT_AREA_NEW_MINIKITS_RELEVANT_ELEMENT_SIZE
 
 
-_SAVE_DATA_MINIKITS_ARRAY = 0x8668f9
+_SAVE_DATA_MINIKITS_ARRAY = Level(0).minikits_save_data_addr
 # 10 * 8 bytes of null terminated strings, plus one byte
 _SAVE_DATA_MINIKITS_ELEMENT_SIZE = 0x8 * 10 + 1
 _SAVE_DATA_MINIKITS_RELEVANT_ELEMENT_SIZE = _SAVE_DATA_MINIKITS_ELEMENT_SIZE - 1
@@ -109,7 +109,7 @@ class MinikitChecker(ClientComponent):
     def _check_save_data_minikits(self, ctx: TCSContext) -> None:
         for level in self._enabled_chapter_levels_with_minikits:
             minikit_to_ap_id = _PER_LEVEL_MINIKITS_TO_AP_IDS[level]
-            sub_array_addr = _SAVE_DATA_MINIKITS_ARRAY + _SAVE_DATA_MINIKITS_ELEMENT_SIZE * level
+            sub_array_addr = level.minikits_save_data_addr
             minikits_bytes_array = ctx.read_bytes(sub_array_addr, _SAVE_DATA_MINIKITS_RELEVANT_ELEMENT_SIZE)
             minikit_bytes: bytes
             if minikits_bytes_array == _SAVE_DATA_MINIKITS_EMPTY_ELEMENT:
@@ -122,7 +122,8 @@ class MinikitChecker(ClientComponent):
                     # space in the array.
                     break
                 if minikit_bytes not in minikit_to_ap_id:
-                    _LOGGER.error("Could not find AP location id for minikit %r. Report this as a bug.", minikit_bytes)
+                    _LOGGER.error("Could not find AP location id for minikit %r in level %r. Report this as a bug.",
+                                  minikit_bytes, level)
                     continue
                 self._checked_locations.add(minikit_to_ap_id[minikit_bytes])
 
