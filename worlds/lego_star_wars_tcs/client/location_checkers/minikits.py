@@ -64,9 +64,9 @@ def _make_per_level_minikits_to_ap_id() -> dict[Level, dict[bytes, ApLocationId]
 
 
 _PER_LEVEL_MINIKITS_TO_AP_IDS: dict[Level, dict[bytes, ApLocationId]] = _make_per_level_minikits_to_ap_id()
-_LEVEL_MINIKITS_BYTES_TO_AP_IDS: dict[bytes, ApLocationId] = {
+_LEVEL_MINIKITS_BYTES_TO_AP_IDS: dict[tuple[bytes, int], ApLocationId] = {
     # 8 byte, null-terminated string, followed by a short.
-    minikit_bytes + struct.pack(b"<h", level): ap_location_id
+    (minikit_bytes.rstrip(b"\x00"), level.value): ap_location_id
     for level, per_level_minikits in _PER_LEVEL_MINIKITS_TO_AP_IDS.items()
     for minikit_bytes, ap_location_id in per_level_minikits.items()
 }
@@ -136,10 +136,15 @@ class MinikitChecker(ClientComponent):
                 # There is no need to iterate any further.
                 # Note that 0x951254 says how many elements are in the array, so the client could read that instead.
                 break
-            if element not in _LEVEL_MINIKITS_BYTES_TO_AP_IDS:
-                _LOGGER.error("Could not find AP location id for minikit %r. Report this as a bug.", element)
+            minikit_name_bytes: bytes
+            level_id: int
+            minikit_name_bytes, level_id = struct.unpack("<8sh", element)
+            minikit_name_bytes = minikit_name_bytes.partition(b"\x00")[0]
+            key = (minikit_name_bytes, level_id)
+            if key not in _LEVEL_MINIKITS_BYTES_TO_AP_IDS:
+                _LOGGER.error("Could not find AP location id for minikit %r. Report this as a bug.", key)
                 continue
-            self._checked_locations.add(_LEVEL_MINIKITS_BYTES_TO_AP_IDS[element])
+            self._checked_locations.add(_LEVEL_MINIKITS_BYTES_TO_AP_IDS[key])
 
 
     async def check_minikits(self, ctx: TCSContext, new_location_checks: list[int]) -> None:
