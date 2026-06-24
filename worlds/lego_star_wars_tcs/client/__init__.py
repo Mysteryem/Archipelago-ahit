@@ -1076,7 +1076,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         """
         Return whether the current save data has a slot name set.
         """
-        return CustomSaveDataSections.SLOT_NAME.is_utf8_string_empty(self)
+        return not CustomSaveDataSections.SLOT_NAME.is_utf8_string_empty(self)
 
     def is_connected_to_server(self):
         return self.server is not None and not self.server.socket.closed
