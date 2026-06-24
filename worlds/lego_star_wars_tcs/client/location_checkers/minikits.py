@@ -53,11 +53,13 @@ def _make_per_level_minikits_to_ap_id() -> dict[Level, dict[bytes, ApLocationId]
             level_minikits_to_ap_ids: dict[bytes, ApLocationId] = {}
             assert level not in level_minikits_to_ap_ids
             per_level_minikits_to_ap_ids[level] = level_minikits_to_ap_ids
-            for minikit_name in minikits_data.keys():
-                # Right pad to the full 8 bytes with b"\x00".
-                minikit_bytes = struct.pack(b"<8s", minikit_name.encode("utf-8"))
+            for minikit_name, minikit_data in minikits_data.items():
                 location_id = LOCATION_NAME_TO_ID[area.prefix_name(minikit_name)]
-                level_minikits_to_ap_ids[minikit_bytes] = location_id
+                pickup_names = minikit_data.pickup_names
+                for pickup_name in pickup_names:
+                    # Right pad to the full 8 bytes with b"\x00".
+                    minikit_bytes = struct.pack(b"<8s", pickup_name.encode("utf-8"))
+                    level_minikits_to_ap_ids[minikit_bytes] = location_id
     return per_level_minikits_to_ap_ids
 
 
