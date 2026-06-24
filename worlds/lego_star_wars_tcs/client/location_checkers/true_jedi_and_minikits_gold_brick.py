@@ -11,7 +11,7 @@ from ...data.areas import Area
 from ...data.locations import LOCATION_NAME_TO_ID
 from ...data.logic import ALL_CHAPTERS
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger("Client")
 
 _TRUE_JEDI_FIELD_1 = UCharField(2)
 #_TRUE_JEDI_FIELD_2 = UCharField(3)

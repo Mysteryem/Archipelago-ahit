@@ -28,7 +28,7 @@ _SAVE_DATA_MINIKITS_RELEVANT_ELEMENT_SIZE = _SAVE_DATA_MINIKITS_ELEMENT_SIZE - 1
 _SAVE_DATA_MINIKITS_EMPTY_ELEMENT = b"\x00" * _SAVE_DATA_MINIKITS_RELEVANT_ELEMENT_SIZE
 
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger("Client")
 
 
 def _make_level_to_minikits_data() -> dict[bytes, ApLocationId]:
