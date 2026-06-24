@@ -271,3 +271,27 @@ class TestEpisodes(TestCase):
     def test_chapters_by_short_name(self):
         for short_name, chapter in CHAPTERS_BY_SHORT_NAME.items():
             self.assertEqual(short_name, chapter.short_name)
+
+    def test_expected_no_minikits_levels(self):
+        expected_no_minikits_levels = {
+            # The level with the Slave 1 and the Power Brick.
+            Level.CLOUDCITYESCAPE_B,
+            # The final battle against Zam's Speeder.
+            Level.PURSUIT_E,
+            # The falling elevator.
+            Level.CRUISER_D,
+            # The many forcefields corridor before the final fight.
+            Level.MAUL_E,
+            # The optional elevator room with four hat machines (and a challenge kit).
+            Level.DEATHSTARRESCUE_D,
+            # The twin turbolaster control room where you shoot TIE Fighters for a lot of studs.
+            Level.DEATHSTARRESCUE_E,
+            # The waste disposal/crusher room with the Power Brick.
+            Level.DEATHSTARESCAPE_D,
+        }
+
+        levels_with_minikits = {level for chapter in chapters_iter() for level in chapter.level_minikits.keys()}
+        playable_chapter_levels = {level for chapter in chapters_iter() for level in chapter.area.get_playable_levels()}
+        playable_chapter_levels_without_minikits = playable_chapter_levels - levels_with_minikits
+
+        self.assertEqual(playable_chapter_levels_without_minikits, expected_no_minikits_levels)
