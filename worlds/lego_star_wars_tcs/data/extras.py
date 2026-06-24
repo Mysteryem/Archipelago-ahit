@@ -23,6 +23,12 @@ class ExtraInitializer(TypedDict):
     purchase_cost: int | None
 
 
+# The actual array elements look to start 4 bytes earlier, but we only care about whether an Extra is toggled on/off
+# currently, so pretend the array starts at the byte we're interested in.
+_EXTRA_ENABLED_BASE_ADDRESS = 0x7f3da0
+_EXTRA_ARRAY_ELEMENT_SIZE = 0x20
+
+
 
 class Extra(IntEnum):
     readable_name: str
@@ -70,6 +76,9 @@ class Extra(IntEnum):
 
     def get_shop_slot_mask(self) -> int:
         return 1 << (self % 8)
+
+    def get_enabled_address(self) -> int:
+        return _EXTRA_ENABLED_BASE_ADDRESS + self * _EXTRA_ARRAY_ELEMENT_SIZE
 
     @staticmethod
     def has_all(*extras: "Extra") -> Has | HasAll | True_:

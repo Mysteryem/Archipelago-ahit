@@ -3,10 +3,12 @@ from typing import Mapping, Sequence, cast
 
 from ..common import StaticUChar
 from ..common_addresses import ShopType, EXTRAS_SHOP_START
-from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
-from ..type_aliases import ApItemId, BitMask, MemoryOffset
+from ..custom_save_data import CustomSaveDataSections
+from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent, OnAreaChangeEvent
+from ..type_aliases import ApItemId, BitMask, MemoryOffset, TCSContext
 from . import ItemReceiver
 
+from ...data.areas import Area
 from ...data.extras import Extra
 from ...data.items.extra_items import EXTRA_DATA
 
@@ -75,13 +77,24 @@ _START_ADDRESS = _UNLOCKED_EXTRAS_ADDRESS + _MIN_RANDOMIZED_BYTE
 class AcquiredExtras(ItemReceiver):
     receivable_ap_ids = _RECEIVABLE_EXTRAS_BY_AP_ID
     unlocked_extras: bytearray
+    _restored_enabled_extras: bool = False
 
     def __init__(self):
         self.unlocked_extras = bytearray(_NUM_RANDOMIZED_BYTES)
 
     @subscribe_event
-    def init_from_slot_data(self, _event: OnReceiveSlotDataEvent) -> None:
+    def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         self.clear_received_items()
+
+        # Restore enabled Extras from save data, but only once per new multiworld+slot connection.
+        if not event.first_time_setup and not self._restored_enabled_extras:
+            self.restore_enabled_extras_from_save_data(event.context)
+        self._restored_enabled_extras = True
+
+    @subscribe_event
+    def on_area_change(self, event: OnAreaChangeEvent) -> None:
+        if event.new_area_data_id == Area.MAP:
+            self.save_enabled_extras_to_save_data(event.context)
 
     def clear_received_items(self) -> None:
         # Clearing unlocked extras is necessary because Score Multiplier unlocks are usually progressive. Additionally,
@@ -109,6 +122,26 @@ class AcquiredExtras(ItemReceiver):
             return
 
         self.unlock_extra(_RECEIVABLE_EXTRAS_BY_AP_ID[ap_item_id])
+
+    @staticmethod
+    def restore_enabled_extras_from_save_data(ctx: TCSContext) -> None:
+        base_addr = CustomSaveDataSections.CUSTOM_SAVE_FLAGS2.get_address()
+        extra_bits = ctx.read_bytes(base_addr, 5)
+        for extra in Extra:
+            should_be_enabled = extra_bits[extra.get_shop_slot_byte()] & extra.get_shop_slot_mask() != 0
+            to_write = 1 if should_be_enabled else 0
+            ctx.write_byte(extra.get_enabled_address(), to_write)
+
+    @staticmethod
+    def save_enabled_extras_to_save_data(ctx: TCSContext) -> None:
+        # 5 bytes are needed (44 // 8 = 5)
+        custom_save_data_array = bytearray(5)
+        for extra in Extra:
+            is_enabled = bool(ctx.read_uchar(extra.get_enabled_address()))
+            if is_enabled:
+                custom_save_data_array[extra.get_shop_slot_byte()] |= extra.get_shop_slot_mask()
+        base_addr = CustomSaveDataSections.CUSTOM_SAVE_FLAGS2.get_address()
+        ctx.write_bytes(base_addr, custom_save_data_array, len(custom_save_data_array))
 
     @subscribe_event
     async def update_game_state(self, event: OnGameWatcherTickEvent):

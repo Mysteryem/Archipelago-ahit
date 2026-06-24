@@ -132,7 +132,9 @@ class CustomSaveFlags1(IntFlag):
 class CustomSaveDataSections(IntEnum):
     SLOT_NAME = 0
     MULTIWORLD_SEED_NAME = 1
-    CUSTOM_SAVE_FLAGS = 2
+    # The first 5 bytes are used for storing which Extras were active, so that the player does not have to re-activate
+    # them when continuing an in-progress multiworld.
+    CUSTOM_SAVE_FLAGS2 = 2
 
     def get_address(self) -> int:
         return _LEVELS_WITHOUT_MINIKITS[self.value].minikits_save_data_addr
