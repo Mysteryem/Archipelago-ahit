@@ -126,7 +126,7 @@ class AcquiredExtras(ItemReceiver):
     @staticmethod
     def restore_enabled_extras_from_save_data(ctx: TCSContext) -> None:
         base_addr = CustomSaveDataSections.CUSTOM_SAVE_FLAGS2.get_address()
-        extra_bits = ctx.read_bytes(base_addr, 5)
+        extra_bits = ctx.read_bytes(base_addr, 6)
         for extra in Extra:
             should_be_enabled = extra_bits[extra.get_shop_slot_byte()] & extra.get_shop_slot_mask() != 0
             to_write = 1 if should_be_enabled else 0
@@ -135,7 +135,7 @@ class AcquiredExtras(ItemReceiver):
     @staticmethod
     def save_enabled_extras_to_save_data(ctx: TCSContext) -> None:
         # 5 bytes are needed (44 // 8 = 5)
-        custom_save_data_array = bytearray(5)
+        custom_save_data_array = bytearray(6)
         for extra in Extra:
             is_enabled = bool(ctx.read_uchar(extra.get_enabled_address()))
             if is_enabled:
