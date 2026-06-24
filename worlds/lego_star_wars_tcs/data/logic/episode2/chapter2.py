@@ -103,7 +103,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                         ),
                     ),
                 ),
-                new_level=Level.KAMINO_F,
+                new_level=Level.KAMINO_E,
             ),
         ),
         R_INTERIOR_BEFORE_JANGO_FIGHT: (
