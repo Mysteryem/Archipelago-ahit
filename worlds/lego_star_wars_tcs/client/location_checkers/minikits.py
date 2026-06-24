@@ -115,7 +115,8 @@ class MinikitChecker(ClientComponent):
             if minikits_bytes_array == _SAVE_DATA_MINIKITS_EMPTY_ELEMENT:
                 # The entire array is empty, so skip and check the next Level.
                 continue
-            for minikit_bytes in struct.iter_unpack(b"8s", minikits_bytes_array):
+            for i in range(0, _SAVE_DATA_MINIKITS_RELEVANT_ELEMENT_SIZE, 8):
+                minikit_bytes = minikits_bytes_array[i:i + 8]
                 if minikit_bytes == _MINIKIT_EMPTY_NAME:
                     # There is no need to iterate any further because minikit names are inserted into the earliest free
                     # space in the array.
