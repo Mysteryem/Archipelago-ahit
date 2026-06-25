@@ -4,13 +4,13 @@ from typing import Mapping, Sequence, cast
 from ..common import StaticUChar
 from ..common_addresses import ShopType, EXTRAS_SHOP_START
 from ..custom_save_data import CustomSaveDataSections
-from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent, OnAreaChangeEvent
+from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent, OnLevelChangeEvent
 from ..type_aliases import ApItemId, BitMask, MemoryOffset, TCSContext
 from . import ItemReceiver
 
-from ...data.areas import Area
 from ...data.extras import Extra
 from ...data.items.extra_items import EXTRA_DATA
+from ...data.levels import Level
 
 
 _LOGGER = logging.getLogger("Client")
@@ -92,8 +92,12 @@ class AcquiredExtras(ItemReceiver):
         self._restored_enabled_extras = True
 
     @subscribe_event
-    def on_area_change(self, event: OnAreaChangeEvent) -> None:
-        if event.new_area_data_id == Area.MAP:
+    def on_level_change(self, event: OnLevelChangeEvent) -> None:
+        # It was tried to save enabled Extras when the Area changes to Area.MAP (the Cantina), but it seems this can be
+        # too late because the game is typically already done saving the save data to file at that point.
+        # Instead, the enabled Extras are now saved when entering a Status level, which always precedes entering
+        # Area.MAP.
+        if event.new_level_id in Level and Level(event.new_level_id).is_status():
             self.save_enabled_extras_to_save_data(event.context)
 
     def clear_received_items(self) -> None:
