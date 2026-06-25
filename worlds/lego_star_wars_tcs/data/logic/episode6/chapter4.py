@@ -14,7 +14,7 @@ THE_BATTLE_OF_ENDOR = make_legacy_chapter(
         "Left Minikit Outside Bunker": LegacyMinikitData.new("endorbattle_c", "mk_1"),
         "Right Minikit Outside Bunker": LegacyMinikitData.new("endorbattle_c", "mk_0"),
 
-        "Bunker Minikit After Hatch And Gap": LegacyMinikitData.new("endorbattle_c", "m_pup1"),
-        "Bunker Buildable Minikit": LegacyMinikitData.new("endorbattle_c", "MINI06"),
+        "Bunker Minikit After Hatch And Gap": LegacyMinikitData.new("endorbattle_d", "m_pup1"),
+        "Bunker Buildable Minikit": LegacyMinikitData.new("endorbattle_d", "MINI06"),
     },
 )
