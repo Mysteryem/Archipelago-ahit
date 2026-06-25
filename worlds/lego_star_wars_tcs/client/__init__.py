@@ -1650,9 +1650,9 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                                 ctx, new_location_checks)
 
                         # The Minikit checker needs to check frequently for in-area minikits, but handles this itself.
-                        # The checked minikits are stored, so the minikit checker does not need to be frequently polled
-                        # for locations to send.
-                        if in_game_watcher_tick_count % 20 == 2:
+                        # The checked minikits are stored, so the minikit checker does not need to be as frequently
+                        # polled for locations to send, but still wants to be fairly responsive.
+                        if in_game_watcher_tick_count % 5 == 2:
                             await ctx.minikit_checker.check_minikits(ctx, new_location_checks)
 
                         # Purchases do not need to be checked often.
