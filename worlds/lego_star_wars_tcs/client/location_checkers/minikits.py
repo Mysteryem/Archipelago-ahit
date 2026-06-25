@@ -2,10 +2,16 @@ import struct
 import logging
 
 from . import ClientComponent
-from ..events import subscribe_event, OnReceiveSlotDataEvent, OnAreaChangeEvent, OnGameWatcherTickEvent
+from ..events import (
+    subscribe_event,
+    OnReceiveSlotDataEvent,
+    OnAreaChangeEvent,
+    OnGameWatcherTickEvent,
+    OnLevelChangeEvent,
+)
 from ..type_aliases import TCSContext, ApLocationId
 
-from ...data.areas import Area, ALL_CHAPTER_AREAS
+from ...data.areas import Area
 from ...data.levels import Level
 from ...data.locations import LOCATION_NAME_TO_ID
 from ...data.logic import ALL_CHAPTERS
@@ -92,12 +98,14 @@ class MinikitChecker(ClientComponent):
 
     @subscribe_event
     async def on_area_change(self, event: OnAreaChangeEvent) -> None:
-        self._on_tick_active = event.new_area_data_id in ALL_CHAPTER_AREAS
-
         # Always check the save data the first time, then only check the save data when returning to the Cantina.
         if event.new_area_data_id == Area.MAP or not self._initial_save_data_check_done:
             self._check_save_data_minikits(event.context)
             self._initial_save_data_check_done = True
+
+    @subscribe_event
+    async def on_level_change(self, event: OnLevelChangeEvent) -> None:
+        self._on_tick_active = event.new_level_id in _PER_LEVEL_MINIKITS_TO_AP_IDS
 
     @subscribe_event
     async def on_tick(self, event: OnGameWatcherTickEvent) -> None:
