@@ -1714,6 +1714,7 @@ class LegoStarWarsTCSDeathLink(DeathLink):
     Known issues:
     - Studs are not dropped when receiving a death, however, you can use the Death Link Studs Loss option to cause a
     loss of studs when receiving a death.
+    - Using the Self Destruct Extra counts as dying.
     """
     display_name = "Death Link"
     rich_text_doc = True
