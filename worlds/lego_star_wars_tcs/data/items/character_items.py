@@ -449,7 +449,7 @@ NORMAL_CHARACTER_DATA: list[CharacterData] = [
     generic_clone(Character.CLONE_EPISODE_III_SWAMP),
     generic_clone(Character.CLONE_EPISODE_III_WALKER),
     generic_clone(Character.DISGUISED_CLONE),
-    _char(Character.ANAKIN_SKYWALKER_BOY, SHORTIE | COMMON_HATLES_PACIFIST_NON_DROID, 1.2, 0.37, 0.84, Alignment.GOOD),
+    _char(Character.ANAKIN_SKYWALKER_BOY, SHORTIE | COMMON_PACIFIST_NON_DROID, 1.2, 0.37, 0.84, Alignment.GOOD),
     _char(Character.BOBA_FETT_BOY, COMMON_SHORT_SLOW, 0.8, 0.37, 0.56, Alignment.EVIL),
     # Cannot build.
     # Like Watto, they cannot jump normally, but fly instead, with similar jump distance to Ewok.
