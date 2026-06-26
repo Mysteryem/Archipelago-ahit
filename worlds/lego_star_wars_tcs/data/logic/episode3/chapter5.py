@@ -6,13 +6,13 @@ from ..macros import (
     CAN_SITH_FORCE,
     CAN_DAMAGE_AT_CLOSE_RANGE as BASE_CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
+    CAN_YODA_CLIP,
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
-from ...characters import Character
 from ...extras import Extra
 from ...levels import Level
 
@@ -212,14 +212,28 @@ RUIN_OF_THE_JEDI = Chapter(
                     CAN_DESTROY_CLOSE_SILVER_BRICKS,
                     HasAbility(SITH) | Extra.DARK_SIDE.has(),
                 ),
+                hard=Or(
+                    And(
+                        CAN_DESTROY_CLOSE_SILVER_BRICKS,
+                        HasAbility(SITH) | Extra.DARK_SIDE.has(),
+                    ),
+                    CAN_YODA_CLIP,
+                ),
             ),
             er_rule=logic_options(
                 base=CAN_DESTROY_CLOSE_SILVER_BRICKS & CAN_SITH_FORCE,
                 hard=Or(
                     CAN_DESTROY_CLOSE_SILVER_BRICKS & CAN_SITH_FORCE,
-                    # Swapping to yoda up against the force field seems to let you grab this minikit through the force
-                    # field.
-                    Character.has_any(Character.YODA, Character.YODA_GHOST),
+                    # Clip through the ceiling in front of the minikit, then go to the left to drop down to where the
+                    # minikit is.
+                    # It seems that if you swap from General Grievous to a Yoda while pressed against the force field,
+                    # you can also grab the minikit that way, through the force field, though you can Yoda Clip with
+                    # that combination anyway.
+                    # Clipping back out and finishing the chapter can be a pain, I'm unsure if it's possible with every
+                    # character.
+                    # Yoda can get through the entire level on his own, so it is necessary to check that the player has
+                    # some character other than having both Yoda and Yoda (Ghost).
+                    CAN_YODA_CLIP,
                 ),
             ),
             pickup_name="m_pup1",
