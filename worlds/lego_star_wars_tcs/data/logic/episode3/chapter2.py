@@ -2,7 +2,8 @@ from rule_builder.rules import True_, Or
 
 from ..macros import (
     CAN_GRAPPLE,
-    CAN_DESTROY_CLOSE_SILVER_BRICKS
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    HAS_ANY_YODA,
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities
@@ -59,7 +60,7 @@ CHANCELLOR_IN_PERIL = Chapter(
                 # Optimise out the JEDI required to reach here.
                 logic_options(
                     base=HasAbility(ASTROMECH_PANEL),
-                    hard=HasAbility(ASTROMECH_PANEL) | Character.has_any(Character.YODA, Character.YODA_GHOST),
+                    hard=HasAbility(ASTROMECH_PANEL) | HAS_ANY_YODA,
                 ),
                 er_rule=logic_options(
                     # Use the panel to open the door, force the explosive into position, and then force the explosive
@@ -67,9 +68,17 @@ CHANCELLOR_IN_PERIL = Chapter(
                     base=HasAllAbilities(ASTROMECH_PANEL | JEDI),
                     # Yoda can triple jump under the trigger to the next area, swap to another character,
                     # and then hit the trigger to load into the next area, skipping the Astromech Panel requirement.
+                    # This is not a Yoda Clip, because it works even when swapping between Yoda and Yoda (Ghost), it
+                    # might be because of Yodas' janky collision box, but maybe it's more to do with Yoda's small height
+                    # and being able to fit behind the explodable ramp.
+                    # The player is guaranteed to have at least 2 unique characters, even if one of them is just the
+                    # Womp Rat from only having Yoda/Yoda (Ghost) unlocked, so there is no need to check for having
+                    # any other character that can be swapped to (required to triple jump).
+                    # todo: Try other small characters with a different Jedi to see if the character height is the
+                    #  important part, of if it is the Yodas' janky collision.
                     hard=Or(
                         HasAllAbilities(ASTROMECH_PANEL | JEDI),
-                        Character.has_any(Character.YODA, Character.YODA_GHOST)
+                        HAS_ANY_YODA,
                     ),
                 ),
             ),
