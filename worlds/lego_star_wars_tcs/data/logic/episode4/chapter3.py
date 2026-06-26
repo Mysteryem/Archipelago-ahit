@@ -7,6 +7,7 @@ from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_GRAPPLE,
     CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE,
+    CAN_YODA_CLIP,
 )
 from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, ot_high_jump_ternary
 from ..rules import (
@@ -461,7 +462,7 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
             R_INSIDE_CANTINA,
             logic_options(
                 base=HasAbility(SHORTIE),
-                hard=HasAbility(SHORTIE) | Character.has_any(Character.YODA, Character.YODA_GHOST)
+                hard=HasAbility(SHORTIE) | CAN_YODA_CLIP,
             ),
             pickup_name="m_pup1",
         ),

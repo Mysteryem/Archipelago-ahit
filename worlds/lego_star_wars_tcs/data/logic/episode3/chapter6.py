@@ -3,6 +3,7 @@ from rule_builder.rules import True_, And, Or, False_, Rule
 from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT,
     CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
+    HAS_ANY_YODA,
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAbilityCombination, HasAbilityExceptCharacters
@@ -278,7 +279,7 @@ DARTH_VADER = Chapter(
                     base=HasAbility(HOVER),
                     normal=Or(
                         HasAbility(HOVER),
-                        Character.has_any(Character.YODA, Character.YODA_GHOST),
+                        HAS_ANY_YODA,
                         # Write out the HasAny to help confirm in logic tests that HasAbilityExceptCharacters is working
                         # as expected. Rule Builder will automatically combine the two HasAny within the Or.
                         Character.has_any(
@@ -294,7 +295,7 @@ DARTH_VADER = Chapter(
                         HasAbility(HOVER),
                         # Yoda can make the jump due to his increase double jump distance.
                         # High jumpers, except Grievous' Bodyguard can also make the jump.
-                        Character.has_any(Character.YODA, Character.YODA_GHOST),
+                        HAS_ANY_YODA,
                         HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD),
                     ),
                     # Triple jumps or Yoda can jump the required distance.

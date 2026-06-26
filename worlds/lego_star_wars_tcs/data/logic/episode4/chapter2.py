@@ -6,6 +6,8 @@ from ..macros import (
     CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_GRAPPLE,
+    CAN_YODA_CLIP,
+    HAS_ANY_YODA,
 )
 from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, ot_high_jump_ternary
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExceptCharacters
@@ -286,7 +288,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 logic_options(
                     base=HasAbility(ASTROMECH_PANEL),
                     # Ceiling clip and jump into the loading zone.
-                    hard=HasAbility(ASTROMECH_PANEL) | Character.has_any(Character.YODA, Character.YODA_GHOST),
+                    hard=HasAbility(ASTROMECH_PANEL) | CAN_YODA_CLIP,
                 ),
             ),
         ),
@@ -302,7 +304,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                     hard=Or(
                         CAN_SITH_FORCE & HasAbility(SHORTIE),
                         # Ceiling clip over the fence.
-                        Character.has_any(Character.YODA, Character.YODA_GHOST),
+                        CAN_YODA_CLIP,
                     ),
                 ),
             ),
@@ -329,7 +331,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                     hard=Or(
                         HasAbility(PROTOCOL_PANEL),
                         # Ceiling clip over the door.
-                        Character.has_any(Character.YODA, Character.YODA_GHOST),
+                        CAN_YODA_CLIP,
                     ),
                 ),
             ),
@@ -487,7 +489,7 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 normal=Or(
                     And(
                         HasAbility(CAN_BUILD_BRICKS) & CAN_GRAPPLE,
-                        HasAbility(HOVER) | Character.has_any(Character.YODA, Character.YODA_GHOST),
+                        HasAbility(HOVER) | HAS_ANY_YODA,
                     ),
                     HasAbility(HIGH_JUMP) & OT_HIGH_JUMP_ENABLED,
                 ),

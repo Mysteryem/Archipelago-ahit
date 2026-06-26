@@ -7,6 +7,7 @@ from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_GRAPPLE,
     CAN_USE_DEFLECT_BOLTS,
+    CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
 )
 from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, OT_HIGH_JUMP_DISABLED
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExceptCharacters
@@ -203,7 +204,7 @@ SECRET_PLANS = _helper.make_chapter(
                     # escape pod can be used without opening the escape pod door first.
                     hard=Or(
                         HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL | CAN_PULL_LEVERS),
-                        HasAbility(ASTROMECH_PANEL) & Character.has_any(Character.YODA, Character.YODA_GHOST),
+                        HasAbility(ASTROMECH_PANEL) & CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
                     ),
                 ),
             ),

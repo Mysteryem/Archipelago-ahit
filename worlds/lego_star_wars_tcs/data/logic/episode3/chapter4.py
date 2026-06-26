@@ -6,6 +6,7 @@ from ..macros import (
     CAN_SITH_FORCE,
     CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_USE_SELF_DESTRUCT,
+    HAS_ANY_YODA,
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
@@ -384,7 +385,7 @@ DEFENSE_OF_KASHYYYK = Chapter(
                     HasAbility(CAN_HIGH_JUMP_SLAM),
                     # For some reason, Yoda can repeatedly jump up the tree to the left by the Dark Side Bush, through
                     # this is irrelevant because all Jedi can ride vehicles and then triple jump up to the platform.
-                    Character.has_any(Character.YODA, Character.YODA_GHOST),
+                    HAS_ANY_YODA,
                 ),
             ),
             pickup_name="m_pup2",
