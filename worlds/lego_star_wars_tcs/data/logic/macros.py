@@ -214,6 +214,9 @@ CAN_YODA_CLIP = logic_options(
         # Yoda's collision box is messed up, presumably due to the Y-offset Yoda has.
         HAS_ANY_YODA,
         # Any other character without the messed up Y-offset is required.
+        # Logic cannot depend on having Yoda + Womp Rat, where Womp Rat is a character forced onto the player because
+        # they only have 1 character unlocked because if the player were to gain Yoda (Ghost) as their next character,
+        # the player could lose access to locations, so there can be a very small window of out-of-logic Yoda Clips.
         HasAnyCharacterExcept(Character.YODA, Character.YODA_GHOST),
     ),
 )
