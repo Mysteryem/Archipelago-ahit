@@ -1,8 +1,8 @@
-from rule_builder.rules import True_, Or, False_
+from rule_builder.rules import True_, Or, False_, And
 from rule_builder.options import OptionFilter
 
 from .option_filters import normal_logic, logic_options, OT_HIGH_JUMP_ENABLED
-from .rules import HasAbility, HasAnyAbilities, HasAbilityExceptCharacters, HasSingleJumpDistance
+from .rules import HasAbility, HasAnyAbilities, HasAbilityExceptCharacters, HasSingleJumpDistance, HasAnyCharacterExcept
 from ..characters import Character
 from ..extras import Extra
 from ..items.character_items import NON_VEHICLE_CHARACTER_TO_ITEM_DATA
@@ -200,6 +200,32 @@ CAN_USE_BOUNTY_HUNTER_ROCKETS = logic_options(
     base=False_(),
     normal=HasAbility(JETPACK) & Extra.BOUNTY_HUNTER_ROCKETS.has(),
 )
+
+HAS_ANY_YODA = Character.has_any(Character.YODA, Character.YODA_GHOST)
+"""Check for having any Yoda character. This is typically used on its own in Normal logic only, when Yoda can double
+jump across a gap that other Jedi cannot. Base logic tends to not consider Yoda's increased double jump distance, and
+Moderate logic introduces triple jumps for increased jump distance (and height), and Yodas have the worst distance out
+of Jedi. Occasionally, Yodas can be used to grab minikits through thin walls on their own, without needing to switch to
+another character to perform a typical 'Yoda Clip'."""
+
+CAN_YODA_CLIP = logic_options(
+    base=False_(),
+    hard=And(
+        # Yoda's collision box is messed up, presumably due to the Y-offset Yoda has.
+        HAS_ANY_YODA,
+        # Any other character without the messed up Y-offset is required.
+        HasAnyCharacterExcept(Character.YODA, Character.YODA_GHOST),
+    ),
+)
+"""Note: Checks for having at least some other character that is not a Yoda, if it is guaranteed that the player must
+have some other, non-Yoda character, then the CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS macro should be used instead."""
+
+CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS = logic_options(
+    base=False_(),
+    hard=HAS_ANY_YODA,
+)
+"""CAN_YODA_CLIP, but skip checking for other characters in cases where it is known that the player must have
+a non-Yoda character if they have managed to reach the current region."""
 
 NORMAL_PLUS = logic_options(
     base=False_(),

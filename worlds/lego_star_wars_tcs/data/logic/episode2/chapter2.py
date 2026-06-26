@@ -1,8 +1,17 @@
-from rule_builder.rules import And, Or
+from rule_builder.rules import And, Or, True_
 
-from ..macros import CAN_SITH_FORCE, CAN_USE_DEFLECT_BOLTS, CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS, CAN_USE_SELF_DESTRUCT
+from ..macros import (
+    CAN_SITH_FORCE,
+    CAN_USE_DEFLECT_BOLTS,
+    CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
+    CAN_USE_SELF_DESTRUCT,
+    CAN_YODA_CLIP,
+    CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
+    CAN_GRAPPLE,
+    HAS_ANY_YODA,
+)
 from ..option_filters import logic_options
-from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilityExceptCharacters
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
@@ -36,7 +45,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                     # Hover to near the minikit, then hover to the building entrance.
                     # There is a 'fall plane' on the left of the building entrance, which also extends slightly
                     # outwards, so the final part of the hover needs to approach the entrance platform from the front.
-                    moderate=HasAnyAbilities(JEDI | JETPACK),
+                    hard=HasAnyAbilities(JEDI | JETPACK),
                 ),
                 # Yes, the levels are out-of-order, and kamino_b does not exist.
                 new_level=Level.KAMINO_D,
@@ -45,7 +54,11 @@ DISCOVERY_ON_KAMINO = Chapter(
         R_CLONE_VIEWING_AREA: (
             ExitData(
                 R_BOUNTY_HUNTER_AREA,
-                HasAllAbilities(JEDI | BOUNTY_HUNTER),
+                logic_options(
+                    base=HasAllAbilities(JEDI | BOUNTY_HUNTER),
+                    # Ceiling clip to get on the other side of the door.
+                    hard=HasAllAbilities(JEDI | BOUNTY_HUNTER) | CAN_YODA_CLIP,
+                ),
             ),
             ExitData(
                 R_LIVING_QUARTERS,
@@ -79,13 +92,19 @@ DISCOVERY_ON_KAMINO = Chapter(
         R_OUTSIDE_JANGO_CHASE: (
             ExitData(
                 R_END_OF_OUTSIDE_JANGO_CHASE,
-                HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
+                # JEDI is required to reach here.
+                # HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
             ),
         ),
         R_END_OF_OUTSIDE_JANGO_CHASE: (
             ExitData(
                 R_INTERIOR_BEFORE_JANGO_FIGHT,
+                # JEDI and ASTROMECH_PANEL are required to reach here.
                 logic_options(
+                    base=HasAbility(HOVER),
+                    moderate=HasAnyAbilities(HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE),
+                ),
+                er_rule=logic_options(
                     base=HasAllAbilities(JEDI | HOVER | ASTROMECH_PANEL),
                     moderate=And(
                         # Cross the gap.
@@ -99,7 +118,7 @@ DISCOVERY_ON_KAMINO = Chapter(
                         # Use the panel, or ceiling clip with Yoda from where the studs are above the elevator door.
                         Or(
                             HasAllAbilities(JEDI | ASTROMECH_PANEL),
-                            Character.has_any(Character.YODA, Character.YODA_GHOST),
+                            CAN_YODA_CLIP,
                         ),
                     ),
                 ),
@@ -110,21 +129,34 @@ DISCOVERY_ON_KAMINO = Chapter(
             # Force the bricks out of the way, use the panel and then defeat Jango Fett.
             ExitData(
                 R_JANGO_FIGHT,
-                logic_options(
+                # JEDI and ASTROMECH_PANEL are required to reach here.
+                True_(),
+                er_rule=logic_options(
                     base=HasAllAbilities(JEDI | ASTROMECH_PANEL),
                     # Allow yoda ceiling clip to bypass the door.
                     hard=Or(
                         HasAllAbilities(JEDI | ASTROMECH_PANEL),
-                        Character.has_any(Character.YODA, Character.YODA_GHOST),
+                        CAN_YODA_CLIP,
                     )
                 ),
             ),
             ExitData(
                 R_SITH_FORCE_DROID_ROOM,
+                # JEDI and ASTROMECH_PANEL are required to reach here.
                 logic_options(
+                    base=HasAbility(SITH),
+                    normal=HasAbility(SITH) | Extra.DARK_SIDE.has(),
+                    hard=Or(
+                        HasAbility(SITH),
+                        Extra.DARK_SIDE.has(),
+                        # ASTROMECH_PANEL means the player must have at least another character.
+                        CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
+                    ),
+                ),
+                er_rule=logic_options(
                     base=CAN_SITH_FORCE,
                     # Allow using a Yoda ceiling clip to get into the room.
-                    hard=CAN_SITH_FORCE | Character.has_any(Character.YODA, Character.YODA_GHOST),
+                    hard=CAN_SITH_FORCE | CAN_YODA_CLIP,
                 )
             ),
         ),
@@ -132,6 +164,20 @@ DISCOVERY_ON_KAMINO = Chapter(
             ExitData(
                 "Chapter Completion",
                 logic_options(
+                    base=HasAbility(IS_NON_GHOST_JEDI),
+                    # HasAnyAbilities(IS_NON_GHOST_JEDI | BLASTER) is required to get past the ceiling turrets force
+                    # field.
+                    normal=True_(),
+                    # The ceiling turrets could have been destroyed by characters that can deflect bolts, or the Deflect
+                    # Bolts Extra and a character that the turrets will shoot at.
+                    moderate=Or(
+                        HasAnyAbilities(IS_NON_GHOST_JEDI | BLASTER),
+                        # JEDI is also required to reach here, and all IS_NON_GHOST_JEDI are JEDI anyway.
+                        Extra.SUPER_JEDI_SLAM.has(),
+                        CAN_USE_SELF_DESTRUCT,
+                    ),
+                ),
+                er_rule=logic_options(
                     # During the first hovering phase, Jango will not fire Rockets, so a Ghost jedi cannot hit him.
                     # Expect the intended strategy of a Jedi.
                     base=HasAbility(IS_NON_GHOST_JEDI),
@@ -176,12 +222,20 @@ DISCOVERY_ON_KAMINO = Chapter(
         ),
         "Six Walkway Lights Minikit": minikit_data(
             R_CLONE_VIEWING_AREA,
-            HasAbility(JEDI),
+            logic_options(
+                # Jedi is required to reach here.
+                base=True_(),
+                # Hard logic can reach here with a Jetpack character instead.
+                hard=HasAbility(JEDI),
+            ),
+            er_rule=HasAbility(JEDI),
             pickup_name="MINI3",
         ),
         "Four Updrafts Platform Minikit": minikit_data(
             R_BOUNTY_HUNTER_AREA,
-            logic_options(
+            # Jedi is required to reach here.
+            True_(),
+            er_rule=logic_options(
                 # Double jump across the platforms and then force the small platform out, to use to reach the minikit.
                 # HOVER/CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS/CAN_DOUBLE_JUMP can jump across the circular platforms, but
                 # HOVER/'can jump slighter further'(CAN_JUMP_DISTANCE_0_84 + CAN_JUMP_0_44)/CAN_DOUBLE_JUMP
@@ -197,18 +251,17 @@ DISCOVERY_ON_KAMINO = Chapter(
         ),
         "Five Access Hatches Minikit": minikit_data(
             R_BOUNTY_HUNTER_AREA,
+            # Jedi is required to reach here.
             logic_options(
-                base=HasAnyAbilities(CAN_DOUBLE_JUMP | ASTROMECH_DROID) & HasAllAbilities(BLASTER | SHORTIE),
-                moderate=And(
-                    Or(
-                        # Optimise the CAN_JUMP_DISTANCE_0_84 from CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS into the
-                        # HasAnyAbilities.
-                        HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER | CAN_JUMP_DISTANCE_0_84),
-                        Character.DEXTER_JETTSTER.has(),
-                    ),
+                # Bounty Hunter is required to reach here.
+                base=HasAbility(SHORTIE),
+                # Bounty Hunter is no longer required, if you can ceiling clip.
+                hard=And(
+                    # Reach the Access Hatches area.
                     HasAbility(BLASTER) | Character.GENERAL_GRIEVOUS.has(),
-                    HasAbility(SHORTIE),
-                ),
+                    # Actually get the minikit.
+                    HasAbility(SHORTIE) | CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
+                )
             ),
             er_rule=logic_options(
                 # AI P2 will only use Double Jump and Astromech Hover, so Jetpack Hover is not allowed here because then
@@ -228,19 +281,21 @@ DISCOVERY_ON_KAMINO = Chapter(
                     HasAbility(BLASTER) | Character.GENERAL_GRIEVOUS.has(),
                     HasAbility(SHORTIE),
                 ),
-                # # Instead of using a vent, Yoda ceiling clip over the top of the machine and access the minikit from
-                # # behind.
-                # hard=And(
-                #     HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER | CAN_JUMP_DISTANCE_0_69),
-                #     HasAbility(BLASTER) | Character.GENERAL_GRIEVOUS.has(),
-                #     HasAbility(SHORTIE) | HasAny("Yoda", "Yoda (Ghost)"),
-                # ),
+                # Instead of using a vent, Yoda ceiling clip over the top of the machine and access the minikit from
+                # behind.
+                hard=And(
+                    HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER | CAN_JUMP_DISTANCE_0_69),
+                    HasAbility(BLASTER) | Character.GENERAL_GRIEVOUS.has(),
+                    HasAbility(SHORTIE) | CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
+                ),
             ),
             pickup_name="MINI04",
         ),
         "Mosaic Vending Machine Minikit": minikit_data(
             R_LIVING_QUARTERS,
-            logic_options(
+            # Jedi is required to reach here.
+            True_(),
+            er_rule=logic_options(
                 base=HasAbility(JEDI),
                 # Swap to Droideka while as close to the Minikit as possible. Stud Magnet isn't even needed.
                 moderate=Or(
@@ -252,7 +307,9 @@ DISCOVERY_ON_KAMINO = Chapter(
         ),
         "Two Player Triple Buttons Minikit": minikit_data(
             R_LIVING_QUARTERS_BEHIND_FORCE_FIELD,
-            logic_options(
+            # Jedi is required to reach here.
+            True_(),
+            er_rule=logic_options(
                 # A higher than normal jump is required to get into the alcove that the minikit is in.
                 base=HasAbility(CAN_DOUBLE_JUMP),
                 # Allow characters with a slightly higher jump.
@@ -270,17 +327,62 @@ DISCOVERY_ON_KAMINO = Chapter(
         "Jango Chase Hover Platform Minikit": minikit_data(
             R_OUTSIDE_JANGO_CHASE,
             logic_options(
+                base=HasAbility(HOVER),
+                moderate=HasAnyAbilities(HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE | CAN_HIGH_JUMP_SLAM),
+                # JEDI is required to reach here.
+                hard=Or(
+                    HasAnyAbilities(HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE | CAN_HIGH_JUMP_SLAM),
+                    HasAbilityExceptCharacters(RUN_SPEED_1_18_OR_HIGHER,
+                                               Character.GEONOSIAN,
+                                               Character.WATTO,
+                                               Character.YODA,
+                                               Character.YODA_GHOST)
+                )
+            ),
+            er_rule=logic_options(
                 # Hover across to the platform.
                 base=HasAbility(HOVER),
-                # Or triple jump across to the platform. Yodas cannot make the jump. TODO: Check Grievous' Bodyguard.
-                moderate=HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | HOVER),
+                # Or triple jump across to the platform. Yodas cannot make the jump.
+                moderate=HasAnyAbilities(HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE | CAN_HIGH_JUMP_SLAM),
+                # Or Yoda triple jump across so long as you have a character with decent movement speed to swap to.
+                hard=Or(
+                    HasAnyAbilities(HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE | CAN_HIGH_JUMP_SLAM),
+                    And(
+                        HasAbility(JEDI),
+                        # Geonosian and Watto only have high movement speed while fluttering, their default movement
+                        # speed (which corresponds to their air speed after swapping to them in this case), is very
+                        # slow.
+                        HasAbilityExceptCharacters(RUN_SPEED_1_18_OR_HIGHER,
+                                                   Character.GEONOSIAN,
+                                                   Character.WATTO,
+                                                   Character.YODA,
+                                                   Character.YODA_GHOST)
+                    ),
+                )
             ),
             pickup_name="mk_1",
         ),
         "Blaster Targets Reward Minikit": minikit_data(
             R_END_OF_OUTSIDE_JANGO_CHASE,
+            # Jedi is required to reach here.
             logic_options(
                 base=HasAllAbilities(GRAPPLE | PROTOCOL_PANEL),
+                normal=And(
+                    HasAbility(PROTOCOL_PANEL),
+                    HasAbility(GRAPPLE) | Extra.FORCE_GRAPPLE_LEAP.has()
+                ),
+                moderate=Or(
+                    # Self Destruct does not work because the moving platform is not safe ground, so, after
+                    # exploding, you respawn back on the ground.
+                    # Hitting the targets with an ewok is a bit annoying, but doable.
+                    HasAbility(PROTOCOL_PANEL) & HasAnyAbilities(BLASTER | WEAPON_EWOK),
+                    # Jump up to the slightly raised part of the machine the minikit is in, and then swap to
+                    # Droideka to grab the minikit through the door of the machine. Stud Magnet is not required.
+                    Character.DROIDEKA.has(),
+                ),
+            ),
+            er_rule=logic_options(
+                base=CAN_GRAPPLE & HasAbility(PROTOCOL_PANEL),
                 moderate=And(
                     # Get to the upper area.
                     HasAnyAbilities(GRAPPLE | CAN_HIGH_JUMP_SLAM),
@@ -300,10 +402,20 @@ DISCOVERY_ON_KAMINO = Chapter(
         ),
         "Dark Side Droid Room Minikit": minikit_data(
             R_SITH_FORCE_DROID_ROOM,
+            # JEDI is required to reach here.
+            # ASTROMECH_PANEL is required to reach here.
             logic_options(
+                base=HasAbility(SITH),
+                normal=HasAbility(SITH) | Extra.DARK_SIDE.has(),
+                hard=Or(
+                    HasAbility(SITH) | Extra.DARK_SIDE.has(),
+                    HAS_ANY_YODA,
+                ),
+            ),
+            er_rule=logic_options(
                 base=CAN_SITH_FORCE,
-                # Yoda's weird collision can grab it through the force field.
-                hard=CAN_SITH_FORCE | Character.has_any(Character.YODA, Character.YODA_GHOST),
+                # Yoda's weird collision can grab it through the force field, no character swapping required.
+                hard=CAN_SITH_FORCE | HAS_ANY_YODA,
             ),
             pickup_name="m_pup1",
         )
