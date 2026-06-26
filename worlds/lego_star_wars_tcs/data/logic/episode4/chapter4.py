@@ -27,23 +27,34 @@ from ...levels import Level
 from ....character_ability import *
 from ....data.characters import Character
 
+R_SPAWN = "Spawn"
+R_FIRST_CORRIDOR = "First Corridor"
+R_HANGAR_OBSERVATION_AND_CONTROL_ROOM = "Hangar Observation And Control Room"
+R_TWIN_CORRIDORS_SPAWN = "Twin Corridors Spawn"
+R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP = "Twin Corridors Right Corridor Across Gap"
+R_TWIN_CORRIDORS_LEFT_CORRIDOR_ACROSS_BRIDGE_GAP = "Twin Corridors Left Corridor Across Bridge Gap"
+R_TURNTABLE_BRIDGE_ROOM = "Turntable Bridge Room"
+R_IMPERIAL_DATA_CENTER_ROOM = "Imperial Data Center Room"
+R_AFTER_IMPERIAL_PHONES_ROOM_IMPERIAL_PANEL_AND_HOLDING_CELLS = \
+    "After Imperial Phones Room Imperial Panel, And Holding Cells"
+
 
 helper = ChapterHelper(
     area=Area.DEATHSTARRESCUE,
-    start_region="Spawn"
+    start_region=R_SPAWN
 )
 
 RESCUE_THE_PRINCESS = helper.make_chapter(
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "First Corridor",
+                R_FIRST_CORRIDOR,
                 HasAbility(JEDI),
             ),
         ),
-        "First Corridor": (
+        R_FIRST_CORRIDOR: (
             ExitData(
-                "Hangar Observation And Control Room",
+                R_HANGAR_OBSERVATION_AND_CONTROL_ROOM,
                 # Base logic would also expect defeating the Stormtroopers, but all Jedi can do that.
                 logic_options(
                     base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT),
@@ -55,9 +66,9 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                 ),
             ),
         ),
-        "Hangar Observation And Control Room": (
+        R_HANGAR_OBSERVATION_AND_CONTROL_ROOM: (
             ExitData(
-                "Twin Corridors Spawn",
+                R_TWIN_CORRIDORS_SPAWN,
                 # All Jedi can build bricks
                 # base=HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL),
                 # While Hard logic could Yoda Ceiling Clip past the door, the level transition is not active until
@@ -66,9 +77,9 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                 new_level=Level.DEATHSTARRESCUE_B,
             ),
         ),
-        "Twin Corridors Spawn": (
+        R_TWIN_CORRIDORS_SPAWN: (
             ExitData(
-                "Twin Corridors Right Corridor Across Gap",
+                R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP,
                 logic_options(
                     base=HasAbility(HOVER),
                     # Yoda's extra double jump distance makes this easy with him.
@@ -100,7 +111,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Twin Corridors Left Corridor Across Bridge Gap",
+                R_TWIN_CORRIDORS_LEFT_CORRIDOR_ACROSS_BRIDGE_GAP,
                 logic_options(
                     # AI will only cross with Hover, but we'll allow high jump characters that have good distance.
                     base=ot_high_jump_ternary(
@@ -121,23 +132,23 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                     # Triple jump allows all double jump characters to cross.
                     moderate=HasAnyAbilities(HOVER | CAN_DOUBLE_JUMP),
                 # Force the bridge across from the right side.
-                # ).or_rule(helper.can_reach_region("Twin Corridors Right Corridor Across Gap") & HasAbility(JEDI))
+                # ).or_rule(helper.can_reach_region(R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP) & HasAbility(JEDI))
                 # JEDI is required at the start of the chapter so checking for it can be skipped.
                 # There are no cases where you would be able to reach this region, but not cross the bridge gap.
-                # ).or_rule(helper.can_reach_region("Twin Corridors Right Corridor Across Gap"))
+                # ).or_rule(helper.can_reach_region(R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP))
                 ),
             ),
         ),
-        "Twin Corridors Right Corridor Across Gap": (
+        R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP: (
             # There is a one-way door that requires destroying an object on this side of the door to open it.
             ExitData(
-                "Twin Corridors Left Corridor Across Bridge Gap",
+                R_TWIN_CORRIDORS_LEFT_CORRIDOR_ACROSS_BRIDGE_GAP,
             ),
             # There is a Sith Force door here, but it takes you to an area that is always accessible from
-            # "Twin Corridors Left Corridor Across Bridge Gap", and there is already an entrance to that region that
+            # R_TWIN_CORRIDORS_LEFT_CORRIDOR_ACROSS_BRIDGE_GAP, and there is already an entrance to that region that
             # requires nothing.
         ),
-        "Twin Corridors Left Corridor Across Bridge Gap": (
+        R_TWIN_CORRIDORS_LEFT_CORRIDOR_ACROSS_BRIDGE_GAP: (
             # A Jedi is needed at the start of the chapter, so there is no need to logically separate 'after explosives'
             # as a new region.
             # ExitData(
@@ -174,7 +185,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
             #     )
             # ),
             ExitData(
-                "Twin Corridors Right Corridor Across Gap",
+                R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP,
                 logic_options(
                     base=False_(),
                     # The one-way door can be opened from the wrong side with a large enough AOE attack.
@@ -185,16 +196,16 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Turntable Bridge Room",
+                R_TURNTABLE_BRIDGE_ROOM,
                 # While Yoda can ceiling clip over the door, the level transition is not active until the Imperial panel
                 # is used.
                 HasAnyAbilities(CAN_WEAR_HAT | IMPERIAL),
                 new_level=Level.DEATHSTARRESCUE_C,
             ),
         ),
-        "Turntable Bridge Room": (
+        R_TURNTABLE_BRIDGE_ROOM: (
             ExitData(
-                "Imperial Data Center Room",
+                R_IMPERIAL_DATA_CENTER_ROOM,
                 logic_options(
                     # The platforms are too high for High Jump.
                     base=CAN_GRAPPLE,
@@ -205,10 +216,10 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                 ),
             ),
         ),
-        "Imperial Data Center Room": (
+        R_IMPERIAL_DATA_CENTER_ROOM: (
             ExitData(
                 # "After Imperial Phones Room Imperial Panel",
-                "After Imperial Phones Room Imperial Panel And Holding Cells",
+                R_AFTER_IMPERIAL_PHONES_ROOM_IMPERIAL_PANEL_AND_HOLDING_CELLS,
                 logic_options(
                     base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_GRAPPLE)
                 # Allow Yoda ceiling clip past the door.
@@ -216,7 +227,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
             ),
         ),
         # "After Imperial Phones Room Imperial Panel": (
-        "After Imperial Phones Room Imperial Panel And Holding Cells": (
+        R_AFTER_IMPERIAL_PHONES_ROOM_IMPERIAL_PANEL_AND_HOLDING_CELLS: (
             # There is no logical purpose to this region currently, so it is not created.
             # ExitData(
             #     "Pool Double Score Zone",
@@ -238,13 +249,13 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
     },
     minikits={
         "Defeat 10 Imperials With Crane Minikit": minikit_data(
-            "First Corridor",
+            R_FIRST_CORRIDOR,
             # All Jedi can ride vehicles.
             # HasAbility(CAN_RIDE_VEHICLES),
             pickup_name="m_pup1",
         ),
         "Hangar Observation Room Protocol Panel Minikit": minikit_data(
-            "Hangar Observation And Control Room",
+            R_HANGAR_OBSERVATION_AND_CONTROL_ROOM,
             logic_options(
                 base=HasAbility(PROTOCOL_PANEL)).or_rule(
                 # Ceiling clip to get into the mini elevator room containing the minikit (Yoda can ceiling clip back out
@@ -254,11 +265,11 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
             pickup_name="mk_0",
         ),
         "Right Corridor Alcove Minikit": minikit_data(
-            "Twin Corridors Right Corridor Across Gap",
+            R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP,
             pickup_name="mk_1",
         ),
         "Right Corridor Access Hatch Minikit": minikit_data(
-            "Twin Corridors Right Corridor Across Gap",
+            R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP,
             logic_options(
                 # All grapple characters can destroy the fences to allow hovering across with ease.
                 base=Or(
@@ -293,7 +304,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
             pickup_name="mk_2",
         ),
         "Tractor Beam Control Minikit": minikit_data(
-            "Twin Corridors Right Corridor Across Gap",
+            R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP,
             # The bridge parts must be forced out the way first, but a Jedi is required at the start of the chapter.
             # This also means there is no need to check for being able to pull levers, and CAN_GRAPPLE can be optimised.
             logic_options(
@@ -311,7 +322,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
             pickup_name="pup1",
         ),
         "Right Corridor High Minikit": minikit_data(
-            "Twin Corridors Right Corridor Across Gap",
+            R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP,
             # JEDI is required to reach here, so CAN_SITH_FORCE can be optimized.
             logic_options(
                 base=HasAbility(SITH)).or_rule(
@@ -353,7 +364,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
             pickup_name="mk_0",
         ),
         "Turntable Bridge Room Minikit": minikit_data(
-            "Turntable Bridge Room",
+            R_TURNTABLE_BRIDGE_ROOM,
             logic_options(
                 base=CAN_GRAPPLE & HasAbility(HOVER),
                 # moderate=Or(
@@ -366,14 +377,14 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
             pickup_name="mk_0",
         ),
         "Destroy Data Center Consoles Minikit": minikit_data(
-            "Imperial Data Center Room",
+            R_IMPERIAL_DATA_CENTER_ROOM,
             True_(),
             # Yeah, you can actually punch these consoles.
             er_rule=CAN_DAMAGE_AT_CLOSE_RANGE,
             pickup_name="m_pup1",
         ),
         "Caged Minikit": minikit_data(
-            "After Imperial Phones Room Imperial Panel And Holding Cells",
+            R_AFTER_IMPERIAL_PHONES_ROOM_IMPERIAL_PANEL_AND_HOLDING_CELLS,
             # JEDI is needed at the start of the chapter.
             True_(),
             er_rule=logic_options(
@@ -393,13 +404,13 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
             pickup_name="mk_1"
         ),
         "Protocol Panel Holding Cell Minikit": minikit_data(
-            "After Imperial Phones Room Imperial Panel And Holding Cells",
+            R_AFTER_IMPERIAL_PHONES_ROOM_IMPERIAL_PANEL_AND_HOLDING_CELLS,
             HasAbility(PROTOCOL_PANEL),
             pickup_name="mk_2",
         ),
     },
     power_brick=LocationData(
-        "Twin Corridors Spawn",
+        R_TWIN_CORRIDORS_SPAWN,
         logic_options(
             base=And(
                 HasAllAbilities(ASTROMECH_PANEL),
@@ -427,6 +438,6 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
     ridables={
         # There are more towards the end of the chapter used to control the turbolasers, but they are not logically
         # relevant when this GRABBERCONTROL is here.
-        Character.GRABBERCONTROL: LocationData("First Corridor"),
+        Character.GRABBERCONTROL: LocationData(R_FIRST_CORRIDOR),
     },
 )
