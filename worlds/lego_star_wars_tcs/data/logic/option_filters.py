@@ -242,6 +242,7 @@ def logic_options(
         normal: Rule[TWorld] | None = None,
         moderate: Rule[TWorld] | None = None,
         hard: Rule[TWorld] | None = None,
+        *, strict: bool = True,
 ) -> LogicOptions[TWorld]:
     base_rule = base
 
@@ -263,7 +264,7 @@ def logic_options(
     else:
         hard_rule = hard
 
-    if hard_rule is moderate_rule and hard_rule is normal_rule and hard_rule is base_rule:
+    if strict and hard_rule is moderate_rule and hard_rule is normal_rule and hard_rule is base_rule:
         # This is not really a problem, but it could indicate an issue elsewhere if all the provided rules are the same.
         raise Exception("All rules are the same. Maybe don't use logic_options.")
 
