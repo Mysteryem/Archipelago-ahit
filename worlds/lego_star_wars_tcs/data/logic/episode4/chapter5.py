@@ -20,6 +20,7 @@ from ..rules import (
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData
 
 from ...areas import Area
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -82,7 +83,11 @@ DEATH_STAR_ESCAPE = helper.make_chapter(
                 logic_options(
                     # Get access to the Service Car, destroy the objects on the floor tiles, then drive over the tiles.
                     base=CAN_DAMAGE_AT_CLOSE_RANGE,
-                    # Walk over the tiles with two players simultaneously.
+                    # Mouse Droid can activate the tiles all on its own. Droideka can too, but only just. Droideka can
+                    # just shoot the objects in the way anyway, so it's not logically relevant.
+                    normal=CAN_DAMAGE_AT_CLOSE_RANGE | Extra.EXTRA_TOGGLE.has(),
+                    # Walk over the tiles with two players simultaneously (hold up for one player, and hold down for the
+                    # other player).
                     moderate=CAN_DAMAGE_AT_CLOSE_RANGE | _ONE_P_TWO_C_PLATFORMING_ROOM_FLOOR_TILES,
                 ).and_rule(
                     # Use the Imperial Panel.
