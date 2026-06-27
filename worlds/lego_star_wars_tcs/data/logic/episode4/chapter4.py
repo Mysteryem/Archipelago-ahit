@@ -221,6 +221,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                 # "After Imperial Phones Room Imperial Panel",
                 R_AFTER_IMPERIAL_PHONES_ROOM_IMPERIAL_PANEL_AND_HOLDING_CELLS,
                 logic_options(
+                    strict=False,
                     base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_GRAPPLE)
                 # Allow Yoda ceiling clip past the door.
                 ).or_rule(apply_to="hard+", rule=HAS_ANY_YODA),
@@ -257,6 +258,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
         "Hangar Observation Room Protocol Panel Minikit": minikit_data(
             R_HANGAR_OBSERVATION_AND_CONTROL_ROOM,
             logic_options(
+                strict=False,
                 base=HasAbility(PROTOCOL_PANEL)).or_rule(
                 # Ceiling clip to get into the mini elevator room containing the minikit (Yoda can ceiling clip back out
                 # too).
@@ -325,6 +327,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
             R_TWIN_CORRIDORS_RIGHT_CORRIDOR_ACROSS_GAP,
             # JEDI is required to reach here, so CAN_SITH_FORCE can be optimized.
             logic_options(
+                strict=False,
                 base=HasAbility(SITH)).or_rule(
                 apply_to="normal+", rule=Extra.DARK_SIDE.has()).or_rule(
                 apply_to="moderate+", rule=HasAbility(CAN_HIGH_JUMP_SLAM) & OT_HIGH_JUMP_ENABLED).or_rule(
@@ -334,7 +337,9 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                     HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | CAN_HIGH_JUMP_SLAM),
                 ),
             ),
-            er_rule=logic_options(base=CAN_SITH_FORCE).or_rule(
+            er_rule=logic_options(
+                strict=False,
+                base=CAN_SITH_FORCE).or_rule(
                 # Triple High Jump can reach the minikit.
                 apply_to="moderate+", rule=HasAbility(CAN_HIGH_JUMP_SLAM) & OT_HIGH_JUMP_ENABLED).or_rule(
                 # Using Yoda's glitchy height, you can swap from yoda to another character and have them spawn
