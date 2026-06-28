@@ -13,6 +13,11 @@ from ...levels import Level
 
 from ....character_ability import *
 
+R_SPAWN = "Spawn"
+R_AFTER_SECOND_FORCE_FIELD = "After Second Force Field"
+R_AFTER_THIRD_FORCE_FIELD = "After Third Force Field"
+R_TRENCH_RUN_AND_EXHAUST_PORT = "Trench Run, and Exhaust Port"
+
 
 # Maybe this could be in Moderate logic, but it kind of sucks due to RNG and how long it can take, so it's going in Hard
 # logic.
@@ -23,12 +28,12 @@ _CAN_DEFLECT_BOLTS_TO_DESTROY_THINGS = logic_options(
 
 REBEL_ATTACK = Chapter(
     area=Area.DEATHSTARBATTLE,
-    start_region="Spawn",
+    start_region=R_SPAWN,
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "After Second Force Field",
+                R_AFTER_SECOND_FORCE_FIELD,
                 logic_options(
                     # Expect a blaster vehicle beyond this point.
                     base=HasAbility(VEHICLE_BLASTER),
@@ -38,9 +43,9 @@ REBEL_ATTACK = Chapter(
                 new_level=Level.DEATHSTARBATTLE_B,
             ),
         ),
-        "After Second Force Field": (
+        R_AFTER_SECOND_FORCE_FIELD: (
             ExitData(
-                "After Third Force Field",
+                R_AFTER_THIRD_FORCE_FIELD,
                 # Base logic expects a blaster vehicle, and normal logic is expected to shoot these walls with
                 # torpedoes.
                 # todo: Maybe Normal logic should expect a blaster vehicle at some point?
@@ -49,13 +54,13 @@ REBEL_ATTACK = Chapter(
                 new_level=Level.DEATHSTARBATTLE_C,
             ),
         ),
-        "After Third Force Field": (
+        R_AFTER_THIRD_FORCE_FIELD: (
             ExitData(
-                "Trench Run, and Exhaust Port",
+                R_TRENCH_RUN_AND_EXHAUST_PORT,
                 new_level=Level.DEATHSTARBATTLE_D,
             ),
         ),
-        "Trench Run, and Exhaust Port": (
+        R_TRENCH_RUN_AND_EXHAUST_PORT: (
             ExitData(
                 "Chapter Completion",
                 logic_options(
@@ -70,24 +75,24 @@ REBEL_ATTACK = Chapter(
     },
     minikits={
         "First Spinner Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             HasAbility(VEHICLE_BLASTER) | _CAN_DEFLECT_BOLTS_TO_DESTROY_THINGS,
             pickup_name="m_pup1",
         ),
         "First Hidden Alcove Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             HasAbility(VEHICLE_BLASTER) | _CAN_DEFLECT_BOLTS_TO_DESTROY_THINGS,
             pickup_name="m_pup2",
         ),
         "First TIE Gate Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             # The typical TIE gate skip of dropping in P2 at the top of P1's loop doesn't seem to work here. There are
             # out-of-bounds tricks in this level (seems to require Clone Arcfighter), but I could not get them to work.
             HasAbility(VEHICLE_TIE),
             pickup_name="m_pup3",
         ),
         "Second Spinner Minikit By Second TIE Gate": minikit_data(
-            "After Second Force Field",
+            R_AFTER_SECOND_FORCE_FIELD,
             logic_options(
                 # Base logic expects a VEHICLE_BLASTER to get here.
                 base=True_(),
@@ -97,12 +102,12 @@ REBEL_ATTACK = Chapter(
             pickup_name="m_pup4",
         ),
         "Second TIE Gate Green Tiles Minikit": minikit_data(
-            "After Second Force Field",
+            R_AFTER_SECOND_FORCE_FIELD,
             HasAbility(VEHICLE_TIE),
             pickup_name="m_pup5",
         ),
         "Second Hidden Alcove Minikit": minikit_data(
-            "After Second Force Field",
+            R_AFTER_SECOND_FORCE_FIELD,
             logic_options(
                 # Base logic expects a VEHICLE_BLASTER to get here.
                 base=True_(),
@@ -114,13 +119,13 @@ REBEL_ATTACK = Chapter(
             pickup_name="m_pup6",
         ),
         "Third TIE Gate Behind Force Field Minikit": minikit_data(
-            "After Second Force Field",
+            R_AFTER_SECOND_FORCE_FIELD,
             # The minikit is not interactable until the force field has been taken down with bombs.
             HasAllAbilities(VEHICLE_TIE | VEHICLE_TOW),
             pickup_name="m_pup7",
         ),
         "Third Spinner Minikit": minikit_data(
-            "After Third Force Field",
+            R_AFTER_THIRD_FORCE_FIELD,
             logic_options(
                 # Base logic expects a VEHICLE_BLASTER to get here.
                 base=True_(),
@@ -130,7 +135,7 @@ REBEL_ATTACK = Chapter(
             pickup_name="m_pup8",
         ),
         "Third Alcove Minikit Before Trench Run": minikit_data(
-            "After Third Force Field",
+            R_AFTER_THIRD_FORCE_FIELD,
             logic_options(
                 # Base logic expects a VEHICLE_BLASTER to get here.
                 base=True_(),
@@ -144,7 +149,7 @@ REBEL_ATTACK = Chapter(
             pickup_name="m_pup9",
         ),
         "Fourth Spinner Minikit By Exhaust Port": minikit_data(
-            "Trench Run, and Exhaust Port",
+            R_TRENCH_RUN_AND_EXHAUST_PORT,
             logic_options(
                 base=True_(),
                 # There are no respawning enemy TIE fighters here, and the turbolaser bolts seem to be difficult, or
@@ -155,6 +160,6 @@ REBEL_ATTACK = Chapter(
         ),
     },
     power_brick=LocationData(
-        "Trench Run, and Exhaust Port",
+        R_TRENCH_RUN_AND_EXHAUST_PORT,
     ),
 )
