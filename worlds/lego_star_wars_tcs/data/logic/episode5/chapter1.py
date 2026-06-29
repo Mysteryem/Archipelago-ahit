@@ -11,14 +11,21 @@ from ...levels import Level
 from ....character_ability import *
 from ....data.characters import Character
 
+R_SPAWN = "Spawn"
+R_FIRST_AREA_BEHIND_TIE_GATE = "First Area Behind TIE Gate"
+R_FIRST_AREA_TIE_GATE_CAVE = "First Area TIE Gate Cave"
+R_SECOND_AREA_SPAWN = "Second Area Spawn"
+R_SECOND_AREA_BEHIND_TIE_GATE = "Second Area Behind TIE Gate"
+R_FINAL_BATTLE = "Final Battle"
+
 
 HOTH_BATTLE = Chapter(
     area=Area.HOTHBATTLE,
-    start_region="Spawn",
+    start_region=R_SPAWN,
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "First Area Behind TIE Gate",
+                R_FIRST_AREA_BEHIND_TIE_GATE,
                 logic_options(
                     base=HasAbility(VEHICLE_TIE),
                     # Skip the gate by performing a loop and dropping in P2 at the top of the loop.
@@ -30,7 +37,7 @@ HOTH_BATTLE = Chapter(
                 ),
             ),
             ExitData(
-                "Second Area Spawn",
+                R_SECOND_AREA_SPAWN,
                 # I am aware of a clip involving Arcfighter, but have been unable to pull it off. Perhaps it requires a
                 # specific refresh rate. Theoretically, if you could get enough height, and speed, the next level
                 # trigger extends above the mountain and is active even without destroying the wall. I tried similar
@@ -39,9 +46,9 @@ HOTH_BATTLE = Chapter(
                 new_level=Level.HOTHBATTLE_C,
             )
         ),
-        "First Area Behind TIE Gate": (
+        R_FIRST_AREA_BEHIND_TIE_GATE: (
             ExitData(
-                "First Area TIE Gate Cave",
+                R_FIRST_AREA_TIE_GATE_CAVE,
                 logic_options(
                     base=HasAbility(VEHICLE_TOW),
                     # Similar to the TIE gate, I think every vehicle can get over the top of the wall by using the same
@@ -51,10 +58,10 @@ HOTH_BATTLE = Chapter(
                 new_level=Level.HOTHBATTLE_B,
             ),
         ),
-        "First Area TIE Gate Cave": (),
-        "Second Area Spawn": (
+        R_FIRST_AREA_TIE_GATE_CAVE: (),
+        R_SECOND_AREA_SPAWN: (
             ExitData(
-                "Second Area Behind TIE Gate",
+                R_SECOND_AREA_BEHIND_TIE_GATE,
                 logic_options(
                     strict=False,
                     base=HasAbility(VEHICLE_TIE),
@@ -91,18 +98,18 @@ HOTH_BATTLE = Chapter(
                 new_level=Level.HOTHBATTLE_D,
             ),
             ExitData(
-                "Final Battle",
+                R_FINAL_BATTLE,
                 new_level=Level.HOTHBATTLE_E,
             ),
         ),
-        "Second Area Behind TIE Gate": (),
-        "Final Battle": (
+        R_SECOND_AREA_BEHIND_TIE_GATE: (),
+        R_FINAL_BATTLE: (
             ExitData("Chapter Completion"),
         ),
     },
     minikits={
         "Minikit Behind Wall In First Area": minikit_data(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=HasAbility(VEHICLE_BLASTER),
                 # Torpedoes do not target the minikit, and while hitting the minikit with a torpedo isn't too hard, the
@@ -114,7 +121,7 @@ HOTH_BATTLE = Chapter(
             pickup_name="m_pup1",
         ),
         "First TIE Gate Behind Rock Minikit": minikit_data(
-            "First Area Behind TIE Gate",
+            R_FIRST_AREA_BEHIND_TIE_GATE,
             logic_options(
                 base=True_(),
                 # I could not get Torpedoes to hit the rock.
@@ -123,12 +130,12 @@ HOTH_BATTLE = Chapter(
             pickup_name="m_pup2",
         ),
         "First Area Trip AT-STs Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             HasAbility(VEHICLE_TOW),
             pickup_name="m_pup3",
         ),
         "Rescue Rebels In Cave Minikit": minikit_data(
-            "First Area TIE Gate Cave",
+            R_FIRST_AREA_TIE_GATE_CAVE,
             logic_options(
                 # If you can get here, you must have VEHICLE_BLASTER since all VEHICLE_TIE and VEHICLE_TOW have
                 # VEHICLE_BLASTER.
@@ -143,29 +150,29 @@ HOTH_BATTLE = Chapter(
             pickup_name="m_pup4",
         ),
         "Second Area Trip AT-STs Minikit": minikit_data(
-            "Second Area Spawn",
+            R_SECOND_AREA_SPAWN,
             pickup_name="m_pup7",
         ),
         "Second Area Minikit Right Of Last Wall": minikit_data(
-            "Second Area Spawn",
+            R_SECOND_AREA_SPAWN,
             pickup_name="m_pup8",
         ),
         "Second TIE Gate Cave Minikit": minikit_data(
-            "Second Area Behind TIE Gate",
+            R_SECOND_AREA_BEHIND_TIE_GATE,
             pickup_name="m_pup5",
         ),
         "Second TIE Gate Rock After Cave Minikit": minikit_data(
-            "Second Area Behind TIE Gate",
+            R_SECOND_AREA_BEHIND_TIE_GATE,
             pickup_name="m_pup6",
         ),
         "Final Battle Behind Rock Minikit 1": minikit_data(
-            "Final Battle",
+            R_FINAL_BATTLE,
             pickup_name="m_pup9",
         ),
         "Final Battle Behind Rock Minikit 2": minikit_data(
-            "Final Battle",
+            R_FINAL_BATTLE,
             pickup_name="m_pup10",
         ),
     },
-    power_brick=LocationData("Second Area Behind TIE Gate"),
+    power_brick=LocationData(R_SECOND_AREA_BEHIND_TIE_GATE),
 )
