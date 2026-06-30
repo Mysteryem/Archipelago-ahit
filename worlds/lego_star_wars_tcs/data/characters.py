@@ -389,7 +389,7 @@ class Character(IntEnum):
     FOUR_LOM =                          225, dict(readable_name="4-LOM", unlock_method=UnlockMethod.ALL_EPISODES_COMPLETE, purchase_cost=45_000)
     ANAKIN_SKYWALKER_GHOST =            226, dict(readable_name="Anakin Skywalker (Ghost)", unlock_method=UnlockMethod.ALL_EPISODES_COMPLETE, purchase_cost=1_000_000)
     YODA_GHOST =                        227, dict(readable_name="Yoda (Ghost)", unlock_method=UnlockMethod.ALL_EPISODES_COMPLETE, purchase_cost=1_200_000)
-    AT_AT_DRIVER =                      228, dict(readable_name="AT-AT Driver", unlock_method=UnlockMethod.EXTRA_TOGGLE, areas=[Area.SPEEDERCHASE])
+    AT_AT_DRIVER =                      228, dict(readable_name="AT-AT Driver", unlock_method=UnlockMethod.EXTRA_TOGGLE, areas=[Area.HOTHESCAPE, Area.SPEEDERCHASE])
     TENNUMB =                           229
     ATST_LOWRES =                       230
     SKELETON =                          231, dict(readable_name="Skeleton", unlock_method=UnlockMethod.EXTRA_TOGGLE, areas=[Area.JEDI, Area.TEMPLE, Area.TATOOINE, Area.DEATHSTARRESCUE, Area.HOTHESCAPE, Area.DAGOBAH, Area.CLOUDCITYTRAP, Area.E3CHARACTERBONUS])
