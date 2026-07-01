@@ -27,24 +27,38 @@ from ....character_ability import *
 from ....character_ability import CAN_AGGRAVATE_ENEMIES, CAN_PULL_LEVERS
 from ....data.characters import Character
 
+R_SPAWN = "Spawn"
+R_FIRST_CORRIDOR = "First Corridor"
+R_BREAK_ROOM = "Break Room"
+R_CROSSROADS_CORRIDOR_WITH_TURRET = "Crossroads Corridor With Turret"
+R_LARGE_ICY_ROOM_WITH_FLOOR_FANS_THROUGH_TO_ICE_SLIDE_ROOM = "Large Icy Room With Floor Fans, through to Ice Slide Room"
+R_SNOWTROOPER_FISHING_ROOM = "Snowtrooper Fishing Room"
+R_BLOCKED_OFF_FLOOR_FAN_ROOM = "Blocked Off Floor Fan Room"
+R_AFTER_ICE_SLIDE_ROOM_START_OF_DOUBLE_SCORE_ZONE_ROOM_AND_HANGAR = ("After Ice Slide Room, Start Of Double Score Zone"
+                                                                     " Room, and Hangar")
+R_DOUBLE_SCORE_ZONE_TUBE_ROOM = "Double Score Zone Tube Room"
+R_HANGAR_OBSERVATION_ROOM = "Hangar Observation Room"
+R_TOP_OF_SLIPPERY_SNOW_SLOPE = "Top Of Slippery Snow Slope"
+R_SNOW_CANOPY_AREA = "Snow Canopy Area"
+
 
 _helper = ChapterHelper(
     area=Area.HOTHESCAPE,
-    start_region="Spawn",
+    start_region=R_SPAWN,
 )
 
 
 ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "First Corridor",
+                R_FIRST_CORRIDOR,
                 HasAbility(CAN_BUILD_BRICKS),
             ),
         ),
-        "First Corridor": (
+        R_FIRST_CORRIDOR: (
             ExitData(
-                "Break Room",
+                R_BREAK_ROOM,
                 logic_options(
                     strict=False,
                     # Tarpals cannot hit the heater.
@@ -64,15 +78,15 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
                 ),
             ),
         ),
-        "Break Room": (
+        R_BREAK_ROOM: (
             ExitData(
-                "Crossroads Corridor With Turret",
+                R_CROSSROADS_CORRIDOR_WITH_TURRET,
                 HasAbility(CAN_PUSH_OBJECTS)
             ),
         ),
-        "Crossroads Corridor With Turret": (
+        R_CROSSROADS_CORRIDOR_WITH_TURRET: (
             ExitData(
-                "Large Icy Room With Floor Fans, through to Ice Slide Room",
+                R_LARGE_ICY_ROOM_WITH_FLOOR_FANS_THROUGH_TO_ICE_SLIDE_ROOM,
                 # If you can reach here, you can build bricks, and can ride vehicles (implied by CAN_PUSH_OBJECTS).
                 # You can yoda clip over the door, but the level transition trigger is not present until the panel is
                 # used.
@@ -81,26 +95,26 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
                 new_level=Level.HOTHESCAPE_B,
             ),
         ),
-        "Large Icy Room With Floor Fans, through to Ice Slide Room": (
+        R_LARGE_ICY_ROOM_WITH_FLOOR_FANS_THROUGH_TO_ICE_SLIDE_ROOM: (
             ExitData(
-                "Snowtrooper Fishing Room",
+                R_SNOWTROOPER_FISHING_ROOM,
                 # The player must have a PROTOCOL_PANEL character to reach here.
                 HasAbility(ASTROMECH_PANEL) | CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS
             ),
             ExitData(
-                "Blocked Off Floor Fan Room",
+                R_BLOCKED_OFF_FLOOR_FAN_ROOM,
                 HasAbility(JEDI),
             ),
             ExitData(
-                "After Ice Slide Room, Start Of Double Score Zone Room, and Hangar",
+                R_AFTER_ICE_SLIDE_ROOM_START_OF_DOUBLE_SCORE_ZONE_ROOM_AND_HANGAR,
                 new_level=Level.HOTHESCAPE_C,
             ),
         ),
-        "Snowtrooper Fishing Room": (),
-        "Blocked Off Floor Fan Room": (),
-        "After Ice Slide Room, Start Of Double Score Zone Room, and Hangar": (
+        R_SNOWTROOPER_FISHING_ROOM: (),
+        R_BLOCKED_OFF_FLOOR_FAN_ROOM: (),
+        R_AFTER_ICE_SLIDE_ROOM_START_OF_DOUBLE_SCORE_ZONE_ROOM_AND_HANGAR: (
             ExitData(
-                "Double Score Zone Tube Room",
+                R_DOUBLE_SCORE_ZONE_TUBE_ROOM,
                 logic_options(
                     base=CAN_DESTROY_CLOSE_SILVER_BRICKS,
                     # You don't even need to Yoda clip. The silver brick collision that blocks access doesn't extend all
@@ -123,11 +137,11 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Top Of Slippery Snow Slope",
+                R_TOP_OF_SLIPPERY_SNOW_SLOPE,
                 CAN_SITH_FORCE,
             ),
             ExitData(
-                "Hangar Observation Room",
+                R_HANGAR_OBSERVATION_ROOM,
                 logic_options(
                     base=False_(),
                     # In the front of the hangar, you can clip into the 'observation area' with the RNG levers that lift
@@ -141,19 +155,19 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
                 "Chapter Completion",
             ),
         ),
-        "Double Score Zone Tube Room": (),
-        "Hangar Observation Room": (
+        R_DOUBLE_SCORE_ZONE_TUBE_ROOM: (),
+        R_HANGAR_OBSERVATION_ROOM: (
             ExitData(
-                "Top Of Slippery Snow Slope",
+                R_TOP_OF_SLIPPERY_SNOW_SLOPE,
                 logic_options(
                     base=False_(),
                     hard=CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS
                 ),
             ),
         ),
-        "Top Of Slippery Snow Slope": (
+        R_TOP_OF_SLIPPERY_SNOW_SLOPE: (
             ExitData(
-                "Hangar Observation Room",
+                R_HANGAR_OBSERVATION_ROOM,
                 # Hard logic can Yoda Clip to skip the Astromech Panel, but hard logic can Yoda Clip from the hangar to
                 # the observation room anyway, so it is not logically relevant to consider Yoda Clip to bypass the
                 # Astromech Panel.
@@ -164,7 +178,7 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
                 )
             ),
             ExitData(
-                "Snow Canopy Area",
+                R_SNOW_CANOPY_AREA,
                 logic_options(
                     base=CAN_GRAPPLE,
                     # You can triple/high jump to hit the trigger. For Jar Jar and Tarpals, you will need to stand on
@@ -177,11 +191,11 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
                 new_level=Level.HOTHESCAPE_D,
             ),
         ),
-        "Snow Canopy Area": (),
+        R_SNOW_CANOPY_AREA: (),
     },
     minikits={
         "Spawn Room Consoles Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             HasAbility(JEDI),
             pickup_name="m_pup2",
         ),
@@ -189,7 +203,7 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
             # The player has to be able to destroy/activate the heater earlier in the level to get here, so they must be
             # able to destroy the boxes blocking access to the door. Though you can also just build and ride the turret,
             # since all characters that can push blocks can ride vehicles and vice versa.
-            "Crossroads Corridor With Turret",
+            R_CROSSROADS_CORRIDOR_WITH_TURRET,
             logic_options(
                 # Expect double jump so that if the player sends away the cart before getting the minikit, they can
                 # still get the minikit.
@@ -209,7 +223,7 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
             pickup_name="m_pup3",
         ),
         "Four Buttons Thaw Skeletons Minikit": minikit_data(
-            "Crossroads Corridor With Turret",
+            R_CROSSROADS_CORRIDOR_WITH_TURRET,
             logic_options(
                 strict=False,
                 base=CAN_DESTROY_CLOSE_SILVER_BRICKS,
@@ -236,7 +250,7 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
             pickup_name="m_pup1",
         ),
         "High Minikit In Snowmobile Room": minikit_data(
-            "Large Icy Room With Floor Fans, through to Ice Slide Room",
+            R_LARGE_ICY_ROOM_WITH_FLOOR_FANS_THROUGH_TO_ICE_SLIDE_ROOM,
             # Build the snowmobile, stand on it, and then double jump to the minikit.
             # Or double jump + slam directly under the minikit.
             # Or high jump (when enabled) under the minikit.
@@ -257,29 +271,29 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
             pickup_name="pup4",
         ),
         "Hidden Minikit In Snowmobile Room Wall": minikit_data(
-            "Large Icy Room With Floor Fans, through to Ice Slide Room",
+            R_LARGE_ICY_ROOM_WITH_FLOOR_FANS_THROUGH_TO_ICE_SLIDE_ROOM,
             pickup_name="pup2",
         ),
         "Snowtrooper Fishing Minikit": minikit_data(
-            "Snowtrooper Fishing Room",
+            R_SNOWTROOPER_FISHING_ROOM,
             HasAbility(JEDI),
             pickup_name="pup1",
         ),
         "Fan Minikit In Blocked Off Room": minikit_data(
-            "Blocked Off Floor Fan Room",
+            R_BLOCKED_OFF_FLOOR_FAN_ROOM,
             pickup_name="m_pup1",
         ),
         "Minikit In Double Score Zone Tube": minikit_data(
-            "Double Score Zone Tube Room",
+            R_DOUBLE_SCORE_ZONE_TUBE_ROOM,
             pickup_name="pup1",
         ),
         "Minikit Inside Green-Yellow Shutter": minikit_data(
-            "After Ice Slide Room, Start Of Double Score Zone Room, and Hangar",
-            _helper.can_reach_region("Hangar Observation Room") & HasAbility(CAN_PULL_LEVERS),
+            R_AFTER_ICE_SLIDE_ROOM_START_OF_DOUBLE_SCORE_ZONE_ROOM_AND_HANGAR,
+            _helper.can_reach_region(R_HANGAR_OBSERVATION_ROOM) & HasAbility(CAN_PULL_LEVERS),
             pickup_name="pup2",
         ),
         "Snow Canopy Access Hatch Minikit": minikit_data(
-            "Snow Canopy Area",
+            R_SNOW_CANOPY_AREA,
             # There are infinite walls all around the spawn, you can Yoda Clip through the ceiling, but then have
             # infinite walls surrounding you.
             HasAbility(SHORTIE),
@@ -287,12 +301,12 @@ ESCAPE_FROM_ECHO_BASE = _helper.make_chapter(
         )
     },
     power_brick=LocationData(
-        "After Ice Slide Room, Start Of Double Score Zone Room, and Hangar",
-        _helper.can_reach_region("Hangar Observation Room") & HasAbility(CAN_PULL_LEVERS),
+        R_AFTER_ICE_SLIDE_ROOM_START_OF_DOUBLE_SCORE_ZONE_ROOM_AND_HANGAR,
+        _helper.can_reach_region(R_HANGAR_OBSERVATION_ROOM) & HasAbility(CAN_PULL_LEVERS),
     ),
     ridables={
-        Character.TROOPERCANNON: LocationData("Crossroads Corridor With Turret"),
-        Character.SNOWMOB: LocationData("Large Icy Room With Floor Fans, through to Ice Slide Room"),
-        Character.TAUNTAUN: LocationData("After Ice Slide Room, Start Of Double Score Zone Room, and Hangar"),
+        Character.TROOPERCANNON: LocationData(R_CROSSROADS_CORRIDOR_WITH_TURRET),
+        Character.SNOWMOB: LocationData(R_LARGE_ICY_ROOM_WITH_FLOOR_FANS_THROUGH_TO_ICE_SLIDE_ROOM),
+        Character.TAUNTAUN: LocationData(R_AFTER_ICE_SLIDE_ROOM_START_OF_DOUBLE_SCORE_ZONE_ROOM_AND_HANGAR),
     },
 )
