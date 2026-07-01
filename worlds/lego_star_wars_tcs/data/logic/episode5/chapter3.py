@@ -11,6 +11,13 @@ from ...levels import Level
 from ....character_ability import *
 from ....data.characters import Character
 
+R_STAR_DESTROYER_BATTLE = "Star Destroyer Battle"
+R_AFTER_STAR_DESTROYER_BATTLE = "After Star Destroyer Battle"
+R_FIRST_TIE_GATE_AREA = "First TIE Gate Area"
+R_AFTER_BLOCKED_TUNNEL = "After Blocked Tunnel"
+R_HUGE_ASTEROID_TIE_GATE_AREA = "Huge Asteroid TIE Gate Area"
+R_AFTER_HUGE_ASTEROID = "After Huge Asteroid"
+
 # Maybe this could be in Moderate logic, but it kind of sucks due to RNG and how long it can take, so it's going in Hard
 # logic.
 _CAN_DEFLECT_BOLTS_TO_DESTROY_THINGS = logic_options(
@@ -20,19 +27,19 @@ _CAN_DEFLECT_BOLTS_TO_DESTROY_THINGS = logic_options(
 
 FALCON_FLIGHT = Chapter(
     area=Area.ASTEROIDCHASE,
-    start_region="Star Destroyer Battle",
+    start_region=R_STAR_DESTROYER_BATTLE,
     regions={
-        "Star Destroyer Battle": (
+        R_STAR_DESTROYER_BATTLE: (
             ExitData(
-                "After Star Destroyer Battle",
+                R_AFTER_STAR_DESTROYER_BATTLE,
                 # Torpedoes do not target the Star Destroyer weapons.
                 HasAbility(VEHICLE_BLASTER) | _CAN_DEFLECT_BOLTS_TO_DESTROY_THINGS,
                 new_level=Level.ASTEROIDCHASE_A,
             ),
         ),
-        "After Star Destroyer Battle": (
+        R_AFTER_STAR_DESTROYER_BATTLE: (
             ExitData(
-                "First TIE Gate Area",
+                R_FIRST_TIE_GATE_AREA,
                 logic_options(
                     base=HasAbility(VEHICLE_TIE),
                     # For this TIE Gate skip, approach the gate and allow your vehicle to automatically turn to the
@@ -58,7 +65,7 @@ FALCON_FLIGHT = Chapter(
                 ),
             ),
             ExitData(
-                "After Blocked Tunnel",
+                R_AFTER_BLOCKED_TUNNEL,
                 # Need torpedoes to un-block the tunnel. The small destroyable asteroids in this area spawn brick chunks
                 # that drop torpedoes when colliding into them with a vehicle. These asteroids respawn after a short
                 # period, and can be destroyed with deflected enemy blaster bolts.
@@ -72,10 +79,10 @@ FALCON_FLIGHT = Chapter(
                 new_level=Level.ASTEROIDCHASE_B,
             ),
         ),
-        "First TIE Gate Area": (),
-        "After Blocked Tunnel": (
+        R_FIRST_TIE_GATE_AREA: (),
+        R_AFTER_BLOCKED_TUNNEL: (
             ExitData(
-                "Huge Asteroid TIE Gate Area",
+                R_HUGE_ASTEROID_TIE_GATE_AREA,
                 logic_options(
                     base=HasAbility(VEHICLE_TIE),
                     # Skipping this TIE Gate is more difficult than the first TIE Gate because one side of the gate does
@@ -106,12 +113,12 @@ FALCON_FLIGHT = Chapter(
                 )
             ),
             ExitData(
-                "After Huge Asteroid",
+                R_AFTER_HUGE_ASTEROID,
                 new_level=Level.ASTEROIDCHASE_C,
             )
         ),
-        "Huge Asteroid TIE Gate Area": (),
-        "After Huge Asteroid": (
+        R_HUGE_ASTEROID_TIE_GATE_AREA: (),
+        R_AFTER_HUGE_ASTEROID: (
             ExitData(
                 "Chapter Completion"
             ),
@@ -119,24 +126,24 @@ FALCON_FLIGHT = Chapter(
     },
     minikits={
         "Behind Star Destroyer Minikit": minikit_data(
-            "Star Destroyer Battle",
+            R_STAR_DESTROYER_BATTLE,
             # Probably possible with just Deflect Bolts, but most of the enemy vehicles do not fly over here, and the
             # turrets in the level will target the closest friendly vehicle
             HasAbility(VEHICLE_BLASTER),
             pickup_name="m_pup1",
         ),
         "Behind First TIE Gate Minikit 1": minikit_data(
-            "First TIE Gate Area",
+            R_FIRST_TIE_GATE_AREA,
             HasAbility(VEHICLE_TOW),
             pickup_name="m_pup2",
         ),
         "Behind First TIE Gate Minikit 2": minikit_data(
-            "First TIE Gate Area",
+            R_FIRST_TIE_GATE_AREA,
             HasAbility(VEHICLE_TOW),
             pickup_name="m_pup3",
         ),
         "Loose Minikit Before Blocked Tunnel": minikit_data(
-            "After Star Destroyer Battle",
+            R_AFTER_STAR_DESTROYER_BATTLE,
             # Base through to Moderate expect VEHICLE_BLASTER to get here.
             logic_options(
                 base=True_(),
@@ -152,33 +159,34 @@ FALCON_FLIGHT = Chapter(
             pickup_name="m_pup4",
         ),
         "Loose Minikit After Blocked Tunnel": minikit_data(
-            "After Blocked Tunnel",
+            R_AFTER_BLOCKED_TUNNEL,
             pickup_name="m_pup5",
         ),
         "Huge Asteroid TIE Gate Torpedo Minikit": minikit_data(
-            "Huge Asteroid TIE Gate Area",
+            R_HUGE_ASTEROID_TIE_GATE_AREA,
             pickup_name="m_pup6",
         ),
         "Huge Asteroid Torpedo Minikit 1": minikit_data(
-            "After Blocked Tunnel",
+            R_AFTER_BLOCKED_TUNNEL,
             pickup_name="m_pup7",
         ),
         "Huge Asteroid Torpedo Minikit 2": minikit_data(
-            "After Blocked Tunnel",
+            R_AFTER_BLOCKED_TUNNEL,
             pickup_name="m_pup8",
         ),
         "Minikit Inside Space Slug Mouth": minikit_data(
-            "After Blocked Tunnel",
+            R_AFTER_BLOCKED_TUNNEL,
             logic_options(
                 base=True_(),
+                # I could not hit this minikit without a blaster vehicle.
                 hard=HasAbility(VEHICLE_BLASTER),
             ),
             pickup_name="m_pup9",
         ),
         "Final Area Asteroid Alcove Minikit": minikit_data(
-            "After Huge Asteroid",
+            R_AFTER_HUGE_ASTEROID,
             pickup_name="m_pup10",
         )
     },
-    power_brick=LocationData("Star Destroyer Battle"),
+    power_brick=LocationData(R_STAR_DESTROYER_BATTLE),
 )
