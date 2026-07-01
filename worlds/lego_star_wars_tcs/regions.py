@@ -352,9 +352,14 @@ class _RegionBuilder:
         # Checks for riding unique characters.
         if world.options.ridesanity:
             for ridable_character, ridable_location_data in chapter.ridables.items():
-                ridable_region = regions[ridable_location_data.region]
-                ridable_data = _RidableData(area, ridable_region, ridable_location_data.rule)
-                self.ridable_character_regions.setdefault(ridable_character, []).append(ridable_data)
+                if isinstance(ridable_location_data, tuple):
+                    ridable_location_data_tuple = ridable_location_data
+                else:
+                    ridable_location_data_tuple = (ridable_location_data,)
+                for ridable_location_datum in ridable_location_data_tuple:
+                    ridable_region = regions[ridable_location_datum.region]
+                    ridable_data = _RidableData(area, ridable_region, ridable_location_datum.rule)
+                    self.ridable_character_regions.setdefault(ridable_character, []).append(ridable_data)
 
         # Boss.
         if chapter.short_name in world.enabled_bosses:

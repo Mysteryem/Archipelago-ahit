@@ -171,9 +171,14 @@ class TestEpisodes(TestCase):
                 yield minikit_name + "(ER)", minikit_data.er_rule
 
         for ridable, ridable_data in chapter.ridables.items():
-            yield ridable.readable_name, ridable_data.rule
-            if ridable_data.er_rule is not None:
-                yield ridable.readable_name + "(ER)", ridable_data.er_rule
+            if not isinstance(ridable_data, tuple):
+                ridable_data_tuple = (ridable_data,)
+            else:
+                ridable_data_tuple = ridable_data
+            for ridable_datum in ridable_data_tuple:
+                yield ridable.readable_name, ridable_datum.rule
+                if ridable_datum.er_rule is not None:
+                    yield ridable.readable_name + "(ER)", ridable_datum.er_rule
 
         yield "Power Brick", chapter.power_brick.rule
         if chapter.power_brick.er_rule is not None:

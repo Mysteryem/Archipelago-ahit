@@ -143,7 +143,7 @@ class Chapter:
     The start region and Chapter Completion region are implicit."""
 
     # TODO: Add wip_true_jedi_rule
-    ridables: dict[Character, LocationData] = field(default_factory=dict)
+    ridables: dict[Character, LocationData | tuple[LocationData, ...]] = field(default_factory=dict)
     extra_chapter_entrance_rules: Rule = field(default_factory=True_)
     regions_in_can_reach: Iterable[str] = ()
 
@@ -192,7 +192,12 @@ class Chapter:
         for minikit_name, minikit_data in self.minikits.items():
             self.minikits[minikit_name] = rule_optimizer.replace_rule_data(minikit_data)
         for ridable_character, ridable_data in self.ridables.items():
-            self.ridables[ridable_character] = rule_optimizer.replace_rule_data(ridable_data)
+            if isinstance(ridable_data, tuple):
+                self.ridables[ridable_character] = tuple(
+                    rule_optimizer.replace_rule_data(ridable_datum) for ridable_datum in ridable_data
+                )
+            else:
+                self.ridables[ridable_character] = rule_optimizer.replace_rule_data(ridable_data)
         replaced_power_brick_data = rule_optimizer.replace_rule_data(self.power_brick)
         object.__setattr__(self, "power_brick", replaced_power_brick_data)
 
@@ -247,7 +252,11 @@ class Chapter:
         Does not include locations that become accessible once the chapter is completed (these are always in the Chapter
         Completion region of the level, and most of the data for these locations is defined elsewhere)."""
         yield from self.minikits.values()
-        yield from self.ridables.values()
+        for ridable_data in self.ridables.values():
+            if isinstance(ridable_data, tuple):
+                yield from ridable_data
+            else:
+                yield ridable_data
         yield self.power_brick
 
     @property
