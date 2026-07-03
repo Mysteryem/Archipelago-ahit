@@ -30,6 +30,34 @@ from ...characters import Character
 from ...items.all_character_items import CHARACTER_TO_ITEM_DATA
 from ...items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 
+R_SPAWN = "Spawn"
+R_UP_STEPS_FROM_SPAWN = "Up Steps From Spawn"
+R_RACETRACK = "Racetrack"
+R_ACROSS_FIRST_SWAMP = "Across First Swamp"
+R_FIRST_SWAMP_LAST_AREA_WITH_BRIDGE_PANEL = "First Swamp Last Area With Bridge Panel"
+R_SPAWN_ACROSS_SWAMP_FROM_YODAS_HUT = "Spawn Across Swamp From Yoda's Hut"
+R_IN_FRONT_OF_YODAS_HUT = "In Front Of Yoda's Hut"
+R_YODAS_HUT = "Yoda's Hut"
+R_ACROSS_RAFT_TO_SILVER_BRICK_CAVE = "Across Raft To Silver Brick Cave"
+R_TRAINING_AREA_START = "Training Area Start"
+R_TRAINING_AREA_MIDDLE_ISLAND = "Training Area Middle Island"
+R_TRAINING_AREA_END = "Training Area End"
+R_POST_TRAINING_AREA = "Post-Training Area"
+R_ROOTS_PLATFORMING_END = "Roots Platforming End"
+R_CAVE_START = "Cave Start"
+R_CAVE_ACROSS_SITH_FORCE_BRIDGE = "Cave: Across Sith Force Bridge"
+R_CAVE_AFTER_FIRST_LOWERING_PLATFORMS = "Cave: After First Lowering Platforms"
+R_CAVE_UPPER_AREA_AFTER_FIRST_LOWERING_PLATFORMS = "Cave: Upper Area After First Lowering Platforms"
+R_CAVE_AFTER_SECOND_LOWERING_PLATFORMS = "Cave: After Second Lowering Platforms"
+R_CAVE_UPPER_AREA_WITH_PANEL_AFTER_SECOND_LOWERING_PLATFORMS = \
+    "Cave: Upper Area With Panel After Second Lowering Platforms"
+R_CAVE_ACCESS_HATCH_EXIT_PLATFORM_AFTER_SECOND_LOWERING_PLATFORMS = \
+    "Cave: Access Hatch Exit Platform After Second Lowering Platforms"
+R_VADER_FIGHT_AREA = "Vader Fight Area"
+R_CAVE_MANY_COLLAPSING_PLATFORMS_ROOM = "Cave: Many Collapsing Platforms Room"
+R_FINAL_AREA_SPAWN = "Final Area Spawn"
+R_FINAL_AREA_ACROSS_BRIDGE = "Final Area Across Bridge"
+
 
 _HAS_KAMINOAN = Character.has_any(Character.LAMA_SU, Character.TAUN_WE)
 
@@ -143,14 +171,14 @@ _HARD_CAN_JUMP_ACROSS_SWAMP_PLATFORMS_WITHOUT_RAISING_THEM = (
 
 helper = ChapterHelper(
     area=Area.DAGOBAH,
-    start_region="Spawn",
+    start_region=R_SPAWN,
 )
 
 DAGOBAH = helper.make_chapter(
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "Up Steps From Spawn",
+                R_UP_STEPS_FROM_SPAWN,
                 logic_options(
                     # Base logic expects fighting the bats.
                     base=CAN_DAMAGE_AT_CLOSE_RANGE & HasAnyAbilities(CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
@@ -160,9 +188,9 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
         ),
-        "Up Steps From Spawn": (
+        R_UP_STEPS_FROM_SPAWN: (
             ExitData(
-                "Racetrack",
+                R_RACETRACK,
                 logic_options(
                     base=CAN_SITH_FORCE,
                     # Triple jump over the Sith Force bricks.
@@ -170,7 +198,7 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Across First Swamp",
+                R_ACROSS_FIRST_SWAMP,
                 logic_options(
                     # All characters that can grapple can destroy the bush to reveal the grapple point.
                     base=CAN_GRAPPLE | HasAbility(ASTROMECH_DROID),
@@ -183,15 +211,15 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
         ),
-        "Racetrack": (
+        R_RACETRACK: (
             ExitData(
-                "Across First Swamp",
+                R_ACROSS_FIRST_SWAMP,
                 # Just walk down.
             ),
         ),
-        "Across First Swamp": (
+        R_ACROSS_FIRST_SWAMP: (
             ExitData(
-                "Racetrack",
+                R_RACETRACK,
                 logic_options(
                     # "Racetrack -> Across First Swamp" is intended to be 1-way, so even if this is easy with OT High
                     # Jump enabled, Base logic will not consider it.
@@ -207,7 +235,7 @@ DAGOBAH = helper.make_chapter(
                 )
             ),
             ExitData(
-                "First Swamp Last Area With Bridge Panel",
+                R_FIRST_SWAMP_LAST_AREA_WITH_BRIDGE_PANEL,
                 logic_options(
                     base=ot_high_jump_ternary(
                         uncapped=Or(
@@ -232,9 +260,9 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
         ),
-        "First Swamp Last Area With Bridge Panel": (
+        R_FIRST_SWAMP_LAST_AREA_WITH_BRIDGE_PANEL: (
             ExitData(
-                "Spawn Across Swamp From Yoda's Hut",
+                R_SPAWN_ACROSS_SWAMP_FROM_YODAS_HUT,
                 logic_options(
                     base=CAN_DAMAGE_AT_CLOSE_RANGE | HasAbility(CAN_DOUBLE_JUMP),
                     # You can jump sort of through/over the plants on the right hand side.
@@ -249,9 +277,9 @@ DAGOBAH = helper.make_chapter(
                 new_level=Level.DAGOBAH_B,
             ),
         ),
-        "Spawn Across Swamp From Yoda's Hut": (
+        R_SPAWN_ACROSS_SWAMP_FROM_YODAS_HUT: (
             ExitData(
-                "In Front Of Yoda's Hut",
+                R_IN_FRONT_OF_YODAS_HUT,
                 logic_options(
                     base=HasAllAbilities(CAN_BUILD_BRICKS | CAN_DOUBLE_JUMP),
                     # Allow hovering across the platforms, or fluttering across the swamp.
@@ -294,14 +322,14 @@ DAGOBAH = helper.make_chapter(
                 )
             ),
         ),
-        "In Front Of Yoda's Hut": (
+        R_IN_FRONT_OF_YODAS_HUT: (
             ExitData(
-                "Yoda's Hut",
+                R_YODAS_HUT,
                 _CAN_ENTER_YODAS_HUT,
                 new_level=Level.DAGOBAH_E,
             ),
             ExitData(
-                "Across Raft To Silver Brick Cave",
+                R_ACROSS_RAFT_TO_SILVER_BRICK_CAVE,
                 logic_options(
                     base=CAN_SITH_FORCE,
                     normal=CAN_SITH_FORCE | HasAbility(HOVER) | HAS_FLUTTER_CHARACTER,
@@ -338,12 +366,12 @@ DAGOBAH = helper.make_chapter(
                 )
             ),
             ExitData(
-                "Training Area Start",
+                R_TRAINING_AREA_START,
                 # The area is not blocked in Free Play, so the player can enter it immediately.
                 new_level=Level.DAGOBAH_E,
             ),
             ExitData(
-                "Post-Training Area",
+                R_POST_TRAINING_AREA,
                 logic_options(
                     # Force Yoda's hut into a ramp and then jump up.
                     # Or travel across the swamp as an Astromech Droid
@@ -356,17 +384,17 @@ DAGOBAH = helper.make_chapter(
                 ),
             )
         ),
-        "Yoda's Hut": (),
-        "Across Raft To Silver Brick Cave": (),
-        "Training Area Start": (
-            # This entrance is never logically relevant because "In Front Of Yoda's Hut" is always reached first.
+        R_YODAS_HUT: (),
+        R_ACROSS_RAFT_TO_SILVER_BRICK_CAVE: (),
+        R_TRAINING_AREA_START: (
+            # This entrance is never logically relevant because R_IN_FRONT_OF_YODAS_HUT is always reached first.
             # ExitData(
-            #     "In Front Of Yoda's Hut",
+            #     R_IN_FRONT_OF_YODAS_HUT,
             #     CAN_DESTROY_CLOSE_SILVER_BRICKS,
             #     new_level=Level.DAGOBAH_B,
             # ),
             ExitData(
-                "Training Area Middle Island",
+                R_TRAINING_AREA_MIDDLE_ISLAND,
                 logic_options(
                     base=HasAnyAbilities(JEDI | ASTROMECH_DROID),
                     # Allow jetpack hover or flutter
@@ -380,9 +408,9 @@ DAGOBAH = helper.make_chapter(
                 )
             ),
         ),
-        "Training Area Middle Island": (
+        R_TRAINING_AREA_MIDDLE_ISLAND: (
             ExitData(
-                "Training Area Start",
+                R_TRAINING_AREA_START,
                 logic_options(
                     base=HasAbility(ASTROMECH_DROID),
                     # Allow flutter over the swamp.
@@ -396,7 +424,7 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Training Area End",
+                R_TRAINING_AREA_END,
                 logic_options(
                     # The jump from the final platform to the end is a little tight on worse jumping characters, so
                     # expect 0.84 for base logic.
@@ -407,11 +435,11 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
         ),
-        "Training Area End": (
+        R_TRAINING_AREA_END: (
             # I don't think this entrance will ever be logically relevant, but I'm not fully sure, so it has been left
             # in for now.
             ExitData(
-                "Post-Training Area",
+                R_POST_TRAINING_AREA,
                 logic_options(
                     base=HasAllAbilities(JEDI | ASTROMECH_PANEL),
                     normal=HasAbility(ASTROMECH_PANEL) & HasAnyAbilities(CAN_DOUBLE_JUMP | JETPACK),
@@ -433,14 +461,14 @@ DAGOBAH = helper.make_chapter(
                 new_level=Level.DAGOBAH_B,
             ),
         ),
-        "Post-Training Area": (
+        R_POST_TRAINING_AREA: (
             ExitData(
-                "Training Area End",
+                R_TRAINING_AREA_END,
                 # No requirements, just walk in.
                 new_level=Level.DAGOBAH_E,
             ),
             ExitData(
-                "Roots Platforming End",
+                R_ROOTS_PLATFORMING_END,
                 logic_options(
                     # Fall into the swamp and go around.
                     base=HasAbility(ASTROMECH_DROID),
@@ -472,16 +500,16 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
         ),
-        "Roots Platforming End": (
+        R_ROOTS_PLATFORMING_END: (
             ExitData(
-                "Cave Start",
+                R_CAVE_START,
                 CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE,
                 new_level=Level.DAGOBAH_D,
             ),
         ),
-        "Cave Start": (
+        R_CAVE_START: (
             ExitData(
-                "Cave: Across Sith Force Bridge",
+                R_CAVE_ACROSS_SITH_FORCE_BRIDGE,
                 logic_options(
                     base=CAN_SITH_FORCE,
                     # While Astromech HOVER can cross the gap from the first platform, if the platform is lowered by
@@ -508,7 +536,7 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Cave: After First Lowering Platforms",
+                R_CAVE_AFTER_FIRST_LOWERING_PLATFORMS,
                 logic_options(
                     base=HasAbility(CAN_DOUBLE_JUMP),
                     normal=Or(
@@ -521,10 +549,10 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
         ),
-        "Cave: Across Sith Force Bridge": (),
-        "Cave: After First Lowering Platforms": (
+        R_CAVE_ACROSS_SITH_FORCE_BRIDGE: (),
+        R_CAVE_AFTER_FIRST_LOWERING_PLATFORMS: (
             ExitData(
-                "Cave: After Second Lowering Platforms",
+                R_CAVE_AFTER_SECOND_LOWERING_PLATFORMS,
                 logic_options(
                     base=HasAbility(CAN_DOUBLE_JUMP),
                     normal=HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
@@ -535,7 +563,7 @@ DAGOBAH = helper.make_chapter(
             # developed (there are two blue studs behind the silver bricks up here, and JETPACK can cross to the exit of
             # the Access Hatch from here.
             ExitData(
-                "Cave: Upper Area After First Lowering Platforms",
+                R_CAVE_UPPER_AREA_AFTER_FIRST_LOWERING_PLATFORMS,
                 logic_options(
                     base=CAN_GRAPPLE,
                     # Allow high jump.
@@ -552,9 +580,9 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
         ),
-        "Cave: Upper Area After First Lowering Platforms": (
+        R_CAVE_UPPER_AREA_AFTER_FIRST_LOWERING_PLATFORMS: (
             ExitData(
-                "Cave: Access Hatch Exit Platform After Second Lowering Platforms",
+                R_CAVE_ACCESS_HATCH_EXIT_PLATFORM_AFTER_SECOND_LOWERING_PLATFORMS,
                 logic_options(
                     base=False_(),
                     normal=HasAbility(JETPACK),
@@ -564,9 +592,9 @@ DAGOBAH = helper.make_chapter(
                 )
             ),
         ),
-        "Cave: After Second Lowering Platforms": (
+        R_CAVE_AFTER_SECOND_LOWERING_PLATFORMS: (
             ExitData(
-                "Cave: Upper Area With Panel After Second Lowering Platforms",
+                R_CAVE_UPPER_AREA_WITH_PANEL_AFTER_SECOND_LOWERING_PLATFORMS,
                 logic_options(
                     base=HasAbility(CAN_DOUBLE_JUMP),
                     # The jump and then jetpack hover can get enough height.
@@ -579,7 +607,7 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Cave: Access Hatch Exit Platform After Second Lowering Platforms",
+                R_CAVE_ACCESS_HATCH_EXIT_PLATFORM_AFTER_SECOND_LOWERING_PLATFORMS,
                 logic_options(
                     base=HasAbility(SHORTIE),
                     # Triple high jump. Triple jump is just barely possible, but is far more precise than most triple
@@ -594,7 +622,7 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Vader Fight Area",
+                R_VADER_FIGHT_AREA,
                 logic_options(
                     # The AI will only use double jump and astromech characters, so that will be considered developer
                     # intended. Jetpack hover is the better version of astromech hover, so that is also allowed, despite
@@ -643,18 +671,18 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
         ),
-        "Cave: Upper Area With Panel After Second Lowering Platforms": (),
-        "Cave: Access Hatch Exit Platform After Second Lowering Platforms": (),
-        "Vader Fight Area": (
+        R_CAVE_UPPER_AREA_WITH_PANEL_AFTER_SECOND_LOWERING_PLATFORMS: (),
+        R_CAVE_ACCESS_HATCH_EXIT_PLATFORM_AFTER_SECOND_LOWERING_PLATFORMS: (),
+        R_VADER_FIGHT_AREA: (
             ExitData(
-                "Cave: Many Collapsing Platforms Room",
+                R_CAVE_MANY_COLLAPSING_PLATFORMS_ROOM,
                 logic_options(
                     base=CAN_DESTROY_CLOSE_SILVER_BRICKS,
                     hard=CAN_DESTROY_CLOSE_SILVER_BRICKS | CAN_YODA_CLIP
                 )
             ),
             ExitData(
-                "Final Area Spawn",
+                R_FINAL_AREA_SPAWN,
                 logic_options(
                     # Fight him and force the platforms to get around the fight area.
                     base=HasAbility(JEDI),
@@ -677,10 +705,10 @@ DAGOBAH = helper.make_chapter(
                 new_level=Level.DAGOBAH_C,
             ),
         ),
-        "Cave: Many Collapsing Platforms Room": (),
-        "Final Area Spawn": (
+        R_CAVE_MANY_COLLAPSING_PLATFORMS_ROOM: (),
+        R_FINAL_AREA_SPAWN: (
             ExitData(
-                "Final Area Across Bridge",
+                R_FINAL_AREA_ACROSS_BRIDGE,
                 logic_options(
                     base=Or(
                         # Build the bridge and cross.
@@ -711,7 +739,7 @@ DAGOBAH = helper.make_chapter(
                 ),
             ),
         ),
-        "Final Area Across Bridge": (
+        R_FINAL_AREA_ACROSS_BRIDGE: (
             ExitData(
                 "Chapter Completion",
                 And(
@@ -723,7 +751,7 @@ DAGOBAH = helper.make_chapter(
     },
     minikits={
         "Spawn Tree Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=HasAbility(JEDI),
                 normal=HasAbility(CAN_DOUBLE_JUMP),
@@ -732,7 +760,7 @@ DAGOBAH = helper.make_chapter(
             pickup_name="m_pup2"
         ),
         "Snake Swamp Central Island Minikit": minikit_data(
-            "Up Steps From Spawn",
+            R_UP_STEPS_FROM_SPAWN,
             logic_options(
                 base=CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE & HasAbility(HOVER),
                 # Stand slightly in the swamp and just double jump to the island.
@@ -745,26 +773,26 @@ DAGOBAH = helper.make_chapter(
             pickup_name="m_pup1",
         ),
         "Yoda's TV Minikit": minikit_data(
-            "Yoda's Hut",
+            R_YODAS_HUT,
             CAN_SITH_FORCE,
             pickup_name="m_pup2",
         ),
         "Swamp Silver Brick Cave Minikit": minikit_data(
-            "Across Raft To Silver Brick Cave",
+            R_ACROSS_RAFT_TO_SILVER_BRICK_CAVE,
             CAN_DESTROY_CLOSE_SILVER_BRICKS,
             pickup_name="m_pup3",
         ),
         "Open Three Hatches Minikit": MinikitData(
-            "Training Area End",
+            R_TRAINING_AREA_END,
             And(
                 CAN_DAMAGE_AT_CLOSE_RANGE,
-                helper.can_reach_region("Training Area Start"),
-                helper.can_reach_region("Training Area Middle Island"),
+                helper.can_reach_region(R_TRAINING_AREA_START),
+                helper.can_reach_region(R_TRAINING_AREA_MIDDLE_ISLAND),
             ),
             pickup_names=("m_pup1", "m_pup3", "m_pup4",)
         ),
         "Grapple Minikit After Hut": minikit_data(
-            "Roots Platforming End",
+            R_ROOTS_PLATFORMING_END,
             logic_options(
                 base=CAN_GRAPPLE,
                 # High jump off the astromech panel box. It seems like the developers intended to make you slide off
@@ -779,7 +807,7 @@ DAGOBAH = helper.make_chapter(
             pickup_name="m_pup2",
         ),
         "Sith Force Bridge Minikit": minikit_data(
-            "Cave: Across Sith Force Bridge",
+            R_CAVE_ACROSS_SITH_FORCE_BRIDGE,
             # The minikit is visible from the start, but cannot be interacted with until grapple point is built.
             # The grapple point is hidden within the silver bricks.
             # The silver bricks cannot be destroyed until the bridge is built.
@@ -791,7 +819,7 @@ DAGOBAH = helper.make_chapter(
             pickup_name="m_pup1",
         ),
         "Caged Minikit": minikit_data(
-            "Cave: After Second Lowering Platforms",
+            R_CAVE_AFTER_SECOND_LOWERING_PLATFORMS,
             # It is so easy to shoot this minikit down from ground-level, that I'm not going to consider using the
             # Access Hatch and then shooting it from the high vantage point to be the developer intended solution.
             logic_options(
@@ -800,7 +828,7 @@ DAGOBAH = helper.make_chapter(
                 normal=Or(
                     HasAbility(BLASTER),
                     And(
-                        helper.can_reach_region("Cave: Upper Area With Panel After Second Lowering Platforms"),
+                        helper.can_reach_region(R_CAVE_UPPER_AREA_WITH_PANEL_AFTER_SECOND_LOWERING_PLATFORMS),
                         HasAbility(WEAPON_EWOK),
                     ),
                 ),
@@ -813,7 +841,7 @@ DAGOBAH = helper.make_chapter(
                     HasAnyAbilities(BLASTER | WEAPON_EWOK),
                     # Get to the cage from the area with the astromech panel.
                     And(
-                        helper.can_reach_region("Cave: Upper Area With Panel After Second Lowering Platforms"),
+                        helper.can_reach_region(R_CAVE_UPPER_AREA_WITH_PANEL_AFTER_SECOND_LOWERING_PLATFORMS),
                         Or(
                             And(
                                 # Triple jump or high jump to the cage.
@@ -839,7 +867,7 @@ DAGOBAH = helper.make_chapter(
                     ),
                     # Get to the cage from the Access Hatch exit.
                     And(
-                        helper.can_reach_region("Cave: Access Hatch Exit Platform After Second Lowering Platforms"),
+                        helper.can_reach_region(R_CAVE_ACCESS_HATCH_EXIT_PLATFORM_AFTER_SECOND_LOWERING_PLATFORMS),
                         # Hover over to the cage, then explode next to it.
                         HasAbility(ASTROMECH_DROID) & Extra.SELF_DESTRUCT.has(),
                     ),
@@ -848,7 +876,7 @@ DAGOBAH = helper.make_chapter(
             pickup_name="m_pup2",
         ),
         "Many Collapsing Platforms Minikit": minikit_data(
-            "Cave: Many Collapsing Platforms Room",
+            R_CAVE_MANY_COLLAPSING_PLATFORMS_ROOM,
             # If you can reach here, you can get to the minikit. The platforms that don't collapse are fixed, and even
             # the worse jumpers can jump across.
             True_(),
@@ -856,7 +884,7 @@ DAGOBAH = helper.make_chapter(
             pickup_name="m_pup4",
         ),
         "Final Area Lever Minikit": minikit_data(
-            "Final Area Across Bridge",
+            R_FINAL_AREA_ACROSS_BRIDGE,
             logic_options(
                 # 1) Use the Access Hatch.
                 # 2) Hover/double jump across to the lever.
@@ -931,18 +959,18 @@ DAGOBAH = helper.make_chapter(
         ),
     },
     power_brick=LocationData(
-        "Racetrack",
+        R_RACETRACK,
         CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE & HasAllAbilities(CAN_RIDE_VEHICLES | CAN_BUILD_BRICKS)
     ),
     ridables={
         Character.TRACTOR: (
             LocationData(
-                "Racetrack",
+                R_RACETRACK,
                 # Destroy the object containing the bricks, and then build it.
                 CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE & HasAbility(CAN_BUILD_BRICKS)
             ),
             LocationData(
-                "Post-Training Area",
+                R_POST_TRAINING_AREA,
                 # It must be forced out of the swamp, and then the trailer must be forced off.
                 HasAbility(JEDI),
             ),
