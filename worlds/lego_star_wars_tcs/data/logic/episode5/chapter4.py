@@ -175,6 +175,21 @@ helper = ChapterHelper(
 )
 
 DAGOBAH = helper.make_chapter(
+    intended_completion_path=(
+        R_UP_STEPS_FROM_SPAWN,
+        R_ACROSS_FIRST_SWAMP,
+        R_FIRST_SWAMP_LAST_AREA_WITH_BRIDGE_PANEL,
+        R_SPAWN_ACROSS_SWAMP_FROM_YODAS_HUT,
+        R_IN_FRONT_OF_YODAS_HUT,
+        R_POST_TRAINING_AREA,
+        R_ROOTS_PLATFORMING_END,
+        R_CAVE_START,
+        R_CAVE_AFTER_FIRST_LOWERING_PLATFORMS,
+        R_CAVE_AFTER_SECOND_LOWERING_PLATFORMS,
+        R_VADER_FIGHT_AREA,
+        R_FINAL_AREA_SPAWN,
+        R_FINAL_AREA_ACROSS_BRIDGE,
+    ),
     regions={
         R_SPAWN: (
             ExitData(
