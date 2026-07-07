@@ -490,7 +490,7 @@ DAGOBAH = helper.make_chapter(
                     # Jetpack can jump up to the top platform, then hover across.
                     # Flutter across the swamp.
                     # Walk through the swamp as a kaminoan.
-                    # Yoda's double jump distance is enough to cross the gap.
+                    # Yoda/Ackbar's double jump distance is enough to cross the gap.
                     # High jumpers can just jump across (when OT high jump is enabled).
                     normal=Or(
                         ot_high_jump_ternary(
@@ -536,11 +536,12 @@ DAGOBAH = helper.make_chapter(
                     # Allow basic HOVER by not messing up and lowering the first platform.
                     # Allow triple jump across. This is possible even after the platform has been lowered.
                     moderate=ot_high_jump_ternary(
-                        uncapped=HasAnyAbilities(
-                            CAN_DOUBLE_JUMP | HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE | CAN_HIGH_JUMP_SLAM
+                        uncapped=Or(
+                            HasAllAbilities(CAN_DOUBLE_JUMP | HOVER),
+                            HasAnyAbilities(JEDI | HIGH_JUMP),
                         ),
                         capped=Or(
-                            HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
+                            HasAllAbilities(CAN_DOUBLE_JUMP | HOVER),
                             HasAbilityExceptCharacters(CAN_TRIPLE_JUMP_GREAT_DISTANCE, Character.GENERAL_GRIEVOUS),
                         ),
                     ),

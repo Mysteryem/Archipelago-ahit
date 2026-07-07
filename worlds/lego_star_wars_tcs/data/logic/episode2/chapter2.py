@@ -9,6 +9,7 @@ from ..macros import (
     CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
     CAN_GRAPPLE,
     HAS_ANY_YODA,
+    HAS_P2_AI_DOUBLE_JUMP,
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilityExceptCharacters
@@ -264,9 +265,9 @@ DISCOVERY_ON_KAMINO = Chapter(
                 )
             ),
             er_rule=logic_options(
-                # AI P2 will only use Double Jump and Astromech Hover, so Jetpack Hover is not allowed here because then
-                # 1P2C would be required.
-                base=HasAnyAbilities(CAN_DOUBLE_JUMP | ASTROMECH_DROID) & HasAllAbilities(BLASTER | SHORTIE),
+                # AI P2 will only use Jedi/High-Jump and Astromech Hover, so Jetpack Hover is not allowed here because
+                # then 1P2C would be required.
+                base=(HAS_P2_AI_DOUBLE_JUMP | HasAbility(ASTROMECH_DROID)) & HasAllAbilities(BLASTER | SHORTIE),
                 # Allow jumping across the platforms with normal jump distance (may require 1P2C).
                 # Jetpack Hover would work too (potentially requiring 1P2C), but both Jango and Boba have normal jump
                 # distance.

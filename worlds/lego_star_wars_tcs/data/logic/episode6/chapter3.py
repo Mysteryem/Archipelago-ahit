@@ -10,7 +10,7 @@ from ..macros import (
     CAN_USE_BOUNTY_HUNTER_ROCKETS,
     CAN_SUPER_EWOK_CATAPULT,
     MODERATE_PLUS,
-    HAS_ANY_YODA,
+    HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
 )
 from ..option_filters import logic_options, ot_high_jump_ternary, OT_HIGH_JUMP_ENABLED
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExceptCharacters
@@ -227,8 +227,8 @@ SPEEDER_SHOWDOWN = Chapter(
                     CAN_SITH_FORCE & HasAbility(SHORTIE),
                     Or(
                         HasAbility(HOVER),
-                        # Yoda can double jump across.
-                        HAS_ANY_YODA,
+                        # Yoda/Ackbar can double jump across.
+                        HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
                         # High jump characters, except Grievous' Bodygaurd can jump across.
                         HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD) & OT_HIGH_JUMP_ENABLED,
                     )

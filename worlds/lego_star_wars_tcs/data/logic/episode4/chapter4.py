@@ -9,6 +9,7 @@ from ..macros import (
     CAN_YODA_CLIP,
     CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
     HAS_ANY_YODA,
+    HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
 )
 from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, ot_high_jump_ternary
 from ..rules import (
@@ -83,6 +84,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                 logic_options(
                     base=HasAbility(HOVER),
                     # Yoda's extra double jump distance makes this easy with him.
+                    # Ackbar's double-jump-dive makes this easy with him.
                     # Captain Tarpals and Jar Jar Binks can also cross this gap without too much trouble due to their
                     # higher movement speed than Jedi, but this is especially niche knowledge, so is not considered for
                     # Normal logic.
@@ -90,7 +92,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                     normal=Or(
                         HasAbility(HOVER),
                         CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
-                        HAS_ANY_YODA,
+                        HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
                     ),
                     moderate=Or(
                         HasAbility(HOVER),
@@ -284,10 +286,10 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                         CAN_GRAPPLE,
                         Or(
                             HasAbility(HOVER),
-                            # Yoda's extra far double jump can cross the initial gap without needing HOVER.
+                            # Yoda/Ackbar's extra far double jump can cross the initial gap without needing HOVER.
                             And(
                                 HasAbility(SHORTIE),
-                                HAS_ANY_YODA,
+                                HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
                             ),
                         ),
                     ),
@@ -430,8 +432,8 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                     # Optimised out CAN_GRAPPLE because all Jedi can get to the Power Brick on their own.
                     HasAllAbilities(HOVER | GRAPPLE),
                     ot_high_jump_ternary(
-                        uncapped=HasAbility(CAN_DOUBLE_JUMP),
-                        capped=HasAbility(CAN_HIGH_JUMP_SLAM),
+                        uncapped=HasAnyAbilities(JEDI | HIGH_JUMP),
+                        capped=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                     ),
                 ),
             ),

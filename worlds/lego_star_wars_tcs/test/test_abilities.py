@@ -315,8 +315,8 @@ class TestAbilities(TestCase):
             ([BOUNTY_HUNTER | JEDI | HIGH_JUMP],
              {JEDI, BOUNTY_HUNTER, HIGH_JUMP},
              "1"),
-            ([BOUNTY_HUNTER, JEDI, HIGH_JUMP],
-             {BOUNTY_HUNTER | CAN_DOUBLE_JUMP},
+            ([BOUNTY_HUNTER, JETPACK, ASTROMECH_DROID],
+             {BOUNTY_HUNTER | ASTROMECH_DROID},
              "2"),
             ([BOUNTY_HUNTER | JEDI | HIGH_JUMP, CAN_HIGH_JUMP_SLAM],
              {JEDI | CAN_HIGH_JUMP_SLAM, BOUNTY_HUNTER | CAN_HIGH_JUMP_SLAM, HIGH_JUMP},
@@ -335,8 +335,8 @@ class TestAbilities(TestCase):
 
     def test_convert_and_has_any_to_or_has_all(self):
         cases: list[tuple[list[CharacterAbility], set[CharacterAbility], str]] = [
-            ([BOUNTY_HUNTER | JEDI | HIGH_JUMP],
-             {BOUNTY_HUNTER, CAN_DOUBLE_JUMP},
+            ([JEDI | JETPACK | ASTROMECH_DROID],
+             {JEDI, HOVER},
              "1"),
             ([BOUNTY_HUNTER, JEDI, HIGH_JUMP],
              {BOUNTY_HUNTER | HIGH_JUMP | JEDI},

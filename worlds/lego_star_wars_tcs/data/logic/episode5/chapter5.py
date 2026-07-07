@@ -6,7 +6,7 @@ from ..macros import (
     CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
-    HAS_ANY_YODA,
+    HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
     CAN_USE_DEFLECT_BOLTS,
     CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
 )
@@ -224,11 +224,11 @@ CLOUD_CITY_TRAP = _helper.make_chapter(
                 logic_options(
                     # Expect defeating Vader.
                     base=False_(),
-                    # Allow Jetpack, Yoda or High Jump (except Bodyguard).
+                    # Allow Jetpack, Yoda, Ackbar or High Jump (except Bodyguard).
                     normal=Or(
                         HasAbility(JETPACK),
                         HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD) & OT_HIGH_JUMP_ENABLED,
-                        HAS_ANY_YODA,
+                        HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
                     ),
                     # Allow triple jumps.
                     moderate=ot_high_jump_ternary(
@@ -316,11 +316,11 @@ CLOUD_CITY_TRAP = _helper.make_chapter(
                 logic_options(
                     # Expect using the upper path.
                     base=False_(),
-                    # Allow Jetpack or Yoda's extra distance double jump
+                    # Allow Jetpack or Yoda/Ackbar's extra distance double jump
                     normal=Or(
                         HasAbility(JETPACK),
                         (HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD) & OT_HIGH_JUMP_ENABLED),
-                        HAS_ANY_YODA,
+                        HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
                     ),
                     # Allow triple jumps.
                     # Allow all high jumpers even without OT high jump enabled because Tarpals and Jar Jar can actually
@@ -390,8 +390,8 @@ CLOUD_CITY_TRAP = _helper.make_chapter(
                         capped=HasAnyAbilities(ASTROMECH_PANEL | CAN_HIGH_JUMP_SLAM | JEDI),
                     ),
                     # Allow double jump off the collision of the Astromech Panel. This is barely possible with Jar Jar
-                    # and Tarpals, who are the only characters this is relevant for. I did not check if it was possible
-                    # for other double-jump characters because they can all triple jump.
+                    # and Tarpals and fairly easy with Ackbar, who are the only characters this is relevant for. I did
+                    # not check if it was possible for other double-jump characters because they can all triple jump.
                     hard=HasAnyAbilities(ASTROMECH_PANEL | CAN_DOUBLE_JUMP),
                 ),
             ),
@@ -502,11 +502,11 @@ CLOUD_CITY_TRAP = _helper.make_chapter(
             logic_options(
                 base=HasAbility(HOVER),
                 # Allow high jump with double jump.
-                # Allow Yodas with their better double jump distance.
+                # Allow Yodas/Ackbar with their better double jump distance.
                 normal=ot_high_jump_ternary(
                     uncapped=HasAbility(HOVER) | HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD),
                     capped=HasAbility(HOVER),
-                ) | HAS_ANY_YODA,
+                ) | HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
                 # Allow triple jumps.
                 moderate=ot_high_jump_ternary(
                     uncapped=HasAnyAbilities(HOVER | HIGH_JUMP | JEDI),

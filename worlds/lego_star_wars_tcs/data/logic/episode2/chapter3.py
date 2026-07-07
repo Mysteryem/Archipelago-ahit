@@ -297,9 +297,9 @@ DROID_FACTORY = Chapter(
                         HasAbility(SHORTIE),
                     )
                 ),
-                # Triple jump gets more height than high jump, so all double jumpers can skip using the Access Hatch.
+                # Triple jump gets more height than high jump, so all Jedi can also skip using the Access Hatch.
                 moderate=Or(
-                    HasAbility(CAN_DOUBLE_JUMP),
+                    HasAnyAbilities(JEDI | HIGH_JUMP),
                     HasAllAbilities(JETPACK | SHORTIE),
                 ),
             ),

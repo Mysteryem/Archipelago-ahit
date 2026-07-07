@@ -5,6 +5,7 @@ from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE,
     CAN_USE_SELF_DESTRUCT,
     can_jump_distance_rule,
+    HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityCombination
@@ -158,7 +159,8 @@ GENERAL_GRIEVOUS = _helper.make_chapter(
                         # Fight Grievous, then shoot the explosives, and then force to make the bridge.
                         HasAllAbilities(BLASTER | JEDI),
                     ),
-                    moderate=HasAnyAbilities(HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE),
+                    # Yoda and Ackbar can double jump across, but it's close, so this is only in Moderate+.
+                    moderate=HasAnyAbilities(HOVER | CAN_TRIPLE_JUMP_GREAT_DISTANCE) | HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
                 ),
             ),
             ExitData(

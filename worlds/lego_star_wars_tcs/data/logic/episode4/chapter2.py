@@ -7,7 +7,7 @@ from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_GRAPPLE,
     CAN_YODA_CLIP,
-    HAS_ANY_YODA,
+    HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
 )
 from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, ot_high_jump_ternary
 from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities, HasAbilityExceptCharacters
@@ -485,11 +485,11 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                     HasAllAbilities(CAN_BUILD_BRICKS | HOVER) & CAN_GRAPPLE,
                     HasAbility(HIGH_JUMP) & OT_HIGH_JUMP_ENABLED,
                 ),
-                # Allow double jumping across with Yoda.
+                # Allow double jumping across with Yoda/Ackbar.
                 normal=Or(
                     And(
                         HasAbility(CAN_BUILD_BRICKS) & CAN_GRAPPLE,
-                        HasAbility(HOVER) | HAS_ANY_YODA,
+                        HasAbility(HOVER) | HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
                     ),
                     HasAbility(HIGH_JUMP) & OT_HIGH_JUMP_ENABLED,
                 ),

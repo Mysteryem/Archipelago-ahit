@@ -126,6 +126,7 @@ class CharacterData(GenericCharacterData):
         # Double jump implies all the jump height and jump distance abilities.
         if (HIGH_JUMP | JEDI) & abilities != 0:
             abilities |= CAN_DOUBLE_JUMP
+        if CAN_DOUBLE_JUMP in abilities:
             abilities |= CAN_JUMP_DISTANCE_0_92
             abilities |= CAN_JUMP_DISTANCE_0_84
             abilities |= CAN_JUMP_DISTANCE_0_69
@@ -523,7 +524,11 @@ NORMAL_CHARACTER_DATA: list[CharacterData] = [
     generic_leia(Character.PRINCESS_LEIA_PRISONER),
     generic_solo(Character.HAN_SOLO_ENDOR),
     generic_rebel(Character.CAPTAIN_ANTILLES),
-    _char(Character.ADMIRAL_ACKBAR, COMMON_GRAPPLE | COMMON_PACIFIST_NON_DROID, 1.2, 0.44, 0.92, Alignment.GOOD),
+    _char(Character.ADMIRAL_ACKBAR,
+          COMMON_GRAPPLE
+          | COMMON_PACIFIST_NON_DROID
+          | CAN_DOUBLE_JUMP,
+          1.2, 0.44, 0.92, Alignment.GOOD),
     generic_greedo(Character.BOSSK),
     generic_greedo(Character.DENGAR),
     generic_ewok(Character.WICKET),

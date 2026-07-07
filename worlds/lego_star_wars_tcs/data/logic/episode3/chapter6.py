@@ -4,6 +4,7 @@ from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT,
     CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
     HAS_ANY_YODA,
+    HAS_P2_AI_DOUBLE_JUMP,
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAnyAbilities, HasAbilityCombination, HasAbilityExceptCharacters
@@ -32,9 +33,10 @@ R_LAVA_PLATFORMING_SINKING_PLATFORMS_SECTION = "Lava Platforming Sinking Platfor
 R_LAVA_PLATFORMING_FINAL_PLATFORM_VERSUS_OTHER_PLAYER = "Lava Platforming Final Platform Versus Other Player"
 R_LAVA_PLATFORMING_FAR_MINIKIT_PLATFORM = "Lava Platforming Far Minikit Platform"
 
-ANY_DOUBLE_JUMP_EXCEPT_YODA = HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | HIGH_JUMP)
+ANY_DOUBLE_JUMP_EXCEPT_YODA_AND_ACKBAR = HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_DISTANCE | HIGH_JUMP)
 # More expensive and makes fewer assumptions but should be identical.
-ANY_DOUBLE_JUMP_EXCEPT_YODA_ER = HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, Character.YODA, Character.YODA_GHOST)
+ANY_DOUBLE_JUMP_EXCEPT_YODA_AND_ACKBAR_ER = HasAbilityExceptCharacters(
+    CAN_DOUBLE_JUMP, Character.YODA, Character.YODA_GHOST, Character.ADMIRAL_ACKBAR)
 
 
 # todo: Replace with HasAnyCharacterExcept
@@ -79,7 +81,7 @@ DARTH_VADER = Chapter(
             ExitData(
                 R_END_OF_COLLAPSING_LAVA_HALLWAY,
                 logic_options(
-                    base=ANY_DOUBLE_JUMP_EXCEPT_YODA,
+                    base=ANY_DOUBLE_JUMP_EXCEPT_YODA_AND_ACKBAR,
                     # Optimised out the RUN_SPEED_1_18_OR_HIGHER because all characters that have jump_distance>=0.84
                     # also have run_speed>=1.20.
                     hard=HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER | CAN_JUMP_DISTANCE_0_84),
@@ -87,8 +89,9 @@ DARTH_VADER = Chapter(
                 er_rule=logic_options(
                     # Expect any character that can double jump.
                     # The AI will happily make it to the end with any double jump character, except "Yoda" and
-                    # "Yoda (Ghost)" who the AI will walk with their lightsaber stowed and die over and over.
-                    base=ANY_DOUBLE_JUMP_EXCEPT_YODA_ER,
+                    # "Yoda (Ghost)" who the AI will walk with their lightsaber stowed and die over and over, and except
+                    # "Admiral Ackbar" because the game only considers JEDI/HIGH_JUMP characters.
+                    base=ANY_DOUBLE_JUMP_EXCEPT_YODA_AND_ACKBAR_ER,
                     # Normal and moderate continue expecting double jump characters, except Yodas, so that P2's AI
                     # doesn't die.
                     #
@@ -182,8 +185,8 @@ DARTH_VADER = Chapter(
                 # Jedi is needed to reach here.
                 True_(),
                 er_rule=logic_options(
-                    # To progress after the revolving platform, P2's AI needs a double jump character.
-                    base=HasAbility(CAN_DOUBLE_JUMP),
+                    # To progress after the revolving platform, P2's AI needs a character it can double jump with.
+                    base=HAS_P2_AI_DOUBLE_JUMP,
                     # Move both characters individually if no double jump character is unlocked.
                     moderate=True_(),
                 ),
@@ -283,7 +286,10 @@ DARTH_VADER = Chapter(
                         # Write out the HasAny to help confirm in logic tests that HasAbilityExceptCharacters is working
                         # as expected. Rule Builder will automatically combine the two HasAny within the Or.
                         Character.has_any(
-                            Character.JAR_JAR_BINKS, Character.CAPTAIN_TARPALS, Character.GENERAL_GRIEVOUS
+                            Character.JAR_JAR_BINKS,
+                            Character.CAPTAIN_TARPALS,
+                            Character.GENERAL_GRIEVOUS,
+                            Character.ADMIRAL_ACKBAR,
                         ),
                     ),
                     # A Jedi is required to reach here.
@@ -293,13 +299,15 @@ DARTH_VADER = Chapter(
                     base=HasAbility(HOVER),
                     normal=Or(
                         HasAbility(HOVER),
-                        # Yoda can make the jump due to his increase double jump distance.
+                        # Yoda and Ackbar can make the jump due to their increased double jump distance.
                         # High jumpers, except Grievous' Bodyguard can also make the jump.
                         HAS_ANY_YODA,
+                        Character.ADMIRAL_ACKBAR.has(),
                         HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD),
                     ),
-                    # Triple jumps or Yoda can jump the required distance.
-                    moderate=HasAnyAbilities(HOVER | JEDI | HIGH_JUMP),
+                    # All double jump characters can jump the required distance, either with a regular double jump, or
+                    # with a triple jump.
+                    moderate=HasAnyAbilities(HOVER | CAN_DOUBLE_JUMP),
                 ),
             ),
         ),
