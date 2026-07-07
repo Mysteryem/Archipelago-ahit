@@ -49,6 +49,20 @@ R_FINAL_VADER_CHASE_PLATFORM_AFTER_FORCE_RAMP = "Final Vader Chase Platform Afte
 R_FINAL_VADER_FIGHT = "Final Vader Fight"
 
 
+_HAS_ANY_HATLESS_DIVE_ROLL = Character.has_any(
+    Character.LUKE_SKYWALKER_TATOOINE,
+    Character.LUKE_SKYWALKER_STORMTROOPER,
+    Character.HAN_SOLO,
+    Character.HAN_SOLO_STORMTROOPER,
+    Character.HAN_SOLO_HOTH,
+    Character.HAN_SOLO_SKIFF,
+    Character.HAN_SOLO_ENDOR,
+    Character.HAN_SOLO_HOOD,
+    Character.INDIANA_JONES,
+    Character.LANDO_CALRISSIAN,
+)
+
+
 _CAN_DAMAGE_VADER = logic_options(
     # Vader tends to deflect all blaster bolts.
     base=HasAbility(CAN_MELEE),
@@ -254,8 +268,12 @@ CLOUD_CITY_TRAP = _helper.make_chapter(
                 logic_options(
                     # Without an IMPERIAL character, double jump across the gap to the bridge while carrying the helmet.
                     base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_DOUBLE_JUMP),
-                    # todo: Can Lando/Han Solo cross the gap to the bridge while wearing a Helmet?
-                    #  normal=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_DOUBLE_JUMP) | Character.has_any(...),
+                    # Allow Lando/Han/Luke to cross the gap to the bridge while wearing a helmet, by using their dive to
+                    # get the required distance.
+                    normal=Or(
+                        HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_DOUBLE_JUMP),
+                        _HAS_ANY_HATLESS_DIVE_ROLL,
+                    ),
                     # Without an IMPERIAL character, use 1P2C to move one character wearing the helmet across the gap.
                     # But you can trick one of the Stormtroopers that spawns into activating the Imperial Panel by
                     # swapping to passive characters, or moving far enough away.
@@ -271,8 +289,11 @@ CLOUD_CITY_TRAP = _helper.make_chapter(
                 logic_options(
                     base=HasAbility(IMPERIAL),
                     # Allow extending the bridge without defeating Vader, then carrying a Helmet across.
-                    # todo: Can Lando/Han Solo cross the gap to the bridge while wearing a Helmet?
-                    normal=HasAbility(IMPERIAL) | HasAllAbilities(ASTROMECH_PANEL | CAN_WEAR_HAT_AND_DOUBLE_JUMP),
+                    normal=Or(
+                        HasAbility(IMPERIAL),
+                        HasAllAbilities(ASTROMECH_PANEL | CAN_WEAR_HAT_AND_DOUBLE_JUMP),
+                        HasAbility(ASTROMECH_PANEL) & _HAS_ANY_HATLESS_DIVE_ROLL,
+                    ),
                     # I could not manage to do a Yoda Ceiling Clip and bypass this door.
                 ),
                 new_level=Level.CLOUDCITYTRAP_C,
