@@ -262,8 +262,11 @@ def generic_lando(character: Character, already_got_hat: bool = False):
     return CharacterData.ap_item(character, abilities, 1.18, 0.44, 0.90413, Alignment.GOOD)
 
 
-def generic_padme(character: Character):
-    abilities = COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID
+def generic_padme(character: Character, can_melee: bool = True):
+    if can_melee:
+        abilities = COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID
+    else:
+        abilities = COMMON_GRAPPLE | COMMON_HATLESS_NON_DROID
     return CharacterData.ap_item(character, abilities, 1.2, 0.37, 0.84, Alignment.GOOD)
 
 
@@ -436,7 +439,7 @@ NORMAL_CHARACTER_DATA: list[CharacterData] = [
     generic_padme(Character.PADME),
     generic_padme(Character.PADME_BATTLE),
     generic_padme(Character.PADME_CLAWED),
-    generic_padme(Character.PADME_GEONOSIS),
+    generic_padme(Character.PADME_GEONOSIS, can_melee=False),
     _char(Character.QUEEN_AMIDALA, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID, 1.2, 0.37, 0.84, Alignment.GOOD),
     _char(Character.SUPER_BATTLE_DROID, BLASTER | CAN_SELF_DESTRUCT, 1.07, 0.0, 0.0, Alignment.EVIL),
     generic_jedi(Character.KI_ADI_MUNDI, True),
