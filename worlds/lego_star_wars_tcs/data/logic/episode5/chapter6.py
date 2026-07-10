@@ -28,6 +28,29 @@ from ...levels import Level
 from ....character_ability import *
 from ....data.characters import Character
 
+R_SPAWN = "Spawn"
+R_AFTER_SPAWN_STAIRS = "After Spawn Stairs"
+R_BEHIND_FIRST_ASTROMECH_PANEL_DOOR = "Behind First Astromech Panel Door"
+R_AFTER_BOUNTY_HUNTER_DOOR = "After Bounty Hunter Door"
+R_AFTER_GAS_TOWARDS_SLAVE_1_LANDING_PLATFORM = "After Gas Towards Slave 1 Landing Platform"
+R_SLAVE_1_LANDING_PLATFORM = "Slave 1 Landing Platform"
+R_BEHIND_PROTOCOL_DROID_DOOR_TO_ELEVATORS = "Behind Protocol Droid Door to Elevators"
+R_AFTER_BOUNTY_HUNTER_ELEVATOR = "After Bounty Hunter Elevator"
+R_LANDING_PAD_AFTER_IMPERIAL_ELEVATOR = "Landing Pad After Imperial Elevator"
+R_BUILDING_EXTERIOR_MAGNET_CRANE_PLATFORM = "Building Exterior Magnet Crane Platform"
+R_BUILDING_EXTERIOR_ELEVATOR_UPPER_PLATFORM = "Building Exterior Elevator Upper Platform"
+R_BUILDING_EXTERIOR_PLATFORM_ABOVE_LARGE_GAP = "Building Exterior Platform Above Large Gap"
+R_BUILDING_EXTERIOR_AFTER_LARGE_GAP = "Building Exterior After Large Gap"
+R_BUILDING_EXTERIOR_AIR_ABOVE_PUSH_BLOCKS = "Building Exterior Air Above Push Blocks"
+R_CORRIDOR_TO_FALCON_LANDING_PAD = "Corridor to Falcon Landing Pad"
+R_SITH_FORCE_DOUBLE_SCORE_ZONE = "Sith Force Double Score Zone"
+R_FALCON_LANDING_PAD_BRIDGE_CONTROL_ROOM = "Falcon Landing Pad Bridge Control Room"
+R_FALCON_LANDING_PAD_BRIDGE_CONTROL_ROOM_BRIDGE_EXTENDED = "Falcon Landing Pad Bridge Control Room (Bridge Extended)"
+R_CORRIDOR_TO_FALCON_LANDING_PAD_BRIDGE_EXTENDED = "Corridor to Falcon Landing Pad (Bridge Extended)"
+R_FALCON_LANDING_PAD_BRIDGE_EXTENDED = "Falcon Landing Pad (Bridge Extended)"
+R_FALCON_LANDING_PAD_BRIDGE_STOWED = "Falcon Landing Pad (Bridge Stowed)"
+R_FALCON_LANDING_PAD = "Falcon Landing Pad"
+
 
 FOUNTAINS_MINIKIT_NAME = "Build Three Fountain Sculptures Minikit"
 
@@ -46,7 +69,7 @@ _HAS_THIN_NON_YODA_CHARACTER = HasAnyCharacterExcept(
 
 _helper = ChapterHelper(
     area=Area.CLOUDCITYESCAPE,
-    start_region="Spawn",
+    start_region=R_SPAWN,
 )
 
 _CORRIDOR_TO_FALCON_LANDING_PAD_TO_FALCON_LANDING_PAD = logic_options(
@@ -61,26 +84,26 @@ _CORRIDOR_TO_FALCON_LANDING_PAD_TO_FALCON_LANDING_PAD = logic_options(
 
 BETRAYAL_OVER_BESPIN = _helper.make_chapter(
     intended_completion_path=(
-        "After Spawn Stairs",
-        "After Bounty Hunter Door",
-        "Behind Protocol Droid Door to Elevators",
-        "Landing Pad After Imperial Elevator",
-        "Building Exterior Magnet Crane Platform",
-        "Building Exterior Elevator Upper Platform",
-        # todo: Would be better to go to "Building Exterior Platform Above Large Gap" first on Moderate+ because this
+        R_AFTER_SPAWN_STAIRS,
+        R_AFTER_BOUNTY_HUNTER_DOOR,
+        R_BEHIND_PROTOCOL_DROID_DOOR_TO_ELEVATORS,
+        R_LANDING_PAD_AFTER_IMPERIAL_ELEVATOR,
+        R_BUILDING_EXTERIOR_MAGNET_CRANE_PLATFORM,
+        R_BUILDING_EXTERIOR_ELEVATOR_UPPER_PLATFORM,
+        # todo: Would be better to go to R_BUILDING_EXTERIOR_PLATFORM_ABOVE_LARGE_GAP first on Moderate+ because this
         #  skips needing a HOVER character.
-        "Building Exterior After Large Gap",
-        "Corridor to Falcon Landing Pad",
-        "Falcon Landing Pad Bridge Control Room",
-        "Falcon Landing Pad Bridge Control Room (Bridge Extended)",
-        "Corridor to Falcon Landing Pad (Bridge Extended)",
-        "Falcon Landing Pad (Bridge Extended)",
-        "Falcon Landing Pad",
+        R_BUILDING_EXTERIOR_AFTER_LARGE_GAP,
+        R_CORRIDOR_TO_FALCON_LANDING_PAD,
+        R_FALCON_LANDING_PAD_BRIDGE_CONTROL_ROOM,
+        R_FALCON_LANDING_PAD_BRIDGE_CONTROL_ROOM_BRIDGE_EXTENDED,
+        R_CORRIDOR_TO_FALCON_LANDING_PAD_BRIDGE_EXTENDED,
+        R_FALCON_LANDING_PAD_BRIDGE_EXTENDED,
+        R_FALCON_LANDING_PAD,
     ),
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "After Spawn Stairs",
+                R_AFTER_SPAWN_STAIRS,
                 logic_options(
                     # Base expects combat.
                     base=HasAbility(CAN_PULL_LEVERS) & CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -95,15 +118,15 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 ),
             ),
         ),
-        "After Spawn Stairs": (
+        R_AFTER_SPAWN_STAIRS: (
             ExitData(
-                "After Bounty Hunter Door",
+                R_AFTER_BOUNTY_HUNTER_DOOR,
                 # Fight Boba Fett, and then he will open the door. This notably causes him to run down the corridor
                 # towards his ship, which activates gas in the corridor on the return.
                 CAN_DAMAGE_AT_CLOSE_RANGE,
             ),
             ExitData(
-                "Behind First Astromech Panel Door",
+                R_BEHIND_FIRST_ASTROMECH_PANEL_DOOR,
                 logic_options(
                     base=HasAbility(ASTROMECH_PANEL),
                     # Allow Yoda Ceiling clip to skip the door, but exclude bigger characters that get pushed away from
@@ -119,8 +142,8 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
         # the outside door frame then jump partially around the wall and back into the area on the other side of the
         # door. The death trigger does not extend very far, and the wall is one-way, so you can easily jump under the
         # floor.
-        "Behind First Astromech Panel Door": (),
-        "After Bounty Hunter Door": (
+        R_BEHIND_FIRST_ASTROMECH_PANEL_DOOR: (),
+        R_AFTER_BOUNTY_HUNTER_DOOR: (
             # Free Play currently has no reason to go into this room, aside from getting a few studs.
             # ExitData(
             #     "Rebuild C-3PO Room",
@@ -131,7 +154,7 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
             #     )
             # ),
             ExitData(
-                "Behind Protocol Droid Door to Elevators",
+                R_BEHIND_PROTOCOL_DROID_DOOR_TO_ELEVATORS,
                 logic_options(
                     base=HasAbility(PROTOCOL_PANEL),
                     # Yoda can get here all on his own, so it is important to check for another character.
@@ -139,7 +162,7 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "After Gas Towards Slave 1 Landing Platform",
+                R_AFTER_GAS_TOWARDS_SLAVE_1_LANDING_PLATFORM,
                 logic_options(
                     # For Base logic only, expect being able to go to the Slave 1 Landing Platform, and then get past
                     # the gas that appears in the corridor when returning from the landing platform.
@@ -151,16 +174,16 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 )
             ),
         ),
-        "After Gas Towards Slave 1 Landing Platform": (
+        R_AFTER_GAS_TOWARDS_SLAVE_1_LANDING_PLATFORM: (
             ExitData(
-                "Slave 1 Landing Platform",
+                R_SLAVE_1_LANDING_PLATFORM,
                 new_level=Level.CLOUDCITYESCAPE_B,
             ),
         ),
-        "Slave 1 Landing Platform": (),
-        "Behind Protocol Droid Door to Elevators": (
+        R_SLAVE_1_LANDING_PLATFORM: (),
+        R_BEHIND_PROTOCOL_DROID_DOOR_TO_ELEVATORS: (
             ExitData(
-                "After Bounty Hunter Elevator",
+                R_AFTER_BOUNTY_HUNTER_ELEVATOR,
                 logic_options(
                     base=HasAbility(BOUNTY_HUNTER),
                     # General Grievous's triple high jump can get on top of the elevator, which is where the transition
@@ -172,7 +195,7 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 )
             ),
             ExitData(
-                "Landing Pad After Imperial Elevator",
+                R_LANDING_PAD_AFTER_IMPERIAL_ELEVATOR,
                 logic_options(
                     base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT),
                     # General Grievous's triple high jump can get on top of the elevator, which is where the transition
@@ -185,19 +208,19 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 new_level=Level.CLOUDCITYESCAPE_C,
             ),
         ),
-        "After Bounty Hunter Elevator": (),
-        "Landing Pad After Imperial Elevator": (
+        R_AFTER_BOUNTY_HUNTER_ELEVATOR: (),
+        R_LANDING_PAD_AFTER_IMPERIAL_ELEVATOR: (
             ExitData(
-                "Building Exterior Magnet Crane Platform",
+                R_BUILDING_EXTERIOR_MAGNET_CRANE_PLATFORM,
                 logic_options(
                     base=HasAbility(GRAPPLE),
                     normal=HasAnyAbilities(GRAPPLE | CAN_DOUBLE_JUMP),
                 )
             ),
         ),
-        "Building Exterior Magnet Crane Platform": (
+        R_BUILDING_EXTERIOR_MAGNET_CRANE_PLATFORM: (
             ExitData(
-                "Building Exterior Elevator Upper Platform",
+                R_BUILDING_EXTERIOR_ELEVATOR_UPPER_PLATFORM,
                 logic_options(
                     base=CAN_GRAPPLE,
                     moderate=Or(
@@ -214,9 +237,9 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 ),
             ),
         ),
-        "Building Exterior Elevator Upper Platform": (
+        R_BUILDING_EXTERIOR_ELEVATOR_UPPER_PLATFORM: (
             ExitData(
-                "Building Exterior Platform Above Large Gap",
+                R_BUILDING_EXTERIOR_PLATFORM_ABOVE_LARGE_GAP,
                 logic_options(
                     # Only expect using the Grapple point on the other side.
                     base=False_(),
@@ -227,16 +250,16 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 )
             ),
             ExitData(
-                "Building Exterior After Large Gap",
+                R_BUILDING_EXTERIOR_AFTER_LARGE_GAP,
                 # Technically it is possible to triple jump across this gap, but the platform above makes doing so
                 # really difficult because you bonk your head on it, preventing you from getting the maximum distance.
                 # Fortunately, Moderate+ can just triple jump up to the platform above the gap.
                 HasAbility(HOVER),
             ),
         ),
-        "Building Exterior Platform Above Large Gap": (
+        R_BUILDING_EXTERIOR_PLATFORM_ABOVE_LARGE_GAP: (
             ExitData(
-                "Building Exterior After Large Gap",
+                R_BUILDING_EXTERIOR_AFTER_LARGE_GAP,
                 logic_options(
                     # Irrelevant on lower logic difficulties.
                     base=False_(),
@@ -246,17 +269,17 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
             ),
             ExitData(
                 # This is just for the minikit.
-                "Building Exterior Air Above Push Blocks",
+                R_BUILDING_EXTERIOR_AIR_ABOVE_PUSH_BLOCKS,
                 logic_options(
                     base=HasAbility(HOVER),
                     normal=HasAnyAbilities(HOVER | CAN_DOUBLE_JUMP),
                 ),
             ),
         ),
-        "Building Exterior After Large Gap": (
+        R_BUILDING_EXTERIOR_AFTER_LARGE_GAP: (
             ExitData(
                 # This is just for the minikit.
-                "Building Exterior Air Above Push Blocks",
+                R_BUILDING_EXTERIOR_AIR_ABOVE_PUSH_BLOCKS,
                 logic_options(
                     # Only expect hovering from the platform.
                     base=False_(),
@@ -277,7 +300,7 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 )
             ),
             ExitData(
-                "Corridor to Falcon Landing Pad",
+                R_CORRIDOR_TO_FALCON_LANDING_PAD,
                 logic_options(
                     base=HasAbility(PROTOCOL_PANEL),
                     # Allow Yoda Ceiling Clip to bypass the door, but the ceiling to clip through is thin again, so big
@@ -290,10 +313,10 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
             ),
         ),
         # This is just for the minikit.
-        "Building Exterior Air Above Push Blocks": (),
-        "Corridor to Falcon Landing Pad": (
+        R_BUILDING_EXTERIOR_AIR_ABOVE_PUSH_BLOCKS: (),
+        R_CORRIDOR_TO_FALCON_LANDING_PAD: (
             ExitData(
-                "Falcon Landing Pad Bridge Control Room",
+                R_FALCON_LANDING_PAD_BRIDGE_CONTROL_ROOM,
                 logic_options(
                     # I don't think there is an in-game hint about passing through gas, but we are considering droids to
                     # be developer intended, but not ghosts.
@@ -303,32 +326,32 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Sith Force Double Score Zone",
+                R_SITH_FORCE_DOUBLE_SCORE_ZONE,
                 # I tried, but could not manage to Yoda Ceiling Clip to bypass this door.
                 CAN_SITH_FORCE,
             ),
             ExitData(
-                "Falcon Landing Pad (Bridge Stowed)",
+                R_FALCON_LANDING_PAD_BRIDGE_STOWED,
                 _CORRIDOR_TO_FALCON_LANDING_PAD_TO_FALCON_LANDING_PAD,
             )
         ),
-        "Sith Force Double Score Zone": (),
-        "Falcon Landing Pad Bridge Control Room": (
+        R_SITH_FORCE_DOUBLE_SCORE_ZONE: (),
+        R_FALCON_LANDING_PAD_BRIDGE_CONTROL_ROOM: (
             ExitData(
-                "Falcon Landing Pad Bridge Control Room (Bridge Extended)",
+                R_FALCON_LANDING_PAD_BRIDGE_CONTROL_ROOM_BRIDGE_EXTENDED,
                 HasAbility(CAN_PULL_LEVERS),
             ),
         ),
-        "Falcon Landing Pad Bridge Control Room (Bridge Extended)": (
+        R_FALCON_LANDING_PAD_BRIDGE_CONTROL_ROOM_BRIDGE_EXTENDED: (
             ExitData(
-                "Corridor to Falcon Landing Pad (Bridge Extended)",
+                R_CORRIDOR_TO_FALCON_LANDING_PAD_BRIDGE_EXTENDED,
                 logic_options(
                     base=HAS_GAS_IMMUNE_EXCEPT_GHOSTS,
                     normal=HAS_GAS_IMMUNE,
                 ),
             ),
             ExitData(
-                "Falcon Landing Pad (Bridge Extended)",
+                R_FALCON_LANDING_PAD_BRIDGE_EXTENDED,
                 logic_options(
                     base=False_(),
                     # There's no ceiling collision here, so this is not actually a Yoda Ceiling Clip, but instead using
@@ -341,22 +364,22 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 )
             ),
         ),
-        "Corridor to Falcon Landing Pad (Bridge Extended)": (
+        R_CORRIDOR_TO_FALCON_LANDING_PAD_BRIDGE_EXTENDED: (
             ExitData(
-                "Falcon Landing Pad (Bridge Extended)",
+                R_FALCON_LANDING_PAD_BRIDGE_EXTENDED,
                 _CORRIDOR_TO_FALCON_LANDING_PAD_TO_FALCON_LANDING_PAD,
             ),
         ),
-        "Falcon Landing Pad (Bridge Extended)": (
-            # This connection is present so that "Falcon Landing Pad (Bridge Stowed)" exits don't need to also be
+        R_FALCON_LANDING_PAD_BRIDGE_EXTENDED: (
+            # This connection is present so that R_FALCON_LANDING_PAD_BRIDGE_STOWED exits don't need to also be
             # specified here.
-            ExitData("Falcon Landing Pad (Bridge Stowed)"),
+            ExitData(R_FALCON_LANDING_PAD_BRIDGE_STOWED),
             # Now that the bridge is extended, just walk across.
-            ExitData("Falcon Landing Pad"),
+            ExitData(R_FALCON_LANDING_PAD),
         ),
-        "Falcon Landing Pad (Bridge Stowed)": (
+        R_FALCON_LANDING_PAD_BRIDGE_STOWED: (
             ExitData(
-                "Falcon Landing Pad",
+                R_FALCON_LANDING_PAD,
                 # I tried astromech hover plus shooting the player as they fly across, but was unsuccessful, but it
                 # seems close.
                 logic_options(
@@ -371,7 +394,7 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Falcon Landing Pad Bridge Control Room",
+                R_FALCON_LANDING_PAD_BRIDGE_CONTROL_ROOM,
                 logic_options(
                     base=False_(),
                     # The Bridge Control Room's walls are one-way, so you can just jump/hover into it.
@@ -379,7 +402,7 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 ),
             ),
         ),
-        "Falcon Landing Pad": (
+        R_FALCON_LANDING_PAD: (
             ExitData(
                 "Chapter Completion",
                 CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -388,7 +411,7 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
     },
     minikits={
         "Spawn Protocol Panel Room Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             # I could not get a ceiling clip to work for this door. There is a more out-of-bounds clip by ceiling
             # clipping out of the corridor and then jumping around beneath the floor, but this should probably require
             # Expert logic.
@@ -396,12 +419,12 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
             pickup_name="pup4",
         ),
         "Boba Fight Room Minikit": minikit_data(
-            "After Spawn Stairs",
+            R_AFTER_SPAWN_STAIRS,
             HasAbility(JEDI),
             pickup_name="pup3",
         ),
         "Astromech Door Platforming Minikit": minikit_data(
-            "Behind First Astromech Panel Door",
+            R_BEHIND_FIRST_ASTROMECH_PANEL_DOOR,
             # Note: All jedi can pull levers.
             logic_options(
                 base=Or(
@@ -439,57 +462,57 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
             pickup_name="pup2",
         ),
         "Force Chairs Minikit": minikit_data(
-            "Behind Protocol Droid Door to Elevators",
+            R_BEHIND_PROTOCOL_DROID_DOOR_TO_ELEVATORS,
             HasAbility(JEDI),
             pickup_name="pup6",
         ),
         "Bounty Hunter Area Force Plant Pots Minikit": minikit_data(
-            "After Bounty Hunter Elevator",
+            R_AFTER_BOUNTY_HUNTER_ELEVATOR,
             HasAbility(JEDI),
             pickup_name="pup7",
         ),
         "Minikit Behind Camera After Imperial Elevator": minikit_data(
-            "Landing Pad After Imperial Elevator",
+            R_LANDING_PAD_AFTER_IMPERIAL_ELEVATOR,
             pickup_name="pup5",
         ),
         "High Minikit Above Push Blocks": minikit_data(
-            "Building Exterior Air Above Push Blocks",
+            R_BUILDING_EXTERIOR_AIR_ABOVE_PUSH_BLOCKS,
             pickup_name="pup2",
         ),
         "Sith Force Double Score Zone Minikit": minikit_data(
-            "Sith Force Double Score Zone",
+            R_SITH_FORCE_DOUBLE_SCORE_ZONE,
             # A small jump is required because the minikit is on the table, but if you can get in this room, you can get
             # onto the table.
             pickup_name="pup3",
         ),
         "Millennium Falcon Minikit": minikit_data(
-            "Falcon Landing Pad",
+            R_FALCON_LANDING_PAD,
             HasAbility(CAN_DOUBLE_JUMP),
             pickup_name="pup4",
         ),
         FOUNTAINS_MINIKIT_NAME: minikit_data(
-            "Corridor to Falcon Landing Pad",
+            R_CORRIDOR_TO_FALCON_LANDING_PAD,
             # Obviously, the spawn region is reachable.
             And(
                 HasAbility(CAN_BUILD_BRICKS),
-                _helper.can_reach_region("After Gas Towards Slave 1 Landing Platform"),
+                _helper.can_reach_region(R_AFTER_GAS_TOWARDS_SLAVE_1_LANDING_PLATFORM),
             ),
             er_rule=And(
                 HasAbility(CAN_BUILD_BRICKS),
-                _helper.can_reach_region("Spawn"),
-                _helper.can_reach_region("After Gas Towards Slave 1 Landing Platform"),
+                _helper.can_reach_region(R_SPAWN),
+                _helper.can_reach_region(R_AFTER_GAS_TOWARDS_SLAVE_1_LANDING_PLATFORM),
             ),
             pickup_name="pup1",
         ),
     },
     power_brick=LocationData(
-        "Slave 1 Landing Platform",
+        R_SLAVE_1_LANDING_PLATFORM,
         # The Power Brick is on the Slave 1 itself, and is not reachable without a small jump.
         HasAbility(CAN_BARELY_JUMP),
     ),
     ridables={
         Character.CLOUDCAR: LocationData(
-            "Behind Protocol Droid Door to Elevators",
+            R_BEHIND_PROTOCOL_DROID_DOOR_TO_ELEVATORS,
             logic_options(
                 base=HasAllAbilities(BLASTER | CAN_BUILD_BRICKS),
                 # Allow jump + character swap + self-destruct.
@@ -502,7 +525,7 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
             ),
         ),
         Character.GRABBERCONTROL: LocationData(
-            "Building Exterior Magnet Crane Platform",
+            R_BUILDING_EXTERIOR_MAGNET_CRANE_PLATFORM,
         ),
     },
 )
@@ -511,4 +534,4 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
 #  really, level_minikits should store only the data it needs (the minikit name and the pickup names).
 # This is one of the only Minikits in the entire game that is split across multiple levels.
 BETRAYAL_OVER_BESPIN.level_minikits[Level.CLOUDCITYESCAPE_A][FOUNTAINS_MINIKIT_NAME] \
-    = MinikitData("After Gas Towards Slave 1 Landing Platform", pickup_names=("pup1", "pup5"))
+    = MinikitData(R_AFTER_GAS_TOWARDS_SLAVE_1_LANDING_PLATFORM, pickup_names=("pup1", "pup5"))
