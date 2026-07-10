@@ -487,8 +487,7 @@ NORMAL_CHARACTER_DATA: list[CharacterData] = [
     # Can wear hats despite the hood.
     generic_solo(Character.HAN_SOLO_HOOD),
     generic_solo(Character.HAN_SOLO_HOTH),
-    # TODO: From the extracted data, Luke Skywalker (Pilot) does not already have a hat?
-    generic_luke(Character.LUKE_SKYWALKER_PILOT, True),
+    generic_luke(Character.LUKE_SKYWALKER_PILOT),
     generic_jedi(Character.LUKE_SKYWALKER_DAGOBAH),
     _char(Character.UGNAUGHT, COMMON_SHORT_SLOW | WEAPON_ZAPPER, 0.9, 0.44, 0.69, Alignment.EVIL),
     generic_leia(Character.PRINCESS_LEIA_SLAVE),
