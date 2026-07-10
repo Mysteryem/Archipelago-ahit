@@ -249,3 +249,51 @@ HAS_DOUBLE_JUMP_EXCEPT_ACKBAR = HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, Char
 HAS_P2_AI_DOUBLE_JUMP = HAS_DOUBLE_JUMP_EXCEPT_ACKBAR
 
 HAS_EXTRA_DISTANCE_DOUBLE_JUMP = HAS_ANY_YODA | Character.ADMIRAL_ACKBAR.has()
+
+HAS_GAS_IMMUNE = HasAnyAbilities(ASTROMECH_PANEL | PROTOCOL_PANEL) | Character.has_any(
+    # PROTOCOL_PANEL
+    # Character.TC_14,
+    # Character.C_3PO,
+
+    # ASTORMECH_PANEL
+    # Character.R2_D2,
+    # Character.R4_P17,
+    # Character.R2_Q5,
+    # Character.IG_88,
+    # Character.FOUR_LOM,
+    Character.GONK_DROID,
+    Character.PK_DROID,
+    Character.BATTLE_DROID,
+    Character.BATTLE_DROID_SECURITY,
+    Character.BATTLE_DROID_COMMANDER,
+    Character.DROIDEKA,
+    Character.PIT_DROID,
+    Character.BATTLE_DROID_GEONOSIS,
+    Character.SUPER_BATTLE_DROID,
+    Character.GRIEVOUS_BODYGUARD,
+    Character.BEN_KENOBI_GHOST,
+    Character.ANAKIN_SKYWALKER_GHOST,
+    Character.YODA_GHOST,
+
+    # Extra Toggle characters
+    # Character.BUZZ_DROID,
+    # Character.TRAINING_REMOTE,
+    # Character.DROID_1,
+    # Character.DROID_2,
+    # Character.DROID_3,
+    # Character.DROID_4,
+    # Character.MOUSE_DROID,
+)
+
+HAS_GAS_IMMUNE_EXCEPT_GHOSTS = HasAnyAbilities(ASTROMECH_PANEL | PROTOCOL_PANEL) | Character.has_any(
+    Character.GONK_DROID,
+    Character.PK_DROID,
+    Character.BATTLE_DROID,
+    Character.BATTLE_DROID_SECURITY,
+    Character.BATTLE_DROID_COMMANDER,
+    Character.DROIDEKA,
+    Character.PIT_DROID,
+    Character.BATTLE_DROID_GEONOSIS,
+    Character.SUPER_BATTLE_DROID,
+    Character.GRIEVOUS_BODYGUARD,
+)
