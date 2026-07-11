@@ -509,7 +509,6 @@ NORMAL_CHARACTER_DATA: list[CharacterData] = [
           IMPERIAL | COMMON_MELEE_NON_DROID | CAN_DEFLECT_BOLTS,
           1.2, 0.44, 0.92, Alignment.EVIL),
     generic_jedi(Character.BEN_KENOBI_GHOST, False, True),
-    # TODO: Check if Palace Guard can actually Melee, I suspect not.
     generic_skiff_guard(Character.PALACE_GUARD, True),
     _char(Character.IG_88,
           COMMON_BOUNTY_HUNTER
