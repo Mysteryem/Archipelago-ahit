@@ -29,6 +29,21 @@ from ...levels import Level
 from ....character_ability import *
 from ....data.characters import Character
 
+R_SPAWN = "Spawn"
+R_FAR_MINIKIT_PLATFORM_LEFT_OF_SPAWN = "Far Minikit Platform Left Of Spawn"
+R_INITIAL_INTERIOR = "Initial Interior"
+R_PROTOCOL_PANEL_JAILED_BOMARR_BONK = "Protocol Panel Jailed B'omarr Bonk"
+R_AFTER_FIRST_BOUNTY_HUNTER_DOOR = "After First Bounty Hunter Door"
+R_BEHIND_FIRST_ASTROMECH_PANEL_DOOR = "Behind First Astromech Panel Door"
+R_AFTER_FIRST_BOUNTY_HUNTER_DOOR_USING_PANEL = "After First Bounty Hunter Door (Using Panel)"
+R_POWER_BRICK_UPPER_AREA = "Power Brick Upper Area"
+R_PRISON_CELLS = "Prison Cells"
+R_AFTER_SECOND_PORTCULLIS_THROUGH_TO_DROIDS_ROOM = "After Second Portcullis, through to Droids Room"
+R_CORRIDOR_AFTER_DROIDS_ROOM = "Corridor After Droids Room"
+R_OPEN_AREA_WITH_RAMP_FOR_C_3PO = "Open Area With Ramp For C-3PO"
+R_FINAL_ROOMS_BEFORE_RANCOR = "Final Rooms Before Rancor"
+R_RANCOR_PIT = "Rancor Pit"
+
 _OTHER_CHARACTERS_THAT_FIT_ABOVE_PORTCULLIS = {
     Character.GONK_DROID,
     Character.PIT_DROID,
@@ -46,11 +61,11 @@ _HAS_CHARACTER_THAT_FITS_ABOVE_PORTCULLIS = HasAbility(ASTROMECH_DROID) | Charac
 
 JABBAS_PALACE = Chapter(
     area=Area.JABBASPALACE,
-    start_region="Spawn",
+    start_region=R_SPAWN,
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "Far Minikit Platform Left Of Spawn",
+                R_FAR_MINIKIT_PLATFORM_LEFT_OF_SPAWN,
                 logic_options(
                     base=Or(
                         CAN_SITH_FORCE & CAN_GRAPPLE,
@@ -73,7 +88,7 @@ JABBAS_PALACE = Chapter(
                 )
             ),
             ExitData(
-                "Initial Interior",
+                R_INITIAL_INTERIOR,
                 logic_options(
                     # It seems that only Blaster Bolts can damage the turrets.
                     # Jump height/building bricks are needed to activate the middle turret.
@@ -90,10 +105,10 @@ JABBAS_PALACE = Chapter(
                 )
             ),
         ),
-        "Far Minikit Platform Left Of Spawn": (),
-        "Initial Interior": (
+        R_FAR_MINIKIT_PLATFORM_LEFT_OF_SPAWN: (),
+        R_INITIAL_INTERIOR: (
             ExitData(
-                "Protocol Panel Jailed B'omarr Bonk",
+                R_PROTOCOL_PANEL_JAILED_BOMARR_BONK,
                 logic_options(
                     base=HasAllAbilities(CAN_BUILD_BRICKS | PROTOCOL_PANEL),
                     # Allow Yoda Ceiling Clip.
@@ -104,11 +119,11 @@ JABBAS_PALACE = Chapter(
                 ),
             ),
             ExitData(
-                "After First Bounty Hunter Door (Using Panel)",
+                R_AFTER_FIRST_BOUNTY_HUNTER_DOOR_USING_PANEL,
                 HasAnyAbilities(BOUNTY_HUNTER | CAN_WEAR_HAT),
             ),
             ExitData(
-                "After First Bounty Hunter Door",
+                R_AFTER_FIRST_BOUNTY_HUNTER_DOOR,
                 logic_options(
                     # Expect using the panel to open the door.
                     base=False_(),
@@ -130,15 +145,15 @@ JABBAS_PALACE = Chapter(
                 ),
             )
         ),
-        "Protocol Panel Jailed B'omarr Bonk": (),
-        "After First Bounty Hunter Door": (
+        R_PROTOCOL_PANEL_JAILED_BOMARR_BONK: (),
+        R_AFTER_FIRST_BOUNTY_HUNTER_DOOR: (
             ExitData(
-                "Behind First Astromech Panel Door",
+                R_BEHIND_FIRST_ASTROMECH_PANEL_DOOR,
                 # I could not manage to Yoda Ceiling Clip through this door.
                 HasAbility(ASTROMECH_PANEL),
             ),
             ExitData(
-                "Power Brick Upper Area",
+                R_POWER_BRICK_UPPER_AREA,
                 logic_options(
                     base=Or(
                         # Build the block, stand on it, and double jump up.
@@ -158,18 +173,18 @@ JABBAS_PALACE = Chapter(
                 )
             ),
             ExitData(
-                "Prison Cells",
+                R_PRISON_CELLS,
                 # The panel needs to be built.
                 HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS),
                 name="Use the second Bounty Hunter panel using a Bounty Hunter",
                 new_level=Level.JABBASPALACE_B,
             )
         ),
-        "Behind First Astromech Panel Door": (),
-        "After First Bounty Hunter Door (Using Panel)": (
-            ExitData("After First Bounty Hunter Door"),
+        R_BEHIND_FIRST_ASTROMECH_PANEL_DOOR: (),
+        R_AFTER_FIRST_BOUNTY_HUNTER_DOOR_USING_PANEL: (
+            ExitData(R_AFTER_FIRST_BOUNTY_HUNTER_DOOR),
             ExitData(
-                "Prison Cells",
+                R_PRISON_CELLS,
                 # If you could use the first panel, you can use the second panel.
                 # The panel needs to be built.
                 HasAbility(CAN_BUILD_BRICKS),
@@ -177,10 +192,10 @@ JABBAS_PALACE = Chapter(
                 new_level=Level.JABBASPALACE_B,
             ),
         ),
-        "Power Brick Upper Area": (),
-        "Prison Cells": (
+        R_POWER_BRICK_UPPER_AREA: (),
+        R_PRISON_CELLS: (
             ExitData(
-                "After Second Portcullis, through to Droids Room",
+                R_AFTER_SECOND_PORTCULLIS_THROUGH_TO_DROIDS_ROOM,
                 # The Silver Brick debris does not need to be considered because
                 logic_options(
                     # Destroy the object, build it into a platform, and then have P2 AI force the platform into the air.
@@ -207,9 +222,9 @@ JABBAS_PALACE = Chapter(
         ),
         # All characters that can either wear hats or are bounty hunters can destroy the objects holding down the third
         # portcullis, cross the falling grates, and make it to the Droids Room.
-        "After Second Portcullis, through to Droids Room": (
+        R_AFTER_SECOND_PORTCULLIS_THROUGH_TO_DROIDS_ROOM: (
             ExitData(
-                "Corridor After Droids Room",
+                R_CORRIDOR_AFTER_DROIDS_ROOM,
                 logic_options(
                     base=HasAllAbilities(ASTROMECH_PANEL | PROTOCOL_PANEL),
                     # Stand on the rim of one of the droid 'cages', then Yoda Ceiling Clip past the door.
@@ -217,9 +232,9 @@ JABBAS_PALACE = Chapter(
                 ),
             ),
         ),
-        "Corridor After Droids Room": (
+        R_CORRIDOR_AFTER_DROIDS_ROOM: (
             ExitData(
-                "Open Area With Ramp For C-3PO",
+                R_OPEN_AREA_WITH_RAMP_FOR_C_3PO,
                 True_(),
                 er_rule=logic_options(
                     base=HasAbility(ASTROMECH_PANEL),
@@ -229,20 +244,20 @@ JABBAS_PALACE = Chapter(
                 new_level=Level.JABBASPALACE_D,
             ),
         ),
-        "Open Area With Ramp For C-3PO": (
+        R_OPEN_AREA_WITH_RAMP_FOR_C_3PO: (
             ExitData(
-                "Final Rooms Before Rancor",
+                R_FINAL_ROOMS_BEFORE_RANCOR,
                 logic_options(
-                    # The Exit from "Prison Cells" requires JEDI.
-                    # The Exit from "Corridor After Droids Room" requires a PROTOCOL_PANEL character.
-                    # "After First Bounty Hunter Door" -> "Prison Cells" requires CAN_BUILD_BRICKS.
+                    # The Exit from R_PRISON_CELLS requires JEDI.
+                    # The Exit from R_CORRIDOR_AFTER_DROIDS_ROOM requires a PROTOCOL_PANEL character.
+                    # R_AFTER_FIRST_BOUNTY_HUNTER_DOOR -> R_PRISON_CELLS requires CAN_BUILD_BRICKS.
                     base=Or(
                         HasAbility(HOVER),
                         CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
                     ),
-                    # The Exit from "Prison Cells" requires a CAN_DOUBLE_JUMP character.
-                    # The Exit from "Corridor After Droids Room" requires a PROTOCOL_PANEL character.
-                    # "After First Bounty Hunter Door" -> "Prison Cells" requires CAN_BUILD_BRICKS.
+                    # The Exit from R_PRISON_CELLS requires a CAN_DOUBLE_JUMP character.
+                    # The Exit from R_CORRIDOR_AFTER_DROIDS_ROOM requires a PROTOCOL_PANEL character.
+                    # R_AFTER_FIRST_BOUNTY_HUNTER_DOOR -> R_PRISON_CELLS requires CAN_BUILD_BRICKS.
                     normal=True_(),
                     # If the earlier PROTOCOL_PANEL was skipped through a Yoda Ceiling Clip, that is also fine because
                     # a Yoda Ceiling Clip can skip this panel too.
@@ -316,14 +331,14 @@ JABBAS_PALACE = Chapter(
                 ),
             ),
         ),
-        # The Exit from "Prison Cells" requires CAN_PULL_LEVERS, so these final rooms can be a single region.
-        "Final Rooms Before Rancor": (
+        # The Exit from R_PRISON_CELLS requires CAN_PULL_LEVERS, so these final rooms can be a single region.
+        R_FINAL_ROOMS_BEFORE_RANCOR: (
             # Pull the levers to prevent more guards from spawning, and defeat all the guards.
             # Get a Bounty Hunter hat from the hat machine, or use a Bounty Hunter character, and use the panel to enter
             # the Rancor fight.
-            ExitData("Rancor Pit", new_level=Level.JABBASPALACE_E),
+            ExitData(R_RANCOR_PIT, new_level=Level.JABBASPALACE_E),
         ),
-        "Rancor Pit": (
+        R_RANCOR_PIT: (
             ExitData(
                 "Chapter Completion",
                 logic_options(
@@ -342,11 +357,11 @@ JABBAS_PALACE = Chapter(
     },
     minikits={
         "Spawn Far Left Minikit": minikit_data(
-            "Far Minikit Platform Left Of Spawn",
+            R_FAR_MINIKIT_PLATFORM_LEFT_OF_SPAWN,
             pickup_name="mk_2"
         ),
         "Minikit Outside Above Silver Bricks": minikit_data(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=And(
                     HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
@@ -366,15 +381,15 @@ JABBAS_PALACE = Chapter(
             pickup_name="mk_1",
         ),
         "Minikit Behind Gate With B'Omarr Monk": minikit_data(
-            "Protocol Panel Jailed B'omarr Bonk",
+            R_PROTOCOL_PANEL_JAILED_BOMARR_BONK,
             pickup_name="mk_3",
         ),
         "Minikit Behind Astromech Door": minikit_data(
-            "Behind First Astromech Panel Door",
+            R_BEHIND_FIRST_ASTROMECH_PANEL_DOOR,
             pickup_name="mk_0",
         ),
         "Prison Protocol Room Porthole Minikit": minikit_data(
-            "Prison Cells",
+            R_PRISON_CELLS,
             # Triple high jump onto the top of the lid of the chute that spawns Gamorrean Guards is possible, and, from
             # there, a Yoda Ceiling Clip can be performed to get into the left prison cell, but the table cannot be
             # destroyed until the table in the right prison cell has been destroyed. So this already annoying ceiling
@@ -388,7 +403,7 @@ JABBAS_PALACE = Chapter(
             pickup_name="mk_0",
         ),
         "Explode Prison Wall Minikit": minikit_data(
-            "After Second Portcullis, through to Droids Room",
+            R_AFTER_SECOND_PORTCULLIS_THROUGH_TO_DROIDS_ROOM,
             # Build the explosive then destroy it.
             # Being able to use Bounty Hunter panels is required to reach here (either by having a Bounty Hunter or by
             # being able to wear hats).
@@ -397,7 +412,7 @@ JABBAS_PALACE = Chapter(
             pickup_name="mk_1",
         ),
         "Droid Room Porthole Minikit": minikit_data(
-            "After Second Portcullis, through to Droids Room",
+            R_AFTER_SECOND_PORTCULLIS_THROUGH_TO_DROIDS_ROOM,
             # A BLASTER/JEDI/General Grievous is required at the start of the chapter to get through the main gate.
             # All characters that can wear hats or use bounty hunter panels fit inside the tunnel.
             # Normal+ could also be expected to carry a Bounty Hunter hat all the way here.
@@ -409,12 +424,12 @@ JABBAS_PALACE = Chapter(
             pickup_name="mk_2",
         ),
         "Sith Force Grate Minikit": minikit_data(
-            "Open Area With Ramp For C-3PO",
+            R_OPEN_AREA_WITH_RAMP_FOR_C_3PO,
             CAN_SITH_FORCE,
             pickup_name="mk_0",
         ),
         "Imperial Gate Minikit": minikit_data(
-            "Final Rooms Before Rancor",
+            R_FINAL_ROOMS_BEFORE_RANCOR,
             logic_options(
                 base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT),
                 # Allow Yoda Clip to skip the panel.
@@ -423,18 +438,18 @@ JABBAS_PALACE = Chapter(
             pickup_name="mk_1",
         ),
         "Rancor Pit Minikit": minikit_data(
-            "Rancor Pit",
+            R_RANCOR_PIT,
             logic_options(
                 base=CAN_GRAPPLE,
                 # Triple jump or high jump to the minikit by jumping from on top of the lever.
-                # Exiting "Prison Cells" requires JEDI or HIGH_JUMP, both of which can reach the minikit.
+                # Exiting R_PRISON_CELLS requires JEDI or HIGH_JUMP, both of which can reach the minikit.
                 moderate=True_(),
             ),
             pickup_name="m_pup1"
         ),
     },
-    power_brick=LocationData("Power Brick Upper Area"),
+    power_brick=LocationData(R_POWER_BRICK_UPPER_AREA),
     ridables={
-        Character.BOMARRMONK: LocationData("Initial Interior"),
+        Character.BOMARRMONK: LocationData(R_INITIAL_INTERIOR),
     },
 )
