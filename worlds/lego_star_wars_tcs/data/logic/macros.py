@@ -297,3 +297,6 @@ HAS_GAS_IMMUNE_EXCEPT_GHOSTS = HasAnyAbilities(ASTROMECH_PANEL | PROTOCOL_PANEL)
     Character.SUPER_BATTLE_DROID,
     Character.GRIEVOUS_BODYGUARD,
 )
+
+HAS_CAN_REFLECT_BLASTER_BOLTS = HasAbility(IS_NON_GHOST_JEDI) | Character.GENERAL_GRIEVOUS.has()
+"""Grievous can *reflect* bolts. Bodyguard, Imperial Guard, Tarpals and Gamorrean Guard can each only *deflect* bolts"""
