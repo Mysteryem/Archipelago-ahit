@@ -9,7 +9,7 @@ from rule_builder.rules import Rule, TWorld, True_, Has, Or, And
 from rule_builder.options import OptionFilter
 
 from ...constants import GAME_NAME
-from ...options import LogicDifficulty, EntranceRandomizer, UncapOriginalTrilogyHighJump
+from ...options import LogicDifficulty, UncapOriginalTrilogyHighJump
 
 
 if TYPE_CHECKING:
