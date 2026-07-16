@@ -1,19 +1,521 @@
-from ..types import make_legacy_chapter, LegacyMinikitData
+from rule_builder.rules import And, Or, True_, False_
 
-THE_GREAT_PIT_OF_CARKOON = make_legacy_chapter(
-    short_name="6-2",
-    minikits={
-        "Walk The Plank Minikit": LegacyMinikitData.new("sarlaccpit_a", "mk_0"),
-        "Barge Left Side Minikit": LegacyMinikitData.new("sarlaccpit_a", "mk_2"),
-        "Build Four Skiff Cannons Minikit": LegacyMinikitData.new("sarlaccpit_a", "m_pup2"),
-        "Barge Front Two Levers Minikit": LegacyMinikitData.new("sarlaccpit_a", "m_pup1"),
-        "Barge Rear Three Levers Minikit": LegacyMinikitData.new("sarlaccpit_a", "m_pup3"),
+from ..macros import (
+    CAN_DAMAGE_AT_CLOSE_RANGE,
+    CAN_SITH_FORCE,
+    CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
+    CAN_YODA_CLIP,
+    CAN_GRAPPLE,
+    HAS_ANY_YODA,
+    CAN_DESTROY_CLOSE_SILVER_BRICKS,
+    CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT,
+    CAN_USE_DEFLECT_BOLTS,
+    HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
+    HAS_HIGH_JUMP_EXCEPT_BODYGUARD_OT,
+)
+from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED
+from ..rules import (
+    HasAbility,
+    HasAnyAbilities,
+    HasAllAbilities,
+    HasAnyCharacterExcept,
+    HasAbilityExceptCharacters,
+)
+from ..types import minikit_data, ExitData, ChapterHelper, LocationData
 
-        "Barge Interior Access Hatch Minikit": LegacyMinikitData.new("sarlaccpit_b", "m_pup1"),
-        "Barge Interior Window Shutters Minikit": LegacyMinikitData.new("sarlaccpit_b", "m_pup2"),
+from ...areas import Area
+from ...characters import Character
+from ...extras import Extra
+from ...levels import Level
 
-        "Barge Deck Minikit Beneath Sail": LegacyMinikitData.new("sarlaccpit_c", "mk_0"),
-        "Minikit Between Barge Deck Targets": LegacyMinikitData.new("sarlaccpit_c", "mk_1"),
-        "Barge Deck Access Hatch Minikit": LegacyMinikitData.new("sarlaccpit_c", "mk_2"),
+
+from ....character_ability import *
+from ....character_ability import CAN_BUILD_BRICKS
+
+_CAN_DAMAGE_BOBA_FETT = logic_options(
+    base=CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT,
+    # Allow defeating Boba Fett by deflecting his bolts back at him. This is awkward because if you're too close, Boba
+    # will melee you instead.
+    hard=CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT | CAN_USE_DEFLECT_BOLTS
+)
+"""For some reason, Boba Fett is immune to explosions, so Self Destruct is not a suitable source of damage."""
+
+_helper = ChapterHelper(
+    area=Area.SARLACCPIT,
+    start_region="Skiff 1",
+)
+
+_LEFT_SIDE_ACTIVATE_BOTH_PLATFORMS_TO_REAR = logic_options(
+    # Expect Jedi to move the panels covering the lever in the lower area.
+    base=And(
+        _helper.can_reach_region("Sail Barge Left Side Upper Area"),
+        HasAllAbilities(JEDI | CAN_PULL_LEVERS)
+    ),
+    # Skip the Jedi requirement.
+    normal=And(
+        _helper.can_reach_region("Sail Barge Left Side Upper Area"),
+        HasAbility(CAN_PULL_LEVERS)
+    ),
+)
+
+_RIGHT_SIDE_ACTIVATE_ALL_PLATFORMS_TO_REAR = logic_options(
+    # Force one of the panels to stand on, jump up to the pushable box and push it down.
+    # Build the grapple point and grapple up.
+    # Walk through the upper area and pull the lever.
+    # Expect Jedi to move the panels covering the lever in the lower area.
+    # All jedi can push objects, pull levers and build bricks.
+    base=HasAbility(JEDI) & CAN_GRAPPLE,
+    # Alternatively, substitute JEDI for HIGH_JUMP when enabled.
+    normal=Or(
+        HasAbility(JEDI),
+        # The platform with the pushable box is easily reachable with HIGH_JUMP.
+        HasAllAbilities(HIGH_JUMP | CAN_PUSH_OBJECTS | CAN_PULL_LEVERS | CAN_BUILD_BRICKS) & OT_HIGH_JUMP_ENABLED,
+    ) & CAN_GRAPPLE,
+)
+
+THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
+    intended_completion_path=(
+        "Skiff 2",
+        "Skiff 3 (Boba Fight)",
+        "Skiff 4",
+        "Sail Barge Right Side",
+        "Sail Barge Rear",
+        "Sail Barge Rear Interior",
+        "Sail Barge Rear Interior Lift Room",
+        "Sail Barge Main Interior Spawn",
+        "Sail Barge Main Interior Post Disco",
+        "Sail Barge Deck",
+    ),
+    regions={
+        "Skiff 1": (
+            ExitData(
+                "Skiff 2",
+                logic_options(
+                    base=HasAllAbilities(CAN_PULL_LEVERS | CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
+                    # Allow hovering across from the fence of the first Skiff, to the fence of the second Skiff.
+                    normal=Or(
+                        HasAllAbilities(CAN_PULL_LEVERS | CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
+                        HasAbility(HOVER),
+                    ),
+                    # While it is fairly simple to jump across with a double jump, it is not in any way obvious that
+                    # only the very back of the skiff can be stood on, and that the sides on the back of the skiff are
+                    # slippery.
+                    moderate=Or(
+                        HasAllAbilities(CAN_PULL_LEVERS | CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
+                        HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
+                    )
+                )
+            ),
+        ),
+        "Skiff 2": (
+            ExitData(
+                "Skiff 3 (Boba Fight)",
+                # Note: Dive rolls can get enough distance to cross the gap, but then always seem to slide off and die.
+                logic_options(
+                    base=HasAllAbilities(JEDI | CAN_PULL_LEVERS),
+                    # There is a slight complication here for Normal logic, in that, if the player hovers across to
+                    # Skiff 2, then P2's AI won't follow, meaning that the player will need to pull both levers
+                    # themselves. While all Jedi can pull both levers themselves, it is not obvious because the timing
+                    # window is tight, so Normal logic expects pulling the levers on the first Skiff to allow P2's AI to
+                    # help with the levers on Skiff 2.
+                    # Regular Astromech Hover cannot hover across to the fence on Skiff 3, it's too high, so only
+                    # Jetpack hover is allowed.
+                    normal=Or(
+                        HasAllAbilities(CAN_PULL_LEVERS | CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37 | JEDI),
+                        HasAbility(JETPACK),
+                    ),
+                    # Allow double jump and astromech hover.
+                    moderate=HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
+                )
+            ),
+        ),
+        "Skiff 3 (Boba Fight)": (
+            ExitData(
+                "Skiff 4",
+                # Only Boba Fett needs to be defeated for Skiff 4 to move into place.
+                _CAN_DAMAGE_BOBA_FETT,
+            ),
+        ),
+        "Skiff 4": (
+            ExitData(
+                "Sail Barge Right Side",
+                logic_options(
+                    base=HasAbility(JEDI),
+                    # Allow hover.
+                    normal=HasAnyAbilities(JEDI | HOVER),
+                    # Allow triple jump with slam characters.
+                    moderate=HasAnyAbilities(JEDI | HOVER | CAN_HIGH_JUMP_SLAM),
+                    # Allow double jump.
+                    hard=HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER),
+                ),
+            ),
+            ExitData(
+                "Sail Barge Front and Left Side",
+                logic_options(
+                    base=CAN_SITH_FORCE,
+                    # Allow extra distance double jump, and high jump when enabled (except bodyguard)
+                    normal=Or(
+                        CAN_SITH_FORCE, HasAbility(HOVER),
+                        HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
+                        HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD) & OT_HIGH_JUMP_ENABLED,
+                    ),
+                    moderate=Or(
+                        CAN_SITH_FORCE,
+                        HasAbility(HOVER),
+                        HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, Character.GRIEVOUS_BODYGUARD)
+                    ),
+
+                )
+            ),
+            ExitData(
+                "Sail Barge Front Raised Levers Area",
+                # The cable connecting the skiff to the barge has collision. While it is difficult to stand on for any
+                # time without sliding off, it does allow you to jump again, so you can jump most of the way up, and
+                # then triple jump to the raised area with the levers.
+                logic_options(
+                    base=False_(),
+                    hard=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
+                )
+            )
+        ),
+        "Sail Barge Right Side": (
+            ExitData(
+                "Sail Barge Rear",
+                logic_options(
+                    base=_RIGHT_SIDE_ACTIVATE_ALL_PLATFORMS_TO_REAR,
+                    # Allow activating only the first and third platforms and hovering across.
+                    normal=Or(
+                        HasAllAbilities(CAN_PULL_LEVERS | HOVER),
+                        _RIGHT_SIDE_ACTIVATE_ALL_PLATFORMS_TO_REAR,
+                    ),
+                    # Allow triple jumps to cross with only the first and third platforms activated.
+                    moderate=Or(
+                        HasAllAbilities(CAN_PULL_LEVERS | JEDI),
+                        HasAllAbilities(CAN_PULL_LEVERS | CAN_HIGH_JUMP_SLAM),
+                        HasAllAbilities(CAN_PULL_LEVERS | HOVER),
+                        _RIGHT_SIDE_ACTIVATE_ALL_PLATFORMS_TO_REAR,
+                    ),
+                ),
+            ),
+        ),
+        "Sail Barge Front and Left Side": (
+            ExitData(
+                "Sail Barge Front Raised Levers Area",
+                logic_options(
+                    strict=False,
+                    base=CAN_GRAPPLE,
+                    # Allow triple high jump and Yoda's slightly higher triple jump.
+                    moderate=Or(
+                        CAN_GRAPPLE,
+                        HasAbility(CAN_HIGH_JUMP_SLAM) & OT_HIGH_JUMP_ENABLED,
+                        HAS_ANY_YODA & HasAnyCharacterExcept(Character.YODA, Character.YODA_GHOST),
+                    ),
+                    # todo: You can also get up here with Bodyguard's non-high-jump triple jump + character swap to an
+                    #  astromech, but I haven't figured out which combinations work. This would be Hard+ logic only due
+                    #  to requiring a specific combination of 2 characters.
+                ),
+            ),
+            ExitData(
+                "Sail Barge Left Side Upper Area",
+                logic_options(
+                    base=CAN_GRAPPLE | CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
+                    # Allow triple jump.
+                    moderate=Or(
+                        CAN_GRAPPLE | CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
+                        HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
+                    )
+                ),
+            ),
+            ExitData(
+                "Sail Barge Left Side Upper Area End",
+                logic_options(
+                    base=False_(),
+                    # Triple jump directly to the end where the minikit is.
+                    moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
+                ),
+            ),
+            ExitData(
+                "Sail Barge Rear",
+                _LEFT_SIDE_ACTIVATE_BOTH_PLATFORMS_TO_REAR.or_rule(
+                    # Right platform activated.
+                    apply_to="normal+",
+                    rule=logic_options(
+                        base=False_(),
+                        normal=HasAbility(CAN_PULL_LEVERS) & Or(
+                            HasAbility(HOVER),
+                            HAS_HIGH_JUMP_EXCEPT_BODYGUARD_OT,
+                        ),
+                        moderate=And(
+                            HasAbility(CAN_PULL_LEVERS) & Or(
+                                HasAnyAbilities(HOVER | JEDI | CAN_HIGH_JUMP_SLAM),
+                                HAS_HIGH_JUMP_EXCEPT_BODYGUARD_OT,
+                            )
+                        ),
+                    )
+                ).or_rule(
+                    # Neither platform activated.
+                    apply_to="normal+",
+                    rule=HasAbility(JETPACK),
+                )
+            ),
+        ),
+        "Sail Barge Front Raised Levers Area": (),
+        "Sail Barge Left Side Upper Area": (
+            ExitData(
+                "Sail Barge Left Side Upper Area End",
+                # Activate the panels in the lower area, and destroy the silver bricks at the end.
+                HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
+            ),
+        ),
+        "Sail Barge Left Side Upper Area End": (),
+        "Sail Barge Rear": (
+            ExitData(
+                "Sail Barge Rear Upper Levers Area",
+                logic_options(
+                    base=HasAbility(CAN_BUILD_BRICKS) & CAN_GRAPPLE,
+                    # Use the force to move up one of the panels covering the colors, then stand on top of the panel and
+                    # triple jump up.
+                    moderate=HasAbility(JEDI) | HasAllAbilities(CAN_BUILD_BRICKS | GRAPPLE),
+                ),
+            ),
+            ExitData(
+                "Sail Barge Rear Interior",
+                HasAllAbilities(JEDI | CAN_PUSH_OBJECTS),
+                new_level=Level.SARLACCPIT_B,
+            ),
+        ),
+        "Sail Barge Rear Upper Levers Area": (),
+
+        # JEDI is strictly required from here on.
+        "Sail Barge Rear Interior": (
+            # JEDI can destroy the objects and build and ride the turret to proceed.
+            ExitData("Sail Barge Rear Interior Lift Room"),
+        ),
+        "Sail Barge Rear Interior Lift Room": (
+            ExitData(
+                "Sail Barge Rear Interior Access Hatch Area",
+                logic_options(
+                    base=HasAbility(SHORTIE),
+                    # Just ceiling clip to get into the Access Hatch area.
+                    hard=HasAbility(SHORTIE) | CAN_YODA_CLIP,
+                )
+            ),
+            ExitData(
+                "Sail Barge Main Interior Spawn",
+                logic_options(
+                    base=HasAbility(PROTOCOL_PANEL),
+                    # The collider that blocks access to the next area doesn't actually spawn until you fully build the
+                    # generator object, so if you can reach the transition, you can skip the Protocol Panel.
+                    # JEDI is required to reach here, so just triple jump up.
+                    moderate=True_(),
+                ),
+            ),
+        ),
+        "Sail Barge Rear Interior Access Hatch Area": (),
+        "Sail Barge Main Interior Spawn": (
+            # No logical relevance currently.
+            # ExitData(
+            #     "Sail Barge Main Interior Storage Room",
+            #     logic_options(
+            #         base=CAN_DESTROY_CLOSE_SILVER_BRICKS,
+            #         # Allow Yoda Ceiling Clip. Stand on top of the silver bricks to get enough height.
+            #         hard=CAN_DESTROY_CLOSE_SILVER_BRICKS | CAN_YODA_CLIP,
+            #     )
+            # ),
+            ExitData(
+                "Sail Barge Main Interior Post Disco",
+                logic_options(
+                    base=HasAbility(GRAPPLE),
+                    # Allow Force Grapple Leap.
+                    normal=HasAbility(GRAPPLE) | Extra.FORCE_GRAPPLE_LEAP.has(),
+                    # Triple jump up instead of needing to grapple.
+                    moderate=True_(),
+                    # # Allow Yoda Ceiling Clip from the top area (triple jump to get up initially.
+                    # hard=HasAbility(GRAPPLE) | Extra.FORCE_GRAPPLE_LEAP.has() | CAN_YODA_CLIP,
+                ),
+            ),
+        ),
+        "Sail Barge Main Interior Post Disco": (
+            ExitData(
+                "Sail Barge Deck",
+                new_level=Level.SARLACCPIT_C,
+            ),
+        ),
+        # Because JEDI is required to reach here, the "Sail Barge Deck" region covers pretty much the entire deck
+        # because any JEDI can traverse pretty much the entire deck.
+        "Sail Barge Deck": (
+            ExitData(
+                "Sail Barge First Platform Beneath Front Sail",
+                logic_options(
+                    # Expect Grappling up because the double jump up is a bit awkward due to easily hitting your head if
+                    # you don't jump far enough away with the initial jump before double jumping up.
+                    base=CAN_GRAPPLE,
+                    # There is a porthole to destroy, which then lets you force smaller platforms onto the sail's
+                    # 'mast', which can be jumped up with a JEDI.
+                    normal=True_(),
+                ),
+            ),
+            ExitData(
+                "Chapter Completion",
+                # Push the explosives on the side close to the camera, activate the Protocol Panel on the other side,
+                # then reload the big cannon through its Astromech Panel, and shoot the targets.
+                logic_options(
+                    base=HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL),
+                    # Allow destroying the targets without using the big cannon.
+                    normal=Or(
+                        HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL),
+                        HasAbility(PROTOCOL_PANEL) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
+                    )
+                ),
+            ),
+        ),
+        "Sail Barge First Platform Beneath Front Sail": (
+            # Logic skips the second platform because all JEDI can jump across to it.
+            ExitData(
+                "Sail Barge Minikit Platform Beneath Front Sail",
+                logic_options(
+                    # Base logic expects CAN_GRAPPLE to get here, which is enough to get to the minikit platform.
+                    base=True_(),
+                    # Grapple or HIGH_JUMP up.
+                    normal=HasAbility(GRAPPLE) | Extra.FORCE_GRAPPLE_LEAP.has() | CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
+                    # Triple jump up with a JEDI.
+                    moderate=True_(),
+                ),
+            ),
+        ),
+        "Sail Barge Minikit Platform Beneath Front Sail": (),
     },
+    minikits={
+        "Build Four Skiff Cannons Minikit": minikit_data(
+            "Skiff 2",
+            # All jedi can reach the minikit.
+            HasAllAbilities(CAN_PULL_LEVERS | JEDI | CAN_BUILD_BRICKS),
+            pickup_name="m_pup2",
+        ),
+        "Skiff Walk The Plank Minikit": minikit_data(
+            "Skiff 2",
+            logic_options(
+                # Expect HOVER to easily grab the minikit without dying.
+                base=HasAbility(HOVER),
+                # If you can reach "Skiff 2", then you can reach the minikit.
+                normal=True_(),
+            ),
+            pickup_name="mk_0",
+        ),
+        "Barge Rear Three Levers Minikit": minikit_data(
+            "Sail Barge Rear Upper Levers Area",
+            # All jedi/sith can pull levers.
+            # All jedi/sith as AI can pull both regular levers
+            logic_options(
+                # Require getting P2's AI to follow.
+                base=And(
+                    Or(
+                        # AI will only jump across when all 3 platforms are extended, but will happily jump across with
+                        # any character that can jump.
+                        And(
+                            _helper.can_reach_region("Sail Barge Right Side"),
+                            _RIGHT_SIDE_ACTIVATE_ALL_PLATFORMS_TO_REAR
+                        ),
+                        # AI won't even attempt to cross the gap unless the first platform is extended.
+                        # AI will only use astromechs to cross.
+                        # AI will die repeatedly if only the first platform is extended.
+                        And(
+                            _helper.can_reach_region("Sail Barge Front and Left Side"),
+                            HasAbility(ASTROMECH_DROID),
+                            _LEFT_SIDE_ACTIVATE_BOTH_PLATFORMS_TO_REAR,
+                        ),
+                    ),
+                    CAN_GRAPPLE,
+                    CAN_SITH_FORCE
+                ),
+                # If needed, drop in P2 and then drop them out to teleport them to P1.
+                normal=CAN_GRAPPLE & CAN_SITH_FORCE,
+            ),
+            pickup_name="m_pup3",
+        ),
+        "Barge Front Between Two Levers Minikit": minikit_data(
+            "Sail Barge Front Raised Levers Area",
+            CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CAN_BUILD_BRICKS),
+            er_rule=(
+                (
+                    (CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CAN_JUMP_HEIGHT_0_37))
+                    | CAN_DESTROY_CLOSE_SILVER_BRICKS
+                )
+                & HasAbility(CAN_BUILD_BRICKS)
+            ),
+            pickup_name="m_pup1",
+        ),
+        "Barge Left Side Minikit": minikit_data(
+            "Sail Barge Left Side Upper Area End",
+            # Access to the region contains all the logic necessary to reach the minikit.
+            pickup_name="mk_2",
+        ),
+        "Barge Interior Access Hatch Minikit": minikit_data(
+            "Sail Barge Rear Interior Access Hatch Area",
+            pickup_name="m_pup1",
+        ),
+        "Barge Interior Window Shutters Minikit": minikit_data(
+            "Sail Barge Main Interior Post Disco",
+            # JEDI is required to reach here, so there are no requirements.
+            pickup_name="m_pup2",
+        ),
+        "Barge Deck Minikit Beneath Sail": minikit_data(
+            "Sail Barge Minikit Platform Beneath Front Sail",
+            pickup_name="mk_0",
+        ),
+        "Minikit Between Barge Deck Targets": minikit_data(
+            "Sail Barge Deck",
+            logic_options(
+                # Expect using the big cannon to destroy the target closest to the camera.
+                base=HasAbility(ASTROMECH_PANEL),
+                normal=HasAbility(ASTROMECH_PANEL) | CAN_DESTROY_CLOSE_SILVER_BRICKS,
+            ),
+            pickup_name="mk_1",
+        ),
+        "Barge Deck Access Hatch Minikit": minikit_data(
+            "Sail Barge Deck",
+            logic_options(
+                base=HasAbility(SHORTIE),
+                # It's possible to grab this through the wall with Yoda + General Grievous by walking against the fence
+                # close to the minikit as Grievous and then swapping to Yoda.
+                # todo: I don't know what other combinations work.
+                hard=Or(
+                    HasAbility(SHORTIE),
+                    HAS_ANY_YODA & Character.has_any(
+                        Character.GENERAL_GRIEVOUS,
+                    ),
+                )
+            ),
+            pickup_name="mk_2",
+        ),
+    },
+    power_brick=LocationData(
+        "Sail Barge Deck",
+        logic_options(
+            # Maybe Base logic could require HOVER to go between the platforms, but double jumps work and JEDI is
+            # required to reach here.
+            base=CAN_GRAPPLE,
+            # Grievous and Bodyguard, with OT High Jump enabled, can barely jump from the box, containing the grapple
+            # point bricks, to the closest platform. Tarpals and Jar Jar have slightly worse high jump height, so
+            # cannot make this jump (or if they can, it's too difficult for Normal logic).
+            # Destroying the box means restarting the level, and because this is right at the end of the level, I am not
+            # including this in Normal logic for now.
+            # normal=Or(
+            #     CAN_GRAPPLE,
+            #     HasAbility(CAN_HIGH_JUMP_SLAM) & OT_HIGH_JUMP_ENABLED,
+            # ),
+            # Just triple jump directly to the Power Brick.
+            moderate=True_(),
+        )
+    ),
+    ridables={
+        Character.CANNON: LocationData(
+            "Skiff 1",
+            HasAbility(JEDI) | (HasAbility(CAN_BUILD_BRICKS) & CAN_DAMAGE_AT_CLOSE_RANGE)
+        ),
+        Character.BIGGUN: LocationData(
+            # Does not need to be reloaded to get in.
+            "Sail Barge Deck",
+        ),
+    }
 )
