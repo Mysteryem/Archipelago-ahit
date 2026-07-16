@@ -32,6 +32,26 @@ from ...levels import Level
 from ....character_ability import *
 from ....character_ability import CAN_BUILD_BRICKS
 
+R_SKIFF_1 = "Skiff 1"
+R_SKIFF_2 = "Skiff 2"
+R_SKIFF_3_BOBA_FIGHT = "Skiff 3 (Boba Fight)"
+R_SKIFF_4 = "Skiff 4"
+R_SAIL_BARGE_RIGHT_SIDE = "Sail Barge Right Side"
+R_SAIL_BARGE_FRONT_AND_LEFT_SIDE = "Sail Barge Front and Left Side"
+R_SAIL_BARGE_FRONT_RAISED_LEVERS_AREA = "Sail Barge Front Raised Levers Area"
+R_SAIL_BARGE_LEFT_SIDE_UPPER_AREA = "Sail Barge Left Side Upper Area"
+R_SAIL_BARGE_LEFT_SIDE_UPPER_AREA_END = "Sail Barge Left Side Upper Area End"
+R_SAIL_BARGE_REAR = "Sail Barge Rear"
+R_SAIL_BARGE_REAR_UPPER_LEVERS_AREA = "Sail Barge Rear Upper Levers Area"
+R_SAIL_BARGE_REAR_INTERIOR = "Sail Barge Rear Interior"
+R_SAIL_BARGE_REAR_INTERIOR_LIFT_ROOM = "Sail Barge Rear Interior Lift Room"
+R_SAIL_BARGE_REAR_INTERIOR_ACCESS_HATCH_AREA = "Sail Barge Rear Interior Access Hatch Area"
+R_SAIL_BARGE_MAIN_INTERIOR_SPAWN = "Sail Barge Main Interior Spawn"
+R_SAIL_BARGE_MAIN_INTERIOR_POST_DISCO = "Sail Barge Main Interior Post Disco"
+R_SAIL_BARGE_DECK = "Sail Barge Deck"
+R_SAIL_BARGE_FIRST_PLATFORM_BENEATH_FRONT_SAIL = "Sail Barge First Platform Beneath Front Sail"
+R_SAIL_BARGE_MINIKIT_PLATFORM_BENEATH_FRONT_SAIL = "Sail Barge Minikit Platform Beneath Front Sail"
+
 _CAN_DAMAGE_BOBA_FETT = logic_options(
     base=CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT,
     # Allow defeating Boba Fett by deflecting his bolts back at him. This is awkward because if you're too close, Boba
@@ -42,18 +62,18 @@ _CAN_DAMAGE_BOBA_FETT = logic_options(
 
 _helper = ChapterHelper(
     area=Area.SARLACCPIT,
-    start_region="Skiff 1",
+    start_region=R_SKIFF_1,
 )
 
 _LEFT_SIDE_ACTIVATE_BOTH_PLATFORMS_TO_REAR = logic_options(
     # Expect Jedi to move the panels covering the lever in the lower area.
     base=And(
-        _helper.can_reach_region("Sail Barge Left Side Upper Area"),
+        _helper.can_reach_region(R_SAIL_BARGE_LEFT_SIDE_UPPER_AREA),
         HasAllAbilities(JEDI | CAN_PULL_LEVERS)
     ),
     # Skip the Jedi requirement.
     normal=And(
-        _helper.can_reach_region("Sail Barge Left Side Upper Area"),
+        _helper.can_reach_region(R_SAIL_BARGE_LEFT_SIDE_UPPER_AREA),
         HasAbility(CAN_PULL_LEVERS)
     ),
 )
@@ -75,21 +95,21 @@ _RIGHT_SIDE_ACTIVATE_ALL_PLATFORMS_TO_REAR = logic_options(
 
 THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
     intended_completion_path=(
-        "Skiff 2",
-        "Skiff 3 (Boba Fight)",
-        "Skiff 4",
-        "Sail Barge Right Side",
-        "Sail Barge Rear",
-        "Sail Barge Rear Interior",
-        "Sail Barge Rear Interior Lift Room",
-        "Sail Barge Main Interior Spawn",
-        "Sail Barge Main Interior Post Disco",
-        "Sail Barge Deck",
+        R_SKIFF_2,
+        R_SKIFF_3_BOBA_FIGHT,
+        R_SKIFF_4,
+        R_SAIL_BARGE_RIGHT_SIDE,
+        R_SAIL_BARGE_REAR,
+        R_SAIL_BARGE_REAR_INTERIOR,
+        R_SAIL_BARGE_REAR_INTERIOR_LIFT_ROOM,
+        R_SAIL_BARGE_MAIN_INTERIOR_SPAWN,
+        R_SAIL_BARGE_MAIN_INTERIOR_POST_DISCO,
+        R_SAIL_BARGE_DECK,
     ),
     regions={
-        "Skiff 1": (
+        R_SKIFF_1: (
             ExitData(
-                "Skiff 2",
+                R_SKIFF_2,
                 logic_options(
                     base=HasAllAbilities(CAN_PULL_LEVERS | CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
                     # Allow hovering across from the fence of the first Skiff, to the fence of the second Skiff.
@@ -107,9 +127,9 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 )
             ),
         ),
-        "Skiff 2": (
+        R_SKIFF_2: (
             ExitData(
-                "Skiff 3 (Boba Fight)",
+                R_SKIFF_3_BOBA_FIGHT,
                 # Note: Dive rolls can get enough distance to cross the gap, but then always seem to slide off and die.
                 logic_options(
                     base=HasAllAbilities(JEDI | CAN_PULL_LEVERS),
@@ -129,16 +149,16 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 )
             ),
         ),
-        "Skiff 3 (Boba Fight)": (
+        R_SKIFF_3_BOBA_FIGHT: (
             ExitData(
-                "Skiff 4",
+                R_SKIFF_4,
                 # Only Boba Fett needs to be defeated for Skiff 4 to move into place.
                 _CAN_DAMAGE_BOBA_FETT,
             ),
         ),
-        "Skiff 4": (
+        R_SKIFF_4: (
             ExitData(
-                "Sail Barge Right Side",
+                R_SAIL_BARGE_RIGHT_SIDE,
                 logic_options(
                     base=HasAbility(JEDI),
                     # Allow hover.
@@ -150,7 +170,7 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Sail Barge Front and Left Side",
+                R_SAIL_BARGE_FRONT_AND_LEFT_SIDE,
                 logic_options(
                     base=CAN_SITH_FORCE,
                     # Allow extra distance double jump, and high jump when enabled (except bodyguard)
@@ -168,7 +188,7 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 )
             ),
             ExitData(
-                "Sail Barge Front Raised Levers Area",
+                R_SAIL_BARGE_FRONT_RAISED_LEVERS_AREA,
                 # The cable connecting the skiff to the barge has collision. While it is difficult to stand on for any
                 # time without sliding off, it does allow you to jump again, so you can jump most of the way up, and
                 # then triple jump to the raised area with the levers.
@@ -178,9 +198,9 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 )
             )
         ),
-        "Sail Barge Right Side": (
+        R_SAIL_BARGE_RIGHT_SIDE: (
             ExitData(
-                "Sail Barge Rear",
+                R_SAIL_BARGE_REAR,
                 logic_options(
                     base=_RIGHT_SIDE_ACTIVATE_ALL_PLATFORMS_TO_REAR,
                     # Allow activating only the first and third platforms and hovering across.
@@ -198,9 +218,9 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 ),
             ),
         ),
-        "Sail Barge Front and Left Side": (
+        R_SAIL_BARGE_FRONT_AND_LEFT_SIDE: (
             ExitData(
-                "Sail Barge Front Raised Levers Area",
+                R_SAIL_BARGE_FRONT_RAISED_LEVERS_AREA,
                 logic_options(
                     strict=False,
                     base=CAN_GRAPPLE,
@@ -216,7 +236,7 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Sail Barge Left Side Upper Area",
+                R_SAIL_BARGE_LEFT_SIDE_UPPER_AREA,
                 logic_options(
                     base=CAN_GRAPPLE | CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
                     # Allow triple jump.
@@ -227,7 +247,7 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Sail Barge Left Side Upper Area End",
+                R_SAIL_BARGE_LEFT_SIDE_UPPER_AREA_END,
                 logic_options(
                     base=False_(),
                     # Triple jump directly to the end where the minikit is.
@@ -235,7 +255,7 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Sail Barge Rear",
+                R_SAIL_BARGE_REAR,
                 _LEFT_SIDE_ACTIVATE_BOTH_PLATFORMS_TO_REAR.or_rule(
                     # Right platform activated.
                     apply_to="normal+",
@@ -259,18 +279,18 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 )
             ),
         ),
-        "Sail Barge Front Raised Levers Area": (),
-        "Sail Barge Left Side Upper Area": (
+        R_SAIL_BARGE_FRONT_RAISED_LEVERS_AREA: (),
+        R_SAIL_BARGE_LEFT_SIDE_UPPER_AREA: (
             ExitData(
-                "Sail Barge Left Side Upper Area End",
+                R_SAIL_BARGE_LEFT_SIDE_UPPER_AREA_END,
                 # Activate the panels in the lower area, and destroy the silver bricks at the end.
                 HasAllAbilities(PROTOCOL_PANEL | ASTROMECH_PANEL) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
             ),
         ),
-        "Sail Barge Left Side Upper Area End": (),
-        "Sail Barge Rear": (
+        R_SAIL_BARGE_LEFT_SIDE_UPPER_AREA_END: (),
+        R_SAIL_BARGE_REAR: (
             ExitData(
-                "Sail Barge Rear Upper Levers Area",
+                R_SAIL_BARGE_REAR_UPPER_LEVERS_AREA,
                 logic_options(
                     base=HasAbility(CAN_BUILD_BRICKS) & CAN_GRAPPLE,
                     # Use the force to move up one of the panels covering the colors, then stand on top of the panel and
@@ -279,21 +299,21 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Sail Barge Rear Interior",
+                R_SAIL_BARGE_REAR_INTERIOR,
                 HasAllAbilities(JEDI | CAN_PUSH_OBJECTS),
                 new_level=Level.SARLACCPIT_B,
             ),
         ),
-        "Sail Barge Rear Upper Levers Area": (),
+        R_SAIL_BARGE_REAR_UPPER_LEVERS_AREA: (),
 
         # JEDI is strictly required from here on.
-        "Sail Barge Rear Interior": (
+        R_SAIL_BARGE_REAR_INTERIOR: (
             # JEDI can destroy the objects and build and ride the turret to proceed.
-            ExitData("Sail Barge Rear Interior Lift Room"),
+            ExitData(R_SAIL_BARGE_REAR_INTERIOR_LIFT_ROOM),
         ),
-        "Sail Barge Rear Interior Lift Room": (
+        R_SAIL_BARGE_REAR_INTERIOR_LIFT_ROOM: (
             ExitData(
-                "Sail Barge Rear Interior Access Hatch Area",
+                R_SAIL_BARGE_REAR_INTERIOR_ACCESS_HATCH_AREA,
                 logic_options(
                     base=HasAbility(SHORTIE),
                     # Just ceiling clip to get into the Access Hatch area.
@@ -301,7 +321,7 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 )
             ),
             ExitData(
-                "Sail Barge Main Interior Spawn",
+                R_SAIL_BARGE_MAIN_INTERIOR_SPAWN,
                 logic_options(
                     base=HasAbility(PROTOCOL_PANEL),
                     # The collider that blocks access to the next area doesn't actually spawn until you fully build the
@@ -311,8 +331,8 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 ),
             ),
         ),
-        "Sail Barge Rear Interior Access Hatch Area": (),
-        "Sail Barge Main Interior Spawn": (
+        R_SAIL_BARGE_REAR_INTERIOR_ACCESS_HATCH_AREA: (),
+        R_SAIL_BARGE_MAIN_INTERIOR_SPAWN: (
             # No logical relevance currently.
             # ExitData(
             #     "Sail Barge Main Interior Storage Room",
@@ -323,7 +343,7 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
             #     )
             # ),
             ExitData(
-                "Sail Barge Main Interior Post Disco",
+                R_SAIL_BARGE_MAIN_INTERIOR_POST_DISCO,
                 logic_options(
                     base=HasAbility(GRAPPLE),
                     # Allow Force Grapple Leap.
@@ -335,17 +355,17 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 ),
             ),
         ),
-        "Sail Barge Main Interior Post Disco": (
+        R_SAIL_BARGE_MAIN_INTERIOR_POST_DISCO: (
             ExitData(
-                "Sail Barge Deck",
+                R_SAIL_BARGE_DECK,
                 new_level=Level.SARLACCPIT_C,
             ),
         ),
-        # Because JEDI is required to reach here, the "Sail Barge Deck" region covers pretty much the entire deck
+        # Because JEDI is required to reach here, the R_SAIL_BARGE_DECK region covers pretty much the entire deck
         # because any JEDI can traverse pretty much the entire deck.
-        "Sail Barge Deck": (
+        R_SAIL_BARGE_DECK: (
             ExitData(
-                "Sail Barge First Platform Beneath Front Sail",
+                R_SAIL_BARGE_FIRST_PLATFORM_BENEATH_FRONT_SAIL,
                 logic_options(
                     # Expect Grappling up because the double jump up is a bit awkward due to easily hitting your head if
                     # you don't jump far enough away with the initial jump before double jumping up.
@@ -369,10 +389,10 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 ),
             ),
         ),
-        "Sail Barge First Platform Beneath Front Sail": (
+        R_SAIL_BARGE_FIRST_PLATFORM_BENEATH_FRONT_SAIL: (
             # Logic skips the second platform because all JEDI can jump across to it.
             ExitData(
-                "Sail Barge Minikit Platform Beneath Front Sail",
+                R_SAIL_BARGE_MINIKIT_PLATFORM_BENEATH_FRONT_SAIL,
                 logic_options(
                     # Base logic expects CAN_GRAPPLE to get here, which is enough to get to the minikit platform.
                     base=True_(),
@@ -383,27 +403,27 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                 ),
             ),
         ),
-        "Sail Barge Minikit Platform Beneath Front Sail": (),
+        R_SAIL_BARGE_MINIKIT_PLATFORM_BENEATH_FRONT_SAIL: (),
     },
     minikits={
         "Build Four Skiff Cannons Minikit": minikit_data(
-            "Skiff 2",
+            R_SKIFF_2,
             # All jedi can reach the minikit.
             HasAllAbilities(CAN_PULL_LEVERS | JEDI | CAN_BUILD_BRICKS),
             pickup_name="m_pup2",
         ),
         "Skiff Walk The Plank Minikit": minikit_data(
-            "Skiff 2",
+            R_SKIFF_2,
             logic_options(
                 # Expect HOVER to easily grab the minikit without dying.
                 base=HasAbility(HOVER),
-                # If you can reach "Skiff 2", then you can reach the minikit.
+                # If you can reach R_SKIFF_2, then you can reach the minikit.
                 normal=True_(),
             ),
             pickup_name="mk_0",
         ),
         "Barge Rear Three Levers Minikit": minikit_data(
-            "Sail Barge Rear Upper Levers Area",
+            R_SAIL_BARGE_REAR_UPPER_LEVERS_AREA,
             # All jedi/sith can pull levers.
             # All jedi/sith as AI can pull both regular levers
             logic_options(
@@ -413,14 +433,14 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
                         # AI will only jump across when all 3 platforms are extended, but will happily jump across with
                         # any character that can jump.
                         And(
-                            _helper.can_reach_region("Sail Barge Right Side"),
+                            _helper.can_reach_region(R_SAIL_BARGE_RIGHT_SIDE),
                             _RIGHT_SIDE_ACTIVATE_ALL_PLATFORMS_TO_REAR
                         ),
                         # AI won't even attempt to cross the gap unless the first platform is extended.
                         # AI will only use astromechs to cross.
                         # AI will die repeatedly if only the first platform is extended.
                         And(
-                            _helper.can_reach_region("Sail Barge Front and Left Side"),
+                            _helper.can_reach_region(R_SAIL_BARGE_FRONT_AND_LEFT_SIDE),
                             HasAbility(ASTROMECH_DROID),
                             _LEFT_SIDE_ACTIVATE_BOTH_PLATFORMS_TO_REAR,
                         ),
@@ -434,7 +454,7 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
             pickup_name="m_pup3",
         ),
         "Barge Front Between Two Levers Minikit": minikit_data(
-            "Sail Barge Front Raised Levers Area",
+            R_SAIL_BARGE_FRONT_RAISED_LEVERS_AREA,
             CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CAN_BUILD_BRICKS),
             er_rule=(
                 (
@@ -446,25 +466,25 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
             pickup_name="m_pup1",
         ),
         "Barge Left Side Minikit": minikit_data(
-            "Sail Barge Left Side Upper Area End",
+            R_SAIL_BARGE_LEFT_SIDE_UPPER_AREA_END,
             # Access to the region contains all the logic necessary to reach the minikit.
             pickup_name="mk_2",
         ),
         "Barge Interior Access Hatch Minikit": minikit_data(
-            "Sail Barge Rear Interior Access Hatch Area",
+            R_SAIL_BARGE_REAR_INTERIOR_ACCESS_HATCH_AREA,
             pickup_name="m_pup1",
         ),
         "Barge Interior Window Shutters Minikit": minikit_data(
-            "Sail Barge Main Interior Post Disco",
+            R_SAIL_BARGE_MAIN_INTERIOR_POST_DISCO,
             # JEDI is required to reach here, so there are no requirements.
             pickup_name="m_pup2",
         ),
         "Barge Deck Minikit Beneath Sail": minikit_data(
-            "Sail Barge Minikit Platform Beneath Front Sail",
+            R_SAIL_BARGE_MINIKIT_PLATFORM_BENEATH_FRONT_SAIL,
             pickup_name="mk_0",
         ),
         "Minikit Between Barge Deck Targets": minikit_data(
-            "Sail Barge Deck",
+            R_SAIL_BARGE_DECK,
             logic_options(
                 # Expect using the big cannon to destroy the target closest to the camera.
                 base=HasAbility(ASTROMECH_PANEL),
@@ -473,7 +493,7 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
             pickup_name="mk_1",
         ),
         "Barge Deck Access Hatch Minikit": minikit_data(
-            "Sail Barge Deck",
+            R_SAIL_BARGE_DECK,
             logic_options(
                 base=HasAbility(SHORTIE),
                 # It's possible to grab this through the wall with Yoda + General Grievous by walking against the fence
@@ -490,7 +510,7 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
         ),
     },
     power_brick=LocationData(
-        "Sail Barge Deck",
+        R_SAIL_BARGE_DECK,
         logic_options(
             # Maybe Base logic could require HOVER to go between the platforms, but double jumps work and JEDI is
             # required to reach here.
@@ -510,12 +530,12 @@ THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
     ),
     ridables={
         Character.CANNON: LocationData(
-            "Skiff 1",
+            R_SKIFF_1,
             HasAbility(JEDI) | (HasAbility(CAN_BUILD_BRICKS) & CAN_DAMAGE_AT_CLOSE_RANGE)
         ),
         Character.BIGGUN: LocationData(
             # Does not need to be reloaded to get in.
-            "Sail Barge Deck",
+            R_SAIL_BARGE_DECK,
         ),
     }
 )
