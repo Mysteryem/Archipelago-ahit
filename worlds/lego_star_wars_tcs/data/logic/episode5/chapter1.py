@@ -5,11 +5,11 @@ from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
-from ....data.characters import Character
 
 R_SPAWN = "Spawn"
 R_FIRST_AREA_BEHIND_TIE_GATE = "First Area Behind TIE Gate"

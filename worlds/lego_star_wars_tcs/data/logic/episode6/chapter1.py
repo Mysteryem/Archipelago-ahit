@@ -24,10 +24,10 @@ from ..rules import (
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
-from ....data.characters import Character
 
 R_SPAWN = "Spawn"
 R_FAR_MINIKIT_PLATFORM_LEFT_OF_SPAWN = "Far Minikit Platform Left Of Spawn"

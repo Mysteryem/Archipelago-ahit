@@ -22,11 +22,11 @@ from ..rules import (
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData, MinikitData
 
 from ...areas import Area
+from ...characters import Character
 from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
-from ...characters import Character
 from ...items.all_character_items import CHARACTER_TO_ITEM_DATA
 from ...items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 

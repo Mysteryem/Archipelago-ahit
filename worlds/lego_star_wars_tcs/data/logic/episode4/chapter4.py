@@ -22,11 +22,11 @@ from ..rules import (
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
-from ....data.characters import Character
 
 R_SPAWN = "Spawn"
 R_FIRST_CORRIDOR = "First Corridor"

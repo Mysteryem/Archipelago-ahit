@@ -10,7 +10,6 @@ from ..rules import HasAbility, HasAnyAbilities, HasAllAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
-from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *

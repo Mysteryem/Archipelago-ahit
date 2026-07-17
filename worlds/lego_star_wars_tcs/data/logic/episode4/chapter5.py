@@ -20,11 +20,11 @@ from ..rules import (
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
-from ....data.characters import Character
 
 R_TRASH_COMPACTOR = "Trash Compactor"
 R_FIRST_CORRIDOR_AND_PLATFORMING_ROOM = "First Corridor, And Platforming Room"

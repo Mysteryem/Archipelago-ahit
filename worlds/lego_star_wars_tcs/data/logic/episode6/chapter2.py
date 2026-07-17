@@ -30,7 +30,6 @@ from ...levels import Level
 
 
 from ....character_ability import *
-from ....character_ability import CAN_BUILD_BRICKS
 
 R_SKIFF_1 = "Skiff 1"
 R_SKIFF_2 = "Skiff 2"

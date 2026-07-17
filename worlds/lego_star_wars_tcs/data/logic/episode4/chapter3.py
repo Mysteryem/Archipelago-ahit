@@ -20,11 +20,11 @@ from ..rules import (
 from ..types import minikit_data, ExitData, ChapterHelper, LocationData, MinikitData
 
 from ...areas import Area
+from ...characters import Character
 from ...levels import Level
 
 from ....character_ability import *
-from ....data.characters import Character
-from ....data.items.character_items import NON_VEHICLE_CHARACTER_TO_ITEM_DATA
+from ...items.character_items import NON_VEHICLE_CHARACTER_TO_ITEM_DATA
 
 NAME = "Mos Eisley Spaceport"
 
