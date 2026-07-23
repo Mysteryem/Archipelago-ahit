@@ -378,6 +378,22 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                     # Build the next grapple point.
                     # Grapple up to the next platform, and then grapple across to the top of the bunker.
                     base=CAN_GRAPPLE & HasAbility(CAN_BUILD_BRICKS),
+                    # Allow triple jump.
+                    # Allow "Paul Skip". Stand against the right wall of the bunker entrance, up to near where the
+                    # slippery terrain begins. P2's AI will start pathfinding to the top of the bunker, teleporting
+                    # whenever a grapple point would be required. The AI will *not* use Force Grapple Leap. The AI will
+                    # *not* swap to Extra Toggle characters if they are your only GRAPPLE characters, but you can swap
+                    # P2 to an Extra Toggle GRAPPLE character in advance.
+                    # JEDI covers the Yodas from HAS_EXTRA_DISTANCE_DOUBLE_JUMP, and GRAPPLE covers ADMIRAL_ACKBAR.
+                    moderate=Or(
+                        ot_high_jump_ternary(
+                            uncapped=HasAnyAbilities(GRAPPLE | JEDI | HIGH_JUMP),
+                            capped=HasAnyAbilities(GRAPPLE | JEDI | CAN_HIGH_JUMP_SLAM),
+                        ),
+                        # Since GRAPPLE alone is enough due to Paul Skip, expand out the JEDI side of CAN_GRAPPLE.
+                        HasAllAbilities(JEDI | CAN_BUILD_BRICKS) & Extra.FORCE_GRAPPLE_LEAP.has(),
+
+                    ),
                     # Push an AT-ST up to the raised area outside the bunker, then get in the AT-ST and jump out to get
                     # on top of the bunker.
                     hard=True_(),
@@ -387,19 +403,6 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                     # the platform with the lever, and then high jump across the platforms to the top of the bunker.
                     # Allow extra distance double jump to jump from the platform with the lever to the next platform.
                     rule=CAN_ORIGINAL_TRILOGY_HIGH_JUMP | HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
-                ).ror_rule(
-                    apply_to="moderate",
-                    # Allow triple jump.
-                    # Allow "Paul Skip". Stand against the right wall of the bunker entrance, up to near where the
-                    # slippery terrain begins. P2's AI will start pathfinding to the top of the bunker, teleporting
-                    # whenever a grapple point would be required. The AI will *not* use Force Grapple Leap. The AI will
-                    # *not* swap to Extra Toggle characters if they are your only GRAPPLE characters, but you can swap
-                    # P2 to an Extra Toggle GRAPPLE character in advance.
-                    # JEDI covers the Yodas from HAS_EXTRA_DISTANCE_DOUBLE_JUMP, and GRAPPLE covers ADMIRAL_ACKBAR.
-                    rule=HasAbility(GRAPPLE) | ot_high_jump_ternary(
-                        uncapped=HasAnyAbilities(JEDI | HIGH_JUMP),
-                        capped=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
-                    ) | Character.ADMIRAL_ACKBAR.has(),  # Yoda's are covered by JEDI.
                 ),
             ),
         ),
