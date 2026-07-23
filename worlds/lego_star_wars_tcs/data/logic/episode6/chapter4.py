@@ -30,6 +30,24 @@ from ...items.character_items import NON_VEHICLE_CHARACTER_TO_ITEM_DATA
 
 from ....character_ability import *
 
+R_SPAWN = "Spawn"
+R_AFTER_FIRST_BRIDGE = "After First Bridge"
+R_SECOND_BRIDGE_LEVER_PLATFORM = "Second Bridge Lever Platform"
+R_AFTER_SECOND_BRIDGE = "After Second Bridge"
+R_MINIKIT_PLATFORM_ABOVE_SECOND_BRIDGE = "Minikit Platform Above Second Bridge"
+R_ELEVATOR_ACTIVATION_PLATFORM = "Elevator Activation Platform"
+R_GROUND_LEVEL_SPAWN = "Ground Level Spawn"
+R_BOARDED_UP_MINIKIT_PLATFORM = "Boarded Up Minikit Platform"
+R_RIVER_AREA = "River Area"
+R_AFTER_SPLIT_PATHS = "After Split Paths"
+R_EWOK_BATTLE = "Ewok Battle"
+R_BUNKER_ENTRANCE_ROOF = "Bunker Entrance Roof"
+R_INSIDE_BUNKER = "Inside Bunker"
+R_BUNKER_LEFT_SIDE_STORMTROOPER_BEHIND_WINDOW_DEFEATED = "Bunker Left Side (Stormtrooper Behind Window Defeated)"
+R_BUNKER_YELLOW_LEVER_AREA = "Bunker Yellow Lever Area"
+R_BUNKER_PURPLE_LEVER_PLATFORM = "Bunker Purple Lever Platform"
+R_BUNKER_POWER_BRICK_AREA = "Bunker Power Brick Area"
+
 
 _CAN_DIVE_ROLL_OR_FLOP_CHARACTERS: tuple[Character, ...] = (
     Character.HAN_SOLO,
@@ -100,14 +118,14 @@ _CAN_DIVE_ROLL_OR_FLOP = _make_can_dive_roll_or_flop()
 
 _helper = ChapterHelper(
     area=Area.ENDORBATTLE,
-    start_region="Spawn",
+    start_region=R_SPAWN,
 )
 
 THE_BATTLE_OF_ENDOR = _helper.make_chapter(
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "After First Bridge",
+                R_AFTER_FIRST_BRIDGE,
                 logic_options(
                     base=ot_high_jump_ternary(
                         uncapped=HasAnyAbilities(SHORTIE | HIGH_JUMP),
@@ -140,9 +158,9 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 ),
             ),
         ),
-        "After First Bridge": (
+        R_AFTER_FIRST_BRIDGE: (
             ExitData(
-                "Second Bridge Lever Platform",
+                R_SECOND_BRIDGE_LEVER_PLATFORM,
                 logic_options(
                     base=HasAllAbilities(PROTOCOL_PANEL | CAN_BUILD_BRICKS) & CAN_GRAPPLE,
                     normal=Or(
@@ -152,27 +170,27 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 ),
             ),
         ),
-        "Second Bridge Lever Platform": (
+        R_SECOND_BRIDGE_LEVER_PLATFORM: (
             ExitData(
-                "After Second Bridge",
+                R_AFTER_SECOND_BRIDGE,
                 logic_options(
                     base=HasAbility(CAN_PULL_LEVERS),
                     normal=HasAnyAbilities(CAN_PULL_LEVERS | CAN_DOUBLE_JUMP | HOVER),
                 ),
             ),
             ExitData(
-                "Minikit Platform Above Second Bridge",
+                R_MINIKIT_PLATFORM_ABOVE_SECOND_BRIDGE,
                 HasAbility(JEDI),
             )
         ),
-        "After Second Bridge": (
+        R_AFTER_SECOND_BRIDGE: (
             ExitData(
-                "Minikit Platform Above Second Bridge",
+                R_MINIKIT_PLATFORM_ABOVE_SECOND_BRIDGE,
                 # JEDI is not considered by this entrance because all difficulties that can use JEDI to traverse this
                 # entrance can preferably traverse
-                # "Second Bridge Lever Platform" -> "Minikit Platform Above Second Bridge" instead.
+                # R_SECOND_BRIDGE_LEVER_PLATFORM -> R_MINIKIT_PLATFORM_ABOVE_SECOND_BRIDGE instead.
                 logic_options(
-                    # Expect "Second Bridge Lever Platform" -> "Minikit Platform Above Second Bridge".
+                    # Expect R_SECOND_BRIDGE_LEVER_PLATFORM -> R_MINIKIT_PLATFORM_ABOVE_SECOND_BRIDGE.
                     base=False_(),
                     # Jar Jar and Tarpals cannot make it without standing on the torch.
                     normal=HasAbility(CAN_HIGH_JUMP_SLAM) & OT_HIGH_JUMP_ENABLED,
@@ -185,7 +203,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 )
             ),
             ExitData(
-                "Elevator Activation Platform",
+                R_ELEVATOR_ACTIVATION_PLATFORM,
                 logic_options(
                     base=ot_high_jump_ternary(
                         uncapped=HasAnyAbilities(SHORTIE | HIGH_JUMP),
@@ -202,10 +220,10 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 )
             ),
         ),
-        "Minikit Platform Above Second Bridge": (),
-        "Elevator Activation Platform": (
+        R_MINIKIT_PLATFORM_ABOVE_SECOND_BRIDGE: (),
+        R_ELEVATOR_ACTIVATION_PLATFORM: (
             ExitData(
-                "Ground Level Spawn",
+                R_GROUND_LEVEL_SPAWN,
                 # There is an object here that cannot be destroyed with basic melee attacks, but it doesn't actually
                 # block pushing the object.
                 # There is only actually one destroyable object that blocks the path of the pushing object.
@@ -223,9 +241,9 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
             ),
         ),
         # From this point, being able to push objects and pull levers is required.
-        "Ground Level Spawn": (
+        R_GROUND_LEVEL_SPAWN: (
             ExitData(
-                "Boarded Up Minikit Platform",
+                R_BOARDED_UP_MINIKIT_PLATFORM,
                 logic_options(
                     base=CAN_GRAPPLE & HasAbility(CAN_BUILD_BRICKS),
                     # Allow high jumping up by jumping from on top of one of the destroyable plants.
@@ -243,7 +261,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "River Area",
+                R_RIVER_AREA,
                 # CAN_PUSH_OBJECTS and CAN_PULL_LEVERS are strictly required to reach here.
                 logic_options(
                     base=Or(
@@ -298,10 +316,10 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 ),
             ),
         ),
-        "Boarded Up Minikit Platform": (),
-        "River Area": (
+        R_BOARDED_UP_MINIKIT_PLATFORM: (),
+        R_RIVER_AREA: (
             ExitData(
-                "After Split Paths",
+                R_AFTER_SPLIT_PATHS,
                 logic_options(
                     strict=False,
                     # The cover of the Protocol Panel needs to be destroyed, which requires any close-range attack,
@@ -339,9 +357,9 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 # which can be used to go past the right side with characters that cannot double jump/hover/flutter.
             ),
         ),
-        "After Split Paths": (
+        R_AFTER_SPLIT_PATHS: (
             ExitData(
-                "Ewok Battle",
+                R_EWOK_BATTLE,
                 new_level=Level.ENDORBATTLE_C,
             ),
         ),
@@ -349,9 +367,9 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
         # All characters that can push blocks can also ride vehicles. This means that all characters here can use the
         # Ewok catapult to destroy the first barricade, then fight the AT-ST and use it to destroy the second barricade.
         # This means the entire ground-level outside the bunker can be one big region.
-        "Ewok Battle": (
+        R_EWOK_BATTLE: (
             ExitData(
-                "Bunker Entrance Roof",
+                R_BUNKER_ENTRANCE_ROOF,
                 logic_options(
                     strict=False,
                     # Shoot the barricade around the platform with the button.
@@ -385,9 +403,9 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 ),
             ),
         ),
-        "Bunker Entrance Roof": (
+        R_BUNKER_ENTRANCE_ROOF: (
             ExitData(
-                "Inside Bunker",
+                R_INSIDE_BUNKER,
                 # Destroy the objects on the roof (damaging at close range is strictly required to reach here), build
                 # the sliding floor and push the object across and off the roof (pushing blocks is strictly required to
                 # reach here). Then build and use the panel.
@@ -396,9 +414,9 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 new_level=Level.ENDORBATTLE_D,
             ),
         ),
-        "Inside Bunker": (
+        R_INSIDE_BUNKER: (
             ExitData(
-                "Bunker Yellow Lever Area",
+                R_BUNKER_YELLOW_LEVER_AREA,
                 # CAN_BUILD_BRICKS and ASTROMECH_PANEL are strictly required to reach here.
                 logic_options(
                     base=Or(
@@ -424,14 +442,14 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Bunker Purple Lever Platform",
+                R_BUNKER_PURPLE_LEVER_PLATFORM,
                 # Basic melee attacks cannot reveal the 2 hidden buttons
                 CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE | CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
                 # Moderate+ can triple jump up, but all triple jump characters have combo-melee attacks and slam
                 # attacks, so this is logically irrelevant.
             ),
             ExitData(
-                "Bunker Left Side (Stormtrooper Behind Window Defeated)",
+                R_BUNKER_LEFT_SIDE_STORMTROOPER_BEHIND_WINDOW_DEFEATED,
                 logic_options(
                     strict=False,
                     base=And(
@@ -440,7 +458,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                         # Reach the protocol panel.
                         Or(
                             CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
-                            _helper.can_reach_region("Bunker Purple Lever Platform") & HasAbility(HOVER),
+                            _helper.can_reach_region(R_BUNKER_PURPLE_LEVER_PLATFORM) & HasAbility(HOVER),
                         ),
                         # Activate the panel.
                         HasAbility(PROTOCOL_PANEL),
@@ -472,7 +490,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 #  due to keyboard having more limited movement precision.
             ),
             ExitData(
-                "Bunker Power Brick Area",
+                R_BUNKER_POWER_BRICK_AREA,
                 logic_options(
                     # Expect defeating the Stormtrooper and using the Access Hatch that spawns.
                     base=False_(),
@@ -509,32 +527,32 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 And(
                     # Required to lower the force fields in front of the Green and Purple levers.
                     HasAbility(PROTOCOL_PANEL),
-                    _helper.can_reach_region("Bunker Yellow Lever Area"),
+                    _helper.can_reach_region(R_BUNKER_YELLOW_LEVER_AREA),
                     # Only PROTOCOL_PANEL requirement for the Green lever because ASTROMECH_PANEL and basic attacking at
                     # close-range are strictly required to reach here.
                     # No additional requirements for the Blue Lever.
-                    _helper.can_reach_region("Bunker Purple Lever Platform"),
+                    _helper.can_reach_region(R_BUNKER_PURPLE_LEVER_PLATFORM),
                     # After all four colored levers are pulled, there are two more levers to pull in the main room, and
                     # then explosives to build in the generator room
                 )
-                # Without going inside "Bunker Yellow Lever Area", if you could somehow aggro the Stormtroopers
-                # inside "Bunker Yellow Lever Area", and then de-aggro them, they would pull the lever for you, but I
+                # Without going inside R_BUNKER_YELLOW_LEVER_AREA, if you could somehow aggro the Stormtroopers
+                # inside R_BUNKER_YELLOW_LEVER_AREA, and then de-aggro them, they would pull the lever for you, but I
                 # don't know how to achieve this.
             ),
         ),
-        "Bunker Left Side (Stormtrooper Behind Window Defeated)": (
+        R_BUNKER_LEFT_SIDE_STORMTROOPER_BEHIND_WINDOW_DEFEATED: (
             ExitData(
-                "Bunker Power Brick Area",
+                R_BUNKER_POWER_BRICK_AREA,
                 HasAbility(SHORTIE),
             ),
         ),
-        "Bunker Yellow Lever Area": (),
-        "Bunker Purple Lever Platform": (),
-        "Bunker Power Brick Area": (),
+        R_BUNKER_YELLOW_LEVER_AREA: (),
+        R_BUNKER_PURPLE_LEVER_PLATFORM: (),
+        R_BUNKER_POWER_BRICK_AREA: (),
     },
     minikits={
         "Minikit Left Of Spawn": minikit_data(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 # Destroy the crates, build the spinner, push the spinner, then hover across.
                 # High Jump directly to the platform if enabled.
@@ -551,7 +569,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
             pickup_name="mk_0",
         ),
         "Minikit Behind Wooden Gate": minikit_data(
-            "After First Bridge",
+            R_AFTER_FIRST_BRIDGE,
             logic_options(
                 base=Or(
                     HasAllAbilities(CAN_PULL_LEVERS | HOVER | JEDI),
@@ -574,17 +592,17 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
             pickup_name="mk_1",
         ),
         "High Minikit Above Second Bridge": minikit_data(
-            "Minikit Platform Above Second Bridge",
+            R_MINIKIT_PLATFORM_ABOVE_SECOND_BRIDGE,
             pickup_name="mk_2",
         ),
         "Boarded Up Minikit": minikit_data(
-            "Boarded Up Minikit Platform",
+            R_BOARDED_UP_MINIKIT_PLATFORM,
             # Destroy the boards blocking access to the minikit.
             CAN_DAMAGE_AT_CLOSE_RANGE,
             pickup_name="mk_1",
         ),
         "Top Of River Minikit": minikit_data(
-            "River Area",
+            R_RIVER_AREA,
             logic_options(
                 strict=False,
                 base=HasAllAbilities(CAN_BUILD_BRICKS | CAN_RIDE_VEHICLES) & CAN_DAMAGE_AT_CLOSE_RANGE,
@@ -614,7 +632,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
             pickup_name="mk_0",
         ),
         "Platform After Split Paths Minikit": minikit_data(
-            "After Split Paths",
+            R_AFTER_SPLIT_PATHS,
             logic_options(
                 # Use the Access Hatch, then Hover across to the platform.
                 strict=False,
@@ -634,7 +652,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
             pickup_name="mk_2",
         ),
         "Right Minikit Outside Bunker": minikit_data(
-            "Ewok Battle",
+            R_EWOK_BATTLE,
             logic_options(
                 strict=False,
                 base=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAllAbilities(SHORTIE | JEDI | CAN_BUILD_BRICKS),
@@ -669,7 +687,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
             pickup_name="mk_0",
         ),
         "Left Minikit Outside Bunker": minikit_data(
-            "Ewok Battle",
+            R_EWOK_BATTLE,
             # Pushing blocks (implies riding vehicles), damaging up close (also possible by riding AT-ST) are required
             # to reach here, so revealing and pushing the spinner are always possible.
             # All JEDI can build, so that does not need to be checked separately.
@@ -702,7 +720,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
             pickup_name="mk_1",
         ),
         "Bunker Minikit After Hatch And Gap": minikit_data(
-            "Bunker Yellow Lever Area",
+            R_BUNKER_YELLOW_LEVER_AREA,
             logic_options(
                 base=HasAbility(HOVER),
                 # Allow triple jumps.
@@ -718,7 +736,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
             pickup_name="m_pup1",
         ),
         "Bunker Buildable Minikit": minikit_data(
-            "Inside Bunker",
+            R_INSIDE_BUNKER,
             # JEDI is required to force the panels to spawn the bricks.
             # JEDI can slam to damage to upper panels, required to reveal the force panels.
             # CAN_BUILD_BRICKS is strictly required to reach here, though all JEDI can build anyway.
@@ -727,7 +745,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
         )
     },
     power_brick=LocationData(
-        "Bunker Power Brick Area",
+        R_BUNKER_POWER_BRICK_AREA,
         logic_options(
             base=CAN_SITH_FORCE,
             # Stand on the right handrail close to the Power Brick, then triple jump to the left to get on top of the
@@ -740,10 +758,10 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
     ),
     ridables={
         Character.TRACTOR: LocationData(
-            "River Area",
+            R_RIVER_AREA,
             HasAbility(CAN_BUILD_BRICKS) & CAN_DAMAGE_AT_CLOSE_RANGE,
         ),
-        Character.CATAPULT: LocationData("Ewok Battle"),
-        Character.ATST: LocationData("Ewok Battle"),
+        Character.CATAPULT: LocationData(R_EWOK_BATTLE),
+        Character.ATST: LocationData(R_EWOK_BATTLE),
     },
 )
