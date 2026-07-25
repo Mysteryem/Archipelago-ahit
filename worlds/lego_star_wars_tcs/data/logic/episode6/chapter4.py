@@ -49,7 +49,8 @@ R_BUNKER_PURPLE_LEVER_PLATFORM = "Bunker Purple Lever Platform"
 R_BUNKER_POWER_BRICK_AREA = "Bunker Power Brick Area"
 
 
-_CAN_DIVE_ROLL_OR_FLOP_CHARACTERS: tuple[Character, ...] = (
+_CAN_HILL_ROLL_CHARACTERS: tuple[Character, ...] = (
+    # Dive roll
     Character.HAN_SOLO,
     Character.HAN_SOLO_ENDOR,
     Character.HAN_SOLO_HOOD,
@@ -62,6 +63,7 @@ _CAN_DIVE_ROLL_OR_FLOP_CHARACTERS: tuple[Character, ...] = (
     Character.LUKE_SKYWALKER_STORMTROOPER,
     Character.LUKE_SKYWALKER_TATOOINE,
 
+    # Dive roll (cannot wear hats)
     Character.LUKE_SKYWALKER_HOTH,
     Character.LANDO_PALACE_GUARD,
     Character.BESPIN_GUARD,
@@ -69,12 +71,18 @@ _CAN_DIVE_ROLL_OR_FLOP_CHARACTERS: tuple[Character, ...] = (
     Character.BOSSK,
     Character.DENGAR,
 
+    # Flop
     Character.STORMTROOPER,
     Character.BEACH_TROOPER,
     Character.SNOWTROOPER,
     Character.DEATH_STAR_TROOPER,
     Character.TIE_FIGHTER_PILOT,
     Character.SANDTROOPER,
+
+    # Air attack
+    Character.IMPERIAL_GUARD,
+    # Too difficult for Hard logic.
+    # Character.GAMORREAN_GUARD,
 )
 
 
@@ -82,23 +90,23 @@ _CAN_DIVE_ROLL_OR_FLOP_CHARACTERS: tuple[Character, ...] = (
 #  abilities to skip needing to check long sublists of that list of characters. This function should consider both the
 #  frequency of found abilities in the list of characters, as well as how many characters outside the list also have
 #  those abilities.
-def _make_can_dive_roll_or_flop() -> Rule:
+def _make_has_hill_roll_character() -> Rule:
     common_abilities = ~CharacterAbility.NONE
 
-    for character in _CAN_DIVE_ROLL_OR_FLOP_CHARACTERS:
+    for character in _CAN_HILL_ROLL_CHARACTERS:
         data = NON_VEHICLE_CHARACTER_TO_ITEM_DATA[character]
         common_abilities &= data.abilities
 
-    imperial_chars = [c for c in _CAN_DIVE_ROLL_OR_FLOP_CHARACTERS
+    imperial_chars = [c for c in _CAN_HILL_ROLL_CHARACTERS
                       if IMPERIAL in NON_VEHICLE_CHARACTER_TO_ITEM_DATA[c].abilities]
     picked_chars = set(imperial_chars)
 
-    hat_chars = [c for c in _CAN_DIVE_ROLL_OR_FLOP_CHARACTERS
+    hat_chars = [c for c in _CAN_HILL_ROLL_CHARACTERS
                  if c not in picked_chars
                  and CAN_WEAR_HAT_AND_GRAPPLE in NON_VEHICLE_CHARACTER_TO_ITEM_DATA[c].abilities]
     picked_chars.update(hat_chars)
 
-    other_chars = [c for c in _CAN_DIVE_ROLL_OR_FLOP_CHARACTERS if c not in picked_chars]
+    other_chars = [c for c in _CAN_HILL_ROLL_CHARACTERS if c not in picked_chars]
 
     return And(
         HasAllAbilities(common_abilities),
@@ -112,7 +120,7 @@ def _make_can_dive_roll_or_flop() -> Rule:
         ),
     )
 
-_CAN_DIVE_ROLL_OR_FLOP = _make_can_dive_roll_or_flop()
+_HAS_HILL_ROLL_CHARACTER = _make_has_hill_roll_character()
 """Dive-roll/flop characters can perform the "Hill Roll" speedrun strategy towards the start of Level.ENDORBATTLE_B."""
 
 
@@ -311,7 +319,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                         # Perform the "Hill Roll" speedrun strategy. This is also possible with characters that 'flop'
                         # instead of dive-roll.
                         # https://www.youtube.com/watch?v=ahzhF_OQBTs&t=244s
-                        _CAN_DIVE_ROLL_OR_FLOP,
+                        _HAS_HILL_ROLL_CHARACTER,
                     ),
                 ),
             ),
