@@ -118,7 +118,7 @@ def _make_has_hill_roll_character() -> Rule:
             HasAbility(IMPERIAL) & Character.has_any(*imperial_chars),
             Character.has_any(*other_chars),
         ),
-    )
+    ) | Extra.EXTRA_TOGGLE.has()
 
 _HAS_HILL_ROLL_CHARACTER = _make_has_hill_roll_character()
 """Dive-roll/flop characters can perform the "Hill Roll" speedrun strategy towards the start of Level.ENDORBATTLE_B."""
