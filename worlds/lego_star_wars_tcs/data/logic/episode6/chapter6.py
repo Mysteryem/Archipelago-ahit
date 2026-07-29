@@ -12,15 +12,24 @@ from ....character_ability import *
 
 from ....character_ability import IS_A_VEHICLE
 
+R_STAR_DESTROYER_BATTLE = "Star Destroyer Battle"
+R_STAR_DESTROYER_BATTLE_MINIKITS = "Star Destroyer Battle Minikits"
+R_INTO_THE_DEATH_STAR_II = "Into The Death Star II"
+R_AFTER_FORCE_FIELD = "After Force Field"
+R_REACTOR_CORE = "Reactor Core"
+R_ESCAPE_PART_1 = "Escape Part 1"
+R_ESCAPE_PART_2 = "Escape Part 2"
+R_ESCAPE_PART_3 = "Escape Part 3"
+
 
 INTO_THE_DEATH_STAR = Chapter(
     area=Area.DEATHSTAR2BATTLE,
-    start_region="Star Destroyer Battle",
+    start_region=R_STAR_DESTROYER_BATTLE,
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
-        "Star Destroyer Battle": (
+        R_STAR_DESTROYER_BATTLE: (
             ExitData(
-                "Star Destroyer Battle Minikits",
+                R_STAR_DESTROYER_BATTLE_MINIKITS,
                 logic_options(
                     base=HasAbility(VEHICLE_BLASTER),
                     # These are quite easy to destroy by deflecting enemy bolts into them, or shooting torpedoes into
@@ -29,7 +38,7 @@ INTO_THE_DEATH_STAR = Chapter(
                 )
             ),
             ExitData(
-                "Into The Death Star II",
+                R_INTO_THE_DEATH_STAR_II,
                 logic_options(
                     base=HasAbility(VEHICLE_BLASTER),
                     normal=HasAbility(VEHICLE_BLASTER) | Extra.INFINITE_TORPEDOS.has(),
@@ -39,26 +48,26 @@ INTO_THE_DEATH_STAR = Chapter(
                 new_level=Level.DEATHSTAR2BATTLE_B,
             ),
         ),
-        "Star Destroyer Battle Minikits": (),
-        "Into The Death Star II": (
+        R_STAR_DESTROYER_BATTLE_MINIKITS: (),
+        R_INTO_THE_DEATH_STAR_II: (
             ExitData(
-                "After Force Field",
+                R_AFTER_FORCE_FIELD,
                 # Torpedoes from the dispenser are all that are needed.
                 True_(),
                 new_level=Level.DEATHSTAR2BATTLE_C,
             ),
         ),
-        "After Force Field": (
+        R_AFTER_FORCE_FIELD: (
             ExitData(
-                "Reactor Core",
+                R_REACTOR_CORE,
                 # Torpedoes from the dispenser are all that are needed.
                 True_(),
                 new_level=Level.DEATHSTAR2BATTLE_D,
             ),
         ),
-        "Reactor Core": (
+        R_REACTOR_CORE: (
             ExitData(
-                "Escape Part 1",
+                R_ESCAPE_PART_1,
                 # Shoot all the shield generators on the wall (possible with torpedoes, but the hitboxes are annoying).
                 # Once all shield generators are destroyed, there is a housing around the reactor core that must be shot
                 # (torpedoes do not appear to work). Deflect Bolts works okay for this.
@@ -91,34 +100,34 @@ INTO_THE_DEATH_STAR = Chapter(
                 new_level=Level.DEATHSTAR2BATTLE_E
             ),
         ),
-        "Escape Part 1": (
-            ExitData("Escape Part 2", new_level=Level.DEATHSTAR2BATTLE_F),
+        R_ESCAPE_PART_1: (
+            ExitData(R_ESCAPE_PART_2, new_level=Level.DEATHSTAR2BATTLE_F),
         ),
-        "Escape Part 2": (
-            ExitData("Escape Part 3", new_level=Level.DEATHSTAR2BATTLE_G),
+        R_ESCAPE_PART_2: (
+            ExitData(R_ESCAPE_PART_3, new_level=Level.DEATHSTAR2BATTLE_G),
         ),
-        "Escape Part 3": (
+        R_ESCAPE_PART_3: (
             ExitData("Chapter Completion"),
         ),
     },
     minikits={
         "Front Start Destroyer Minikit": minikit_data(
-            "Star Destroyer Battle Minikits",
+            R_STAR_DESTROYER_BATTLE_MINIKITS,
             pickup_name="m_pup2",
         ),
         "Rear Start Destroyer Minikit": minikit_data(
-            "Star Destroyer Battle Minikits",
+            R_STAR_DESTROYER_BATTLE_MINIKITS,
             pickup_name="m_pup1",
         ),
         "Torpedo Pipes Minikit": minikit_data(
-            "Into The Death Star II",
+            R_INTO_THE_DEATH_STAR_II,
             # There is a torpedo dispenser, and Base logic, which would expect fighting the turrets, requires a Blaster
             # vehicle to reach here, so there are no extra requirements.
             # The minikit is granted by going near it, there is no requirement to shoot it to get it.
             pickup_name="m_pup3",
         ),
         "First TIE Gate Minikit": minikit_data(
-            "Into The Death Star II",
+            R_INTO_THE_DEATH_STAR_II,
             # There is a giant collision wall going up above the TIE gate, so skipping this one would need a clip.
             logic_options(
                 base=HasAbility(VEHICLE_TIE),
@@ -136,12 +145,12 @@ INTO_THE_DEATH_STAR = Chapter(
             pickup_name="m_pup4",
         ),
         "Hidden Corner Path Minikit": minikit_data(
-            "After Force Field",
+            R_AFTER_FORCE_FIELD,
             # The minikit is granted by going near it.
             pickup_name="m_pup5",
         ),
         "Second TIE Gate Minikit": minikit_data(
-            "After Force Field",
+            R_AFTER_FORCE_FIELD,
             logic_options(
                 base=HasAbility(VEHICLE_TIE),
                 # You can shoot the minikit through the TIE gate fairly easily with a torpedo.
@@ -155,32 +164,32 @@ INTO_THE_DEATH_STAR = Chapter(
             pickup_name="m_pup6",
         ),
         "Reactor Core Minikit": minikit_data(
-            "Reactor Core",
+            R_REACTOR_CORE,
             # Driving into the minikit collects it.
             True_(),
             pickup_name="m_pup7",
         ),
         "Escape Minikit 1": minikit_data(
-            "Escape Part 1",
+            R_ESCAPE_PART_1,
             # Driving into the minikit collects it.
             True_(),
             pickup_name="m_pup8",
         ),
         "Escape Minikit 2": minikit_data(
-            "Escape Part 2",
+            R_ESCAPE_PART_2,
             # Driving into the minikit collects it.
             True_(),
             pickup_name="m_pup9",
         ),
         "Escape Minikit 3": minikit_data(
-            "Escape Part 3",
+            R_ESCAPE_PART_3,
             # Driving into the minikit collects it.
             True_(),
             pickup_name="m_pup10",
         )
     },
     power_brick=LocationData(
-        "Reactor Core",
+        R_REACTOR_CORE,
         # Torpedoes only spawn in this area once you've destroyed all the shield generators and the reactor core
         # housing, but you can go back to the previous area and pick up torpedoes from there.
         True_(),
