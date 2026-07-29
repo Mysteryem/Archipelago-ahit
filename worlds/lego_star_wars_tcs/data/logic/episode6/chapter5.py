@@ -29,6 +29,23 @@ from ...levels import Level
 
 from ....character_ability import *
 
+R_SPAWN = "Spawn"
+R_FIGHT_PHASE_1_COMPLETED = "Fight Phase 1 Completed"
+R_ELECTRIC_FLOOR_PANELS = "Electric Floor Panels"
+R_ELECTRIC_FLOOR_PANELS_FIGHT_PHASE_2 = "Electric Floor Panels (Fight Phase 2)"
+R_ELEVATOR_AREA_FIGHT_PHASE_3 = "Elevator Area (Fight Phase 3)"
+R_ELEVATOR_AREA_PLATFORM_FIGHT_PHASE_4 = "Elevator Area Platform (Fight Phase 4)"
+R_ELEVATOR_AREA_PLATFORM = "Elevator Area Platform"
+R_RED_ROOM_DOOR_EXPLOSIVE_PLATFORM = "Red Room Door Explosive Platform"
+R_RED_ROOM = "Red Room"
+R_RED_ROOM_FAR_LEFT_LEVER_PLATFORM = "Red Room Far Left Lever Platform"
+R_RED_ROOM_ACCESS_HATCH_BRICKS_PLATFORM = "Red Room Access Hatch Bricks Platform"
+R_RED_ROOM_ACCESS_HATCH_PLATFORM = "Red Room Access Hatch Platform"
+R_RED_ROOM_TOP_OF_ELEVATOR_PLATFORM = "Red Room Top Of Elevator Platform"
+R_BEHIND_RED_ROOM_FORCE_FIELD_LEFT_OF_ELEVATOR = "Behind Red Room Force Field Left Of Elevator"
+R_RED_ROOM_ACCESS_HATCH_TUNNEL_END = "Red Room Access Hatch Tunnel End"
+R_RED_ROOM_ACCESS_HATCH_TUNNEL_END_MINIKIT = "Red Room Access Hatch Tunnel End Minikit"
+
 
 # Yoda Grab:
 # Swapping from some other characters, to Yoda, briefly causes Yoda's collision to appear in front of the character
@@ -122,7 +139,7 @@ _CAN_YODA_GRAB_FAR_LEFT_MINIKIT = And(
 
 _helper = ChapterHelper(
     area=Area.EMPERORFIGHT,
-    start_region="Spawn",
+    start_region=R_SPAWN,
 )
 
 _SPAWN_TO_ELECTRIC_FLOOR = logic_options(
@@ -143,9 +160,9 @@ _SPAWN_TO_ELECTRIC_FLOOR = logic_options(
 
 JEDI_DESTINY = _helper.make_chapter(
     regions={
-        "Spawn": (
+        R_SPAWN: (
             ExitData(
-                "Fight Phase 1 Completed",
+                R_FIGHT_PHASE_1_COMPLETED,
                 logic_options(
                     # Expect melee attacks.
                     base=HasAbility(CAN_MELEE),
@@ -158,7 +175,7 @@ JEDI_DESTINY = _helper.make_chapter(
                 )
             ),
             ExitData(
-                "Electric Floor Panels",
+                R_ELECTRIC_FLOOR_PANELS,
                 logic_options(
                     # Expect finishing the first phase to spawn the bricks for the fan.
                     base=False_(),
@@ -190,7 +207,7 @@ JEDI_DESTINY = _helper.make_chapter(
                 name = "\"Ultra Kill\" The Emperor",
             ),
             ExitData(
-                "Red Room Door Explosive Platform",
+                R_RED_ROOM_DOOR_EXPLOSIVE_PLATFORM,
                 logic_options(
                     # High jump to the platform, or reveal and use the Access Hatch.
                     base=Or(
@@ -211,7 +228,7 @@ JEDI_DESTINY = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Elevator Area Platform",
+                R_ELEVATOR_AREA_PLATFORM,
                 logic_options(
                     # Expect finishing the first three phases and using the elevator.
                     base=False_(),
@@ -224,65 +241,65 @@ JEDI_DESTINY = _helper.make_chapter(
                 )
             )
         ),
-        "Fight Phase 1 Completed": (
+        R_FIGHT_PHASE_1_COMPLETED: (
             ExitData(
-                "Electric Floor Panels (Fight Phase 2)",
+                R_ELECTRIC_FLOOR_PANELS_FIGHT_PHASE_2,
                 _SPAWN_TO_ELECTRIC_FLOOR,
             ),
         ),
-        "Electric Floor Panels": (),
-        "Electric Floor Panels (Fight Phase 2)": (
-            ExitData("Electric Floor Panels"),
+        R_ELECTRIC_FLOOR_PANELS: (),
+        R_ELECTRIC_FLOOR_PANELS_FIGHT_PHASE_2: (
+            ExitData(R_ELECTRIC_FLOOR_PANELS),
             ExitData(
-                "Elevator Area (Fight Phase 3)",
+                R_ELEVATOR_AREA_FIGHT_PHASE_3,
                 # Even C-3PO can walk fast enough to get through the electric floor paths, and Gonk Droid cannot
                 # get up to the Phase 2 part of the fight alone, so the player must have some other suitable
                 # character.
                 True_(),
             )
         ),
-        "Elevator Area (Fight Phase 3)": (
+        R_ELEVATOR_AREA_FIGHT_PHASE_3: (
             ExitData(
-                "Elevator Area Platform (Fight Phase 4)",
+                R_ELEVATOR_AREA_PLATFORM_FIGHT_PHASE_4,
                 # Blaster-only is much more annoying for phase 3, but only for the first hit of damage, so it is always
                 # possible to complete Phase 3 if Phase 1 and 2 can be completed.
                 logic_options(
                     # Base logic is expected to take the elevator.
                     base=CAN_SITH_FORCE,
                     # Allow other means of damaging The Emperor and traversing to the upper area.
-                    normal=CAN_SITH_FORCE | _helper.can_reach_region("Elevator Area Platform"),
+                    normal=CAN_SITH_FORCE | _helper.can_reach_region(R_ELEVATOR_AREA_PLATFORM),
                 ),
             ),
         ),
-        "Elevator Area Platform (Fight Phase 4)": (
-            ExitData("Elevator Area Platform"),
+        R_ELEVATOR_AREA_PLATFORM_FIGHT_PHASE_4: (
+            ExitData(R_ELEVATOR_AREA_PLATFORM),
             # Phase 5 is just a drop-down and continue fighting. And phase 6 is just chase after The Emperor.
             # Going to Phase 5 with just BLASTER is a pain, but at least only for the first hit. Make use of the Power
             # Up in one of the destroyable objects on the left side.
             # All characters that can reach this platform can jump across the two sides without issue.
             ExitData("Chapter Completion"),
         ),
-        "Elevator Area Platform": (
+        R_ELEVATOR_AREA_PLATFORM: (
             ExitData(
-                "Red Room",
+                R_RED_ROOM,
                 logic_options(
                     base=False_(),
                     # There is no ceiling here, and the floor goes as far back as the minikit behind the force field.
                     # Triple jump from one of the destroyable objects to get over the wall, then drop down behind the
-                    # minikit and walk towards the "Red Room" area.
+                    # minikit and walk towards the R_RED_ROOM area.
                     hard=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                 ),
                 new_level=Level.EMPERORFIGHT_B,
             ),
         ),
-        "Red Room Door Explosive Platform": (
+        R_RED_ROOM_DOOR_EXPLOSIVE_PLATFORM: (
             ExitData(
-                "Red Room",
+                R_RED_ROOM,
                 HasAbility(CAN_PUSH_OBJECTS) & CAN_DAMAGE_AT_CLOSE_RANGE,
                 new_level=Level.EMPERORFIGHT_B,
             ),
             ExitData(
-                "Elevator Area Platform",
+                R_ELEVATOR_AREA_PLATFORM,
                 logic_options(
                     base=False_(),
                     # Double jump, or triple jump (much easier for Grievous).
@@ -299,9 +316,9 @@ JEDI_DESTINY = _helper.make_chapter(
                 ),
             ),
         ),
-        "Red Room": (
+        R_RED_ROOM: (
             ExitData(
-                "Red Room Far Left Lever Platform",
+                R_RED_ROOM_FAR_LEFT_LEVER_PLATFORM,
                 logic_options(
                     strict=False,
                     base=CAN_DESTROY_CLOSE_SILVER_BRICKS & CAN_GRAPPLE,
@@ -314,7 +331,7 @@ JEDI_DESTINY = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Red Room Top Of Elevator Platform",
+                R_RED_ROOM_TOP_OF_ELEVATOR_PLATFORM,
                 logic_options(
                     strict=False,
                     # Destroy the chair in the center of the room (basic melee attacks do not work) to reveal bricks for
@@ -325,7 +342,7 @@ JEDI_DESTINY = _helper.make_chapter(
                     # Push the, now rotated, pushable object all the way to the elevator to activate it.
                     base=And(
                         HasAllAbilities(CAN_PUSH_OBJECTS | CAN_BUILD_BRICKS | CAN_PUSH_OBJECTS),
-                        _helper.can_reach_region("Red Room Far Left Lever Platform"),
+                        _helper.can_reach_region(R_RED_ROOM_FAR_LEFT_LEVER_PLATFORM),
                         CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE,
                     ),
                 ).ror_rule(
@@ -336,7 +353,7 @@ JEDI_DESTINY = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Behind Red Room Force Field Left Of Elevator",
+                R_BEHIND_RED_ROOM_FORCE_FIELD_LEFT_OF_ELEVATOR,
                 # Stand up against the force field, then Yoda Ceiling Clip over it.
                 # It is possible with big characters, like Droideka, but can be more difficult.
                 # Performing a Yoda Grab can also get this minikit from outside the force field. Tarpals, Imperial Guard
@@ -347,16 +364,16 @@ JEDI_DESTINY = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Red Room Access Hatch Tunnel End Minikit",
+                R_RED_ROOM_ACCESS_HATCH_TUNNEL_END_MINIKIT,
                 logic_options(
                     base=False_(),
                     hard=_CAN_YODA_GRAB_ACCESS_HATCH_MINIKIT_THROUGH_WALL,
                 ),
             ),
         ),
-        "Red Room Far Left Lever Platform": (
+        R_RED_ROOM_FAR_LEFT_LEVER_PLATFORM: (
             ExitData(
-                "Red Room Access Hatch Bricks Platform",
+                R_RED_ROOM_ACCESS_HATCH_BRICKS_PLATFORM,
                 logic_options(
                     base=False_(),
                     # The collision of this platform actually sticks out a lot more than the visuals would suggest,
@@ -365,27 +382,27 @@ JEDI_DESTINY = _helper.make_chapter(
                 ),
             ),
             ExitData(
-                "Red Room Access Hatch Platform",
+                R_RED_ROOM_ACCESS_HATCH_PLATFORM,
                 logic_options(
                     base=False_(),
                     normal=HasAbility(HOVER),
                 ),
             ),
         ),
-        "Red Room Access Hatch Bricks Platform": (
+        R_RED_ROOM_ACCESS_HATCH_BRICKS_PLATFORM: (
             # Just drop down.
-            ExitData("Red Room Access Hatch Platform"),
+            ExitData(R_RED_ROOM_ACCESS_HATCH_PLATFORM),
             ExitData(
-                "Red Room Far Left Lever Platform",
+                R_RED_ROOM_FAR_LEFT_LEVER_PLATFORM,
                 logic_options(
                     base=False_(),
                     normal=HasAbility(CAN_DOUBLE_JUMP),
                 ),
             ),
         ),
-        "Red Room Access Hatch Platform": (
+        R_RED_ROOM_ACCESS_HATCH_PLATFORM: (
             ExitData(
-                "Red Room Access Hatch Bricks Platform",
+                R_RED_ROOM_ACCESS_HATCH_BRICKS_PLATFORM,
                 logic_options(
                     base=HasAbility(CAN_DOUBLE_JUMP),
                     # The jump is not easy, but is possible with both.
@@ -394,7 +411,7 @@ JEDI_DESTINY = _helper.make_chapter(
                 )
             ),
             ExitData(
-                "Red Room Access Hatch Tunnel End",
+                R_RED_ROOM_ACCESS_HATCH_TUNNEL_END,
                 logic_options(
                     base=HasAbility(SHORTIE) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
                     # Allow Yoda Clip.
@@ -405,9 +422,9 @@ JEDI_DESTINY = _helper.make_chapter(
                 ),
             ),
         ),
-        "Red Room Top Of Elevator Platform": (
+        R_RED_ROOM_TOP_OF_ELEVATOR_PLATFORM: (
             ExitData(
-                "Behind Red Room Force Field Left Of Elevator",
+                R_BEHIND_RED_ROOM_FORCE_FIELD_LEFT_OF_ELEVATOR,
                 # Destroy the objects by the entrance door and build and use the Protocol panel to lower the platform in
                 # front of the left lever, then pull the lever to remove the force field.
                 # Then jump up to the minikit from ground level.
@@ -431,15 +448,15 @@ JEDI_DESTINY = _helper.make_chapter(
                 ),
             ),
         ),
-        "Behind Red Room Force Field Left Of Elevator": (),
-        "Red Room Access Hatch Tunnel End": (
-            ExitData("Red Room Access Hatch Tunnel End Minikit"),
+        R_BEHIND_RED_ROOM_FORCE_FIELD_LEFT_OF_ELEVATOR: (),
+        R_RED_ROOM_ACCESS_HATCH_TUNNEL_END: (
+            ExitData(R_RED_ROOM_ACCESS_HATCH_TUNNEL_END_MINIKIT),
         ),
-        "Red Room Access Hatch Tunnel End Minikit": (),
+        R_RED_ROOM_ACCESS_HATCH_TUNNEL_END_MINIKIT: (),
     },
     minikits={
         "Spawn Left Alcove Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=ot_high_jump_ternary(
                     uncapped=HasAnyAbilities(JEDI | HIGH_JUMP),
@@ -455,7 +472,7 @@ JEDI_DESTINY = _helper.make_chapter(
             pickup_name="mk_0",
         ),
         "Grapple Platform Right Of Spawn Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=CAN_DESTROY_CLOSE_SILVER_BRICKS & CAN_GRAPPLE,
                 # Allow triple jump. High jumps are not enough.
@@ -467,7 +484,7 @@ JEDI_DESTINY = _helper.make_chapter(
             pickup_name="pup1",
         ),
         "Silver Brick Panels And Red Buttons Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             # Protocol Droids are the second slowest (shared with a few other characters), and can activate the buttons
             # fine.
             # Gonk Droid is too slow even with 1P2C.
@@ -516,7 +533,7 @@ JEDI_DESTINY = _helper.make_chapter(
             pickup_name="MINI_3",
         ),
         "Below Electric Floor Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             logic_options(
                 base=HasAllAbilities(SITH | CAN_BUILD_BRICKS | BOUNTY_HUNTER | HOVER),
                 # Just jump off some of the destroyable objects.
@@ -525,20 +542,20 @@ JEDI_DESTINY = _helper.make_chapter(
             pickup_name="mk_1",
         ),
         "Protocol Panel Walkway Room Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             # Even if you clip into the room early, the minikit bricks don't spawn until the Protocol Panel is used.
             HasAllAbilities(BOUNTY_HUNTER | PROTOCOL_PANEL | CAN_BUILD_BRICKS),
             pickup_name="MINI_PI",
         ),
         "Silver Bricks Central Column Minikit": minikit_data(
-            "Spawn",
+            R_SPAWN,
             # Even if you clip inside the room with the minikit, the minikit does not spawn until the silver bricks are
             # destroyed.
             CAN_DESTROY_CLOSE_SILVER_BRICKS,
             pickup_name="m_pup1",
         ),
         "Four Lights Force Field Minikit": minikit_data(
-            "Elevator Area Platform",
+            R_ELEVATOR_AREA_PLATFORM,
             # A:
             # Sith Force the lights on the back wall of the Electric Floor Panels.
             # This Spawns bricks for a Bounty Hunter Panel on the attached catwalk. Build and use the panel to spawn the
@@ -554,7 +571,7 @@ JEDI_DESTINY = _helper.make_chapter(
                 base=And(
                     HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS | IMPERIAL),
                     CAN_SITH_FORCE,
-                    _helper.can_reach_region("Electric Floor Panels"),
+                    _helper.can_reach_region(R_ELECTRIC_FLOOR_PANELS),
                 ),
                 # Same as the trick to get into the Red Room, but you intentionally go to where the minikit is, instead
                 # of behind it.
@@ -567,7 +584,7 @@ JEDI_DESTINY = _helper.make_chapter(
             pickup_name="M_RED",
         ),
         "Red Room Left Force Field Minikit": minikit_data(
-            "Behind Red Room Force Field Left Of Elevator",
+            R_BEHIND_RED_ROOM_FORCE_FIELD_LEFT_OF_ELEVATOR,
             pickup_name="mk_0",
         ),
         "Red Room Access Hatch Minikit": minikit_data(
@@ -577,11 +594,11 @@ JEDI_DESTINY = _helper.make_chapter(
             # Sith Force the door of the Access Hatch into place.
             # Use the Access Hatch and then Destroy the Silver Brick fan in the way. Alternatively Yoda Ceiling Clip
             # over the fan (irrelevant since you need to destroy Silver Bricks to spawn the hatch door.
-            "Red Room Access Hatch Tunnel End Minikit",
+            R_RED_ROOM_ACCESS_HATCH_TUNNEL_END_MINIKIT,
             pickup_name="m_pup1",
         ),
         "Red Room Grate Force Field Minikit": minikit_data(
-            "Red Room",
+            R_RED_ROOM,
             # Destroy the silver bricks next to the grate to reveal Astromech Panel bricks.
             # Build and use the Astromech Panel to remove the force field.
             # Sith Force to remove the grate.
@@ -595,5 +612,5 @@ JEDI_DESTINY = _helper.make_chapter(
             pickup_name="mk_1",
         )
     },
-    power_brick=LocationData("Spawn", CAN_SITH_FORCE),
+    power_brick=LocationData(R_SPAWN, CAN_SITH_FORCE),
 )
