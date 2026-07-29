@@ -38,13 +38,13 @@ R_ELEVATOR_AREA_PLATFORM_FIGHT_PHASE_4 = "Elevator Area Platform (Fight Phase 4)
 R_ELEVATOR_AREA_PLATFORM = "Elevator Area Platform"
 R_RED_ROOM_DOOR_EXPLOSIVE_PLATFORM = "Red Room Door Explosive Platform"
 R_RED_ROOM = "Red Room"
-R_RED_ROOM_FAR_LEFT_LEVER_PLATFORM = "Red Room Far Left Lever Platform"
-R_RED_ROOM_ACCESS_HATCH_BRICKS_PLATFORM = "Red Room Access Hatch Bricks Platform"
-R_RED_ROOM_ACCESS_HATCH_PLATFORM = "Red Room Access Hatch Platform"
-R_RED_ROOM_TOP_OF_ELEVATOR_PLATFORM = "Red Room Top Of Elevator Platform"
-R_BEHIND_RED_ROOM_FORCE_FIELD_LEFT_OF_ELEVATOR = "Behind Red Room Force Field Left Of Elevator"
-R_RED_ROOM_ACCESS_HATCH_TUNNEL_END = "Red Room Access Hatch Tunnel End"
-R_RED_ROOM_ACCESS_HATCH_TUNNEL_END_MINIKIT = "Red Room Access Hatch Tunnel End Minikit"
+R_RED_ROOM_FAR_LEFT_LEVER_PLATFORM = "Red Room: Far Left Lever Platform"
+R_RED_ROOM_ACCESS_HATCH_BRICKS_PLATFORM = "Red Room: Access Hatch Bricks Platform"
+R_RED_ROOM_ACCESS_HATCH_PLATFORM = "Red Room: Access Hatch Platform"
+R_RED_ROOM_TOP_OF_ELEVATOR_PLATFORM = "Red Room, Top Of Elevator Platform"
+R_BEHIND_RED_ROOM_FORCE_FIELD_LEFT_OF_ELEVATOR = "Red Room: Behind Force Field Left Of Elevator"
+R_RED_ROOM_ACCESS_HATCH_TUNNEL_END = "Red Room: Access Hatch Tunnel End"
+R_RED_ROOM_ACCESS_HATCH_TUNNEL_END_MINIKIT = "Red Room: Access Hatch Tunnel End Minikit"
 
 
 # Yoda Grab:
