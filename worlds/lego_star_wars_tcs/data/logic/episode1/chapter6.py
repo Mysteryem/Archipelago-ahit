@@ -43,8 +43,8 @@ DARTH_MAUL = Chapter(
                     # High jump can actually just jump onto the floating bridge, and walk across. Maul runs away when
                     # the player gets close to him.
                     # The high jump is a bit too difficult/inconsistent with Jar Jar/Captain Tarpals, but is pretty easy
-                    # with General Grievous. TODO: Try Grievous' Bodyguard.
-                    normal=HasAbility(IS_NON_GHOST_JEDI) | Character.GENERAL_GRIEVOUS.has(),
+                    # with General Grievous and Bodyguard.
+                    normal=HasAnyAbilities(IS_NON_GHOST_JEDI | CAN_HIGH_JUMP_SLAM),
                     # Allow Jar Jar/Captain Tarpals and triple jump.
                     moderate=HasAnyAbilities(JEDI | HIGH_JUMP),
                 )
