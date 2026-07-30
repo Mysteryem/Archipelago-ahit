@@ -46,7 +46,9 @@ DARTH_MAUL = Chapter(
                     # with General Grievous and Bodyguard.
                     normal=HasAnyAbilities(IS_NON_GHOST_JEDI | CAN_HIGH_JUMP_SLAM),
                     # Allow Jar Jar/Captain Tarpals and triple jump.
-                    moderate=HasAnyAbilities(JEDI | HIGH_JUMP),
+                    # Allow Ackbar by hovering across to the light, part way across the gap, and then double jumping
+                    # across the rest of the gap.
+                    moderate=HasAnyAbilities(JEDI | HIGH_JUMP) | HasAllAbilities(CAN_DOUBLE_JUMP | HOVER),
                 )
             ),
         ),
