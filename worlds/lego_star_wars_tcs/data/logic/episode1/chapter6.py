@@ -1,12 +1,15 @@
-from rule_builder.rules import Or, True_, False_
+from rule_builder.rules import Or, True_, False_, And
 
 from ..macros import (
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     can_jump_distance_rule,
     CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
+    CAN_YODA_CLIP,
+    HAS_WALL_CLIMB,
+    HAS_ANY_YODA,
 )
 from ..option_filters import logic_options
-from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilityExceptCharacters
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
@@ -23,6 +26,30 @@ R_TOWER_ROOM = "Tower Room"
 R_TOWER_ROOM_TOP = "Tower Room Top"
 R_ENERGY_COLUMNS_ROOM = "Energy Columns Room"
 R_MAUL_BOSS_ROOM = "Maul Boss Room"
+
+_CAN_YODA_GRAB_TOWER_MINIKIT_BEHIND_SILVER_BRICKS = And(
+    HAS_ANY_YODA,
+    Or(
+        # Grab through both the grate and force field.
+        HasAbilityExceptCharacters(
+            JEDI,
+            Character.YODA,
+            Character.YODA_GHOST,
+            # Luke cannot Yoda Grab.
+            Character.LUKE_SKYWALKER_DAGOBAH,
+            Character.LUKE_SKYWALKER_BESPIN,
+            Character.LUKE_SKYWALKER_JEDI,
+            Character.LUKE_SKYWALKER_ENDOR,
+            # Custom characters also cannot Yoda Grab, but they don't have the JEDI ability on their own, so don't need
+            # to be considered for logic here.
+        ),
+        # Grievous does not need to be considered because triple-high-jump can get the minikit on their own.
+        # Character.GENERAL_GRIEVOUS.has(),
+        Character.IMPERIAL_GUARD.has(),
+        # Tarpals cannot get enough grab distance and I don't think this works with Ackbar, whose Yoda Grab requires his
+        # dive roll, meaning he ends up too high to grab the minikit, even if the grab distance was enough.
+    )
+)
 
 DARTH_MAUL = Chapter(
     area=Area.MAUL,
@@ -60,12 +87,26 @@ DARTH_MAUL = Chapter(
                     base=HasAbility(IMPERIAL),
                     normal=HasAllAbilities(JEDI | IMPERIAL),
                     moderate=HasAbility(IMPERIAL) & HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM)
+                ).or_rule(
+                    apply_to="hard+",
+                    rule=CAN_YODA_CLIP | HAS_WALL_CLIMB,
                 ),
                 er_rule=logic_options(
                     # Force the platforms with P2, then use the Imperial panel.
                     base=HasAllAbilities(JEDI | IMPERIAL),
                     # Alternatively, triple high jump all the way up.
                     moderate=HasAbility(IMPERIAL) & HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM)
+                ).or_rule(
+                    # Alternatively, you can Yoda Clip through the ceiling in front of the panel and fall down on the
+                    # other side of the panel, then walk into the transition.
+                    # Alternatively, you can Wall Climb up the outside and go all the way over the top of the wall
+                    # collision. To make things easier for you, note that the walls, either side of the alcove
+                    # containing the Imperial panel, have floor collision on top, so you can Wall Climb all the way up,
+                    # and then drop down onto the top of one of these walls to more easily walk far enough to get over
+                    # the Imperial panel 'door', without going too far that you hit the backwards transition instead of
+                    # the forwards transition.
+                    apply_to="hard+",
+                    rule=CAN_YODA_CLIP | HAS_WALL_CLIMB,
                 ),
                 new_level=Level.MAUL_B,
             ),
@@ -124,6 +165,11 @@ DARTH_MAUL = Chapter(
             # Logically, fighting the Droideka and going through the force doors corridor (maul_e), is skipped and the
             # logic goes straight to the boss fight (maul_f).
             # Note: In higher logic, Blasters can skip fighting the Droidekas by shooting Maul into the pit.
+            # Note: In expert logic, you can get out-of-bounds in the energy shield corridor room with Grievous by wall
+            #  climbing at the start of the level, and then walk under the level, bypassing everything and then jumping
+            #  back in-bounds at the level transition to the boss fight. This would allow for reaching the boss fight
+            #  without JEDI, which is currently assumed to be present by the minikits within the Boss Fight. I don't
+            #  currently know about other out-of-bounds strategies in this level.
             ExitData(
                 R_MAUL_BOSS_ROOM,
                 logic_options(
@@ -185,7 +231,16 @@ DARTH_MAUL = Chapter(
             # IS_NON_GHOST_JEDI implies CAN_JUMP_DISTANCE_0_69.
             # Normal: HasAbility(IS_NON_GHOST_JEDI) | Character.GENERAL_GRIEVOUS.has() implies CAN_JUMP_DISTANCE_0_69.
             # Moderate: HasAnyAbilities(JEDI | HIGH_JUMP) implies CAN_JUMP_DISTANCE_0_69.
-            CAN_DESTROY_CLOSE_SILVER_BRICKS,
+            logic_options(
+                strict=False,
+                base=CAN_DESTROY_CLOSE_SILVER_BRICKS,
+            ).or_rule(
+                apply_to="hard+",
+                rule=Or(
+                    HasAbility(CAN_HIGH_JUMP_SLAM),
+                    _CAN_YODA_GRAB_TOWER_MINIKIT_BEHIND_SILVER_BRICKS,
+                ),
+            ),
             er_rule=logic_options(
                 # The first gap, at its shortest point is 0.8296566898853424.
                 # The second gap, at its shortest point is 0.8234030011015903.
@@ -196,7 +251,20 @@ DARTH_MAUL = Chapter(
                 normal=CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
                 # Include Ewok and other slow characters that can only barely get enough jump distance.
                 moderate=HasAbility(CAN_JUMP_DISTANCE_0_69),
-            ).and_rule(CAN_DESTROY_CLOSE_SILVER_BRICKS),
+            ).and_rule(
+                CAN_DESTROY_CLOSE_SILVER_BRICKS
+            ).or_rule(
+                apply_to="hard+",
+                rule=Or(
+                    # Triple-high-jump over both the forwards and backwards transitions. Walk all the way down the
+                    # corridor and then move back in the air after falling off the end of the corridor to land on the
+                    # floor of the corridor below and walk all the way back to the minikit. The Silver Bricks have no
+                    # collision on the back, so you can just walk out.
+                    HasAbility(CAN_HIGH_JUMP_SLAM),
+                    # Yoda Grab the minikit from outside the Silver Bricks.
+                    _CAN_YODA_GRAB_TOWER_MINIKIT_BEHIND_SILVER_BRICKS,
+                ),
+            ),
             pickup_name="m_pup1",
         ),
         "Imperial Platform Minikit": minikit_data(
