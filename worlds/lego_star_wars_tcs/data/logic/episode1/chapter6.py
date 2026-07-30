@@ -199,7 +199,10 @@ DARTH_MAUL = Chapter(
         ),
         "Imperial Platform Minikit": minikit_data(
             R_ENERGY_COLUMNS_ROOM,
-            HasAbility(IMPERIAL),
+            logic_options(
+                base=HasAbility(IMPERIAL),
+                normal=HasAnyAbilities(IMPERIAL | JETPACK),
+            ),
             pickup_name="m_pup1",
         ),
         "Energy Column Minikit": minikit_data(
