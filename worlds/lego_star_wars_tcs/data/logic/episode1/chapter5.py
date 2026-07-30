@@ -7,6 +7,7 @@ from ..macros import (
     CAN_SITH_FORCE,
     CAN_DAMAGE_SHIELDED_DROIDEKA,
     CAN_USE_DEFLECT_BOLTS,
+    CAN_YODA_CLIP,
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
@@ -59,6 +60,12 @@ RETAKE_THEED_PALACE = Chapter(
                     # Expert can push R2-D2 onto some objects to get him up to the panel, though I don't know if this is
                     # possible with other characters that cannot jump normally.
                     # expert=HasAbility(ASTROMECH_PANEL),
+                ).or_rule(
+                    # Clip through the door with a swap to a small character, or clip through the ceiling of the round
+                    # window area with the minikit. In the latter case, you need to be careful to not go too short and
+                    # fall down on the front of the door, or too far, and hit the backwards transition.
+                    apply_to="hard+",
+                    rule=CAN_YODA_CLIP,
                 ),
                 new_level=Level.RETAKE_B,
             ),
@@ -83,6 +90,11 @@ RETAKE_THEED_PALACE = Chapter(
                     normal=HasAbility(CAN_BUILD_BRICKS) & CAN_DAMAGE_AT_CLOSE_RANGE,
                     moderate=And(
                         HasAbility(CAN_BUILD_BRICKS),
+                        CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS,
+                    ),
+                    # Yoda Clip could have skipped the first Astromech Panel, so logic needs to check for it here.
+                    hard=And(
+                        HasAllAbilities(CAN_BUILD_BRICKS | ASTROMECH_PANEL),
                         CAN_DAMAGE_AT_CLOSE_RANGE | CAN_USE_DEFLECT_BOLTS,
                     ),
                 ),
