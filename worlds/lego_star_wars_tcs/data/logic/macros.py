@@ -303,3 +303,12 @@ HAS_CAN_REFLECT_BLASTER_BOLTS = HasAbility(IS_NON_GHOST_JEDI) | Character.GENERA
 
 HAS_HIGH_JUMP_EXCEPT_BODYGUARD = HasAbilityExceptCharacters(HIGH_JUMP, Character.GRIEVOUS_BODYGUARD)
 HAS_HIGH_JUMP_EXCEPT_BODYGUARD_OT = HAS_HIGH_JUMP_EXCEPT_BODYGUARD & OT_HIGH_JUMP_ENABLED
+
+HAS_WALL_CLIMB = Character.GENERAL_GRIEVOUS.has() & HasAnyCharacterExcept(
+    Character.GENERAL_GRIEVOUS,
+    # todo: I have not actually checked these characters, and there could be others that don't work.
+    Character.DROIDEKA,
+    Character.DEXTER_JETTSTER,
+)
+"""Grievous can climb up some walls by partially clipping into them following a character swap with the control stick in
+ neutral, and then jumping again. Characters with large collision boxes are excluded."""

@@ -8,9 +8,13 @@ from ..macros import (
     CAN_SITH_FORCE_AND_GRAPPLE,
     CAN_SITH_FORCE,
     CAN_ACTIVATE_CLOSE_TARGET,
+    CAN_YODA_CLIP,
+    HAS_ANY_YODA,
+    CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
+    HAS_WALL_CLIMB,
 )
 from ..option_filters import logic_options
-from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilityExceptCharacters
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAbilityExceptCharacters, HasAnyCharacterExcept
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
@@ -35,7 +39,16 @@ ESCAPE_FROM_NABOO = Chapter(
                 R_ROOFTOPS_CLIMB,
                 logic_options(
                     base=CAN_GRAPPLE,
+                    # Allow triple high jump, possible from standing on one of the flowerbeds, but easier by starting
+                    # from one of the fences which are higher up.
                     moderate=CAN_GRAPPLE | HasAbility(CAN_HIGH_JUMP_SLAM),
+                    # Allow Yoda's extra height triple jump, starting from the spike on one of the fences.
+                    # You can also Yoda Clip into the arch one of the windows is in, and stand on top of the window,
+                    # then jump up.
+                    hard=CAN_GRAPPLE | HasAbility(CAN_HIGH_JUMP_SLAM) | And(
+                        HAS_ANY_YODA,
+                        HasAnyCharacterExcept(Character.YODA, Character.YODA_GHOST),
+                    ),
                 )
             ),
         ),
@@ -48,8 +61,19 @@ ESCAPE_FROM_NABOO = Chapter(
                 logic_options(
                     base=True_(),
                     normal=CAN_ACTIVATE_CLOSE_TARGET,
+                    # Allow Yoda Clip while standing beneath the arch. The arch's collision extends like a tunnel with
+                    # double-sided walls, so you'll have to walk around to the end of the collision to then walk inside
+                    # the tunnel and get to the level transition. Droideka always seems to get pushed out.
+                    # Triple High Jump should also be possible here because there is a collision wall to the right that
+                    # is just short enough to get onto, but I was having trouble with this.
+                    hard=CAN_ACTIVATE_CLOSE_TARGET | (HAS_ANY_YODA & HasAnyCharacterExcept(
+                        Character.YODA, Character.YODA_GHOST, Character.DROIDEKA)),
                 ),
-                er_rule=CAN_ACTIVATE_CLOSE_TARGET,
+                er_rule=logic_options(
+                    base=CAN_ACTIVATE_CLOSE_TARGET,
+                    hard=CAN_ACTIVATE_CLOSE_TARGET | (HAS_ANY_YODA & HasAnyCharacterExcept(
+                        Character.YODA, Character.YODA_GHOST, Character.DROIDEKA)),
+                ),
                 new_level=Level.RESCUE_C,
             ),
         ),
@@ -62,6 +86,9 @@ ESCAPE_FROM_NABOO = Chapter(
                         HasAnyAbilities(BLASTER | WEAPON_EWOK),
                         CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_HEIGHT_0_37),
                     ),
+                ).or_rule(
+                    apply_to="hard+",
+                    rule=CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS | HAS_WALL_CLIMB,
                 ),
                 er_rule=logic_options(
                     base=HasAbility(BLASTER),
@@ -74,6 +101,12 @@ ESCAPE_FROM_NABOO = Chapter(
                         HasAnyAbilities(BLASTER | WEAPON_EWOK),
                         CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_HEIGHT_0_37),
                     ),
+                ).or_rule(
+                    # The wall above the gate can be wall climbed, or you can Yoda Clip through the arched part of the
+                    # collision. Either way, you can then drop down to the other side of the gate and hit the level
+                    # transition.
+                    apply_to="hard+",
+                    rule=CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS | HAS_WALL_CLIMB,
                 ),
                 # rescue_d does not exist.
                 new_level=Level.RESCUE_E,
@@ -167,11 +200,25 @@ ESCAPE_FROM_NABOO = Chapter(
                 base=HasAllAbilities(SHORTIE | HIGH_JUMP),
                 # Jedi can triple jump up instead of using high jump, so Force Grapple Leap is irrelevant.
                 moderate=HasAbility(SHORTIE) & HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
+            ).or_rule(
+                apply_to="hard+",
+                rule=Or(
+                    # Yoda Clip from the small arched alcove next to the Access Hatch. You can then either jump up to
+                    # the higher area, or character swap to upwarp to the higher area.
+                    # To get through the small target gate, you need another non-Yoda character to either activate the
+                    # target and open the gate, or to Yoda Clip around the gate.
+                    CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
+                    # The wall to the left of the small arched alcove can be wall-climbed with Grievous.
+                    HAS_WALL_CLIMB,
+                ),
             ),
             er_rule=logic_options(
                 # Grapple or High Jump up and then use the hatch.
                 base=HasAbility(SHORTIE) & (CAN_GRAPPLE | HasAbility(HIGH_JUMP)),
                 moderate=HasAbility(SHORTIE) & HasAnyAbilities(JEDI | GRAPPLE | HIGH_JUMP),
+            ).or_rule(
+                apply_to="hard+",
+                rule=CAN_YODA_CLIP,
             ),
             pickup_name="mk_0",
         ),
