@@ -7,9 +7,11 @@ from ..macros import (
     CAN_DAMAGE_SHIELDED_DROIDEKA,
     CAN_ACTIVATE_CLOSE_TARGET,
     HAS_FLUTTER_CHARACTER,
+    HAS_WALL_CLIMB,
+    HAS_ANY_YODA,
 )
 from ..option_filters import logic_options
-from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAnyCharacterExcept
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
@@ -100,6 +102,8 @@ DROID_FACTORY = Chapter(
                         CAN_DAMAGE_AT_CLOSE_RANGE,
                         HasAbility(IMPERIAL),
                     ),
+                    # You can Wall Climb over the top of the wall, but the transition is inside the door collision, and
+                    # I could not manage to hit it from behind.
                 ),
             ),
             ExitData(
@@ -170,7 +174,11 @@ DROID_FACTORY = Chapter(
         R_AFTER_FIRST_CRUCIBLE_PUZZLE: (
             ExitData(
                 R_ROLLING_PLATFORMS_ROOM,
-                HasAbility(ASTROMECH_PANEL),
+                logic_options(
+                    base=HasAbility(ASTROMECH_PANEL),
+                    # Allow Wall Climbing over the wall
+                    hard=HasAbility(ASTROMECH_PANEL) | HAS_WALL_CLIMB,
+                )
             ),
             ExitData(
                 R_LAVA_ROOM,
@@ -180,10 +188,25 @@ DROID_FACTORY = Chapter(
                         HasAbility(ASTROMECH_PANEL),
                         CAN_DAMAGE_AT_CLOSE_RANGE,
                     ),
-                    moderate=Or(
-                        HasAnyAbilities(HOVER | GRAPPLE | CAN_DOUBLE_JUMP),
-                        HAS_FLUTTER_CHARACTER,
-                    )
+                    moderate=And(
+                        HasAbility(ASTROMECH_PANEL),
+                        Or(
+                            HasAnyAbilities(HOVER | GRAPPLE | CAN_DOUBLE_JUMP),
+                            HAS_FLUTTER_CHARACTER,
+                        ),
+                    ),
+                ).or_rule(
+                    # Wedge yourself between the two explosives closest to the panel.
+                    # Swap to droideka.
+                    # Roll partially inside the door (don't go too far otherwise you cannot swap characters and will
+                    # need to roll back out of the door)
+                    # Character swap to upwarp to the collision floor on the top of the door.
+                    # Walk forwards to hit the level transition.
+                    apply_to="hard+",
+                    rule=Character.DROIDEKA.has() & HasAbility(CAN_JUMP_HEIGHT_0_37),
+                    # Technically, you can wall climb here to get over the collision and hit the transition from behind,
+                    # but the collision wall is huge and a significant part of the collision extends beyond the wall's
+                    # model, making the wall climb close to blind towards the end.
                 ),
                 new_level=Level.FACTORY_E,
             ),
@@ -202,6 +225,9 @@ DROID_FACTORY = Chapter(
                     # Grievous' Bodyguard also barely can, but jumping to the middle platform along the outside is
                     # easier (which Jedi can also jump to from the spinning platforms).
                     normal=HasAbility(PROTOCOL_PANEL) & HasAnyAbilities(JEDI | HOVER | GRAPPLE | HIGH_JUMP),
+                    # Technically, you can wall climb here, but it seems that you need a specific line (some of the wall
+                    # seems to not work), and the end of the climb is blind because the collision extends beyond the
+                    # wall's model.
                 ),
                 new_level=Level.FACTORY_F,
             ),
@@ -233,8 +259,9 @@ DROID_FACTORY = Chapter(
                         # HasAbility(JETPACK),
                     ),
                     moderate=Or(
-                        # JEDI/Grievous can triple jump up to the cave support now and just triple jump across the lava.
-                        HasAbility(CAN_TRIPLE_JUMP_GREAT_DISTANCE),
+                        # JEDI/Grievous can triple jump up to the cave support now and just triple jump across the lava,
+                        # or force the platform as Yoda.
+                        HasAnyAbilities(JEDI | CAN_TRIPLE_JUMP_GREAT_DISTANCE),
                         And(
                             # Grapple or high jump up to the cave support thing and destroy it, then hover across.
                             Or(
@@ -372,7 +399,11 @@ DROID_FACTORY = Chapter(
             # Complete the maze the intended way.
             base=HasAbility(ASTROMECH_PANEL),
             # Triple high jump over the force field walls.
-            moderate=HasAnyAbilities(ASTROMECH_PANEL | CAN_HIGH_JUMP_SLAM),
+            # Yoda triple jumps are allowed due to their better height.
+            moderate=Or(
+                HasAnyAbilities(ASTROMECH_PANEL | CAN_HIGH_JUMP_SLAM),
+                HAS_ANY_YODA & HasAnyCharacterExcept(Character.YODA, Character.YODA_GHOST),
+            ),
             # Jedi triple jump can also just barely get over the walls with a near max height triple jump.
             # This maybe could be in moderate logic, but feels surprisingly difficult, so is only in hard logic
             # currently.
