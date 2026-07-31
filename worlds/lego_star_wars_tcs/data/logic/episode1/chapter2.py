@@ -2,10 +2,11 @@ from rule_builder.rules import And, Or, False_, True_
 
 from ..macros import CAN_USE_SELF_DESTRUCT
 from ..option_filters import logic_options
-from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
+from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities, HasAnyCharacterExcept
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...characters import Character
 from ...extras import Extra
 from ...levels import Level
 
@@ -40,7 +41,15 @@ INVASION_OF_NABOO = Chapter(
     regions={
         R_FOREST_SPAWN: (
             # Expert logic could get past the tree without a jedi.
-            ExitData(R_AFTER_FIRST_FALLEN_TREE, HasAbility(JEDI)),
+            ExitData(
+                R_AFTER_FIRST_FALLEN_TREE,
+                logic_options(
+                    base=HasAbility(JEDI),
+                    # Allow triple-high-jump. All jedi can actually triple jump high enough to go over the top of the
+                    # tree, though it's a bit close with non-Yoda jedi.
+                    moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
+                ),
+            ),
         ),
         R_AFTER_FIRST_FALLEN_TREE: (
             ExitData(
@@ -57,7 +66,24 @@ INVASION_OF_NABOO = Chapter(
         ),
         R_CLIFF_FACE_RUINS_ENTRANCE: (
             # Hover across the gap or force down the mosaic.
-            ExitData(R_CLIFF_FACE_RUINS_COLLAPSING_DEBRIS_SECTION, er_rule=HasAnyAbilities(JEDI | HOVER)),
+            ExitData(
+                R_CLIFF_FACE_RUINS_COLLAPSING_DEBRIS_SECTION,
+                logic_options(
+                    base=True_(),
+                    moderate=HasAnyAbilities(JEDI | HOVER) | Character.GENERAL_GRIEVOUS.has(),
+                    # JEDI | CAN_HIGH_JUMP_SLAM is required towards the start.
+                    hard=True_(),
+                ),
+                er_rule=logic_options(
+                    base=HasAbility(JEDI),
+                    # Allow HOVER (P2 AI only follows if the mosaic is forced)
+                    normal=HasAnyAbilities(JEDI | HOVER),
+                    # Allow Grievous's triple jump, but not Bodyguard.
+                    moderate=HasAnyAbilities(JEDI | HOVER) | Character.GENERAL_GRIEVOUS.has(),
+                    # Allow Bodyguard's triple jump by jumping to the top of the waterfall, and then across.
+                    hard=HasAnyAbilities(JEDI | HOVER | CAN_HIGH_JUMP_SLAM),
+                ),
+            ),
         ),
         R_CLIFF_FACE_RUINS_COLLAPSING_DEBRIS_SECTION: (
             ExitData(
@@ -113,7 +139,7 @@ INVASION_OF_NABOO = Chapter(
                     # Force down the blocks on the top of the square and then high jump up.
                     base=HasAllAbilities(JEDI | HIGH_JUMP),
                     # Triple jump up (don't even need to force down the blocks).
-                    moderate=HasAbility(JEDI),
+                    moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                 ),
             ),
         ),
@@ -167,11 +193,17 @@ INVASION_OF_NABOO = Chapter(
         R_SWAMP_RUINS_ENTRANCE: (
             ExitData(
                 R_SWAMP_RUINS,
+                logic_options(
+                    base=True_(),
+                    moderate=HasAbility(JEDI),
+                    hard=True_(),
+                ),
                 er_rule=logic_options(
                     # Move the blocks out of the way to collapse the log.
                     base=HasAbility(JEDI),
-                    # A triple jump can bypass the log entirely, but the jump is quite tight.
-                    hard=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
+                    # A triple jump can bypass the log entirely, but the jump is quite tight, so is only in Hard logic.
+                    # Jar Jar + Tarpals can also make the jump as far as I know.
+                    hard=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM | HIGH_JUMP),
                 ),
             ),
         ),
@@ -180,6 +212,7 @@ INVASION_OF_NABOO = Chapter(
             #     "Swamp Behind MTT",
             #     # The collision for the MTT is enormous, though there's probably ways to get out-of-bounds to get
             #     # behind it.
+            #     # One of the trees close by can be stood on to help with getting out-of-bounds.
             #     can_destroy_close_silver_bricks,
             # ),
             ExitData(
@@ -257,6 +290,10 @@ INVASION_OF_NABOO = Chapter(
         ),
         "Minikit Under Crashed MTT": minikit_data(
             R_AFTER_FIRST_FALLEN_TREE,
+            logic_options(
+                base=True_(),
+                moderate=HasAbility(JEDI),
+            ),
             er_rule=HasAbility(JEDI),
             pickup_name="m_pOOP3",
         ),
@@ -278,7 +315,18 @@ INVASION_OF_NABOO = Chapter(
         ),
         "Minikit In Ruins Alcove": minikit_data(
             R_SWAMP_RUINS_ENTRANCE,
-            er_rule=HasAbility(JEDI),
+            logic_options(
+                base=True_(),
+                # Moderate can get here with just Grievous.
+                # Hard can get here with just Grievous/Bodyguard.
+                moderate=HasAbility(JEDI),
+            ),
+            er_rule=logic_options(
+                base=HasAbility(JEDI),
+                # Just fall down next to it.
+                # todo: I thought you simply couldn't get this without forcing the bricks down?
+                normal=True_()
+            ),
             pickup_name="mk_2",
         ),
         "Minikit After Access Hatch": minikit_data(
@@ -288,16 +336,27 @@ INVASION_OF_NABOO = Chapter(
         ),
         "Minikit In Boarded Up Room": minikit_data(
             R_SWAMP_RUINS,
+            logic_options(
+                base=True_(),
+                # Hard logic can get here with just General Grievous and Droideka.
+                hard=HasAnyCharacterExcept(Character.GENERAL_GRIEVOUS),
+            ),
             er_rule=logic_options(
                 # Force the boards out of the way.
                 base=HasAbility(JEDI),
                 # The collision on the boards is broken, you can walk through them if you know what you're doing.
-                moderate=True_(),
+                # Droideka/Grievous are too big.
+                moderate=HasAnyCharacterExcept(Character.DROIDEKA, Character.GENERAL_GRIEVOUS),
             ),
             pickup_name="mk_01",
         ),
         "Statue Puzzle Minikit": minikit_data(
             R_SWAMP_BEFORE_WATER,
+            logic_options(
+                base=True_(),
+                # Hard can get here with just Grievous/Bodyguard.
+                hard=HasAbility(JEDI),
+            ),
             er_rule=HasAbility(JEDI),
             pickup_name="m_pup1",
         ),
