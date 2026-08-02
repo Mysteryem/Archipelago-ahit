@@ -49,24 +49,26 @@ R_ACROSS_SEA_OF_QUICKSAND = "Across Sea Of Quicksand"
 THROUGH_THE_JUNDLAND_WASTES = Chapter(
     area=Area.TATOOINE,
     start_region=R_SPAWN,
-    intended_completion_path=(
-        R_ACROSS_GAP,
-        R_SANDCRAWLER_APPROACH_BEFORE_QUICKSAND,
-        R_SANDCRAWLER_GROUND_LEVEL,
-        # todo: Moderate+ should alternatively be able to skip going to R_TOP_OF_SANDCRAWLER.
-        R_TOP_OF_SANDCRAWLER,
-        R_SANDCRAWLER_INTERIOR_START,
-        R_SANDCRAWLER_ELEVATOR_ROOM,
-        R_SANDCRAWLER_TWIN_SWITCHES_ROOM,
-        R_SANDCRAWLER_CAGED_DROIDS_ROOM,
-        R_SANDCRAWLER_EXIT_ROOM,
-        R_POST_SANDCRAWLER_SPAWN,
-        R_AFTER_QUICKSAND_ARCH,
-        R_LARGE_QUICKSAND_POOL,
-        R_AFTER_LARGE_QUICKSAND_POOL,
-        R_BEFORE_SEA_OF_QUICKSAND,
-        R_ACROSS_SEA_OF_QUICKSAND,
-    ),
+    intended_completion_path={
+        "base": (
+            R_ACROSS_GAP,
+            R_SANDCRAWLER_APPROACH_BEFORE_QUICKSAND,
+            R_SANDCRAWLER_GROUND_LEVEL,
+            # todo: Moderate+ should alternatively be able to skip going to R_TOP_OF_SANDCRAWLER.
+            R_TOP_OF_SANDCRAWLER,
+            R_SANDCRAWLER_INTERIOR_START,
+            R_SANDCRAWLER_ELEVATOR_ROOM,
+            R_SANDCRAWLER_TWIN_SWITCHES_ROOM,
+            R_SANDCRAWLER_CAGED_DROIDS_ROOM,
+            R_SANDCRAWLER_EXIT_ROOM,
+            R_POST_SANDCRAWLER_SPAWN,
+            R_AFTER_QUICKSAND_ARCH,
+            R_LARGE_QUICKSAND_POOL,
+            R_AFTER_LARGE_QUICKSAND_POOL,
+            R_BEFORE_SEA_OF_QUICKSAND,
+            R_ACROSS_SEA_OF_QUICKSAND,
+        ),
+    },
     regions={
         R_SPAWN: (
             ExitData(

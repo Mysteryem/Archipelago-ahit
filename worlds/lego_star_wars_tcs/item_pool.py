@@ -37,8 +37,7 @@ from .levels import (
     DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
 )
 from .locations import LegoStarWarsTCSShopLocation
-from .options import ChapterUnlockRequirement, GoalChapterLocationsMode
-
+from .options import ChapterUnlockRequirement, GoalChapterLocationsMode, LogicDifficulty
 
 if TYPE_CHECKING:
     from . import LegoStarWarsTCSWorld
@@ -486,11 +485,29 @@ def _get_chapter_completion_ability_requirements(
 
     path: list[Entrance] = []
     if chapter.intended_completion_path:
+        difficulty = world.options.logic_difficulty
+        if difficulty == LogicDifficulty.option_hard:
+            path_priority = ("hard", "moderate", "normal", "base")
+        elif difficulty == LogicDifficulty.option_moderate:
+            path_priority = ("moderate", "normal", "base")
+        elif difficulty == LogicDifficulty.option_normal:
+            path_priority = ("normal", "base")
+        elif difficulty == LogicDifficulty.option_none:
+            path_priority = ("base",)
+        else:
+            raise ValueError(f"Unknown logic difficulty: {difficulty}")
+        for path_key in path_priority:
+            if path_key in chapter.intended_completion_path:
+                completion_path = chapter.intended_completion_path[path_key]
+                break
+        else:
+            raise ValueError(f"Could not find any logic difficulty out of {path_priority} in"
+                             f" {chapter.intended_completion_path}")
         # Trust that the path visits every logically required region.
         ignore_can_reach_region = True
         current_region = start_region
         already_visited: dict[str, Region] = {area.prefix_name(chapter.start_region): start_region}
-        for internal_region_name in chapter.intended_completion_path:
+        for internal_region_name in completion_path:
             region_name = area.prefix_name(internal_region_name)
             if region_name in already_visited:
                 # Jump back to an already visited region.

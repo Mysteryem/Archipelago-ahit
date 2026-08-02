@@ -86,16 +86,18 @@ _HAS_CHARACTER_THAT_ALLOWS_YODA_TO_TRIPLE_JUMP_GREAT_DISTANCE = logic_options(
 DISCOVERY_ON_KAMINO = Chapter(
     area=Area.KAMINO,
     start_region=R_LANDING_PAD,
-    intended_completion_path=(
-        R_CLONE_VIEWING_AREA,
-        R_LIVING_QUARTERS,
-        R_LIVING_QUARTERS_BEHIND_FORCE_FIELD,
-        R_OUTSIDE_JANGO_CHASE,
-        R_END_OF_OUTSIDE_JANGO_CHASE,
-        R_INTERIOR_BEFORE_JANGO_FIGHT,
-        R_SITH_FORCE_DROID_ROOM,
-        R_JANGO_FIGHT,
-    ),
+    intended_completion_path={
+        "base": (
+            R_CLONE_VIEWING_AREA,
+            R_LIVING_QUARTERS,
+            R_LIVING_QUARTERS_BEHIND_FORCE_FIELD,
+            R_OUTSIDE_JANGO_CHASE,
+            R_END_OF_OUTSIDE_JANGO_CHASE,
+            R_INTERIOR_BEFORE_JANGO_FIGHT,
+            R_SITH_FORCE_DROID_ROOM,
+            R_JANGO_FIGHT,
+        ),
+    },
     regions={
         R_LANDING_PAD: (
             ExitData(

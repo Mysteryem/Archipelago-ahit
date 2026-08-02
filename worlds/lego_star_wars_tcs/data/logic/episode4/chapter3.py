@@ -105,21 +105,23 @@ helper = ChapterHelper(
 
 
 MOS_EISLEY_SPACEPORT = helper.make_chapter(
-    intended_completion_path=(
-        R_ABOVE_FIRST_STORMTROOPER_GATE,
-        R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT,
-        R_AFTER_BLOCKED_STREET,
-        R_CANTINA_ENTRANCE,
-        R_INSIDE_CANTINA,
-        R_SPY_CHASE_START,
-        R_SPY_CHASE_SPAWN_FIRST_STOREY,
-        R_SPY_CHASE_BOMB_GROUND_LEVEL,
-        R_SPY_CHASE_BOMB_LEVER,
-        # Go back down.
-        R_SPY_CHASE_BOMB_GROUND_LEVEL,
-        R_STORMTROOPER_AND_DEWBACK_COURTYARD,
-        R_HANGAR,
-    ),
+    intended_completion_path={
+        "base": (
+            R_ABOVE_FIRST_STORMTROOPER_GATE,
+            R_AFTER_STORMTROOPER_GATE_PROTOCOL_EXIT,
+            R_AFTER_BLOCKED_STREET,
+            R_CANTINA_ENTRANCE,
+            R_INSIDE_CANTINA,
+            R_SPY_CHASE_START,
+            R_SPY_CHASE_SPAWN_FIRST_STOREY,
+            R_SPY_CHASE_BOMB_GROUND_LEVEL,
+            R_SPY_CHASE_BOMB_LEVER,
+            # Go back down.
+            R_SPY_CHASE_BOMB_GROUND_LEVEL,
+            R_STORMTROOPER_AND_DEWBACK_COURTYARD,
+            R_HANGAR,
+        ),
+    },
     regions={
         R_SPAWN: (
             ExitData(

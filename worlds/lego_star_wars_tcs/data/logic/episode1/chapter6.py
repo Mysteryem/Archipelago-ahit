@@ -54,12 +54,14 @@ _CAN_YODA_GRAB_TOWER_MINIKIT_BEHIND_SILVER_BRICKS = And(
 DARTH_MAUL = Chapter(
     area=Area.MAUL,
     start_region=R_SPAWN,
-    intended_completion_path=(
-        R_HANGAR,
-        R_TOWER_ROOM,
-        R_ENERGY_COLUMNS_ROOM,
-        R_MAUL_BOSS_ROOM,
-    ),
+    intended_completion_path={
+        "base": (
+            R_HANGAR,
+            R_TOWER_ROOM,
+            R_ENERGY_COLUMNS_ROOM,
+            R_MAUL_BOSS_ROOM,
+        ),
+    },
     regions={
         R_SPAWN: (
             ExitData(

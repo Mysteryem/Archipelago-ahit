@@ -134,13 +134,15 @@ CAN_EXPLODE_LAST_EXPLOSIVES = logic_options(
 GENERAL_GRIEVOUS = _helper.make_chapter(
     # The region connections are a mess, and the entrance to the Chapter Completion region is at the start, but with a
     # rule that checks for access to regions.
-    intended_completion_path=(
-        R_FIRST_EXPLOSIVES_SECTION,
-        R_SHOOT_SECOND_EXPLOSIVES_SECTION,
-        R_FORCE_THIRD_EXPLOSIVES_SECTION,
-        # Jump back to the platform to actually complete the chapter.
-        R_CIRCULAR_PLATFORM,
-    ),
+    intended_completion_path={
+        "base": (
+            R_FIRST_EXPLOSIVES_SECTION,
+            R_SHOOT_SECOND_EXPLOSIVES_SECTION,
+            R_FORCE_THIRD_EXPLOSIVES_SECTION,
+            # Jump back to the platform to actually complete the chapter.
+            R_CIRCULAR_PLATFORM,
+        ),
+    },
     regions={
         R_CIRCULAR_PLATFORM: (
             ExitData(

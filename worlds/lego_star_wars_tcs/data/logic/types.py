@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Iterable
+from typing import Iterable, TypedDict, NotRequired
 
 from rule_builder.rules import (
     Rule,
@@ -86,6 +86,13 @@ class RegionData:
         object.__setattr__(self, "exits", tuple(exits))
 
 
+class IntendedCompletionPath(TypedDict):
+    base: NotRequired[tuple[str, ...]]
+    normal: NotRequired[tuple[str, ...]]
+    moderate: NotRequired[tuple[str, ...]]
+    hard: NotRequired[tuple[str, ...]]
+
+
 @dataclass
 class ChapterHelper:
     area: Area
@@ -111,11 +118,14 @@ class ChapterHelper:
             ridables: dict[Character, LocationData] | None = None,
             extra_chapter_entrance_rules: Rule | None = None,
             intended_completion_path: tuple[str, ...] = (),
+            intended_completion_path: IntendedCompletionPath | None = None,
     ):
         if ridables is None:
             ridables = {}
         if extra_chapter_entrance_rules is None:
             extra_chapter_entrance_rules = True_()
+        if intended_completion_path is None:
+            intended_completion_path = {}
         return Chapter(
             area=self.area,
             start_region=self.start_region,
@@ -136,7 +146,7 @@ class Chapter:
     regions: dict[str, tuple[ExitData, ...]]
     minikits: dict[str, MinikitData]
     power_brick: LocationData
-    intended_completion_path: tuple[str, ...] = ()
+    intended_completion_path: IntendedCompletionPath = field(default_factory=dict)
     """The intended traversal route through the chapter. This is used to determine what abilities are required to
     complete the chapter, based on extracting abilities from the entrance rules, and any extra_chapter_entrance_rules.
     

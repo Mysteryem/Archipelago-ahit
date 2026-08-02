@@ -93,18 +93,20 @@ _RIGHT_SIDE_ACTIVATE_ALL_PLATFORMS_TO_REAR = logic_options(
 )
 
 THE_GREAT_PIT_OF_CARKOON = _helper.make_chapter(
-    intended_completion_path=(
-        R_SKIFF_2,
-        R_SKIFF_3_BOBA_FIGHT,
-        R_SKIFF_4,
-        R_SAIL_BARGE_RIGHT_SIDE,
-        R_SAIL_BARGE_REAR,
-        R_SAIL_BARGE_REAR_INTERIOR,
-        R_SAIL_BARGE_REAR_INTERIOR_LIFT_ROOM,
-        R_SAIL_BARGE_MAIN_INTERIOR_SPAWN,
-        R_SAIL_BARGE_MAIN_INTERIOR_POST_DISCO,
-        R_SAIL_BARGE_DECK,
-    ),
+    intended_completion_path={
+        "base": (
+            R_SKIFF_2,
+            R_SKIFF_3_BOBA_FIGHT,
+            R_SKIFF_4,
+            R_SAIL_BARGE_RIGHT_SIDE,
+            R_SAIL_BARGE_REAR,
+            R_SAIL_BARGE_REAR_INTERIOR,
+            R_SAIL_BARGE_REAR_INTERIOR_LIFT_ROOM,
+            R_SAIL_BARGE_MAIN_INTERIOR_SPAWN,
+            R_SAIL_BARGE_MAIN_INTERIOR_POST_DISCO,
+            R_SAIL_BARGE_DECK,
+        ),
+    },
     regions={
         R_SKIFF_1: (
             ExitData(
