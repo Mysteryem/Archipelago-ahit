@@ -61,6 +61,14 @@ DARTH_MAUL = Chapter(
             R_ENERGY_COLUMNS_ROOM,
             R_MAUL_BOSS_ROOM,
         ),
+        "moderate": (
+            R_HANGAR,
+            R_TOWER_ROOM,
+            # R_TOWER_ROOM -> R_ENERGY_COLUMNS_ROOM is disabled due to being logically irrelevant.
+            R_TOWER_ROOM_TOP,
+            R_ENERGY_COLUMNS_ROOM,
+            R_MAUL_BOSS_ROOM,
+        ),
     },
     regions={
         R_SPAWN: (
