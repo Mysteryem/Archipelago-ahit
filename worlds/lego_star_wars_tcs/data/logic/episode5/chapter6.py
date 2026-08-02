@@ -302,6 +302,13 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                 )
             ),
             ExitData(
+                R_BUILDING_EXTERIOR_PLATFORM_ABOVE_LARGE_GAP,
+                logic_options(
+                    base=CAN_GRAPPLE,
+                    moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM) | CAN_GRAPPLE
+                ),
+            ),
+            ExitData(
                 R_CORRIDOR_TO_FALCON_LANDING_PAD,
                 logic_options(
                     base=HasAbility(PROTOCOL_PANEL),
