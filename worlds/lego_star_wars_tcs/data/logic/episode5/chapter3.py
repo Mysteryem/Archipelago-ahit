@@ -28,6 +28,7 @@ _CAN_DEFLECT_BOLTS_TO_DESTROY_THINGS = logic_options(
 FALCON_FLIGHT = Chapter(
     area=Area.ASTEROIDCHASE,
     start_region=R_STAR_DESTROYER_BATTLE,
+    extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         R_STAR_DESTROYER_BATTLE: (
             ExitData(
