@@ -30,6 +30,7 @@ R_PLATFORM_ABOVE_TIN_CANS = "Platform Above Tin Cans"
 R_SANDCRAWLER_APPROACH_BEFORE_QUICKSAND = "Sandcrawler Approach Before Quicksand"
 R_SANDCRAWLER_GROUND_LEVEL = "Sandcrawler Ground Level"
 R_TOP_OF_SANDCRAWLER = "Top Of Sandcrawler"
+R_SANDCRAWLER_EXTERIOR_ACCESS_HATCH_EXIT = "Sandcrawler Exterior Access Hatch Exit"
 R_SANDCRAWLER_INTERIOR_START = "Sandcrawler Interior Start"
 R_SANDCRAWLER_ELEVATOR_ROOM = "Sandcrawler Elevator Room"
 R_SANDCRAWLER_TWIN_SWITCHES_ROOM = "Sandcrawler Twin Switches Room"
@@ -271,13 +272,29 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                 ),
                 new_level=Level.TATOOINE_B,
             ),
+            ExitData(
+                R_SANDCRAWLER_EXTERIOR_ACCESS_HATCH_EXIT,
+                # Yoda Clip from below.
+                logic_options(
+                    base=False_(),
+                    hard=CAN_YODA_CLIP,
+                )
+            )
         ),
+        # If you Yoda Clipped into here from below, you can Yoda Clip or SHORTIE to get on top of the sandcrawler, but
+        # Yoda can just get to the top of the sandcrawler from ground-level on his own anyway, so this is not logically
+        # relevant.
+        R_SANDCRAWLER_EXTERIOR_ACCESS_HATCH_EXIT: (),
         R_TOP_OF_SANDCRAWLER: (
             ExitData(
                 R_SANDCRAWLER_INTERIOR_START,
-                HasAbility(CAN_PULL_LEVERS),
+                HasAllAbilities(CAN_PULL_LEVERS | SHORTIE) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
                 new_level=Level.TATOOINE_B,
             ),
+            ExitData(
+                R_SANDCRAWLER_EXTERIOR_ACCESS_HATCH_EXIT,
+                HasAbility(SHORTIE),
+            )
         ),
         R_SANDCRAWLER_INTERIOR_START: (
             ExitData(
@@ -325,6 +342,10 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                         HasAbility(JETPACK),
                         HasAllAbilities(HOVER | CAN_JUMP_0_44),
                     ),
+                ).or_rule(
+                    # Yoda Clip through the ceiling and over the wall collision of this enclosed area.
+                    apply_to="hard+",
+                    rule=CAN_YODA_CLIP,
                 ),
             ),
             ExitData(
@@ -516,12 +537,12 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
             pickup_name="mk_2",
         ),
         "Sandcrawler Exterior Access Hatch Minikit": minikit_data(
-            R_TOP_OF_SANDCRAWLER,
-            HasAllAbilities(CAN_PULL_LEVERS | SHORTIE) & CAN_DESTROY_CLOSE_SILVER_BRICKS,
+            R_SANDCRAWLER_EXTERIOR_ACCESS_HATCH_EXIT,
             pickup_name="m_pup1",
         ),
         "Sandcrawler Elevator Room Minikit": minikit_data(
             R_SANDCRAWLER_ELEVATOR_ROOM,
+            # You can also Yoda Grab to get this, but Yoda can just get the minikit the intended way.
             HasAllAbilities(CAN_PULL_LEVERS | CAN_PUSH_OBJECTS),
             pickup_name="mk_1",
         ),
