@@ -101,18 +101,11 @@ DEFENSE_OF_KASHYYYK = Chapter(
                             Extra.has_any(Extra.SUPER_EWOK_CATAPULT, Extra.EXPLODING_BLASTER_BOLTS),
                         ),
                     ),
-                    moderate=Or(
-                        HasAbility(BLASTER),
-                        And(
-                            HasAbility(WEAPON_EWOK),
-                            Extra.has_any(Extra.SUPER_EWOK_CATAPULT, Extra.EXPLODING_BLASTER_BOLTS),
-                        ),
-                        # HOVER implies CAN_JUMP_DISTANCE_0_69 so can be optimised away.
-                        CAN_USE_SELF_DESTRUCT & HasAbility(CAN_JUMP_DISTANCE_0_69),
-                    ),
+                    moderate=True_(),
                 ),
                 er_rule=logic_options(
-                    # Note: Blasters do not autotarget the targets until the grapple point has been revealed by forcing
+                    # Note: The targets cannot be activated and are not auto-targeted until both the grapple point is
+                    # revealed and the bridge is forced into place, so JEDI is required.
                     # the plant, and the bridge has been forced into place.
                     base=HasAbility(JEDI) & CAN_GRAPPLE,
                     normal=And(
@@ -140,46 +133,9 @@ DEFENSE_OF_KASHYYYK = Chapter(
                             HasAbility(BLASTER),
                         ),
                     ),
-                    # Adds hovering over to the targets with an Astromech Droid and then Self-Destructing, or jumping
-                    # over to a target, swapping to a droid, and then Self-Destructing. This is only in Moderate due to
-                    # potentially being more difficult to perform.
-                    # Adds triple jumping up to the bridge from the nearby rock.
-                    moderate=And(
-                        HasAbility(JEDI),
-                        Or(
-                            And(
-                                # Get up to the bridge
-                                Or(
-                                    _CAN_BUILD_BEACHFRONT_CLONE_WALKER_ER,
-                                    CAN_GRAPPLE,
-                                    HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
-                                ),
-                                # Activate the targets from the bridge (once the bridge and plant have been forced).
-                                Or(
-                                    HasAbility(BLASTER),
-                                    And(
-                                        HasAbility(WEAPON_EWOK),
-                                        Extra.has_any(Extra.SUPER_EWOK_CATAPULT, Extra.EXPLODING_BLASTER_BOLTS),
-                                    ),
-                                    Or(
-                                        # 'shoot' the targets by hovering over to them and exploding as an Astromech
-                                        # Droid.
-                                        Extra.SELF_DESTRUCT.has() & HasAbility(ASTROMECH_DROID),
-                                        # Or jumping over to them, swapping to a droid and then exploding.
-                                        # Boba Fett (Boy) (jump distance 0.56) is not enough for the left side.
-                                        # Works:
-                                        # - Ewok (jump_distance=0.69)
-                                        #   Clone (jump_distance=0.7)
-                                        #   Geonosian ('jump distance'=0.75)
-                                        #   Wookie (jump_distance=0.84)
-                                        CAN_USE_SELF_DESTRUCT & HasAnyAbilities(HOVER | CAN_JUMP_DISTANCE_0_69),
-                                    )
-                                )
-                            ),
-                            # Shoot the targets from ground level.
-                            HasAbility(BLASTER),
-                        ),
-                    ),
+                    # While there are all sorts of logically interesting ways to activate the targets, you can just
+                    # triple-jump over the gate.
+                    moderate=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                 ),
                 new_level=Level.KASHYYYK_C,
             ),
