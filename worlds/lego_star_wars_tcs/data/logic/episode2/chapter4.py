@@ -1,15 +1,17 @@
-from rule_builder.rules import Or
+from rule_builder.rules import Or, And
 
 from ..macros import (
     CAN_GRAPPLE,
     CAN_DESTROY_CLOSE_SILVER_BRICKS,
     CAN_DAMAGE_SHIELDED_DROIDEKA,
+    CAN_USE_SELF_DESTRUCT,
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...extras import Extra
 
 from ....character_ability import *
 
@@ -20,7 +22,32 @@ JEDI_BATTLE = Chapter(
     start_region=R_ARENA,
     regions={
         R_ARENA: (
-            ExitData("Chapter Completion", HasAbility(JEDI)),
+            ExitData(
+                "Chapter Completion",
+                logic_options(
+                    # JEDI is strictly required to free Padme/Anakin/Obi-Wan
+                    # Jango's first phase requires shooting him or reflecting his bolts back at him, so ghost jedi have
+                    # difficulty proceeding.
+                    base=HasAbility(JEDI) & HasAnyAbilities(BLASTER | IS_NON_GHOST_JEDI),
+                    # If the player only has a ghost jedi, allow Self Destruct, Super Jedi Slam,
+                    # Ewok+EBB/Super Ewok Catapult.
+                    normal=And(
+                        HasAbility(JEDI),
+                        Or(
+                            HasAnyAbilities(BLASTER | IS_NON_GHOST_JEDI),
+                            CAN_USE_SELF_DESTRUCT,
+                            Extra.SUPER_JEDI_SLAM.has(),
+                            And(
+                                HasAbility(WEAPON_EWOK),
+                                Extra.has_any(Extra.EXPLODING_BLASTER_BOLTS, Extra.SUPER_EWOK_CATAPULT)
+                            ),
+                        ),
+                    ),
+                    # Slam attacks with ghost jedi do work, but can be a little awkward because you have to be close,
+                    # and Jango is almost constantly moving away from you.
+                    moderate=HasAbility(JEDI),
+                )
+            ),
         ),
     },
     minikits={
