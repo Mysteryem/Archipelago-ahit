@@ -1640,8 +1640,11 @@ class LogicDifficulty(ChoiceFromStringExtension):
         - Force Grapple Leap can be expected to use Grapple points.
         - Dark Side can be expected to use Sith Force.
       - 1P2C (1 Player, 2 Controllers) usage is limited to pressing only a single button on each controller
-      simultaneously for 2-player Sith Force puzzles when Dark Side is unlocked, but no Sith are unlocked (e.g. the last
-      Minikit in 2-2).
+      simultaneously. E.g. 2-player Sith Force puzzles when Dark Side is unlocked, but no Sith are unlocked (e.g. the last
+      Minikit in Discovery On Kamino (2-2)).
+      - 1P2C can expect teleporting one player to the other through a drop-in, to activate buttons etc. where the
+      AI won't follow you due to the AI only being able to use specific characters, and then dropping out again to let
+      the AI continue as normal.
     - Moderate:
       - Simpler glitches expected.
       - Players that play the AP randomizer often should be able to perform all tricks in this difficulty efficiency,
@@ -1649,16 +1652,18 @@ class LogicDifficulty(ChoiceFromStringExtension):
       - Slam-jumps, e.g. Jedi-Triple-Jump included in logic.
       - Expects more platforming off of terrain.
       - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling only one character at a time,
-      taking turns between controlling each character (e.g. button platforms in 2-2 and 2-6)
+      taking turns between controlling each character, e.g. button platforms in 2-2 and 2-6 when the AI won't follow you
       - 1P2C usage additionally includes simpler use of controlling both characters simultaneously, e.g. completing the
       collapsing hallway at the start of 3-6 by holding the down key/button on both controllers and pressing the jump
       button/key at the correct times for each character.
     - Hard:
       - More difficult jumps and tricks.
-      - Some out-of-bounds tricks may be in logic.
-      - Drop-in warps.
+      - Some out-of-bounds tricks may be in logic (mostly Yoda Clips through ceilings). Full out-of-bounds movement,
+      e.g. walking around under the level, is *not* included.
+      - Yoda Grabs.
+      - Drop-in warps (none are currently present in the logic).
+      - TIE gate, and drag bomb wall, skips using loop drop-ins.
       - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling both characters simultaneously
-      - (incomplete, most levels will use Moderate difficulty logic)
     - Expert (not implemented):
       - This difficulty, if implemented, will probably try to match Expert difficulty in ViolaGuy's standalone TCS
       randomizer.
