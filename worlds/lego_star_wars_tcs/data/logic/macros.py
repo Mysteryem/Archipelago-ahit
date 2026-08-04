@@ -177,23 +177,6 @@ CAN_DESTROY_OBJECTS_WITH_POD_RACERS = (
 )
 CAN_SHOOT_ALLOW_TORPEDOES = HasAbility(VEHICLE_BLASTER) | CAN_DESTROY_OBJECTS_WITH_POD_RACERS
 
-# Captain Tarpals' melee attacks are coded weird, and cannot destroy various objects in the game.
-# TODO: Regular melee attacks and Gamorrean Guard could be similar?
-CAN_ATTACK_UP_CLOSE_EXCEPT_TARPALS = (
-    logic_options(
-        base=Or(
-            HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM | BLASTER | WEAPON_EWOK),
-            HasAbilityExceptCharacters(CAN_MELEE, Character.CAPTAIN_TARPALS),
-        ),
-        # Allow Self Destruct.
-        normal=Or(
-            HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM | BLASTER | WEAPON_EWOK),
-            CAN_USE_SELF_DESTRUCT,
-            HasAbilityExceptCharacters(CAN_MELEE, Character.CAPTAIN_TARPALS),
-        ),
-    )
-),
-
 CAN_ORIGINAL_TRILOGY_HIGH_JUMP = HasAbility(HIGH_JUMP) & OT_HIGH_JUMP_ENABLED
 
 CAN_USE_BOUNTY_HUNTER_ROCKETS = logic_options(
