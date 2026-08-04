@@ -115,9 +115,8 @@ class ChapterHelper:
             minikits: dict[str, MinikitData],
             power_brick: LocationData,
             # TODO: Add wip_true_jedi_rule
-            ridables: dict[Character, LocationData] | None = None,
+            ridables: dict[Character, LocationData | tuple[LocationData, ...]] | None = None,
             extra_chapter_entrance_rules: Rule | None = None,
-            intended_completion_path: tuple[str, ...] = (),
             intended_completion_path: IntendedCompletionPath | None = None,
     ):
         if ridables is None:
