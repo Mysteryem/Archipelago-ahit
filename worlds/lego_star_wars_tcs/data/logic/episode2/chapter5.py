@@ -1,10 +1,12 @@
-from rule_builder.rules import True_
+from rule_builder.rules import True_, Or, HasFromListUnique
 
 from ..option_filters import logic_options
 from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
+from ...extras import Extra
+from ...items.vehicle_items import VEHICLE_DATA
 from ...levels import Level
 
 from ....character_ability import *
@@ -12,6 +14,7 @@ from ....character_ability import *
 R_SPAWN = "Spawn"
 R_BEHIND_FIRST_FORCE_FIELD = "Behind First Force Field"
 R_CONTROL_SHIP_BATTLE = "Control Ship Battle"
+R_CONTROL_SHIP_BATTLE_MINIKITS = "Control Ship Battle Minikits"
 
 GUNSHIP_CAVALRY = Chapter(
     area=Area.GUNSHIP,
@@ -19,23 +22,61 @@ GUNSHIP_CAVALRY = Chapter(
     extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         R_SPAWN: (
-            ExitData(R_BEHIND_FIRST_FORCE_FIELD, HasAbility(VEHICLE_TOW)),
+            ExitData(
+                R_BEHIND_FIRST_FORCE_FIELD,
+                logic_options(
+                    base=HasAbility(VEHICLE_TOW),
+                    # While flying around the force field (and invisible wall), spam character swaps to maintain height
+                    # and avoid falling into the kill plane.
+                    # This maybe could maybe be moved to Moderate logic.
+                    hard=Or(
+                        HasAbility(VEHICLE_TOW),
+                        HasFromListUnique(*(data.name for data in VEHICLE_DATA), count=2),
+                    )
+                ),
+            ),
         ),
         R_BEHIND_FIRST_FORCE_FIELD: (
             ExitData(
                 R_CONTROL_SHIP_BATTLE,
-                HasAbility(VEHICLE_TOW),
+                # If you can get through/around the first force field, you can also get through/around the second one.
+                True_(),
+                er_rule=logic_options(
+                    base=HasAbility(VEHICLE_TOW),
+                    hard=Or(
+                        HasAbility(VEHICLE_TOW),
+                        HasFromListUnique(*(data.name for data in VEHICLE_DATA), count=2),
+                    )
+                ),
                 new_level=Level.GUNSHIP_B,
             ),
         ),
         R_CONTROL_SHIP_BATTLE: (
             ExitData(
+                R_CONTROL_SHIP_BATTLE_MINIKITS,
+                logic_options(
+                    # VEHICLE_TOW required to reach here.
+                    base=True_(),
+                    # Unlike the minikits in the first level, these minikits cannot be collected by ramming into them.
+                    hard=Or(
+                        HasAbility(VEHICLE_BLASTER),
+                        # Deflect enemy blaster fire into the minikits.
+                        Extra.DEFLECT_BOLTS.has(),
+                        # Infinite Torpedos [sic] does not work in this level.
+                        # Extra.INFINITE_TORPEDOS.has(),
+                    )
+                ),
+            ),
+            ExitData(
                 "Chapter Completion",
+                # TOW is strictly required, there is no way to skip this at all.
                 HasAbility(VEHICLE_TOW),
             ),
         ),
     },
     minikits={
+        # The only vehicles that cannot shoot minikits are pod racers, which fly low enough to the ground to collect the
+        # minikits by ramming into them.
         "Freestanding Minikit Before Lasers": minikit_data(
             R_SPAWN,
             pickup_name="m_pup1",
@@ -100,26 +141,35 @@ GUNSHIP_CAVALRY = Chapter(
         ),
         "Minikit Behind Yellow Wall": minikit_data(
             R_BEHIND_FIRST_FORCE_FIELD,
+            # Every logic difficulty either requires VEHICLE_TOW to reach here, or can skip both the VEHICLE_TOW to
+            # reach here, and the VEHICLE_TOW to reach this minikit.
+            True_(),
+            er_rule=logic_options(
+                base=HasAbility(VEHICLE_TOW),
+                # Every vehicle can get over this will using the loop + drop in P2 method. Anakin's and Zam's Speeders
+                # are probably the most difficult.
+                hard=True_(),
+            ),
             pickup_name="m_pup5",
         ),
         "Control Ship Battle Minikit 1": minikit_data(
-            R_CONTROL_SHIP_BATTLE,
-            pickup_name="m_pup3",
-        ),
-        "Control Ship Battle Minikit 2": minikit_data(
-            R_CONTROL_SHIP_BATTLE,
-            pickup_name="m_pup4",
-        ),
-        "Control Ship Battle Minikit 3": minikit_data(
-            R_CONTROL_SHIP_BATTLE,
+            R_CONTROL_SHIP_BATTLE_MINIKITS,
             pickup_name="m_pup1",
         ),
-        "Control Ship Battle Minikit 4": minikit_data(
-            R_CONTROL_SHIP_BATTLE,
+        "Control Ship Battle Minikit 2": minikit_data(
+            R_CONTROL_SHIP_BATTLE_MINIKITS,
             pickup_name="m_pup2",
         ),
+        "Control Ship Battle Minikit 3": minikit_data(
+            R_CONTROL_SHIP_BATTLE_MINIKITS,
+            pickup_name="m_pup3",
+        ),
+        "Control Ship Battle Minikit 4": minikit_data(
+            R_CONTROL_SHIP_BATTLE_MINIKITS,
+            pickup_name="m_pup4",
+        ),
         "Control Ship Battle Minikit 5": minikit_data(
-            R_CONTROL_SHIP_BATTLE,
+            R_CONTROL_SHIP_BATTLE_MINIKITS,
             pickup_name="m_pup5",
         ),
     },
