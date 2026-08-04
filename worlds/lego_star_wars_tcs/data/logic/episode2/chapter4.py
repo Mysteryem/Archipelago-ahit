@@ -8,7 +8,7 @@ from ..macros import (
 )
 from ..option_filters import logic_options
 from ..rules import HasAbility, HasAllAbilities, HasAnyAbilities
-from ..types import minikit_data, ExitData, Chapter, LocationData
+from ..types import minikit_data, ExitData, ChapterHelper, LocationData
 
 from ...areas import Area
 from ...extras import Extra
@@ -17,9 +17,12 @@ from ....character_ability import *
 
 R_ARENA = "Arena"
 
-JEDI_BATTLE = Chapter(
+_helper = ChapterHelper(
     area=Area.JEDI,
     start_region=R_ARENA,
+)
+
+JEDI_BATTLE = _helper.make_chapter(
     regions={
         R_ARENA: (
             ExitData(
@@ -146,6 +149,11 @@ JEDI_BATTLE = Chapter(
         logic_options(
             base=HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
             normal=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
+        ).ror_rule(
+            # Use Jango's own rockets to destroy the silver bricks.
+            # If you can complete the chapter then you must have a JEDI, meaning you can jump to get the power brick.
+            apply_to="moderate+",
+            rule=_helper.can_reach_region("Chapter Completion"),
         ),
         er_rule=CAN_DESTROY_CLOSE_SILVER_BRICKS & HasAllAbilities(CAN_BUILD_BRICKS | CAN_JUMP_HEIGHT_0_37),
     ),
