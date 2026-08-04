@@ -229,6 +229,8 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                 ).or_rule(apply_to="hard+", rule=HAS_ANY_YODA),
             ),
         ),
+        # Droideka can get out-of-bounds on the far left of the room with the levers before the holding cells, between
+        # the left wall and one of the destroyable objects.
         # "After Imperial Phones Room Imperial Panel": (
         R_AFTER_IMPERIAL_PHONES_ROOM_IMPERIAL_PANEL_AND_HOLDING_CELLS: (
             # There is no logical purpose to this region currently, so it is not created.
@@ -251,6 +253,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
         ),
     },
     minikits={
+        # You can also triple jump and swap to mouse droid to get down to where the imperials are.
         "Defeat 10 Imperials With Crane Minikit": minikit_data(
             R_FIRST_CORRIDOR,
             # All Jedi can ride vehicles.

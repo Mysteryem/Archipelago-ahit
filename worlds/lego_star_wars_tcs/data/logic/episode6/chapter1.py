@@ -194,6 +194,7 @@ JABBAS_PALACE = Chapter(
         ),
         R_POWER_BRICK_UPPER_AREA: (),
         R_PRISON_CELLS: (
+            # Expert logic can triple jump over the transition back to the previous area to get out-of-bounds easily.
             ExitData(
                 R_AFTER_SECOND_PORTCULLIS_THROUGH_TO_DROIDS_ROOM,
                 # The Silver Brick debris does not need to be considered because

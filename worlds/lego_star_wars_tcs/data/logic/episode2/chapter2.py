@@ -531,6 +531,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             logic_options(
                 base=HasAbility(SITH),
                 normal=HasAbility(SITH) | Extra.DARK_SIDE.has(),
+                # Droideka can also grab this through the force field, though this isn't logically relevant currently.
                 hard=Or(
                     HasAbility(SITH) | Extra.DARK_SIDE.has(),
                     HAS_ANY_YODA,
@@ -544,6 +545,7 @@ DISCOVERY_ON_KAMINO = Chapter(
             pickup_name="m_pup1",
         )
     },
+    # Expert can level transition skip to get beneath the floor.
     power_brick=LocationData(
         R_LIVING_QUARTERS,
         logic_options(

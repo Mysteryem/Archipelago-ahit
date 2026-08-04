@@ -30,6 +30,7 @@ NEGOTIATIONS = Chapter(
             ExitData(R_MAIN_CORRIDOR, HasAbility(JEDI)),
         ),
         R_MAIN_CORRIDOR: (
+            # Droideka can clip out-of-bounds, into the right wall, on the destroyable object that spawns the power up.
             ExitData(
                 R_SINGLE_FORCE_FIELD_ROOM,
                 logic_options(

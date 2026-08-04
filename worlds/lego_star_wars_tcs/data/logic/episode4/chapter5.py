@@ -226,6 +226,9 @@ DEATH_STAR_ESCAPE = helper.make_chapter(
                 base=CAN_SITH_FORCE,
                 # Allow Yoda clip. An IMPERIAL character or a character that can wear hats is required to reach here,
                 # and Yodas are neither of those, so having a non-yoda character is guaranteed.
+                # The sith force bricks have 1-sided collision, so continuing with the level after Yoda Clipping is
+                # trivial.
+                # You can also Yoda Grab this minikit.
                 hard=CAN_SITH_FORCE | CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
             ),
             pickup_name="pup2",
