@@ -3,9 +3,7 @@ from operator import and_, or_
 from typing import TYPE_CHECKING, Literal, Any
 from typing_extensions import override
 
-from Options import CommonOptions
-from rule_builder.field_resolvers import FromWorldAttr
-from rule_builder.rules import Rule, TWorld, True_, Has, Or, And
+from rule_builder.rules import Rule, TWorld, Has, Or, And
 from rule_builder.options import OptionFilter
 
 from ...constants import GAME_NAME
@@ -20,27 +18,6 @@ else:
 
 OT_HIGH_JUMP_ENABLED = OptionFilter(UncapOriginalTrilogyHighJump, True)
 OT_HIGH_JUMP_DISABLED = OptionFilter(UncapOriginalTrilogyHighJump, False)
-
-
-normal_logic = (OptionFilter(LogicDifficulty, LogicDifficulty.option_normal, "ge"),)
-moderate_logic = (OptionFilter(LogicDifficulty, LogicDifficulty.option_moderate, "ge"),)
-hard_logic = (OptionFilter(LogicDifficulty, LogicDifficulty.option_hard, "ge"),)
-
-base_logic_only = (OptionFilter(LogicDifficulty, LogicDifficulty.option_none),)
-normal_logic_only = (OptionFilter(LogicDifficulty, LogicDifficulty.option_normal),)
-moderate_logic_only = (OptionFilter(LogicDifficulty, LogicDifficulty.option_moderate),)
-hard_logic_only = (OptionFilter(LogicDifficulty, LogicDifficulty.option_hard),)
-
-base_and_normal_logic_only = (
-    OptionFilter(LogicDifficulty, LogicDifficulty.option_normal, "le"),
-)
-
-logic_expects_fighting_all_enemies = base_logic_only
-extras_in_logic = normal_logic
-
-# Entrance Rando does not exist currently, but this can be used to mark rules as only being relevant to entrance rando,
-# and then filtering them out (replacing them with False_()).
-entrance_rando = (OptionFilter(LogicDifficulty, float("nan"), "eq"),)
 
 
 def ot_high_jump_ternary(uncapped: Rule, capped: Rule) -> Rule:
@@ -274,8 +251,3 @@ def logic_options(
     assert isinstance(hard_rule, Rule)
 
     return LogicOptions(base_rule, normal_rule, moderate_rule, hard_rule)
-
-
-
-
-

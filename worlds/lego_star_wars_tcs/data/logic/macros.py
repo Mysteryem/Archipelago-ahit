@@ -1,7 +1,7 @@
 from rule_builder.rules import True_, Or, False_, And
 from rule_builder.options import OptionFilter
 
-from .option_filters import normal_logic, logic_options, OT_HIGH_JUMP_ENABLED
+from .option_filters import logic_options, OT_HIGH_JUMP_ENABLED
 from .rules import HasAbility, HasAnyAbilities, HasAbilityExceptCharacters, HasSingleJumpDistance, HasAnyCharacterExcept
 from ..characters import Character
 from ..extras import Extra
@@ -154,9 +154,9 @@ CAN_SITH_FORCE_AND_GRAPPLE = logic_options(
     base=CAN_SITH_FORCE & HasAbility(GRAPPLE),
     normal=CAN_SITH_FORCE & (HasAbility(GRAPPLE) | Extra.FORCE_GRAPPLE_LEAP.has()),
 )
-CAN_FIGHT_OR_BYPASS_SKIPPABLE_DROIDEKA = Or(
-    CAN_DAMAGE_SHIELDED_DROIDEKA,
-    True_(options=normal_logic)
+CAN_FIGHT_OR_BYPASS_SKIPPABLE_DROIDEKA = logic_options(
+    base=CAN_DAMAGE_SHIELDED_DROIDEKA,
+    normal=True_(),
 )
 
 CAN_ACTIVATE_CLOSE_TARGET = logic_options(
