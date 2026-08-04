@@ -15,6 +15,7 @@ from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
 from ...characters import Character
+from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
@@ -501,7 +502,13 @@ THROUGH_THE_JUNDLAND_WASTES = Chapter(
                     HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                     HasAbility(HIGH_JUMP) & OT_HIGH_JUMP_ENABLED,
                 ),
-            ).and_rule(HasAbility(SHORTIE)),
+            ).and_rule(
+                HasAbility(SHORTIE),
+            ).or_rule(
+                # Allow walking through the gap as Womp Rat, skipping the access hatch entirely.
+                apply_to="moderate+",
+                rule=Extra.EXTRA_TOGGLE.has(),
+            ),
             pickup_name="mk_0",
         ),
         "Above Tin Cans Minikit": minikit_data(
