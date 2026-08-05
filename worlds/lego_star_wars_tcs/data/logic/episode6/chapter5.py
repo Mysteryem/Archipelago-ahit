@@ -327,7 +327,10 @@ JEDI_DESTINY = _helper.make_chapter(
                     rule=CAN_ORIGINAL_TRILOGY_HIGH_JUMP,
                 ).ror_rule(
                     apply_to="moderate+",
-                    rule=HasAnyAbilities(JEDI | HIGH_JUMP),
+                    rule=ot_high_jump_ternary(
+                        uncapped=HasAnyAbilities(JEDI | HIGH_JUMP),
+                        capped=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM)
+                    ),
                 ),
             ),
             ExitData(
@@ -368,6 +371,20 @@ JEDI_DESTINY = _helper.make_chapter(
                 logic_options(
                     base=False_(),
                     hard=_CAN_YODA_GRAB_ACCESS_HATCH_MINIKIT_THROUGH_WALL,
+                ),
+            ),
+            ExitData(
+                R_RED_ROOM_ACCESS_HATCH_PLATFORM,
+                logic_options(
+                    base=HasAbility(JEDI),
+                    normal=ot_high_jump_ternary(
+                        uncapped=HasAnyAbilities(JEDI | HIGH_JUMP),
+                        capped=HasAbility(JEDI),
+                    ),
+                    moderate=ot_high_jump_ternary(
+                        uncapped=HasAnyAbilities(JEDI | HIGH_JUMP),
+                        capped=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
+                    ),
                 ),
             ),
         ),
