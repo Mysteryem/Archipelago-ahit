@@ -94,7 +94,6 @@ DISCOVERY_ON_KAMINO = Chapter(
             R_OUTSIDE_JANGO_CHASE,
             R_END_OF_OUTSIDE_JANGO_CHASE,
             R_INTERIOR_BEFORE_JANGO_FIGHT,
-            R_SITH_FORCE_DROID_ROOM,
             R_JANGO_FIGHT,
         ),
     },
