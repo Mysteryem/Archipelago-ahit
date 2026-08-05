@@ -193,8 +193,16 @@ class TestAbilityExceptCharacters(TestCase):
         rule = HasAbilityExceptCharacters(CharacterAbility.CAN_DOUBLE_JUMP, Character.YODA, Character.YODA_GHOST)
         made = rule.make_simpler_rule()
 
-        self.assertIsInstance(made, HasAnyAbilities)
-        self.assertEqual(made.abilities, CharacterAbility.CAN_TRIPLE_JUMP_GREAT_DISTANCE | CharacterAbility.HIGH_JUMP)
+        self.assertIsInstance(made, Or)
+        self.assertEqual(len(made.children), 2)
+        child1 = made.children[0]
+        child2 = made.children[1]
+
+        self.assertIsInstance(child1, HasAnyAbilities)
+        self.assertEqual(child1.abilities, CharacterAbility.CAN_TRIPLE_JUMP_GREAT_DISTANCE | CharacterAbility.HIGH_JUMP)
+
+        self.assertIsInstance(child2, Has)
+        self.assertEqual(child2.item_name, Character.ADMIRAL_ACKBAR.readable_name)
 
     def test_has_any_character_except(self):
         """Test HasAnyCharacterExcept with random assortments of characters."""
