@@ -159,6 +159,14 @@ _SPAWN_TO_ELECTRIC_FLOOR = logic_options(
 )
 
 JEDI_DESTINY = _helper.make_chapter(
+    intended_completion_path={
+        "base": (
+            R_FIGHT_PHASE_1_COMPLETED,
+            R_ELECTRIC_FLOOR_PANELS_FIGHT_PHASE_2,
+            R_ELEVATOR_AREA_FIGHT_PHASE_3,
+            R_ELEVATOR_AREA_PLATFORM_FIGHT_PHASE_4,
+        ),
+    },
     regions={
         R_SPAWN: (
             ExitData(
