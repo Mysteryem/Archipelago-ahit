@@ -46,6 +46,17 @@ helper = ChapterHelper(
 )
 
 RESCUE_THE_PRINCESS = helper.make_chapter(
+    intended_completion_path={
+        "base": (
+            R_FIRST_CORRIDOR,
+            R_HANGAR_OBSERVATION_AND_CONTROL_ROOM,
+            R_TWIN_CORRIDORS_SPAWN,
+            R_TWIN_CORRIDORS_LEFT_CORRIDOR_ACROSS_BRIDGE_GAP,
+            R_TURNTABLE_BRIDGE_ROOM,
+            R_IMPERIAL_DATA_CENTER_ROOM,
+            R_AFTER_IMPERIAL_PHONES_ROOM_IMPERIAL_PANEL_AND_HOLDING_CELLS,
+        ),
+    },
     regions={
         R_SPAWN: (
             ExitData(
