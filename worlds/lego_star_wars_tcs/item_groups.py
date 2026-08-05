@@ -8,7 +8,7 @@ from .items import (
     MINIKITS_BY_COUNT,
     CHAPTER_UNLOCKS,
 )
-from .levels import CHAPTER_AREA_STORY_CHARACTERS, CHAPTER_AREAS
+from .levels import CHAPTER_AREAS
 
 
 def _ability_to_character() -> Mapping[CharacterAbility, Sequence[GenericCharacterData]]:
@@ -35,8 +35,6 @@ REVERSE_READABLE_ABILITY_TO_ABILITY = {ability_to_readable_group(ability): abili
 ITEM_GROUPS: dict[str, set[str]] = {
     **{ability_to_readable_group(ability): {c.name for c in characters if c.is_sendable}
        for ability, characters in ABILITY_TO_CHARACTERS.items()},
-    "No Abilities Characters": {name for name, c in CHARACTERS_AND_VEHICLES_BY_NAME.items()
-                                if c.is_sendable and c.abilities is CharacterAbility.NONE},
     "Non-Vehicle Characters": {c.name for c in CHARACTERS_AND_VEHICLES_BY_NAME.values()
                                if c.item_type == "Character" and c.is_sendable},
     "Vehicle Characters": {v.name for v in CHARACTERS_AND_VEHICLES_BY_NAME.values()
