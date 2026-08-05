@@ -650,6 +650,7 @@ class LegoStarWarsTCSWorld(World):
                 "shop_fake_trap_chance",
                 "auto_collect_spawned_pickups",
                 "logic_difficulty",
+                "expect_2_1_torpedo_gathering",
             )
         }
 

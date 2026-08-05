@@ -33,6 +33,7 @@ DIRECT_SLOT_DATA_OPTIONS = (
     "enable_starting_extras_locations",
     "chapter_unlock_requirement",
     "chapter_unlock_story_characters_not_required",
+    "expect_2_1_torpedo_gathering",
 )
 assert all(option_name in LegoStarWarsTCSOptions.type_hints for option_name in DIRECT_SLOT_DATA_OPTIONS)
 
