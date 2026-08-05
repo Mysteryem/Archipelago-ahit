@@ -130,6 +130,26 @@ _helper = ChapterHelper(
 )
 
 THE_BATTLE_OF_ENDOR = _helper.make_chapter(
+    intended_completion_path={
+        "base": (
+            R_AFTER_FIRST_BRIDGE,
+            R_SECOND_BRIDGE_LEVER_PLATFORM,
+            R_AFTER_SECOND_BRIDGE,
+            R_ELEVATOR_ACTIVATION_PLATFORM,
+            R_GROUND_LEVEL_SPAWN,
+            R_RIVER_AREA,
+            R_AFTER_SPLIT_PATHS,
+            R_EWOK_BATTLE,
+            R_BUNKER_ENTRANCE_ROOF,
+            R_INSIDE_BUNKER,
+            # Visit and return.
+            R_BUNKER_YELLOW_LEVER_AREA,
+            R_INSIDE_BUNKER,
+            # Visit and return
+            R_BUNKER_PURPLE_LEVER_PLATFORM,
+            R_INSIDE_BUNKER,
+        ),
+    },
     regions={
         R_SPAWN: (
             ExitData(
