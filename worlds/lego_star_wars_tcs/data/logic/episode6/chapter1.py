@@ -35,7 +35,6 @@ R_INITIAL_INTERIOR = "Initial Interior"
 R_PROTOCOL_PANEL_JAILED_BOMARR_BONK = "Protocol Panel Jailed B'omarr Bonk"
 R_AFTER_FIRST_BOUNTY_HUNTER_DOOR = "After First Bounty Hunter Door"
 R_BEHIND_FIRST_ASTROMECH_PANEL_DOOR = "Behind First Astromech Panel Door"
-R_AFTER_FIRST_BOUNTY_HUNTER_DOOR_USING_PANEL = "After First Bounty Hunter Door (Using Panel)"
 R_POWER_BRICK_UPPER_AREA = "Power Brick Upper Area"
 R_PRISON_CELLS = "Prison Cells"
 R_AFTER_SECOND_PORTCULLIS_THROUGH_TO_DROIDS_ROOM = "After Second Portcullis, through to Droids Room"
@@ -119,29 +118,23 @@ JABBAS_PALACE = Chapter(
                 ),
             ),
             ExitData(
-                R_AFTER_FIRST_BOUNTY_HUNTER_DOOR_USING_PANEL,
-                HasAnyAbilities(BOUNTY_HUNTER | CAN_WEAR_HAT),
-            ),
-            ExitData(
                 R_AFTER_FIRST_BOUNTY_HUNTER_DOOR,
                 logic_options(
+                    strict=False,
                     # Expect using the panel to open the door.
-                    base=False_(),
+                    base=HasAnyAbilities(BOUNTY_HUNTER | CAN_WEAR_HAT),
+                ).or_rule(
+                    apply_to="moderate+",
                     # Allow jumping on the right torch, then jumping to the top of the portcullis with Yoda.
-                    moderate=Or(
-                        HasAnyAbilities(BOUNTY_HUNTER | CAN_WEAR_HAT),
-                        HAS_ANY_YODA,
-                    ),
+                    rule=HAS_ANY_YODA,
+                ).or_rule(
+                    apply_to="hard+",
                     # Allow triple jump + character swap to a small character (other than yoda who can do this jump
                     # on his own).
-                    hard=Or(
-                        HasAnyAbilities(BOUNTY_HUNTER | CAN_WEAR_HAT),
-                        HAS_ANY_YODA,
-                        And(
-                            HasAnyAbilities(CAN_HIGH_JUMP_SLAM | JEDI),
-                            _HAS_CHARACTER_THAT_FITS_ABOVE_PORTCULLIS,
-                        ),
-                    ),
+                    rule=And(
+                        HasAnyAbilities(CAN_HIGH_JUMP_SLAM | JEDI),
+                        _HAS_CHARACTER_THAT_FITS_ABOVE_PORTCULLIS,
+                    )
                 ),
             )
         ),
@@ -174,24 +167,12 @@ JABBAS_PALACE = Chapter(
             ),
             ExitData(
                 R_PRISON_CELLS,
-                # The panel needs to be built.
-                HasAllAbilities(BOUNTY_HUNTER | CAN_BUILD_BRICKS),
-                name="Use the second Bounty Hunter panel using a Bounty Hunter",
+                # The panel needs to be built. The transition does not load unless the panel is used.
+                HasAnyAbilities(BOUNTY_HUNTER | CAN_WEAR_HAT) & HasAbility(CAN_BUILD_BRICKS),
                 new_level=Level.JABBASPALACE_B,
             )
         ),
         R_BEHIND_FIRST_ASTROMECH_PANEL_DOOR: (),
-        R_AFTER_FIRST_BOUNTY_HUNTER_DOOR_USING_PANEL: (
-            ExitData(R_AFTER_FIRST_BOUNTY_HUNTER_DOOR),
-            ExitData(
-                R_PRISON_CELLS,
-                # If you could use the first panel, you can use the second panel.
-                # The panel needs to be built.
-                HasAbility(CAN_BUILD_BRICKS),
-                name="Use the second Bounty Hunter panel using the Hat Machine",
-                new_level=Level.JABBASPALACE_B,
-            ),
-        ),
         R_POWER_BRICK_UPPER_AREA: (),
         R_PRISON_CELLS: (
             # Expert logic can triple jump over the transition back to the previous area to get out-of-bounds easily.
