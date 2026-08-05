@@ -80,6 +80,29 @@ _helper = ChapterHelper(
 
 
 CLOUD_CITY_TRAP = _helper.make_chapter(
+    intended_completion_path={
+        "base": (
+            # Visit and return
+            R_SPAWN_LANDING_PAD_BRIDGE_CONTROL_PLATFORM,
+            R_SPAWN_LANDING_PAD,
+            R_ACROSS_LANDING_PAD_BRIDGE,
+            R_SPAWN_LANDING_PAD_INTERIOR,
+            R_SPAWN_LANDING_PAD_INTERIOR_CORRIDOR,
+            R_CARBONITE_CHAMBER,
+            R_CARBONITE_CHAMBER_VADER_DEFEATED,
+            R_CARBONITE_CHAMBER_ACROSS_BRIDGE_VADER_DEFEATED,
+            R_FIRST_VADER_CHASE_SECTION,
+            R_FIRST_VADER_CHASE_SECTION_FAN_UPPER_PATH,
+            R_FIRST_VADER_CHASE_SECTION_MOVING_PLATFORM,
+            R_FIRST_VADER_CHASE_SECTION_AFTER_MOVING_PLATFORM,
+            R_FIRST_VADER_CHASE_AFTER_SECOND_FAN,
+            R_VADER_CHASE_FIRST_FIGHT_ROOM,
+            R_VADER_CHASE_ROUND_WINDOW_ROOM,
+            R_FINAL_VADER_CHASE,
+            R_FINAL_VADER_CHASE_PLATFORM_AFTER_FORCE_RAMP,
+            R_FINAL_VADER_FIGHT,
+        ),
+    },
     regions={
         R_SPAWN_LANDING_PAD: (
             ExitData(
