@@ -1,5 +1,4 @@
 from rule_builder.rules import True_, Or, False_, And
-from rule_builder.options import OptionFilter
 
 from .option_filters import logic_options, OT_HIGH_JUMP_ENABLED
 from .rules import HasAbility, HasAnyAbilities, HasAbilityExceptCharacters, HasSingleJumpDistance, HasAnyCharacterExcept
@@ -7,7 +6,6 @@ from ..characters import Character
 from ..extras import Extra
 from ..items.character_items import NON_VEHICLE_CHARACTER_TO_ITEM_DATA
 from ...character_ability import *
-from ...options import LogicExpectNonInfiniteTorpedoesPodRacer
 
 # Implemented as a CharacterAbility for now.
 # can_jetpack_hover = Character.has_any(Character.BOBA_FETT, Character.JANGO_FETT)
@@ -169,13 +167,6 @@ CAN_ACTIVATE_CLOSE_TARGET = logic_options(
         CAN_USE_SELF_DESTRUCT,
     ),
 )
-
-# Either Infinite Torpedos [sic] is unlocked, or the player enabled gathering torpedoes within the level.
-CAN_DESTROY_OBJECTS_WITH_POD_RACERS = (
-        Extra.INFINITE_TORPEDOS.has()
-        | OptionFilter(LogicExpectNonInfiniteTorpedoesPodRacer, True)
-)
-CAN_SHOOT_ALLOW_TORPEDOES = HasAbility(VEHICLE_BLASTER) | CAN_DESTROY_OBJECTS_WITH_POD_RACERS
 
 CAN_ORIGINAL_TRILOGY_HIGH_JUMP = HasAbility(HIGH_JUMP) & OT_HIGH_JUMP_ENABLED
 

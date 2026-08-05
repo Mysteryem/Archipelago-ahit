@@ -1,6 +1,5 @@
-from ..macros import (
-    CAN_SHOOT_ALLOW_TORPEDOES,
-)
+from rule_builder.options import OptionFilter
+
 from ..option_filters import logic_options
 from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
@@ -10,11 +9,19 @@ from ...extras import Extra
 from ...levels import Level
 
 from ....character_ability import *
+from ....options import LogicExpectNonInfiniteTorpedoesPodRacer21
 
 R_SPAWN = "Spawn"
 R_FIRST_FORCEFIELD_TRAP = "First Forcefield Trap"
 R_AFTER_FIRST_FORCEFIELD_TRAP = "After First Forcefield Trap"
 R_SECOND_FORCEFIELD_TRAP = "Second Forcefield Trap"
+
+# Either Infinite Torpedos [sic] is unlocked, or the player enabled gathering torpedoes within the level.
+CAN_DESTROY_OBJECTS_WITH_POD_RACERS = (
+        Extra.INFINITE_TORPEDOS.has()
+        | OptionFilter(LogicExpectNonInfiniteTorpedoesPodRacer21, True)
+)
+CAN_SHOOT_ALLOW_TORPEDOES = HasAbility(VEHICLE_BLASTER) | CAN_DESTROY_OBJECTS_WITH_POD_RACERS
 
 BOUNTY_HUNTER_PURSUIT = Chapter(
     area=Area.PURSUIT,
