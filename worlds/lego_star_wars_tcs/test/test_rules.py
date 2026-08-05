@@ -258,7 +258,7 @@ class TestAbilityCombinations(TestCase):
 
         r2 = rule.children[1]
         self.assertIsInstance(r2, HasAny)
-        self.assertEqual(set(r2.item_names), {"Jar Jar Binks", "Captain Tarpals"})
+        self.assertEqual(set(r2.item_names), {"Jar Jar Binks", "Captain Tarpals", "Admiral Ackbar"})
 
     def test_imperial_and_jedi(self):
         rule = HasAbilityCombination.static_make_simpler_rule(
