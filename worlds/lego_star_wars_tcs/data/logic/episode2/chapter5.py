@@ -73,6 +73,7 @@ GUNSHIP_CAVALRY = Chapter(
                 HasAbility(VEHICLE_TOW),
             ),
         ),
+        R_CONTROL_SHIP_BATTLE_MINIKITS: (),
     },
     minikits={
         # The only vehicles that cannot shoot minikits are pod racers, which fly low enough to the ground to collect the
