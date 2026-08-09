@@ -220,7 +220,7 @@ class UnlockedChapterManager(ClientComponent):
             ))
             self.characters_excluded_from_unlocking_chapters = set(map(
                 Character.from_sendable_name,
-                slot_data.get("chapter_unlock_characters_not_required", ())
+                slot_data.get("chapter_unlock_story_characters_not_required", ())
             ))
 
         if len(enabled_chapters) == 1:
