@@ -22,6 +22,10 @@ _SEPARATELY_HANDLED_GENERIC = {
     NonDataItemName.BLUE_STUD,
     NonDataItemName.PURPLE_STUD,
     NonDataItemName.POWER_UP,
+    NonDataItemName.MINIKIT,
+    NonDataItemName.TWO_MINIKITS,
+    NonDataItemName.FIVE_MINIKITS,
+    NonDataItemName.TEN_MINIKITS,
 }
 _RECEIVABLE_GENERIC_BY_AP_ID: Mapping[int, GenericItemData] = cast(dict[int, GenericItemData], {
     item.code: item for item in GENERIC_DATA
