@@ -254,7 +254,7 @@ GENERAL_GRIEVOUS = _helper.make_chapter(
                 "Chapter Completion",
                 logic_options(
                     base=False_(),
-                    moderate=HasAbility(BLASTER),
+                    hard=HasAbility(BLASTER),
                 ),
                 name="Grieve-Cheese",
             ),
