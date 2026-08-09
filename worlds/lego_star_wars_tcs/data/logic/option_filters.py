@@ -63,8 +63,15 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
     @override
     def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
         logic_difficulty = world.options.logic_difficulty
+        # Universal Tracker glitched logic is currently disabled because a lower logic difficulty may not be able to
+        # reach a region without a certain item, meaning that some locations within that region do not need a rule
+        # assigned, but a higher logic difficulty may be able to reach that region without that item, so in higher logic
+        # some locations within that region do need rules assigned. UT glitched logic was taking the most logically open
+        # of both, and ignoring the fact that lower logic locations should only be accessible when lower logic entrances
+        # have been used.
         if logic_difficulty == LogicDifficulty.option_none:
-            if world.is_universal_tracker():
+            # Disabled for now.
+            if False and world.is_universal_tracker():
                 rule = Or(
                     self.base,
                     And(
@@ -78,7 +85,8 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
             else:
                 rule = self.base
         elif logic_difficulty == LogicDifficulty.option_normal:
-            if world.is_universal_tracker():
+            # Disabled for now.
+            if False and world.is_universal_tracker():
                 rule = Or(
                     self.normal,
                     And(
@@ -92,7 +100,8 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
             else:
                 rule = self.normal
         elif logic_difficulty == LogicDifficulty.option_moderate:
-            if world.is_universal_tracker():
+            # Disabled for now.
+            if False and world.is_universal_tracker():
                 rule = Or(
                     self.moderate,
                     Has(world.glitches_item_name) & self.hard,
