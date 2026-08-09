@@ -97,11 +97,11 @@ class _RemainingChapterItemRequirements:
             return names[0]
 
     def format_remaining_chapter_requirements(self, chapter_name: str) -> str:
-        count_items = self.ids_to_names(self.item_ids_count_remaining)
         hard_items = self.ids_to_names(self.item_ids_hard_remaining)
         # Move "Episode # Unlock" items to the front.
         hard_items.sort(key=lambda s: 0 if s.startswith("Episode") else 1)
-        if count_items:
+        if self.count_remaining:
+            count_items = self.ids_to_names(self.item_ids_count_remaining)
             if hard_items:
                 return (f"{chapter_name} - Missing {self._format_items_names(hard_items)}"
                         f" and any {self.count_remaining} of {self._format_items_names(count_items)}")
