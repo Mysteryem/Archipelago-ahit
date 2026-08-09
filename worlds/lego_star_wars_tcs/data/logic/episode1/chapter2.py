@@ -349,7 +349,7 @@ INVASION_OF_NABOO = Chapter(
                 # Droideka/Grievous are too big.
                 moderate=HasAnyCharacterExcept(Character.DROIDEKA, Character.GENERAL_GRIEVOUS),
             ),
-            pickup_name="mk_01",
+            pickup_name="mk_0",
         ),
         "Statue Puzzle Minikit": minikit_data(
             R_SWAMP_BEFORE_WATER,
