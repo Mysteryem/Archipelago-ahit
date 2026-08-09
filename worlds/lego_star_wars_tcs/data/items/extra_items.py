@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import ClassVar
 
 from ..extras import Extra
 
@@ -9,7 +8,7 @@ from . import EXTRA_ITEMS_BASE, GenericItemData, ItemType
 @dataclass(frozen=True)
 class ExtraData(GenericItemData):
     extra: Extra
-    item_type: ClassVar[ItemType] = "Extra"
+    item_type = "Extra"
 
     @classmethod
     def ap_item(
