@@ -64,6 +64,9 @@ class Extra(IntEnum):
         if self.purchase_cost is None or self in _SCORE_MULTIPLIERS:
             raise ValueError(f"{self!r} cannot be used in rules.")
 
+    def is_score_multiplier(self):
+        return self in _SCORE_MULTIPLIERS
+
     def has(self) -> Has:
         self.check_can_use_in_rules()
         return Has(self.readable_name)

@@ -22,5 +22,5 @@ class ExtraData(GenericItemData):
         )
 
 EXTRA_DATA: list[ExtraData] = [
-    ExtraData.ap_item(extra) for extra in Extra
+    ExtraData.ap_item(extra) for extra in Extra if not extra.is_score_multiplier()
 ]
