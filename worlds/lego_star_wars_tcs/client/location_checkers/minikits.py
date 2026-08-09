@@ -104,7 +104,7 @@ class MinikitChecker(ClientComponent):
             self._initial_save_data_check_done = True
 
     @subscribe_event
-    async def on_level_change(self, event: OnLevelChangeEvent) -> None:
+    def on_level_change(self, event: OnLevelChangeEvent) -> None:
         self._on_tick_active = event.new_level_id in _PER_LEVEL_MINIKITS_TO_AP_IDS
 
     @subscribe_event
