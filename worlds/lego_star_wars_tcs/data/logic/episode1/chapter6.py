@@ -305,7 +305,7 @@ DARTH_MAUL = Chapter(
             ),
             pickup_name="mk_1",  # "mk_1" + "\x00" + "2"
         ),
-        "Maul Fight Minikit 1": minikit_data(
+        "Maul Fight Minikit 2": minikit_data(
             R_MAUL_BOSS_ROOM,
             logic_options(
                 # ER Note: Currently assuming JEDI is required to reach this room.
@@ -319,7 +319,7 @@ DARTH_MAUL = Chapter(
             ),
             pickup_name="m_pup1",
         ),
-        "Maul Fight Minikit 2": minikit_data(
+        "Maul Fight Minikit 1": minikit_data(
             R_MAUL_BOSS_ROOM,
             logic_options(
                 # ER Note: Currently assuming JEDI is required to reach this room.
