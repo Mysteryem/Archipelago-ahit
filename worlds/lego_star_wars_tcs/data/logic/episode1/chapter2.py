@@ -60,7 +60,6 @@ INVASION_OF_NABOO = Chapter(
                     base=HasAbility(JEDI),
                     moderate=HasAnyAbilities(JEDI | HIGH_JUMP)
                 ),
-                new_level=Level.GUNGAN_B,
             ),
         ),
         R_AFTER_CRASHED_MTT: (
