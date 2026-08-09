@@ -137,7 +137,7 @@ class UnlockedChapterManager(ClientComponent):
 
     easy_true_jedi: bool = False
     scale_true_jedi_with_score_multipliers: bool = False
-    goal_chapter_area: Area | None
+    goal_chapter_area: Area | None = None
 
     last_area_door: Area | None = None
     current_area: Area | None = None
