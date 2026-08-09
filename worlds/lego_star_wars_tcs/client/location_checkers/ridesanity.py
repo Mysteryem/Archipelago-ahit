@@ -45,13 +45,13 @@ class RidesanityChecker(ClientComponent):
             goal_chapter = None
 
         for bonus_name in event.slot_data["enabled_bonuses"]:
-            if bonus_name not in BONUS_TO_RIDABLES:
+            area = next(area for area in BONUS_ROOM_BONUSES if area.readable_name == bonus_name)
+            if area not in BONUS_TO_RIDABLES:
                 # No ridables in this bonus.
                 continue
-            area = next(area for area in BONUS_ROOM_BONUSES if area.readable_name == bonus_name)
             self.ridables_by_area[area] = {
                 ridable.character: LOCATION_NAME_TO_ID[ridable.character.get_ridesanity_location_name()]
-                for ridable in BONUS_TO_RIDABLES[bonus_name]
+                for ridable in BONUS_TO_RIDABLES[area]
             }
         for short_name in event.slot_data["enabled_chapters"]:
             chapter = CHAPTERS_BY_SHORT_NAME[short_name]
