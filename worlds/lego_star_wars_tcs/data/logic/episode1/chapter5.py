@@ -125,7 +125,10 @@ RETAKE_THEED_PALACE = Chapter(
                     base=HasAnyAbilities(JEDI | HOVER),
                     # High jump from the rising platform works, but it is easier to high jump up parts of the buildings
                     # on the left.
-                    normal=HasAnyAbilities(JEDI | HOVER | HIGH_JUMP),
+                    # For Ackbar, double jump from the rising platform or just jump across the broken bridge. There is
+                    # also a tight double jump up part of one of the buildings that is used in speedruns:
+                    # https://youtu.be/W66qxVkOaPA?t=945.
+                    normal=HasAnyAbilities(JEDI | HOVER | HIGH_JUMP | CAN_DOUBLE_JUMP),
                 )
             ),
         ),
