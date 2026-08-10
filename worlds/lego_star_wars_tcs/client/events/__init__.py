@@ -1,13 +1,16 @@
 import inspect
 import logging
+from collections import Counter
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Callable, TypeVar, Any, ClassVar, Generic, Awaitable, overload, cast
+from typing import Callable, TypeVar, Any, ClassVar, Generic, Awaitable, overload, cast, Literal
+
+from Options import Option, OptionSet, OptionCounter, TextChoice
 
 from ..common import ClientComponent
 from ..common_addresses import AREA_DATA_ID, is_actively_playing
 from ..type_aliases import TCSContext
-
+from ... import options
 
 debug_logger = logging.getLogger("TCS Debug")
 
@@ -27,6 +30,7 @@ class Event:
 
 _Subscriber = TypeVar("_Subscriber")
 _T = TypeVar("_T")
+_SENTINEL = object()
 
 
 @dataclass
@@ -200,6 +204,8 @@ class OnAreaChangeEvent(Event):
 @dataclass
 class OnReceiveSlotDataEvent(Event):
     """Called when slot data is received."""
+    _VALID_SLOT_DATA_OPTIONS: ClassVar[frozenset[type[Option[Any]]]] = frozenset(
+        options.LegoStarWarsTCSOptions.direct_slot_data_options())
     slot_data: dict[str, Any]
     first_time_setup: bool
     """Whether first-time setup should be performed."""
@@ -213,6 +219,33 @@ class OnReceiveSlotDataEvent(Event):
         assert isinstance(minor, int)
         assert isinstance(patch, int)
         self.generator_version = (major, minor, patch)
+
+    def get_slot_data_option(self, o: type[Option[_T]], default: _T | Literal[_SENTINEL] = _SENTINEL) -> _T:
+        """Helper for getting option values from slot data. If no default is provided, raises KeyError when the key is
+        absent.
+
+        TextChoice is not supported because TextChoice itself uses invalid typing (Choice is Option[int], but
+        TextChoice values are int | str, which does not match)"""
+        if o not in self._VALID_SLOT_DATA_OPTIONS:
+            raise ValueError(f"'{o}' is not an option type that is directly written to slot data.")
+        attribute_name = options.get_attribute_name(o)
+        if default is _SENTINEL:
+            to_return = self.slot_data[attribute_name]
+        else:
+            to_return_defaultable = self.slot_data.get(attribute_name, _SENTINEL)
+            if to_return_defaultable is _SENTINEL:
+                return default
+            else:
+                to_return = to_return_defaultable
+        # Some option values are converted to different types when passed through json, so need to be converted back
+        # again.
+        if issubclass(o, OptionSet):
+            return set(to_return)
+        if issubclass(o, OptionCounter):
+            return Counter(to_return)
+        if issubclass(o, TextChoice):
+            raise ValueError("TextChoice options are not supported due to invalid typing in Core AP.")
+        return to_return
 
 
 @dataclass

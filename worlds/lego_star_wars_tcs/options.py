@@ -1,6 +1,7 @@
 import itertools
+import typing
 from dataclasses import dataclass
-from typing import Mapping, AbstractSet
+from typing import Mapping, AbstractSet, Any
 
 from Options import (
     PerGameCommonOptions,
@@ -16,6 +17,7 @@ from Options import (
     ItemDict,
     Removed,
     OptionCounter,
+    Option,
 )
 
 from .constants import AP_WORLD_VERSION
@@ -1893,6 +1895,82 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
 
     def item_colors_to_slot_data(self) -> tuple[int, int, int, int, int, int, int]:
         return TextColorChoice.colors_to_slot_data(self)
+
+    def as_dict_by_type(self,
+                      *option_types: type[Option[Any]],
+                      casing: typing.Literal["snake", "camel", "pascal", "kebab"] = "snake",
+                      toggles_as_bools: bool = False,
+                      ) -> dict[str, typing.Any]:
+        return super().as_dict(
+            *map(get_attribute_name, option_types),
+            casing=casing,
+            toggles_as_bools=toggles_as_bools
+        )
+
+    def get_direct_slot_data_options(self):
+        return self.as_dict_by_type(*self.direct_slot_data_options())
+
+    @staticmethod
+    def direct_slot_data_options() -> set[type[Option[Any]]]:
+        return {
+            # Client.
+            ReceivedItemMessages,
+            CheckedLocationMessages,
+            ShopTrapAsFakeProgressionChance,
+            AutoCollectSpawnedPickups,
+
+            # DeathLink.
+            DeathLink,
+            DeathLinkAmnesty,
+            VehicleDeathLinkAmnesty,
+            DeathLinkStudLoss,
+            DeathLinkStudLossScaling,
+
+            # Logic.
+            # Logic knows the bundle size, so checks its counts against that known bundle size.
+            MinikitBundleSize,
+            EpisodeUnlockRequirement,
+            ChapterUnlockRequirement,
+            ChapterStoryUnlockCharactersNotRequired,
+            AllEpisodesCharacterPurchaseRequirements,
+            UncapOriginalTrilogyHighJump,
+
+            # Logic Difficulty.
+            LogicDifficulty,
+            LogicExpectNonInfiniteTorpedoesPodRacer21,
+            MostExpensivePurchaseWithNoScoreMultiplier,
+            EasierTrueJedi,
+            ScaleTrueJediWithScoreMultipliers,
+
+            # Goal logic.
+            DefeatBossesGoalAmount,
+            OnlyUniqueBossesCountTowardsGoal,
+            GoalRequiresKyberBricks,
+
+            # Other goal info.
+            MinikitGoalCompletionMethod,
+            KyberBrickGoalCompletionMethod,
+
+            # Locations. todo: Most of these could be removed.
+            EnableBonusLocations,  # todo: Deduce from locations that exist
+            EnableStoryCharacterUnlockLocations,  # todo: Deduce from locations that exist
+            EnableAllEpisodesCharacterPurchaseLocations,  # todo: Deduce from locations that exist
+            EnableMinikitLocations,  # todo: Deduce from locations that exist
+            EnableTrueJediLocations,  # todo: Deduce from locations that exist
+            Ridesanity,  # todo: Deduce from locations that exist
+            # todo: This can probably be deduce from whether the locations exist, and we probably don't need to care
+            #  whether the locations are excluded.
+            GoalChapterLocationsMode,
+            EnableNonPowerBrickExtraLocations,
+        }
+
+
+_OPTION_TYPE_TO_ATTRIBUTE: Mapping[type[Option[Any]], str] = {
+    v: k for k, v in LegoStarWarsTCSOptions.type_hints.items()
+}
+
+def get_attribute_name(o: type[Option[Any]]) -> str:
+    return _OPTION_TYPE_TO_ATTRIBUTE[o]
 
 
 OPTION_GROUPS: list[OptionGroup] = [

@@ -158,15 +158,16 @@ class UnlockedChapterManager(ClientComponent):
 
         enabled_chapters: list[str] = slot_data["enabled_chapters"]
         enabled_episodes: list[int] = slot_data["enabled_episodes"]
-        episode_unlock_requirement: int = slot_data["episode_unlock_requirement"]
-        all_episodes_character_purchase_requirements: int = slot_data["all_episodes_character_purchase_requirements"]
-        all_episodes_purchases_enabled = bool(slot_data["enable_all_episodes_purchases"])
+        episode_unlock_requirement = event.get_slot_data_option(options.EpisodeUnlockRequirement)
+        all_episodes_character_purchase_requirements = \
+            event.get_slot_data_option(options.AllEpisodesCharacterPurchaseRequirements)
+        all_episodes_purchases_enabled = event.get_slot_data_option(options.EnableAllEpisodesCharacterPurchaseLocations)
 
         # In older multiworlds, easier true jedi is never enabled because the option did not exist.
         if event.generator_version < (1, 2, 0):
             self.easy_true_jedi = False
         else:
-            self.easy_true_jedi = slot_data["easier_true_jedi"]
+            self.easy_true_jedi = bool(event.get_slot_data_option(options.EasierTrueJedi))
         self._set_current_area_true_jedi_requirement(ctx)
 
         # In older multiworlds, there is no option to scale True Jedi with score multipliers, so it is always disabled
@@ -174,13 +175,14 @@ class UnlockedChapterManager(ClientComponent):
         if event.generator_version < (1, 2, 0):
             self.scale_true_jedi_with_score_multipliers = False
         else:
-            self.scale_true_jedi_with_score_multipliers = bool(slot_data["scale_true_jedi_with_score_multipliers"])
+            self.scale_true_jedi_with_score_multipliers = \
+                bool(event.get_slot_data_option(options.ScaleTrueJediWithScoreMultipliers))
 
         # In older multiworlds, chapters were always unlocked through Story Characters.
         if event.generator_version < (1, 3, 0):
             chapter_unlock_requirement = options.ChapterUnlockRequirement.option_vanilla_characters
         else:
-            chapter_unlock_requirement = slot_data["chapter_unlock_requirement"]
+            chapter_unlock_requirement = event.get_slot_data_option(options.ChapterUnlockRequirement)
 
         chapter_unlock_requirement_is_characters = chapter_unlock_requirement in (
             options.ChapterUnlockRequirement.option_vanilla_characters,
@@ -220,7 +222,7 @@ class UnlockedChapterManager(ClientComponent):
             ))
             self.characters_excluded_from_unlocking_chapters = set(map(
                 Character.from_sendable_name,
-                slot_data.get("chapter_unlock_story_characters_not_required", ())
+                event.get_slot_data_option(options.ChapterStoryUnlockCharactersNotRequired, set())
             ))
 
         if len(enabled_chapters) == 1:
