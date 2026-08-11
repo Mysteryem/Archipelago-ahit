@@ -1920,7 +1920,7 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
             AutoCollectSpawnedPickups,
 
             # DeathLink.
-            DeathLink,
+            LegoStarWarsTCSDeathLink,
             DeathLinkAmnesty,
             VehicleDeathLinkAmnesty,
             DeathLinkStudLoss,
