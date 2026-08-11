@@ -126,8 +126,7 @@ class FreePlayChapterCompletionChecker(ClientComponent):
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         ctx = event.context
 
-        goal_chapter_locations_mode = event.slot_data.get("goal_chapter_locations_mode",
-                                                          GoalChapterLocationsMode.option_normal)
+        goal_chapter_locations_mode = event.get_slot_data_option(GoalChapterLocationsMode)
         goal_locations_removed = goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
         goal_chapter_short_name: str | None = event.slot_data.get("goal_chapter")
         if goal_chapter_short_name:

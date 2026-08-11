@@ -163,26 +163,13 @@ class UnlockedChapterManager(ClientComponent):
             event.get_slot_data_option(options.AllEpisodesCharacterPurchaseRequirements)
         all_episodes_purchases_enabled = event.get_slot_data_option(options.EnableAllEpisodesCharacterPurchaseLocations)
 
-        # In older multiworlds, easier true jedi is never enabled because the option did not exist.
-        if event.generator_version < (1, 2, 0):
-            self.easy_true_jedi = False
-        else:
-            self.easy_true_jedi = bool(event.get_slot_data_option(options.EasierTrueJedi))
+        self.easy_true_jedi = bool(event.get_slot_data_option(options.EasierTrueJedi))
         self._set_current_area_true_jedi_requirement(ctx)
 
-        # In older multiworlds, there is no option to scale True Jedi with score multipliers, so it is always disabled
-        # in those versions.
-        if event.generator_version < (1, 2, 0):
-            self.scale_true_jedi_with_score_multipliers = False
-        else:
-            self.scale_true_jedi_with_score_multipliers = \
-                bool(event.get_slot_data_option(options.ScaleTrueJediWithScoreMultipliers))
+        self.scale_true_jedi_with_score_multipliers = \
+            bool(event.get_slot_data_option(options.ScaleTrueJediWithScoreMultipliers))
 
-        # In older multiworlds, chapters were always unlocked through Story Characters.
-        if event.generator_version < (1, 3, 0):
-            chapter_unlock_requirement = options.ChapterUnlockRequirement.option_vanilla_characters
-        else:
-            chapter_unlock_requirement = event.get_slot_data_option(options.ChapterUnlockRequirement)
+        chapter_unlock_requirement = event.get_slot_data_option(options.ChapterUnlockRequirement)
 
         chapter_unlock_requirement_is_characters = chapter_unlock_requirement in (
             options.ChapterUnlockRequirement.option_vanilla_characters,
@@ -206,24 +193,17 @@ class UnlockedChapterManager(ClientComponent):
             enabled_chapters
         ))
 
-        # In older multiworlds, all characters were required, alt characters could not be chosen, and characters could
-        # not be excluded from requirements.
-        if event.generator_version < (1, 4, 0):
-            self.per_chapter_required_character_count = dict.fromkeys(self.enabled_chapter_areas, 999_999_999)
-            self.chapters_using_alt_characters = set()
-            self.characters_excluded_from_unlocking_chapters = set()
-        else:
-            from_slot_data: dict[str, int] = slot_data.get("chapter_required_character_counts", {})
-            converted_to_areas = {Area.from_short_name(k): v for k, v in from_slot_data.items()}
-            self.per_chapter_required_character_count = converted_to_areas
-            self.chapters_using_alt_characters = set(map(
-                Area.from_short_name,
-                slot_data.get("chapters_requiring_alt_characters", ())
-            ))
-            self.characters_excluded_from_unlocking_chapters = set(map(
-                Character.from_sendable_name,
-                event.get_slot_data_option(options.ChapterStoryUnlockCharactersNotRequired, set())
-            ))
+        from_slot_data: dict[str, int] = slot_data.get("chapter_required_character_counts", {})
+        converted_to_areas = {Area.from_short_name(k): v for k, v in from_slot_data.items()}
+        self.per_chapter_required_character_count = converted_to_areas
+        self.chapters_using_alt_characters = set(map(
+            Area.from_short_name,
+            slot_data.get("chapters_requiring_alt_characters", ())
+        ))
+        self.characters_excluded_from_unlocking_chapters = set(map(
+            Character.from_sendable_name,
+            event.get_slot_data_option(options.ChapterStoryUnlockCharactersNotRequired, set())
+        ))
 
         if len(enabled_chapters) == 1:
             chapters_text = enabled_chapters[0]
@@ -241,14 +221,8 @@ class UnlockedChapterManager(ClientComponent):
             tokens = options.AllEpisodesCharacterPurchaseRequirements.option_episodes_tokens
             unlocks = options.AllEpisodesCharacterPurchaseRequirements.option_episodes_unlocked
             if all_episodes_character_purchase_requirements == tokens:
-                if event.generator_version < (1, 2, 0):
-                    # Old versions unlock by having as many tokens as the number of enabled episodes.
-                    # The tokens were previously called "All Episodes Token".
-                    self.should_unlock_all_episodes_shop_slots = (
-                        lambda ctx: ctx.acquired_generic.episode_completion_token_count == num_enabled_episodes)
-                else:
-                    self.should_unlock_all_episodes_shop_slots = (
-                        lambda ctx: ctx.acquired_generic.episode_completion_token_count >= 6)
+                self.should_unlock_all_episodes_shop_slots = (
+                    lambda ctx: ctx.acquired_generic.episode_completion_token_count >= 6)
             elif all_episodes_character_purchase_requirements == unlocks:
                 self.should_unlock_all_episodes_shop_slots = (
                     lambda ctx: len(ctx.acquired_generic.received_episode_unlocks) == num_enabled_episodes)
@@ -262,7 +236,7 @@ class UnlockedChapterManager(ClientComponent):
         item_id_to_chapter_area: dict[int, list[Area]] = {}
         remaining_chapter_item_requirements: dict[Area, _RemainingChapterItemRequirements] = {}
 
-        if goal_chapter := slot_data.get("goal_chapter"):
+        if goal_chapter := event.get_slot_data_option(options.GoalChapter):
             assert isinstance(goal_chapter, str)
             goal_area = Area.from_short_name(goal_chapter)
             # Add the requirement for the fake sub-goals item to the Goal Chapter so that it will only unlock once all
@@ -305,9 +279,7 @@ class UnlockedChapterManager(ClientComponent):
                     assert code is not None
                     character_code_requirements.append(code)
 
-                # Older versions do not provide a count in slot data, and instead assume all are required by setting the
-                # count_required to 999_999_999.
-                assert count_required <= len(character_code_requirements) or event.generator_version < (1, 4, 0), \
+                assert count_required <= len(character_code_requirements), \
                     "Required counts should never be larger than the maximum possible"
                 if count_required < len(character_code_requirements):
                     # Not all are required.

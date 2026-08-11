@@ -586,26 +586,17 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     def _read_slot_data(self, slot_data: dict[str, typing.Any], first_time_setup: bool):
         # The connection to the server is assumed to be OK by this point, so slot_data can now be used to adjust client
         # behaviour.
-        received_item_messages = slot_data["received_item_messages"]
-
         self.client_text = ClientText.from_slot_data(slot_data)
 
         on_receive_slot_data_event = OnReceiveSlotDataEvent(self, slot_data, first_time_setup)
-        generator_apworld_version = on_receive_slot_data_event.generator_version
 
-        if generator_apworld_version < (1, 2, 0):
-            # In older versions, "all" was `0` and "none" was `1`. The values have since been swapped.
-            received_item_messages = 1 if received_item_messages == 0 else 0
+        self.received_item_messages = options.ReceivedItemMessages(
+            on_receive_slot_data_event.get_slot_data_option(options.ReceivedItemMessages))
 
-        self.received_item_messages = options.ReceivedItemMessages(received_item_messages)
-
-        checked_location_messages = slot_data["checked_location_messages"]
-
-        if generator_apworld_version < (1, 2, 0):
-            # In older versions, "all" was `0` and "none" was `1`. The values have since been swapped.
-            checked_location_messages = 1 if checked_location_messages == 0 else 0
-
-        self.checked_location_messages = checked_location_messages == options.CheckedLocationMessages.option_all
+        self.checked_location_messages = (
+                on_receive_slot_data_event.get_slot_data_option(options.CheckedLocationMessages)
+                == options.CheckedLocationMessages.option_all
+        )
 
         # Fire the event so that the various client components initialize themselves from the slot_data.
         self.event_manager.fire_event(on_receive_slot_data_event)

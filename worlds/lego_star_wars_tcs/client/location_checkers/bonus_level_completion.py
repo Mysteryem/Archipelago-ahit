@@ -44,18 +44,18 @@ class BonusAreaCompletionChecker(ClientComponent):
 
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
-        if event.generator_version < (1, 3, 0):
-            self.remaining_bonus_area_completion_locations = {}
-        else:
-            bonus_area_completion_locations = {}
-            for bonus_name in event.slot_data["enabled_bonuses"]:
-                # TODO: Put area IDs into slot data instead.
+        bonus_area_completion_locations = {}
+        for bonus_name in event.slot_data["enabled_bonuses"]:
+            # TODO: Put area IDs into slot data instead.
+            try:
                 bonus_area = next(area for area in BONUS_ROOM_BONUSES if area.readable_name == bonus_name)
-                loc_ids = [LOCATION_NAME_TO_ID[character.get_level_completion_unlock_location_name()]
-                           for character in bonus_area.get_story_characters()]
-                server_locations = event.context.server_locations
-                bonus_area_completion_locations[bonus_area] = list(filter(server_locations.__contains__, loc_ids))
-            self.remaining_bonus_area_completion_locations = bonus_area_completion_locations
+            except StopIteration as ex:
+                raise KeyError(f"No Bonus Area with name {bonus_name} found") from ex
+            loc_ids = [LOCATION_NAME_TO_ID[character.get_level_completion_unlock_location_name()]
+                       for character in bonus_area.get_story_characters()]
+            server_locations = event.context.server_locations
+            bonus_area_completion_locations[bonus_area] = list(filter(server_locations.__contains__, loc_ids))
+        self.remaining_bonus_area_completion_locations = bonus_area_completion_locations
 
     @staticmethod
     def update_from_datastorage(ctx: TCSContext, area_ids: Iterable[AreaId]):

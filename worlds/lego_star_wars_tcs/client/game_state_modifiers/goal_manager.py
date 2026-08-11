@@ -8,7 +8,14 @@ from ..common_addresses import CantinaRoom, GameState1
 from ..custom_save_data import CustomSaveFlags1
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
 from ..type_aliases import TCSContext, AreaId, ApItemId
-from ...options import OnlyUniqueBossesCountTowardsGoal, MinikitGoalCompletionMethod
+from ...options import (
+    MinikitGoalAmount,
+    OnlyUniqueBossesCountTowardsGoal,
+    MinikitGoalCompletionMethod,
+    DefeatBossesGoalAmount,
+    EnableBonusLocations,
+    GoalRequiresKyberBricks,
+)
 from . import ClientComponent
 
 from ...data.areas import Area, BONUS_ROOM_BONUSES
@@ -88,7 +95,7 @@ class GoalManager(ClientComponent):
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         slot_data = event.slot_data
         ctx = event.context
-        self.goal_minikit_count = slot_data["minikit_goal_amount"]
+        self.goal_minikit_count = event.get_slot_data_option(MinikitGoalAmount)
 
         # Reset goal strings.
         self._paused_goal_strings.clear()
@@ -113,17 +120,9 @@ class GoalManager(ClientComponent):
         else:
             minikit_goal_info_text = "Minikit items are not needed to goal."
 
-        if event.generator_version < (1, 2, 0):
-            # The Minikit goal was completed by going to the Junkyard minikit display on previous 1.0.0 versions.
-            self.minikit_goal_completion_method.value = MinikitGoalCompletionMethod.option_junkyard_minikit_display
-        else:
-            self.minikit_goal_completion_method.value = slot_data["minikit_goal_completion_method"]
+        self.minikit_goal_completion_method.value = event.get_slot_data_option(MinikitGoalCompletionMethod)
 
-        if event.generator_version < (1, 1, 0):
-            # Minikit goal was the only goal at this point.
-            goal_bosses_count = 0
-        else:
-            goal_bosses_count = slot_data["defeat_bosses_goal_amount"]
+        goal_bosses_count = event.get_slot_data_option(DefeatBossesGoalAmount)
 
         if goal_bosses_count <= 0:
             self.goal_bosses_count = 0
@@ -133,11 +132,10 @@ class GoalManager(ClientComponent):
         else:
             has_sub_goals = True
             self.goal_bosses_count = goal_bosses_count
-            self.goal_bosses_count = slot_data["defeat_bosses_goal_amount"]
             enabled_boss_chapters = set(slot_data["enabled_bosses"])
             self.enabled_boss_chapters = {Area.from_short_name(chapter)
                                           for chapter in enabled_boss_chapters}
-            only_unique_bosses_count = slot_data["only_unique_bosses_count"]
+            only_unique_bosses_count = event.get_slot_data_option(OnlyUniqueBossesCountTowardsGoal)
             self.goal_bosses_must_be_unique = (
                     only_unique_bosses_count != OnlyUniqueBossesCountTowardsGoal.option_disabled)
             self.goal_bosses_anakin_as_vader = (
@@ -189,10 +187,7 @@ class GoalManager(ClientComponent):
                                            f" {len(self.enabled_boss_chapters)} bosses enabled, in"
                                            f" {boss_chapters_text}")
 
-        if event.generator_version < (1, 2, 0):
-            self.goal_areas_count = 0
-        else:
-            self.goal_areas_count = slot_data["goal_area_completion_count"]
+        self.goal_areas_count = slot_data["goal_area_completion_count"]
 
         # The "Levels" and Kyber Bricks goal info are written to the same shop hint text because they are both quite
         # short.
@@ -203,7 +198,7 @@ class GoalManager(ClientComponent):
         if self.goal_areas_count > 0:
             has_sub_goals = True
             enabled_chapter_count = len(slot_data["enabled_chapters"])
-            if slot_data["enable_bonus_locations"]:
+            if event.get_slot_data_option(EnableBonusLocations):
                 enabled_bonus_level_count = 0
                 for name in slot_data["enabled_bonuses"]:
                     bonus_area = _BONUS_ROOM_BONUS_NAME_TO_AREA[name]
@@ -220,20 +215,14 @@ class GoalManager(ClientComponent):
             hints_page_3_goal_info_texts.append(areas_goal_info_text)
         self.goal_areas_relevant_bonus_area_ids = goal_areas_relevant_bonus_area_ids
 
-        if event.generator_version < (1, 2, 0):
-            self.kyber_bricks_goal_enabled = False
-        else:
-            self.kyber_bricks_goal_enabled = bool(slot_data["goal_requires_kyber_bricks"])
+        self.kyber_bricks_goal_enabled = bool(event.get_slot_data_option(GoalRequiresKyberBricks))
 
-        if event.generator_version < (1, 2, 0):
-            self.goal_chapter_area_id = _NO_GOAL_CHAPTER
+        goal_chapter = slot_data["goal_chapter"]
+        if goal_chapter:
+            self.goal_chapter_area_id = Area.from_short_name(goal_chapter)
         else:
-            goal_chapter = slot_data["goal_chapter"]
-            if goal_chapter:
-                self.goal_chapter_area_id = Area.from_short_name(goal_chapter)
-            else:
-                # No goal chapter required.
-                self.goal_chapter_area_id = _NO_GOAL_CHAPTER
+            # No goal chapter required.
+            self.goal_chapter_area_id = _NO_GOAL_CHAPTER
 
         if self.kyber_bricks_goal_enabled:
             has_sub_goals = True

@@ -74,10 +74,7 @@ class AutoCollectPickups(ClientComponent):
         ctx = event.context
         if event.first_time_setup:
             # Read the value from slot data and write it into the save data.
-            if event.generator_version < (1, 4, 2):
-                value = AutoCollectSpawnedPickups.option_disabled
-            else:
-                value = event.slot_data["auto_collect_spawned_pickups"]
+            value = event.get_slot_data_option(AutoCollectSpawnedPickups)
             enabled = bool(value)
             vehicles_only = value == AutoCollectSpawnedPickups.option_vehicle_levels_only
             CustomSaveFlags1.AUTO_COLLECT_PICKUPS_ENABLED.set_bool(ctx, enabled)

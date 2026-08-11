@@ -4,7 +4,7 @@ from ..events import subscribe_event, OnReceiveSlotDataEvent, OnAreaChangeEvent,
 from ..type_aliases import ApLocationId, TCSContext
 from ...ridables import BONUS_TO_RIDABLES
 
-from ...options import GoalChapterLocationsMode
+from ...options import GoalChapterLocationsMode, Ridesanity
 
 from ...data.areas import Area, BONUS_ROOM_BONUSES
 from ...data.characters import Character
@@ -24,19 +24,14 @@ class RidesanityChecker(ClientComponent):
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent):
         # Initialise
-        if event.generator_version < (1, 2, 0):
-            # Ridesanity did not exist on older versions.
-            ridesanity_enabled = False
-        else:
-            ridesanity_enabled = bool(event.slot_data["ridesanity"])
+        ridesanity_enabled = bool(event.get_slot_data_option(Ridesanity))
 
         self.ridables_by_area = {}
 
         if not ridesanity_enabled:
             return
 
-        goal_chapter_locations_mode = event.slot_data.get("goal_chapter_locations_mode",
-                                                          GoalChapterLocationsMode.option_normal)
+        goal_chapter_locations_mode = event.get_slot_data_option(GoalChapterLocationsMode)
         goal_locations_removed = goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
         goal_chapter_short_name: str | None = event.slot_data.get("goal_chapter")
         if goal_chapter_short_name:
