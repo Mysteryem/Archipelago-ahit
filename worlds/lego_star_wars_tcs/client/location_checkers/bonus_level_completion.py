@@ -45,7 +45,7 @@ class BonusAreaCompletionChecker(ClientComponent):
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         bonus_area_completion_locations = {}
-        for bonus_name in event.slot_data["enabled_bonuses"]:
+        for bonus_name in event.slot_data.enabled_bonuses.value:
             # TODO: Put area IDs into slot data instead.
             try:
                 bonus_area = next(area for area in BONUS_ROOM_BONUSES if area.readable_name == bonus_name)

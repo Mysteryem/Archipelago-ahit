@@ -156,28 +156,26 @@ class UnlockedChapterManager(ClientComponent):
         slot_data = event.slot_data
         ctx = event.context
 
-        enabled_chapters: list[str] = slot_data["enabled_chapters"]
-        enabled_episodes: list[int] = slot_data["enabled_episodes"]
-        episode_unlock_requirement = event.get_slot_data_option(options.EpisodeUnlockRequirement)
-        all_episodes_character_purchase_requirements = \
-            event.get_slot_data_option(options.AllEpisodesCharacterPurchaseRequirements)
-        all_episodes_purchases_enabled = event.get_slot_data_option(options.EnableAllEpisodesCharacterPurchaseLocations)
+        enabled_chapters: list[str] = sorted(slot_data.enabled_chapters.value)
+        enabled_episodes: list[int] = sorted(slot_data.enabled_episodes.value)
+        episode_unlock_requirement = slot_data.episode_unlock_requirement
+        all_episodes_character_purchase_requirements = slot_data.all_episodes_character_purchase_requirements
+        all_episodes_purchases_enabled = slot_data.enable_all_episodes_purchases
 
-        self.easy_true_jedi = bool(event.get_slot_data_option(options.EasierTrueJedi))
+        self.easy_true_jedi = bool(slot_data.easier_true_jedi)
         self._set_current_area_true_jedi_requirement(ctx)
 
         self.scale_true_jedi_with_score_multipliers = \
-            bool(event.get_slot_data_option(options.ScaleTrueJediWithScoreMultipliers))
+            bool(slot_data.scale_true_jedi_with_score_multipliers)
 
-        chapter_unlock_requirement = event.get_slot_data_option(options.ChapterUnlockRequirement)
-
-        chapter_unlock_requirement_is_characters = chapter_unlock_requirement in (
-            options.ChapterUnlockRequirement.option_vanilla_characters,
-            options.ChapterUnlockRequirement.option_random_characters,
-        )
+        chapter_unlock_requirement = slot_data.chapter_unlock_requirement
 
         if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_random_characters:
-            from_slot_data: dict[str, list[ApItemId]] = slot_data["chapter_random_character_requirements"]
+            character_requirements_option = slot_data.chapter_random_character_requirements
+            if character_requirements_option is None:
+                raise Exception("Random character requirements option is missing from slot data, but is required, please"
+                                " report this as a bug.")
+            from_slot_data: dict[str, list[ApItemId]] = character_requirements_option.value
             self.random_character_chapter_requirements = {
                 Area.from_short_name(chapter_short_name): [CODE_TO_CHARACTER_DATA[code].character
                                                            for code in character_codes]
@@ -193,16 +191,26 @@ class UnlockedChapterManager(ClientComponent):
             enabled_chapters
         ))
 
-        from_slot_data: dict[str, int] = slot_data.get("chapter_required_character_counts", {})
-        converted_to_areas = {Area.from_short_name(k): v for k, v in from_slot_data.items()}
+        required_counts_option = slot_data.chapter_required_character_counts
+        required_counts: dict[str, int]
+        if required_counts_option is None:
+            required_counts = {}
+        else:
+            required_counts = required_counts_option.value
+        converted_to_areas = {Area.from_short_name(k): v for k, v in required_counts.items()}
         self.per_chapter_required_character_count = converted_to_areas
+        alt_character_chapters_option = slot_data.chapters_requiring_alt_characters
+        if alt_character_chapters_option is None:
+            chapters_requiring_alt_characters = ()
+        else:
+            chapters_requiring_alt_characters = alt_character_chapters_option.value
         self.chapters_using_alt_characters = set(map(
             Area.from_short_name,
-            slot_data.get("chapters_requiring_alt_characters", ())
+            chapters_requiring_alt_characters
         ))
         self.characters_excluded_from_unlocking_chapters = set(map(
             Character.from_sendable_name,
-            event.get_slot_data_option(options.ChapterStoryUnlockCharactersNotRequired, set())
+            slot_data.chapter_unlock_story_characters_not_required.value,
         ))
 
         if len(enabled_chapters) == 1:
@@ -236,9 +244,8 @@ class UnlockedChapterManager(ClientComponent):
         item_id_to_chapter_area: dict[int, list[Area]] = {}
         remaining_chapter_item_requirements: dict[Area, _RemainingChapterItemRequirements] = {}
 
-        if goal_chapter := event.get_slot_data_option(options.GoalChapter):
-            assert isinstance(goal_chapter, str)
-            goal_area = Area.from_short_name(goal_chapter)
+        if goal_chapter := slot_data.goal_chapter:
+            goal_area = Area.from_short_name(goal_chapter.value)
             # Add the requirement for the fake sub-goals item to the Goal Chapter so that it will only unlock once all
             # sub-goals have been completed.
             item_id_to_chapter_area[_SUB_GOAL_SPECIAL_ID] = [goal_area]
@@ -254,7 +261,7 @@ class UnlockedChapterManager(ClientComponent):
             unique_count_required_items: list[int] = []
             unique_count_required: int = 0
             always_required_items: list[int]
-            if chapter_unlock_requirement_is_characters:
+            if chapter_unlock_requirement.is_characters():
                 character_requirements: list[Character]
                 if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_vanilla_characters:
                     if chapter_area in self.chapters_using_alt_characters:

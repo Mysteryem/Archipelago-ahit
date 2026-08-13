@@ -8,6 +8,7 @@ from ..common import ClientComponent, StaticUint
 from ..common_addresses import ChallengeMode
 
 from ...options import GoalChapterLocationsMode
+from ...slot_data import GoalChapterShortName
 
 from ...data.areas import Area, ALL_CHAPTER_AREAS
 from ...data.levels import Level
@@ -126,11 +127,11 @@ class FreePlayChapterCompletionChecker(ClientComponent):
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         ctx = event.context
 
-        goal_chapter_locations_mode = event.get_slot_data_option(GoalChapterLocationsMode)
+        goal_chapter_locations_mode = event.slot_data.goal_chapter_locations_mode.value
         goal_locations_removed = goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
-        goal_chapter_short_name: str | None = event.slot_data.get("goal_chapter")
-        if goal_chapter_short_name:
-            goal_chapter = Area.from_short_name(goal_chapter_short_name)
+        goal_chapter_option: GoalChapterShortName | None = event.slot_data.goal_chapter
+        if goal_chapter_option is not None:
+            goal_chapter = Area.from_short_name(goal_chapter_option.value)
         else:
             goal_chapter = None
         enabled_chapter_areas: set[Area] = set()

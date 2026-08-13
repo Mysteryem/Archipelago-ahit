@@ -1,10 +1,11 @@
 import re
 import unicodedata
-from typing import TypeVar, Any
+from typing import TypeVar
 
 from BaseClasses import ItemClassification
 
 from ..options import TextColorChoice
+from ..slot_data import TCSSlotDataOptions
 
 
 STR = TypeVar("STR", str, bytes)
@@ -322,10 +323,10 @@ class ClientText:
             return b"~" + format_str.encode("utf-8") + s + b"~~"
 
     @classmethod
-    def from_slot_data(cls, slot_data: dict[str, Any]):
+    def from_slot_data(cls, slot_data: TCSSlotDataOptions):
         self = cls()
         if "item_colors" in slot_data:
-            item_colors = slot_data["item_colors"]
+            item_colors = slot_data.item_colors.value
             (
                 prog_useful_color,
                 progression_color,
@@ -334,7 +335,7 @@ class ClientText:
                 trap_color,
                 player_color,
                 location_color,
-            ) = (COLOR_FORMATTING[s] for s in TextColorChoice.colors_from_slot_data(item_colors))
+            ) = (COLOR_FORMATTING[s] for s in TextColorChoice.colors_from_slot_data(list(item_colors)))
 
             self._prog_useful_color = prog_useful_color
             self._prog_useful_color_b = prog_useful_color.encode()

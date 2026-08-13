@@ -90,7 +90,7 @@ class MinikitChecker(ClientComponent):
 
     @subscribe_event
     def on_receive_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
-        for short_name in event.slot_data["enabled_chapters"]:
+        for short_name in event.slot_data.enabled_chapters.value:
             area = Area.from_short_name(short_name)
             self._enabled_chapter_levels_with_minikits.update(area.get_playable_levels())
         # Not all levels contain minikits.

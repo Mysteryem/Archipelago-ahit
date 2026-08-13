@@ -23,23 +23,24 @@ class RidesanityChecker(ClientComponent):
 
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent):
+        slot_data = event.slot_data
         # Initialise
-        ridesanity_enabled = bool(event.get_slot_data_option(Ridesanity))
+        ridesanity_enabled = bool(slot_data.ridesanity)
 
         self.ridables_by_area = {}
 
         if not ridesanity_enabled:
             return
 
-        goal_chapter_locations_mode = event.get_slot_data_option(GoalChapterLocationsMode)
+        goal_chapter_locations_mode = slot_data.goal_chapter_locations_mode
         goal_locations_removed = goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
-        goal_chapter_short_name: str | None = event.slot_data.get("goal_chapter")
-        if goal_chapter_short_name:
-            goal_chapter = Area.from_short_name(goal_chapter_short_name)
+        goal_chapter_option = slot_data.goal_chapter
+        if goal_chapter_option is not None:
+            goal_chapter = Area.from_short_name(goal_chapter_option.value)
         else:
             goal_chapter = None
 
-        for bonus_name in event.slot_data["enabled_bonuses"]:
+        for bonus_name in slot_data.enabled_bonuses.value:
             area = next(area for area in BONUS_ROOM_BONUSES if area.readable_name == bonus_name)
             if area not in BONUS_TO_RIDABLES:
                 # No ridables in this bonus.
@@ -48,7 +49,7 @@ class RidesanityChecker(ClientComponent):
                 ridable.character: LOCATION_NAME_TO_ID[ridable.character.get_ridesanity_location_name()]
                 for ridable in BONUS_TO_RIDABLES[area]
             }
-        for short_name in event.slot_data["enabled_chapters"]:
+        for short_name in slot_data.enabled_chapters.value:
             chapter = CHAPTERS_BY_SHORT_NAME[short_name]
             ridables = chapter.ridables
             if not ridables:

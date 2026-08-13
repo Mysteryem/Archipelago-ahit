@@ -23,6 +23,7 @@ from CommonClient import server_loop, gui_enabled, get_base_parser
 from .. import options, TCSUniversalTrackerAPWorldVersionMismatchError
 from ..constants import GAME_NAME, AP_WORLD_VERSION
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, ChapterArea
+from ..slot_data import TCSSlotDataOptions
 from .client_text import ClientText, clean_string
 from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from .custom_save_data import CustomSaveDataSections, CUSTOM_SAVE_DATA_SECTION_SIZE
@@ -583,20 +584,17 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 return True, None
         return True, new_seed_name
 
-    def _read_slot_data(self, slot_data: dict[str, typing.Any], first_time_setup: bool):
+    def _read_slot_data(self, slot_data: TCSSlotDataOptions, first_time_setup: bool):
         # The connection to the server is assumed to be OK by this point, so slot_data can now be used to adjust client
         # behaviour.
-        self.client_text = ClientText.from_slot_data(slot_data)
 
         on_receive_slot_data_event = OnReceiveSlotDataEvent(self, slot_data, first_time_setup)
 
-        self.received_item_messages = options.ReceivedItemMessages(
-            on_receive_slot_data_event.get_slot_data_option(options.ReceivedItemMessages))
+        self.client_text = ClientText.from_slot_data(on_receive_slot_data_event.slot_data)
 
-        self.checked_location_messages = (
-                on_receive_slot_data_event.get_slot_data_option(options.CheckedLocationMessages)
-                == options.CheckedLocationMessages.option_all
-        )
+        self.received_item_messages = on_receive_slot_data_event.slot_data.received_item_messages
+
+        self.checked_location_messages = bool(on_receive_slot_data_event.slot_data.checked_location_messages)
 
         # Fire the event so that the various client components initialize themselves from the slot_data.
         self.event_manager.fire_event(on_receive_slot_data_event)
@@ -656,6 +654,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                                 " the APWorld version that generated the multiworld.")
             else:
                 logger.error("Error: slot_data missing from Connected message, something is probably broken.")
+                Utils.async_start(self.disconnect())
+                return
 
             # It is assumed that the player must be loaded into a save file or a new game at this point.
             ok, server_seed_name_to_write = self._validate_seed_name_against_save_data(self.last_connected_seed_name)
@@ -679,7 +679,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 first_time_setup = False
             self.disabled_locations = set(LOCATION_NAME_TO_ID.values()) - self.server_locations
 
-            self._read_slot_data(slot_data, first_time_setup)
+            slot_data_options = TCSSlotDataOptions.from_slot_data(slot_data)
+            self._read_slot_data(slot_data_options, first_time_setup)
 
             # Setting this to non-None indicates to the game watcher loop to start fully running.
             self.last_connected_slot = self.auth

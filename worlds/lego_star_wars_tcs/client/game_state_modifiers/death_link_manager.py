@@ -21,14 +21,6 @@ from ..type_aliases import TCSContext
 
 from ...data.areas import Area
 
-from ...options import (
-    LegoStarWarsTCSDeathLink,
-    DeathLinkAmnesty,
-    VehicleDeathLinkAmnesty,
-    DeathLinkStudLoss,
-    DeathLinkStudLossScaling,
-)
-
 _DEBUG_LOGGER = logging.getLogger("TCS Debug")
 
 # Currently, all characters are allowed to be killed because the client sets the respawn timer before killing the
@@ -258,11 +250,13 @@ class DeathLinkManager(ClientComponent):
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         ctx = event.context
 
-        self.death_link_enabled = bool(event.get_slot_data_option(LegoStarWarsTCSDeathLink))
-        self.normal_death_link_amnesty = event.get_slot_data_option(DeathLinkAmnesty)
-        self.vehicle_death_link_amnesty = event.get_slot_data_option(VehicleDeathLinkAmnesty)
-        self.death_link_stud_loss = event.get_slot_data_option(DeathLinkStudLoss)
-        self.death_link_stud_loss_scaling = bool(event.get_slot_data_option(DeathLinkStudLossScaling))
+        slot_data = event.slot_data
+
+        self.death_link_enabled = bool(slot_data.death_link)
+        self.normal_death_link_amnesty = slot_data.death_link_amnesty.value
+        self.vehicle_death_link_amnesty = slot_data.vehicle_death_link_amnesty.value
+        self.death_link_stud_loss = slot_data.death_link_studs_loss.value
+        self.death_link_stud_loss_scaling = bool(slot_data.death_link_studs_loss_scaling)
 
         if event.first_time_setup:
             # Write whether Death Link is enabled into slot data.

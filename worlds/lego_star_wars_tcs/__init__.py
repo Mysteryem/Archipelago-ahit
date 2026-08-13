@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import Counter
 from typing import Mapping, Any, NoReturn, Callable, ClassVar, TextIO
@@ -73,6 +74,7 @@ from .options import (
 )
 from .option_resolution.common import resolve_options
 from .ridables import RIDABLES_REQUIREMENTS
+from .slot_data import TCSSlotDataOptions
 from .item_groups import ITEM_GROUPS, REVERSE_READABLE_ABILITY_TO_ABILITY
 
 from .data.characters import Character
@@ -585,39 +587,20 @@ class LegoStarWarsTCSWorld(World):
         return False
 
     def fill_slot_data(self) -> Mapping[str, Any]:
-        options = self.options
-        optional_options: dict[str, Any] = {}
-        if options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
-            chapters_requiring_alt_characters = sorted(self.chapters_requiring_alt_characters)
-            if chapters_requiring_alt_characters:
-                optional_options["chapters_requiring_alt_characters"] = chapters_requiring_alt_characters
-            if self.chapter_required_character_counts:
-                optional_options["chapter_required_character_counts"] = self.chapter_required_character_counts
-        elif options.chapter_unlock_requirement == ChapterUnlockRequirement.option_random_characters:
-            # Convert character names to IDs. This reduces slot_data storage/memory usage size, and is easier to
-            # interpret from the PopTracker pack.
-            optional_options["chapter_random_character_requirements"] = {
-                chapter: [c.code for c in characters]
-                for chapter, characters in self.chapter_random_character_requirements.items()
-            }
-            optional_options["chapter_required_character_counts"] = self.chapter_required_character_counts
-        return {
-            # todo: A number of the slot data keys here could be inferred from what locations exist in the multiworld.
-            "apworld_version": constants.AP_WORLD_VERSION,
-            "logic_version": constants.UT_LOGIC_VERSION,
-            "enabled_chapters": sorted(self.enabled_chapters),
-            "enabled_episodes": sorted(self.enabled_episodes),
-            "enabled_bonuses": sorted(self.enabled_bonuses),
-            "starting_chapter": self.starting_chapter.short_name,
-            "starting_episode": self.starting_episode,
-            "minikit_goal_amount": self.goal_minikit_count,
-            "enabled_bosses": self.enabled_bosses,
-            "goal_area_completion_count": self.goal_area_completion_count,
-            "goal_chapter": self.goal_chapter,
-            "item_colors": options.item_colors_to_slot_data(),
-            **optional_options,
-            **options.get_direct_slot_data_options(),
-        }
+        # The dict is presented here, rather than being returned directly by a function call, to help with debugging.
+        slot_data_dict: dict[str, Any] = {}
+        slot_data_options = TCSSlotDataOptions.from_world(self)
+        slot_data_options.fill_slot_data(slot_data_dict)
+        # Make sure the slot data deserializes correctly, so the client won't just be bricked when it tries to load it.
+        from_slot_data = TCSSlotDataOptions.from_slot_data(json.loads(json.dumps(slot_data_dict)))
+        if from_slot_data != slot_data_options:
+            raise Exception(f"Slot data does not match following deserialization."
+                            f"\n\t{slot_data_options}"
+                            f"\nserialized as:"
+                            f"\n\t{slot_data_dict}"
+                            f"\ndeserialized as:"
+                            f"\n\t{from_slot_data}")
+        return slot_data_dict
 
     @classmethod
     def stage_write_spoiler_header(cls, multiworld: MultiWorld, spoiler_handle: TextIO):

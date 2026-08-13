@@ -1,7 +1,6 @@
 import itertools
-import typing
-from dataclasses import dataclass
-from typing import Mapping, AbstractSet, Any
+from dataclasses import dataclass, fields
+from typing import Mapping, AbstractSet, Any, TypedDict, NotRequired
 
 from Options import (
     PerGameCommonOptions,
@@ -1795,27 +1794,84 @@ class DeathLinkStudLossScaling(Toggle):
     rich_text_doc = True
 
 
+class SlotDataOptionMetaData(TypedDict):
+    since: tuple[int, int, int]
+    default_if_absent: NotRequired[Any]
+
+
+def _since(major: int, minor: int, patch: int, default_if_absent=None) -> SlotDataOptionMetaData:
+    if default_if_absent is not None:
+        return {"since": (major, minor, patch), "default_if_absent": default_if_absent}
+    else:
+        return {"since": (major, minor, patch)}
+
+
+# noinspection PyTypeChecker,LongLine
 @dataclass
-class LegoStarWarsTCSOptions(PerGameCommonOptions):
+class TCSDirectSlotDataOptions:
+    """Options that are put directly into slot data."""
+    # Client.
+    received_item_messages: ReceivedItemMessages
+    checked_location_messages: CheckedLocationMessages
+    shop_fake_trap_chance: ShopTrapAsFakeProgressionChance
+    auto_collect_spawned_pickups: AutoCollectSpawnedPickups
+
+    # DeathLink.
+    death_link: LegoStarWarsTCSDeathLink
+    death_link_amnesty: DeathLinkAmnesty
+    vehicle_death_link_amnesty: VehicleDeathLinkAmnesty
+    death_link_studs_loss: DeathLinkStudLoss
+    death_link_studs_loss_scaling: DeathLinkStudLossScaling
+
+    # Logic.
+    # Logic knows the bundle size, so checks its counts against that known bundle size.
+    minikit_bundle_size: MinikitBundleSize
+    episode_unlock_requirement: EpisodeUnlockRequirement
+    chapter_unlock_requirement: ChapterUnlockRequirement
+    chapter_unlock_story_characters_not_required: ChapterStoryUnlockCharactersNotRequired  # todo make this optional
+    all_episodes_character_purchase_requirements: AllEpisodesCharacterPurchaseRequirements
+    uncap_original_trilogy_high_jump: UncapOriginalTrilogyHighJump
+
+    # Logic difficulty.
+    logic_difficulty: LogicDifficulty
+    expect_2_1_torpedo_gathering: LogicExpectNonInfiniteTorpedoesPodRacer21
+    most_expensive_purchase_with_no_multiplier: MostExpensivePurchaseWithNoScoreMultiplier
+    easier_true_jedi: EasierTrueJedi
+    scale_true_jedi_with_score_multipliers: ScaleTrueJediWithScoreMultipliers
+
+    # Goal logic.
+    defeat_bosses_goal_amount: DefeatBossesGoalAmount
+    only_unique_bosses_count: OnlyUniqueBossesCountTowardsGoal
+    goal_requires_kyber_bricks: GoalRequiresKyberBricks
+
+    # Other goal info.
+    minikit_goal_completion_method: MinikitGoalCompletionMethod
+    kyber_brick_goal_completion_method: KyberBrickGoalCompletionMethod
+
+    # Locations. todo: Most of these could be removed.
+    enable_bonus_locations: EnableBonusLocations  # todo: Deduce from locations that exist
+    enable_story_character_unlock_locations: EnableStoryCharacterUnlockLocations  # todo: Deduce from locations that exist
+    enable_all_episodes_purchases: EnableAllEpisodesCharacterPurchaseLocations  # todo: Deduce from locations that exist
+    enable_minikit_locations: EnableMinikitLocations  # todo: Deduce from locations that exist
+    enable_true_jedi_locations: EnableTrueJediLocations  # todo: Deduce from locations that exist
+    ridesanity: Ridesanity  # todo: Deduce from locations that exist
+    goal_chapter_locations_mode: GoalChapterLocationsMode
+    enable_starting_extras_locations: EnableNonPowerBrickExtraLocations
+
+
+@dataclass
+class LegoStarWarsTCSOptions(TCSDirectSlotDataOptions, PerGameCommonOptions):
     start_inventory_from_pool: StartInventoryPool
 
     # Goals.
     minikit_goal_amount: MinikitGoalAmount
     minikit_goal_amount_percentage: MinikitGoalAmountPercentage
-    minikit_goal_completion_method: MinikitGoalCompletionMethod
-    minikit_bundle_size: MinikitBundleSize
 
-    defeat_bosses_goal_amount: DefeatBossesGoalAmount
     enabled_bosses_count: EnabledBossesCount
     allowed_bosses: AllowedBosses
-    only_unique_bosses_count: OnlyUniqueBossesCountTowardsGoal
 
     complete_levels_goal_amount_percentage: CompleteLevelsGoalAmountPercentage
 
-    goal_requires_kyber_bricks: GoalRequiresKyberBricks
-    kyber_brick_goal_completion_method: KyberBrickGoalCompletionMethod
-
-    goal_chapter_locations_mode: GoalChapterLocationsMode
     goal_chapter: GoalChapter
 
     # Enabled/Available locations.
@@ -1826,25 +1882,13 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     starting_chapter: StartingChapter
     preferred_chapters: PreferredChapters
     prefer_entire_episodes: PreferEntireEpisodes
-    enable_story_character_unlock_locations: EnableStoryCharacterUnlockLocations
-    enable_bonus_locations: EnableBonusLocations
-    enable_all_episodes_purchases: EnableAllEpisodesCharacterPurchaseLocations
-    enable_minikit_locations: EnableMinikitLocations
-    enable_true_jedi_locations: EnableTrueJediLocations
-    enable_starting_extras_locations: EnableNonPowerBrickExtraLocations
-    ridesanity: Ridesanity
 
     # Logic and Difficulty.
-    logic_difficulty: LogicDifficulty
-    expect_2_1_torpedo_gathering: LogicExpectNonInfiniteTorpedoesPodRacer21
-    episode_unlock_requirement: EpisodeUnlockRequirement
-    chapter_unlock_requirement: ChapterUnlockRequirement
     #   Chapters locked by Characters.
     chapter_unlock_characters_min_count: ChapterUnlockCharactersMinRequiredCount
     chapter_unlock_characters_max_count: ChapterUnlockCharactersMaxRequiredCount
     chapter_unlock_characters_count_distribution: ChapterUnlockCharactersRequiredCountDistribution
     #   Chapters locked by Vanilla Characters (Story/Purchase).
-    chapter_unlock_story_characters_not_required: ChapterStoryUnlockCharactersNotRequired
     chapters_that_can_require_purchase_characters: ChaptersThatCanRequirePurchaseCharacters
     require_purchase_characters_chance: RequirePurchaseCharactersInsteadOfStoryCharactersChance
     require_purchase_characters_custom_chances: RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance
@@ -1852,11 +1896,6 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     chapter_unlock_random_characters_extra_min_count: ChapterUnlockRandomCharactersMinExtraPoolCount
     chapter_unlock_random_characters_extra_max_count: ChapterUnlockRandomCharactersMaxExtraPoolCount
     chapter_unlock_random_characters_unique_per_chapter: ChapterUnlockRandomCharactersUniquePerChapter
-    #  Other.
-    most_expensive_purchase_with_no_multiplier: MostExpensivePurchaseWithNoScoreMultiplier
-    all_episodes_character_purchase_requirements: AllEpisodesCharacterPurchaseRequirements
-    easier_true_jedi: EasierTrueJedi
-    scale_true_jedi_with_score_multipliers: ScaleTrueJediWithScoreMultipliers
 
     # Items.
     preferred_characters: PreferredCharacters
@@ -1870,11 +1909,6 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     junk_weights: JunkWeights
 
     # Client behaviour.
-    received_item_messages: ReceivedItemMessages
-    checked_location_messages: CheckedLocationMessages
-    uncap_original_trilogy_high_jump: UncapOriginalTrilogyHighJump
-    auto_collect_spawned_pickups: AutoCollectSpawnedPickups
-    shop_fake_trap_chance: ShopTrapAsFakeProgressionChance
     progression_useful_item_color: ProgressionUsefulItemColor
     progression_item_color: ProgressionItemColor
     useful_item_color: UsefulItemColor
@@ -1883,86 +1917,11 @@ class LegoStarWarsTCSOptions(PerGameCommonOptions):
     player_name_color: PlayerNameColor
     location_name_color: LocationNameColor
 
-    # Death Link.
-    death_link: LegoStarWarsTCSDeathLink
-    death_link_amnesty: DeathLinkAmnesty
-    vehicle_death_link_amnesty: VehicleDeathLinkAmnesty
-    death_link_studs_loss: DeathLinkStudLoss
-    death_link_studs_loss_scaling: DeathLinkStudLossScaling
-
     # Future options, not implemented yet.
     # random_starting_level_max_starting_characters: RandomStartingLevelMaxStartingCharacters
 
     def item_colors_to_slot_data(self) -> tuple[int, int, int, int, int, int, int]:
         return TextColorChoice.colors_to_slot_data(self)
-
-    def as_dict_by_type(self,
-                      *option_types: type[Option[Any]],
-                      casing: typing.Literal["snake", "camel", "pascal", "kebab"] = "snake",
-                      toggles_as_bools: bool = False,
-                      ) -> dict[str, typing.Any]:
-        return super().as_dict(
-            *map(get_attribute_name, option_types),
-            casing=casing,
-            toggles_as_bools=toggles_as_bools
-        )
-
-    def get_direct_slot_data_options(self):
-        return self.as_dict_by_type(*self.direct_slot_data_options())
-
-    @staticmethod
-    def direct_slot_data_options() -> set[type[Option[Any]]]:
-        return {
-            # Client.
-            ReceivedItemMessages,
-            CheckedLocationMessages,
-            ShopTrapAsFakeProgressionChance,
-            AutoCollectSpawnedPickups,
-
-            # DeathLink.
-            LegoStarWarsTCSDeathLink,
-            DeathLinkAmnesty,
-            VehicleDeathLinkAmnesty,
-            DeathLinkStudLoss,
-            DeathLinkStudLossScaling,
-
-            # Logic.
-            # Logic knows the bundle size, so checks its counts against that known bundle size.
-            MinikitBundleSize,
-            EpisodeUnlockRequirement,
-            ChapterUnlockRequirement,
-            ChapterStoryUnlockCharactersNotRequired,
-            AllEpisodesCharacterPurchaseRequirements,
-            UncapOriginalTrilogyHighJump,
-
-            # Logic Difficulty.
-            LogicDifficulty,
-            LogicExpectNonInfiniteTorpedoesPodRacer21,
-            MostExpensivePurchaseWithNoScoreMultiplier,
-            EasierTrueJedi,
-            ScaleTrueJediWithScoreMultipliers,
-
-            # Goal logic.
-            DefeatBossesGoalAmount,
-            OnlyUniqueBossesCountTowardsGoal,
-            GoalRequiresKyberBricks,
-
-            # Other goal info.
-            MinikitGoalCompletionMethod,
-            KyberBrickGoalCompletionMethod,
-
-            # Locations. todo: Most of these could be removed.
-            EnableBonusLocations,  # todo: Deduce from locations that exist
-            EnableStoryCharacterUnlockLocations,  # todo: Deduce from locations that exist
-            EnableAllEpisodesCharacterPurchaseLocations,  # todo: Deduce from locations that exist
-            EnableMinikitLocations,  # todo: Deduce from locations that exist
-            EnableTrueJediLocations,  # todo: Deduce from locations that exist
-            Ridesanity,  # todo: Deduce from locations that exist
-            # todo: This can probably be deduce from whether the locations exist, and we probably don't need to care
-            #  whether the locations are excluded.
-            GoalChapterLocationsMode,
-            EnableNonPowerBrickExtraLocations,
-        }
 
 
 _OPTION_TYPE_TO_ATTRIBUTE: Mapping[type[Option[Any]], str] = {

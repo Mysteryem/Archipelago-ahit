@@ -17,7 +17,6 @@ from ..events import (
 from ..client_text import ClientText, clean_string
 from ..type_aliases import ApLocationId, TCSContext
 from ...constants import GAME_NAME
-from ...options import ShopTrapAsFakeProgressionChance
 
 from ...data.extras import Extra
 from ...data.levels import Level
@@ -307,7 +306,7 @@ class ShopNamesReplacer(ClientComponent):
 
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent):
-        self.trap_as_fake_progression_chance = event.get_slot_data_option(ShopTrapAsFakeProgressionChance)
+        self.trap_as_fake_progression_chance = event.slot_data.shop_fake_trap_chance.value
         self._set_enabled_locations(event.context.server_locations)
         self._scout_locations = set().union(self._enabled_character_slots.values(), self._enabled_extra_slots.values())
         if not self._scout_locations:
