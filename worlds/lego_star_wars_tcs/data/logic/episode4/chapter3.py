@@ -8,6 +8,7 @@ from ..macros import (
     CAN_GRAPPLE,
     CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE,
     CAN_YODA_CLIP,
+    HAS_0_53_JUMP_HEIGHT_CHARACTER,
 )
 from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, ot_high_jump_ternary
 from ..rules import (
@@ -263,8 +264,9 @@ MOS_EISLEY_SPACEPORT = helper.make_chapter(
                 R_SPY_CHASE_BOMB_LEVER,
                 logic_options(
                     base=HasAbility(CAN_DOUBLE_JUMP),
-                    # I don't think it will ever be relevant, but Gamorrean Guard can just jump straight up here.
-                    moderate=HasAbility(CAN_DOUBLE_JUMP) | Character.GAMORREAN_GUARD.has(),
+                    # I don't think it will ever be relevant, but Gamorrean Guard/Super Gonk can just jump straight up
+                    # here.
+                    moderate=HasAbility(CAN_DOUBLE_JUMP) | HAS_0_53_JUMP_HEIGHT_CHARACTER,
                 ),
             ),
             ExitData(

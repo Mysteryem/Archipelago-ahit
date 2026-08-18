@@ -286,3 +286,5 @@ HAS_WALL_CLIMB = Character.GENERAL_GRIEVOUS.has() & HasAnyCharacterExcept(
 )
 """Grievous can climb up some walls by partially clipping into them following a character swap with the control stick in
  neutral, and then jumping again. Characters with large collision boxes are excluded."""
+
+HAS_0_53_JUMP_HEIGHT_CHARACTER = Character.has_any(Character.GAMORREAN_GUARD, Character.EVENT_SUPER_GONK_DROID)

@@ -10,6 +10,7 @@ from ..macros import (
     CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
     CAN_YODA_CLIP,
     HAS_ANY_YODA,
+    HAS_0_53_JUMP_HEIGHT_CHARACTER,
 )
 from ..option_filters import logic_options, ot_high_jump_ternary
 from ..rules import (
@@ -429,10 +430,12 @@ JEDI_DESTINY = _helper.make_chapter(
             ExitData(
                 R_RED_ROOM_ACCESS_HATCH_BRICKS_PLATFORM,
                 logic_options(
+                    strict=False,
                     base=HasAbility(CAN_DOUBLE_JUMP),
-                    # The jump is not easy, but is possible with both.
-                    moderate=HasAbility(CAN_DOUBLE_JUMP) | Character.has_any(
-                        Character.GAMORREAN_GUARD, Character.EVENT_SUPER_GONK_DROID),
+                ).or_rule(
+                    apply_to="moderate+",
+                    # The jump is not easy, but is possible.
+                    rule=HAS_0_53_JUMP_HEIGHT_CHARACTER,
                 )
             ),
             ExitData(
@@ -462,8 +465,7 @@ JEDI_DESTINY = _helper.make_chapter(
                     # Droid can also jump up to the minikit.
                     normal=And(
                         HasAllAbilities(PROTOCOL_PANEL | CAN_PULL_LEVERS),
-                        HasAbility(CAN_DOUBLE_JUMP) | Character.has_any(
-                            Character.GAMORREAN_GUARD, Character.EVENT_SUPER_GONK_DROID),
+                        HasAbility(CAN_DOUBLE_JUMP) | HAS_0_53_JUMP_HEIGHT_CHARACTER,
                         CAN_DESTROY_CLOSE_SILVER_BRICKS,
                     ),
                     # Standing on top of the far right lever in the Red Room, you can get enough height to Yoda Ceiling

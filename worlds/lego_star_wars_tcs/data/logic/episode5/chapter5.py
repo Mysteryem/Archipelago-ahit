@@ -9,6 +9,7 @@ from ..macros import (
     HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
     CAN_USE_DEFLECT_BOLTS,
     CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS,
+    HAS_0_53_JUMP_HEIGHT_CHARACTER,
 )
 from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, ot_high_jump_ternary
 from ..rules import (
@@ -437,7 +438,7 @@ CLOUD_CITY_TRAP = _helper.make_chapter(
                         ),
                     ),
                     # Allow triple jumps up to Vader.
-                    # Allow Gamorrean Guard, who can jump up the 'steps' despite not having a double jump.
+                    # Allow Gamorrean Guard/Super Gonk, who can jump up the 'steps' despite not having a double jump.
                     moderate=And(
                         _CAN_DAMAGE_VADER,
                         Or(
@@ -446,7 +447,7 @@ CLOUD_CITY_TRAP = _helper.make_chapter(
                                 uncapped=HasAnyAbilities(JEDI | HIGH_JUMP),
                                 capped=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
                             ),
-                            Character.GAMORREAN_GUARD.has() & HasAbility(ASTROMECH_PANEL),
+                            HAS_0_53_JUMP_HEIGHT_CHARACTER & HasAbility(ASTROMECH_PANEL),
                         ),
                     ),
                 ),

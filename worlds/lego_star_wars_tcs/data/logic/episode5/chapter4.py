@@ -11,7 +11,9 @@ from ..macros import (
     HAS_FLUTTER_CHARACTER,
     CAN_SITH_FORCE_AND_GRAPPLE,
     can_jump_distance_rule,
-    CAN_YODA_CLIP, CAN_USE_SELF_DESTRUCT,
+    CAN_YODA_CLIP,
+    CAN_USE_SELF_DESTRUCT,
+    HAS_0_53_JUMP_HEIGHT_CHARACTER,
 )
 from ..option_filters import logic_options, ot_high_jump_ternary, OT_HIGH_JUMP_ENABLED
 from ..rules import (
@@ -620,7 +622,7 @@ DAGOBAH = helper.make_chapter(
                     moderate=Or(
                         HasAnyAbilities(CAN_DOUBLE_JUMP | JETPACK),
                         # Just barely possible.
-                        Character.has_any(Character.GAMORREAN_GUARD, Character.EVENT_SUPER_GONK_DROID),
+                        HAS_0_53_JUMP_HEIGHT_CHARACTER,
                     ),
                 ),
             ),
