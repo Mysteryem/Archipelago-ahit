@@ -476,6 +476,16 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     def _is_datastorage_key(self, to_check: str, prefix: str):
         return to_check.startswith(prefix) and to_check == self._get_datastorage_key(prefix)
 
+    async def check_locations(self, locations: typing.Collection[int]) -> set[int]:
+        # Filter out locations the client thinks it has already checked and sent to the server.
+        # The base check_locations implementation only filters out locations the server says are checked.
+        # If some locations are sent, but the connection is lost, CommonClient sends the contents of
+        # self.locations_checked to the server when reconnecting. self.locations_checked is not cleared out when an
+        # unintended disconnect (allow_autoreconnect=True) occurs, allowing for any missed location checks to be
+        # re-sent.
+        locations = set(locations).difference(self.locations_checked)
+        return await super().check_locations(locations)
+
     def on_print_json(self, args: dict) -> None:
         super().on_print_json(args)
 
@@ -835,12 +845,14 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.reset_persisted_client_data()
 
     def is_location_unchecked(self, location_id: int) -> bool:
-        """Return whether a location id exists, but has not been checked according to server state."""
-        return location_id not in self.checked_locations and location_id not in self.disabled_locations
+        """Return whether a location id exists, but has not been checked according to server state and client state."""
+        return ((location_id not in self.locations_checked
+                 and location_id not in self.checked_locations)
+                and self.is_location_sendable(location_id))
 
     def is_location_checked(self, location_id: int) -> bool:
-        """Return whether a location id is checked according to server state."""
-        return location_id in self.checked_locations
+        """Return whether a location id is checked according to server state or client state."""
+        return location_id in self.locations_checked or location_id in self.checked_locations
 
     def is_location_sendable(self, location_id: int) -> bool:
         """Return whether a location exists according to server state."""
