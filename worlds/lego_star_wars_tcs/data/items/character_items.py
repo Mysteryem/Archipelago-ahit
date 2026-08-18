@@ -256,7 +256,7 @@ def generic_officer(character: Character, already_got_hat: bool = False):
 
 
 def generic_lando(character: Character, already_got_hat: bool = False):
-    abilities = COMMON_GRAPPLE | COMMON_MELEE_NON_DROID
+    abilities = COMMON_GRAPPLE | COMMON_MELEE_NON_DROID | CAN_REGULAR_DIVE_ROLL
     if not already_got_hat:
         abilities |= CAN_WEAR_HAT
     return CharacterData.ap_item(character, abilities, 1.18, 0.44, 0.90413, Alignment.GOOD)
@@ -272,7 +272,7 @@ def generic_padme(character: Character, can_melee: bool = True):
 
 def generic_solo(character: Character):
     # todo: ViolaGuy's standalone TCS randomizer I think has some logic involving the roll that Han Solo can do.
-    abilities = COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID
+    abilities = COMMON_GRAPPLE | COMMON_HATLESS_MELEE_NON_DROID | CAN_REGULAR_DIVE_ROLL
     return CharacterData.ap_item(character, abilities, 1.2, 0.37, 0.84, Alignment.GOOD)
 
 
@@ -294,7 +294,7 @@ def generic_rebel(character: Character):
 
 
 def generic_greedo(character: Character):
-    abilities = COMMON_BOUNTY_HUNTER | COMMON_MELEE_NON_DROID
+    abilities = COMMON_BOUNTY_HUNTER | COMMON_MELEE_NON_DROID | CAN_REGULAR_DIVE_ROLL
     return CharacterData.ap_item(character, abilities, 1.2, 0.44, 0.92, Alignment.EVIL)
 
 
@@ -346,7 +346,7 @@ def generic_wookie(character: Character):
 
 def generic_luke(character: Character, already_got_hat: bool = False):
     """Non-Jedi Luke specifically."""
-    abilities = COMMON_GRAPPLE | COMMON_MELEE_NON_DROID
+    abilities = COMMON_GRAPPLE | COMMON_MELEE_NON_DROID | CAN_REGULAR_DIVE_ROLL
     if not already_got_hat:
         abilities |= CAN_WEAR_HAT
     return CharacterData.ap_item(character, abilities, 1.2, 0.44, 0.92, Alignment.GOOD)
@@ -504,7 +504,11 @@ NORMAL_CHARACTER_DATA: list[CharacterData] = [
     generic_skiff_guard(Character.SKIFF_GUARD),
     generic_rebel(Character.REBEL_FRIEND),
     _char(Character.LOBOT, COMMON_HATLESS_MELEE_NON_DROID, 1.2, 0.44, 0.92, Alignment.GOOD),
-    _char(Character.BESPIN_GUARD, COMMON_GRAPPLE | COMMON_MELEE_NON_DROID, 1.2, 0.44, 0.92, Alignment.GOOD),
+    _char(Character.BESPIN_GUARD,
+          COMMON_GRAPPLE
+          | COMMON_MELEE_NON_DROID
+          | CAN_REGULAR_DIVE_ROLL,
+          1.2, 0.44, 0.92, Alignment.GOOD),
     _char(Character.IMPERIAL_GUARD,
           IMPERIAL | COMMON_MELEE_NON_DROID | CAN_DEFLECT_BOLTS,
           1.2, 0.44, 0.92, Alignment.EVIL),

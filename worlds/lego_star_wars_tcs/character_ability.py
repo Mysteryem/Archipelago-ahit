@@ -29,6 +29,7 @@ __all__ = [
     "CAN_JUMP_DISTANCE_0_69",
     "CAN_JUMP_DISTANCE_0_84",
     "CAN_JUMP_DISTANCE_0_92",
+    "CAN_REGULAR_DIVE_ROLL",
     "RUN_SPEED_0_9_OR_HIGHER",
     "RUN_SPEED_1_18_OR_HIGHER",
     "CAN_JUMP_0_44",
@@ -100,6 +101,10 @@ class CharacterAbility(IntFlag):
     CAN_JUMP_DISTANCE_0_84 = auto()
     # Storm Troopers, Leia, Luke (non-Jedi) and a few others have 0.92.
     CAN_JUMP_DISTANCE_0_92 = auto()
+    # The dive roll does not provide extra height, except Ackbar, who is logically considered to have a double jump
+    # instead and is not given this ability. The dive roll is useful for getting extra jump distance, as well as using
+    # it to increase air speed enough to slide up some collision that is too tall/sloped to jump up normally.
+    CAN_REGULAR_DIVE_ROLL = auto()
     # If a character is too slow, they cannot get past the 2-3 conveyor crushers without jumping around them or using
     # the thin edge of collision along the front edge of the conveyor.
     # run_speed=0.9 is fast enough, run_speed=0.8285375 is too slow and there are no runs speeds inbetween.
@@ -417,6 +422,7 @@ CAN_JUMP_HEIGHT_0_37 = CharacterAbility.CAN_JUMP_HEIGHT_0_37
 CAN_JUMP_DISTANCE_0_69 = CharacterAbility.CAN_JUMP_DISTANCE_0_69
 CAN_JUMP_DISTANCE_0_84 = CharacterAbility.CAN_JUMP_DISTANCE_0_84
 CAN_JUMP_DISTANCE_0_92 = CharacterAbility.CAN_JUMP_DISTANCE_0_92
+CAN_REGULAR_DIVE_ROLL = CharacterAbility.CAN_REGULAR_DIVE_ROLL
 RUN_SPEED_0_9_OR_HIGHER = CharacterAbility.RUN_SPEED_0_9_OR_HIGHER
 RUN_SPEED_1_18_OR_HIGHER = CharacterAbility.RUN_SPEED_1_18_OR_HIGHER
 CAN_BARELY_JUMP = CharacterAbility.CAN_BARELY_JUMP
@@ -478,6 +484,7 @@ IMPLIED_ABILITIES: dict[CharacterAbility, CharacterAbility] = {
     CAN_JUMP_DISTANCE_0_69: CAN_BARELY_JUMP,
     CAN_JUMP_DISTANCE_0_84: CAN_BARELY_JUMP | CAN_JUMP_DISTANCE_0_69,
     CAN_JUMP_DISTANCE_0_92: CAN_BARELY_JUMP | CAN_JUMP_DISTANCE_0_69 | CAN_JUMP_DISTANCE_0_84,
+    CAN_REGULAR_DIVE_ROLL: BLASTER | GRAPPLE | CAN_PULL_LEVERS | CAN_RIDE_VEHICLES_AND_PUSH_OBJECTS | CAN_BUILD_BRICKS | CAN_BARELY_JUMP | CAN_JUMP_HEIGHT_0_37 | CAN_JUMP_DISTANCE_0_69 | CAN_JUMP_DISTANCE_0_84 | RUN_SPEED_0_9_OR_HIGHER | RUN_SPEED_1_18_OR_HIGHER | CAN_MELEE | CAN_AGGRAVATE_ENEMIES,
     RUN_SPEED_0_9_OR_HIGHER: CharacterAbility.NONE,
     RUN_SPEED_1_18_OR_HIGHER: RUN_SPEED_0_9_OR_HIGHER,
     CAN_JUMP_0_44: CAN_BARELY_JUMP | CAN_JUMP_HEIGHT_0_37 | CAN_JUMP_DISTANCE_0_69,
