@@ -280,7 +280,22 @@ HAS_HIGH_JUMP_EXCEPT_BODYGUARD_OT = HAS_HIGH_JUMP_EXCEPT_BODYGUARD & OT_HIGH_JUM
 
 HAS_WALL_CLIMB = Character.GENERAL_GRIEVOUS.has() & HasAnyCharacterExcept(
     Character.GENERAL_GRIEVOUS,
-    # todo: I have not actually checked these characters, and there could be others that don't work.
+    # Wall climbing works because General Grievous has a larger radius than most characters (0.13), and maybe because he
+    # has a non-1.0 scale (1.25) too.
+    # 0.12 radius:
+    Character.DROID_4,
+    Character.GONK_DROID,
+    Character.EVENT_SUPER_GONK_DROID,
+    Character.MOUSE_DROID,
+    Character.SUPER_BATTLE_DROID,  # Was tested, so it is assumed others that are equal radius or larger do not work.
+    # 0.13 radius:
+    Character.WOMP_RAT,
+    Character.DROID_1,
+    # 0.15 radius:
+    Character.DROID_2,
+    # 0.18 radius:
+    Character.BUZZ_DROID,
+    # 0.19 radius:
     Character.DROIDEKA,
     Character.DEXTER_JETTSTER,
 )
