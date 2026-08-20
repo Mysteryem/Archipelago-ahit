@@ -1652,6 +1652,8 @@ class LogicDifficulty(ChoiceFromStringExtension):
       after some practice and/or learning.
       - Slam-jumps, e.g. Jedi-Triple-Jump included in logic.
       - Expects more platforming off of terrain.
+      - Easy 'oil glitches' (getting a Stormtrooper to activate an Imperial panel for you) that don't require coercing
+      a Stormtrooper into position.
       - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling only one character at a time,
       taking turns between controlling each character, e.g. button platforms in 2-2 and 2-6 when the AI won't follow you
       - 1P2C usage additionally includes simpler use of controlling both characters simultaneously, e.g. completing the
@@ -1664,6 +1666,7 @@ class LogicDifficulty(ChoiceFromStringExtension):
       - Yoda Grabs.
       - Drop-in warps (none are currently present in the logic).
       - TIE gate, and drag bomb wall, skips using loop drop-ins.
+      - More difficult 'oil glitches' (getting a Stormtrooper to activate an Imperial panel for you).
       - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling both characters simultaneously
     - Expert (not implemented):
       - This difficulty, if implemented, will probably try to match Expert difficulty in ViolaGuy's standalone TCS
