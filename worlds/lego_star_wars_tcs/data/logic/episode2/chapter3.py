@@ -197,13 +197,19 @@ DROID_FACTORY = Chapter(
                     ),
                 ).or_rule(
                     # Wedge yourself between the two explosives closest to the panel.
-                    # Swap to droideka.
-                    # Roll partially inside the door (don't go too far otherwise you cannot swap characters and will
-                    # need to roll back out of the door)
+                    # Swap to Droideka/Dexter (radii of 0.19).
+                    # Roll/walk partially inside the door (don't go too far otherwise you cannot swap characters and
+                    # will need to roll/walk/jump back out of the door)
                     # Character swap to upwarp to the collision floor on the top of the door.
                     # Walk forwards to hit the level transition.
                     apply_to="hard+",
-                    rule=Character.DROIDEKA.has() & HasAbility(CAN_JUMP_HEIGHT_0_37),
+                    # General Grievous is the character with next largest radius (excluding a few Extra Toggle
+                    # characters not available in this level), at a radius of 0.13, but this is not enough to clip into
+                    # the door.
+                    rule=Or(
+                        Character.DEXTER_JETTSTER.has(),
+                        Character.DROIDEKA.has() & HasAbility(CAN_JUMP_HEIGHT_0_37),
+                    ),
                     # Technically, you can wall climb here to get over the collision and hit the transition from behind,
                     # but the collision wall is huge and a significant part of the collision extends beyond the wall's
                     # model, making the wall climb close to blind towards the end.
