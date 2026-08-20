@@ -199,6 +199,11 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
         ),
         R_SLAVE_1_LANDING_PLATFORM: (),
         R_BEHIND_PROTOCOL_DROID_DOOR_TO_ELEVATORS: (
+            # todo: It is possible to activate an elevator with P2, drop them out, then drop them back in once they have
+            #  passed the transition, and then jump over to the top of the other elevator and hit its transition from
+            #  the top. So you should be able to use the BOUNTY_HUNTER transition with an IMPERIAL, and vice versa.
+            #  I don't know how to do this though because I just end up teleporting to P1 when I drop in, even with the
+            #  camera panned all the way up and double jumping with P1.
             ExitData(
                 R_AFTER_BOUNTY_HUNTER_ELEVATOR,
                 logic_options(
@@ -217,8 +222,11 @@ BETRAYAL_OVER_BESPIN = _helper.make_chapter(
                     base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT),
                     # General Grievous's triple high jump can get on top of the elevator, which is where the transition
                     # trigger is.
+                    # A stormtrooper can be tricked into activating the panel (Oil glitch). They will need to be pushed
+                    # there, so this is not in Moderate logic. Self-destruct strats to de-aggro do not work here because
+                    # you need to get on the elevator, which leaves before you respawn.
                     hard=Or(
-                        HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT),
+                        HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT | IS_PASSIVE),
                         Character.GENERAL_GRIEVOUS.has() & OT_HIGH_JUMP_ENABLED,
                     )
                 ),
