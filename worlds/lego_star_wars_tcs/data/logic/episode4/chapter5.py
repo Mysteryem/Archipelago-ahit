@@ -90,6 +90,13 @@ DEATH_STAR_ESCAPE = helper.make_chapter(
                     # other player).
                     moderate=CAN_DAMAGE_AT_CLOSE_RANGE | _ONE_P_TWO_C_PLATFORMING_ROOM_FLOOR_TILES,
                 ).and_rule(
+                    # todo: You can actually get a Stormtrooper up to the panel by getting them to follow you as you
+                    #  grapple across, then de-aggroing a Stormtrooper standing by the panel will get them to use it
+                    #  (oil glitch). You will want to make good use of the Power Up's invincibility throughout this.
+                    #  https://youtu.be/TCih1jwCBrw?t=509
+                    #  Using this strategy requires that you have characters that can push blocks, pull levers, grapple,
+                    #  and have a passive character that both players can swap to to de-aggro (technically both players
+                    #  dying would achieve the same, but doing so is difficult without a pit to jump in.
                     # Use the Imperial Panel.
                     logic_options(
                         # For carrying a hat across, strictly require GRAPPLE to start with because
