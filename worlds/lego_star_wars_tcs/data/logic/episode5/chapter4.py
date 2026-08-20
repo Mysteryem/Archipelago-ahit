@@ -33,8 +33,10 @@ from ...items.all_character_items import CHARACTER_TO_ITEM_DATA
 from ...items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 
 R_SPAWN = "Spawn"
+R_SPAWN_SWAMP_ISLAND = "Spawn Swamp Island"
 R_UP_STEPS_FROM_SPAWN = "Up Steps From Spawn"
 R_RACETRACK = "Racetrack"
+R_FIRST_SWAMP_MINIKIT_ISLAND_AND_CHALLENGE_KIT_ISLAND = "First Swamp Minikit Island and Challenge Kit Island"
 R_ACROSS_FIRST_SWAMP = "Across First Swamp"
 R_FIRST_SWAMP_LAST_AREA_WITH_BRIDGE_PANEL = "First Swamp Last Area With Bridge Panel"
 R_SPAWN_ACROSS_SWAMP_FROM_YODAS_HUT = "Spawn Across Swamp From Yoda's Hut"
@@ -206,6 +208,30 @@ DAGOBAH = helper.make_chapter(
                     moderate=HasAnyAbilities(CAN_BUILD_BRICKS | CAN_BARELY_JUMP),
                 ),
             ),
+            # # There's nothing here yet that is logically relevant.
+            # ExitData(
+            #     R_SPAWN_SWAMP_ISLAND,
+            #     logic_options(
+            #         base=HasAbility(ASTROMECH_DROID),
+            #         # Kaminoans are clearly tall enough with their massive 0.62 height.
+            #         normal=HasAnyAbilities(ASTROMECH_DROID | HOVER) | HAS_FLUTTER_CHARACTER | _HAS_KAMINOAN,
+            #     ).or_rule(
+            #         # Allow Super Battle Droid and General Grievous who are less obviously tall enough.
+            #         apply_to="moderate+",
+            #         rule=Character.has_any(
+            #             Character.SUPER_BATTLE_DROID,  # 0.53 height
+            #             Character.GENERAL_GRIEVOUS,  # 0.52 height
+            #         )
+            #     ).or_rule(
+            #         # Allow Droideka which looks like it is going to drown. Droideka becomes too short when rolling, so
+            #         # you must walk.
+            #         # TODO: This is extremely annoying/difficult on keyboard. Either Hard+ logic should expect that the
+            #         #  player has a controller available, or there should be separate logic for controlling whether
+            #         #  controller-required tricks are allowed.
+            #         apply_to="hard+",
+            #         rule=Character.DROIDEKA.has(),  # 0.50 height (when walking)
+            #     ),
+            # ),
         ),
         R_UP_STEPS_FROM_SPAWN: (
             ExitData(
@@ -224,10 +250,26 @@ DAGOBAH = helper.make_chapter(
                     # Allow jetpack hover, flutter and kaminoan.
                     normal=CAN_GRAPPLE | HasAbility(HOVER) | HAS_FLUTTER_CHARACTER | _HAS_KAMINOAN,
                     # You can hop across the stones, even Boba Fett (Boy) can make these jumps.
-                    # General Grievous can also just walk across the swamp because of how tall he is.
+                    # General Grievous/Super Battle Droid can also just walk across the swamp because of how tall they
+                    # are.
                     # And double jump characters can jump between shallower parts of the swamp.
-                    moderate=HasAbility(CAN_BARELY_JUMP),
+                    moderate=HasAbility(CAN_BARELY_JUMP) | Character.SUPER_BATTLE_DROID.has(),
+                ).or_rule(
+                    # TODO: This is extremely annoying/difficult on keyboard. Either Hard+ logic should expect that the
+                    #  player has a controller available, or there should be separate logic for controlling whether
+                    #  controller-required tricks are allowed.
+                    apply_to="hard+",
+                    rule=Character.DROIDEKA.has(),
                 ),
+            ),
+            ExitData(
+                R_FIRST_SWAMP_MINIKIT_ISLAND_AND_CHALLENGE_KIT_ISLAND,
+                logic_options(
+                    base=HasAbility(HOVER),
+                    # Stand slightly in the swamp and just double jump to the island.
+                    # Yoda cannot stand as deep in the swamp, but can double jump further to make up for this.
+                    normal=HasAnyAbilities(HOVER | CAN_DOUBLE_JUMP) | HAS_FLUTTER_CHARACTER,
+                )
             ),
         ),
         R_RACETRACK: (
@@ -254,6 +296,20 @@ DAGOBAH = helper.make_chapter(
                 )
             ),
             ExitData(
+                R_FIRST_SWAMP_MINIKIT_ISLAND_AND_CHALLENGE_KIT_ISLAND,
+                logic_options(
+                    base=HasAllAbilities(HOVER | CAN_JUMP_HEIGHT_0_37),
+                    normal=HasAnyAbilities(HOVER | CAN_DOUBLE_JUMP) | HAS_FLUTTER_CHARACTER,
+                ).or_rule(
+                    # Imperial Guard, jump distance of 0.92, can make it from the right side after going slightly into
+                    # the swamp near the ramp.
+                    # todo: There are probably more characters that can make this jump, especially those with dive
+                    #  rolls.
+                    apply_to="moderate+",
+                    rule=can_jump_distance_rule(Character.IMPERIAL_GUARD)
+                )
+            ),
+            ExitData(
                 R_FIRST_SWAMP_LAST_AREA_WITH_BRIDGE_PANEL,
                 logic_options(
                     base=ot_high_jump_ternary(
@@ -268,8 +324,13 @@ DAGOBAH = helper.make_chapter(
                     normal=Or(
                         HasAbility(HOVER),
                         HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, Character.GRIEVOUS_BODYGUARD),
-                        HAS_FLUTTER_CHARACTER
+                        HAS_FLUTTER_CHARACTER,
                     ),
+                    # Allow any double jump because Bodyguard can triple jump.
+                    moderate=Or(
+                        HasAnyAbilities(HOVER | CAN_DOUBLE_JUMP),
+                        HAS_FLUTTER_CHARACTER,
+                    )
                 ).or_rule(
                     # Allow Kaminoan. The main difficulty is jumping up to this area from the swamp itself because the
                     # swamp is deep around this area. Hugging the left wall allows a Kaminoan to jump and sort of slide
@@ -277,6 +338,25 @@ DAGOBAH = helper.make_chapter(
                     apply_to="moderate+",
                     rule=_HAS_KAMINOAN,
                 ),
+            ),
+        ),
+        R_FIRST_SWAMP_MINIKIT_ISLAND_AND_CHALLENGE_KIT_ISLAND: (
+            ExitData(
+                R_FIRST_SWAMP_LAST_AREA_WITH_BRIDGE_PANEL,
+                # All of these are considered from the Challenge Kit island.
+                # Both islands are the same region because being able to reach the Minikit Island means you can also go
+                # from the Minikit Island to the Challenge Kit Island. This region could be split into two later on.
+                logic_options(
+                    base=HasAbility(HOVER),
+                    normal=ot_high_jump_ternary(
+                        uncapped=HasAnyAbilities(HOVER | CAN_DOUBLE_JUMP),
+                        capped=Or(
+                            HasAbility(HOVER),
+                            HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, Character.GRIEVOUS_BODYGUARD),
+                        ),
+                    ) | HAS_FLUTTER_CHARACTER,
+                    moderate=HasAnyAbilities(HOVER | CAN_DOUBLE_JUMP) | HAS_FLUTTER_CHARACTER,
+                )
             ),
         ),
         R_FIRST_SWAMP_LAST_AREA_WITH_BRIDGE_PANEL: (
@@ -780,15 +860,11 @@ DAGOBAH = helper.make_chapter(
             pickup_name="m_pup2"
         ),
         "Snake Swamp Central Island Minikit": minikit_data(
-            R_UP_STEPS_FROM_SPAWN,
+            R_FIRST_SWAMP_MINIKIT_ISLAND_AND_CHALLENGE_KIT_ISLAND,
+            # The top part of the island, where the box to destroy and spawn the minikit is, needs a jump to get onto.
             logic_options(
-                base=CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE & HasAbility(HOVER),
-                # Stand slightly in the swamp and just double jump to the island.
-                # Yoda cannot stand as deep in the swamp, but can double jump further to make up for this.
-                normal=And(
-                    CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE,
-                    HasAnyAbilities(CAN_DOUBLE_JUMP | HOVER)
-                ),
+                base=CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE & HasAbility(CAN_JUMP_HEIGHT_0_37),
+                normal=CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE & HasAbility(CAN_BARELY_JUMP),
             ),
             pickup_name="m_pup1",
         ),
