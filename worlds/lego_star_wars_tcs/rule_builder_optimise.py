@@ -434,7 +434,7 @@ def optimise_rule(world: World, rule: CollectionRule | Rule.Resolved, memodict: 
         optimised = rule._evaluate
     # The original rule is also stored to ensure that it is not garbage collected for the lifetime of the memodict,
     # ensuring that the id() key remains valid.
-    memodict[id(optimised)] = optimised, rule
+    memodict[id(rule)] = optimised, rule
     return optimised
 
 
