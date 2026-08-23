@@ -235,7 +235,7 @@ _DIRECT_FIELD_NAMES: frozenset[str] = frozenset({field.name for field in datacla
 
 @dataclass
 class TCSSlotDataOptions(TCSDirectSlotDataOptions):
-    ap_world_version: ApWorldVersion = field()
+    apworld_version: ApWorldVersion
     enabled_chapters: EnabledChapters
     enabled_episodes: EnabledEpisodes
     enabled_bonuses: EnabledBonuses

@@ -211,7 +211,7 @@ class OnReceiveSlotDataEvent(Event):
     @property
     def generator_version(self) -> tuple[int, int, int]:
         """The version of the Lego Star Wars: TCS apworld that generated the multiworld"""
-        return self.slot_data.ap_world_version.value
+        return self.slot_data.apworld_version.value
 
 
 @dataclass
