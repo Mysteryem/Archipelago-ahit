@@ -1,11 +1,14 @@
-from collections import Counter
+import dataclasses
 from typing import TYPE_CHECKING, Any
 
-from Options import OptionSet, OptionCounter
+from Options import Option
 
 from ..items import MINIKITS_BY_COUNT
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
 from ..options import LegoStarWarsTCSOptions, OnlyUniqueBossesCountTowardsGoal, GoalChapterLocationsMode
+from ..slot_data import TCSSlotDataOptions, TCSDirectSlotDataOptions
+
+from ..data.items.all_character_items import CODE_TO_ITEM_DATA
 
 
 if TYPE_CHECKING:
@@ -40,46 +43,47 @@ DIRECT_SLOT_DATA_OPTIONS = (
 assert all(option_name in LegoStarWarsTCSOptions.type_hints for option_name in DIRECT_SLOT_DATA_OPTIONS)
 
 
-def _direct_slot_data_options(self: LegoStarWarsTCSWorld, passthrough: dict[str, Any]):
+def _direct_slot_data_options(self: LegoStarWarsTCSWorld, slot_data: TCSSlotDataOptions):
     """Options directly set from slot data."""
-    options = self.options
-    for option_name in DIRECT_SLOT_DATA_OPTIONS:
-        # For example:
-        # `options.minikit_goal_amount.value = passthrough["minikit_goal_amount"]`
-        option = getattr(options, option_name)
-        value = passthrough[option_name]
-        # Collection values from json are always list/dict
-        if isinstance(option, OptionSet):
-            value = set(value)
-        elif isinstance(option, OptionCounter):
-            value = Counter(value)
-        option.value = value
+    for field in dataclasses.fields(TCSDirectSlotDataOptions):
+        field_name = field.name
+        world_option: Option[Any] = getattr(self.options, field_name)
+        slot_data_option: Option[Any] = getattr(slot_data, field_name)
+        world_option.value = slot_data_option.value
 
 
-def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, passthrough: dict[str, Any]):
+def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, slot_data: TCSSlotDataOptions):
     """Attributes normally derived from options during generate_early."""
     # Derived Chapter/Episode attributes.
-    self.enabled_chapters = set(passthrough["enabled_chapters"])
-    self.enabled_episodes = set(passthrough["enabled_episodes"])
+    self.enabled_chapters = slot_data.enabled_chapters.value
+    self.enabled_episodes = set(slot_data.enabled_episodes.value)
     # The enabled bonuses are set depending on the number of Gold Bricks available
-    self.enabled_bonuses = set(passthrough["enabled_bonuses"])
-    self.starting_chapter = SHORT_NAME_TO_CHAPTER_AREA[passthrough["starting_chapter"]]
-    assert self.starting_episode == passthrough["starting_episode"], ("Starting episode from slot_data did not match "
+    self.enabled_bonuses = slot_data.enabled_bonuses.value
+    self.starting_chapter = SHORT_NAME_TO_CHAPTER_AREA[slot_data.starting_chapter.value]
+    assert self.starting_episode == slot_data.starting_episode.value, ("Starting episode from slot_data did not match "
                                                                       "the starting chapter from slot_data.")
 
     # Derived Chapter Unlock requirements.
-    self.chapters_requiring_alt_characters = set(passthrough.get("chapters_requiring_alt_characters", ()))
-    self.chapter_required_character_counts = passthrough.get("chapter_required_character_counts", {})
+    alt_characters_option = slot_data.chapters_requiring_alt_characters
+    self.chapters_requiring_alt_characters = set() if alt_characters_option is None else alt_characters_option.value
+
+    required_counts_option = slot_data.chapter_required_character_counts
+    self.chapter_required_character_counts = {} if required_counts_option is None else required_counts_option.value
+
+    random_requirements_option = slot_data.chapter_random_character_requirements
+    random_requirements = {} if random_requirements_option is None else random_requirements_option.value
     self.chapter_random_character_requirements = {
-        chapter: [self.item_id_to_name[c] for c in characters]
-        for chapter, characters in passthrough.get("chapter_random_character_requirements", {}).items()
+        chapter: [CODE_TO_ITEM_DATA[c] for c in character_item_ids]
+        for chapter, character_item_ids in random_requirements.items()
     }
 
     # Derived Goal attributes.
-    self.enabled_bosses = set(passthrough["enabled_bosses"])
-    self.goal_area_completion_count = passthrough["goal_area_completion_count"]
-    if goal_chapter := passthrough["goal_chapter"]:
-        self.goal_chapter = goal_chapter
+    self.enabled_bosses = slot_data.enabled_bosses.value
+    self.goal_area_completion_count = slot_data.goal_area_completion_count.value
+
+    goal_chapter_option = slot_data.goal_chapter
+    if goal_chapter_option is not None:
+        self.goal_chapter = goal_chapter_option.value
     else:
         self.goal_chapter = None
 
@@ -161,8 +165,9 @@ def _compute_expected_gold_brick_event_count(self: LegoStarWarsTCSWorld):
 
 
 def resolve_universal_tracker_options(self: LegoStarWarsTCSWorld, passthrough: dict[str, Any]):
-    _direct_slot_data_options(self, passthrough)
-    _derived_attributes_from_options(self, passthrough)
+    slot_data_options = TCSSlotDataOptions.from_slot_data(passthrough)
+    _direct_slot_data_options(self, slot_data_options)
+    _derived_attributes_from_options(self, slot_data_options)
     _override_options_with_derived_rolled_values(self)
     _compute_boss_names(self)
     _compute_expected_gold_brick_event_count(self)
