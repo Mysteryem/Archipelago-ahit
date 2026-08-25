@@ -16,40 +16,20 @@ if TYPE_CHECKING:
 else:
     LegoStarWarsTCSWorld = object
 
-DIRECT_SLOT_DATA_OPTIONS = (
-    "minikit_goal_amount",
-    "minikit_bundle_size",
-    "episode_unlock_requirement",
-    "all_episodes_character_purchase_requirements",
-    "most_expensive_purchase_with_no_multiplier",
-    "enable_bonus_locations",
-    "enable_story_character_unlock_locations",
-    "enable_all_episodes_purchases",
-    "defeat_bosses_goal_amount",
-    "only_unique_bosses_count",
-    "enable_minikit_locations",
-    "enable_true_jedi_locations",
-    "goal_requires_kyber_bricks",
-    "goal_chapter_locations_mode",
-    "easier_true_jedi",
-    "ridesanity",
-    "enable_starting_extras_locations",
-    "chapter_unlock_requirement",
-    "chapter_unlock_story_characters_not_required",
-    "expect_2_1_torpedo_gathering",
-    "uncap_original_trilogy_high_jump",
-    "logic_difficulty",
-)
-assert all(option_name in LegoStarWarsTCSOptions.type_hints for option_name in DIRECT_SLOT_DATA_OPTIONS)
-
 
 def _direct_slot_data_options(self: LegoStarWarsTCSWorld, slot_data: TCSSlotDataOptions):
     """Options directly set from slot data."""
+    options = self.options
+
+    # Directly exported to slot data and directly imported from slot data.
     for field in dataclasses.fields(TCSDirectSlotDataOptions):
         field_name = field.name
         world_option: Option[Any] = getattr(self.options, field_name)
         slot_data_option: Option[Any] = getattr(slot_data, field_name)
         world_option.value = slot_data_option.value
+
+    # Exported to slot data through other means, but imported directly.
+    options.minikit_goal_amount.value = slot_data.minikit_goal_amount.value
 
 
 def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, slot_data: TCSSlotDataOptions):
@@ -71,6 +51,7 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, slot_data: TCSS
     self.chapter_required_character_counts = {} if required_counts_option is None else required_counts_option.value
 
     random_requirements_option = slot_data.chapter_random_character_requirements
+    random_requirements: dict[str, list[int]]
     random_requirements = {} if random_requirements_option is None else random_requirements_option.value
     self.chapter_random_character_requirements = {
         chapter: [CODE_TO_ITEM_DATA[c] for c in character_item_ids]
