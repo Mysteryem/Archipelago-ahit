@@ -27,6 +27,7 @@ from .constants import (
     CHAPTER_SPECIFIC_FLAGS,
     progression_deprioritized_skip_balancing,
 )
+from .data.extras import Extra
 from .items import (
     ITEM_NAME_TO_ID,
     LegoStarWarsTCSItem,
@@ -71,6 +72,7 @@ from .options import (
     OPTION_GROUPS,
     GoalChapterLocationsMode,
     ChapterUnlockRequirement,
+    EpisodeUnlockRequirement,
 )
 from .option_resolution.common import resolve_options
 from .ridables import RIDABLES_REQUIREMENTS
@@ -147,8 +149,12 @@ class LegoStarWarsTCSWorld(World):
 
     starting_character_abilities: CharacterAbility = CharacterAbility.NONE
 
-    effective_character_abilities: dict[str, CharacterAbility]
-    effective_item_classifications: dict[str, ItemClassification]
+    # The effective abilities of each character, minus logically irrelevant abilities and abilities provided by
+    # precollected characters. Used to determine the correct ItemClassification for character items.
+    effective_character_abilities: dict[str, CharacterAbility] | None = None
+    # The maximum logically relevant counts of each item, minus the counts of precollected items. Used to determine the
+    # correct ItemClassification for items.
+    logical_item_counts: Counter[str] | None = None
 
     enabled_chapters: set[str]
     enabled_chapters_with_locations: set[str]  # Includes the Goal Chapter when it has locations.
@@ -275,30 +281,38 @@ class LegoStarWarsTCSWorld(World):
     def evaluate_effective_item(self,
                                 name: str,
                                 effective_character_abilities_lookup: dict[str, CharacterAbility] | None = None,
+                                relevant_item_counts: dict[str, int] | None = None,
                                 ) -> tuple[ItemClassification, CharacterAbility]:
         classification = ItemClassification.filler
         abilities = CharacterAbility.NONE
 
         item_data = ITEM_DATA_BY_NAME[name]
-        if item_data.code < 1:
+        code = item_data.code
+        if code is None or code < 1:
             raise RuntimeError(f"Error: Item '{name}' cannot be created")
         assert item_data.code != -1
         if isinstance(item_data, ExtraData):
-            if item_data in PURCHASABLE_NON_POWER_BRICK_EXTRAS:
-                # Only Extra Toggle is useful out of these Extras due to the high movement speed Mouse Droid and a few
-                # logic uses.
-                if name == "Extra Toggle":
+            if relevant_item_counts is not None:
+                if relevant_item_counts.get(name, 0) > 0:
+                    classification = ItemClassification.progression
+                elif item_data not in PURCHASABLE_NON_POWER_BRICK_EXTRAS or name == Extra.EXTRA_TOGGLE.readable_name:
+                    classification = ItemClassification.useful
+            else:
+                if item_data in PURCHASABLE_NON_POWER_BRICK_EXTRAS:
+                    # Only Extra Toggle is useful out of these Extras due to the high movement speed Mouse Droid and a
+                    # few logic uses.
+                    if name == "Extra Toggle":
+                        if self.options.logic_difficulty.normal_plus:
+                            classification = ItemClassification.progression
+                        else:
+                            classification = ItemClassification.useful
+                else:
+                    # Many Power Brick Extras provide cheat-like abilities to the player, so should be given at least
+                    # Useful classification.
                     if self.options.logic_difficulty.normal_plus:
                         classification = ItemClassification.progression
                     else:
                         classification = ItemClassification.useful
-            else:
-                # Many Power Brick Extras provide cheat-like abilities to the player, so should be given at least Useful
-                # classification.
-                if self.options.logic_difficulty.normal_plus:
-                    classification = ItemClassification.progression
-                else:
-                    classification = ItemClassification.useful
         elif isinstance(item_data, GenericCharacterData):
             if effective_character_abilities_lookup is not None:
                 abilities = effective_character_abilities_lookup[name]
@@ -325,11 +339,21 @@ class LegoStarWarsTCSWorld(World):
                 # Force ghosts, glitchy characters and fast characters.
                 classification = ItemClassification.useful
 
-            if name == "Admiral Ackbar":
+            if name == Character.ADMIRAL_ACKBAR.readable_name:
                 # There is no trap functionality, this trap classification is a joke.
                 # Maybe once/if the world switches to modding, receiving this item could play the iconic "It's a trap!"
                 # line.
                 classification |= ItemClassification.trap
+
+            # If the character is not currently progression, but is used directly in some rules, then they need to be
+            # considered as progression.
+            if (relevant_item_counts is not None
+                    and classification & ItemClassification.progression == 0
+                    and relevant_item_counts.get(name, 0) > 0):
+                # Remove useful classification, if set.
+                classification &= ~ItemClassification.useful
+                # And add progression classification.
+                classification |= ItemClassification.progression
         else:
             if name in MINIKITS_BY_NAME:
                 # A goal macguffin.
@@ -342,22 +366,36 @@ class LegoStarWarsTCSWorld(World):
                         # If there are only very few bundles, e.g. the bundles are 10 minikits at a time and there are
                         # not many in the pool, then don't use deprioritized classification.
                         classification = ItemClassification.progression_skip_balancing
-                else:
-                    classification = ItemClassification.filler
+            # todo: Compare against the enum name
             elif name == "Progressive Score Multiplier":
-                # todo: Vary between progression and progression_skip_balancing depending on what percentage of
-                #  locations need them. Make them Useful if none are needed.
                 # Generic item that grants Score multiplier Extras, which are used in logic for purchases from the shop.
-                classification = ItemClassification.progression
+                if relevant_item_counts is not None:
+                    if relevant_item_counts.get(name, 0) > 0:
+                        classification = ItemClassification.progression
+                    else:
+                        classification = ItemClassification.useful
+                else:
+                    # todo: Vary between progression and progression_skip_balancing depending on what percentage of
+                    #  locations need them.
+                    classification = ItemClassification.progression
+            # todo: Compare against the enum name
             elif name == "Episode Completion Token":
                 # Very few location checks and typically late into a seed.
-                classification = ItemClassification.progression_skip_balancing
+                if (self.options.all_episodes_character_purchase_requirements
+                        == AllEpisodesCharacterPurchaseRequirements.option_episodes_tokens):
+                    classification = ItemClassification.progression_skip_balancing
+            # todo: Compare against the enum name
             elif name == "Kyber Brick":
                 # Kyber Bricks are only logically relevant to the Kyber Bricks goal and do not unlock any locations, so
                 # should skip progression balancing.
-                classification = ItemClassification.progression_skip_balancing
+                if self.options.goal_requires_kyber_bricks:
+                    classification = ItemClassification.progression_skip_balancing
+            # todo: Clean this up by using the item_data
             elif name.startswith("Episode ") and name.endswith(" Unlock"):
-                classification = ItemClassification.progression | ItemClassification.useful
+                if (int(name[len("Episode ")]) in self.enabled_episodes
+                        and self.options.episode_unlock_requirement == EpisodeUnlockRequirement.option_episode_item):
+                    classification = ItemClassification.progression | ItemClassification.useful
+            # todo: Clean this up by using the item_data
             elif name[:3] in self.enabled_chapters and name[3:] == " Unlock":
                 # Chapter Unlock item.
                 classification = ItemClassification.progression
@@ -377,7 +415,10 @@ class LegoStarWarsTCSWorld(World):
                                            REVERSE_READABLE_ABILITY_TO_ABILITY[name])
 
         code = self.item_name_to_id[name]
-        classification, collect_abilities = self.evaluate_effective_item(name)
+
+        # `self.effective_character_abilities`, `self.logical_item_counts` are `None` until `create_items()`.
+        classification, collect_abilities = self.evaluate_effective_item(
+            name, self.effective_character_abilities, self.logical_item_counts)
 
         return LegoStarWarsTCSItem(name, classification, code, self.player, collect_abilities)
 
@@ -407,6 +448,7 @@ class LegoStarWarsTCSWorld(World):
         # generate_early.
         assert self.gold_brick_event_count == self.expected_gold_brick_event_count, \
             "Created Gold Bricks did not match expected Gold Bricks, something is wrong."
+        self.set_completion_rule(Has("Victory"))
 
     def add_location(self, name: str, region: Region) -> LegoStarWarsTCSLocation:
         location = LegoStarWarsTCSLocation(self.player, name, self.location_name_to_id[name], region)
@@ -468,8 +510,10 @@ class LegoStarWarsTCSWorld(World):
         return starting_abilities
 
     def set_rules(self) -> None:
-        # All other rules are set when the locations/entrances are created, during create_regions.
-        self.set_completion_rule(Has("Victory"))
+        # Rules are set when the locations/entrances are created, during create_regions. This makes sense for
+        # location/entrance rules, but the completion condition is also set during create_regions so that the rules can
+        # be inspected to determine the classifications of items during create_items, which runs after create_regions,
+        # but before set_rules.
 
         from .rule_builder_optimise import optimise_rules
         optimise_rules(self)

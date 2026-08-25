@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from collections import Counter
 from random import Random
 
+from BaseClasses import CollectionState
 from rule_builder.rules import (
     Rule,
     Or,
@@ -540,3 +541,130 @@ class CNFAbilityRequirementsExtractor:
         # This rule does not have ability requirements, e.g. it is a Has("Exploding Blaster Bolts"), or a
         # CanReachRegion("region name") or similar.
         return self._memoize(rule, None)
+
+
+@dataclass
+class LogicalRequirementsExtractor:
+    """Extract the maximum logically relevant counts of item names, and logically relevant abilities, from resolved
+     rules.
+
+    When given an initial state, this will reduce maximum logically relevant counts by the items already collected by
+    the state.
+    """
+
+    @dataclass(frozen=True)
+    class Requirements:
+        item_counts: Counter[str] = field(default_factory=Counter)
+        abilities: CharacterAbility = CharacterAbility.NONE
+
+        def __bool__(self):
+            return bool(self.item_counts) and bool(self.abilities)
+
+        def __or__(self, 
+                   other: "LogicalRequirementsExtractor.Requirements"
+                   ) -> "LogicalRequirementsExtractor.Requirements":
+            return LogicalRequirementsExtractor.Requirements(
+                self.item_counts | other.item_counts, self.abilities | other.abilities)
+
+
+    initial_state: CollectionState | None = None
+    memodict: dict[Rule.Resolved, Requirements] = field(default_factory=dict)
+
+    def _memoize(self, rule: Rule.Resolved, requirements: Requirements) -> Requirements:
+        # Resolved rules are singletons, so an individual resolved rule only needs to be processed at most once.
+        self.memodict[rule] = requirements
+        return requirements
+
+    def extract_requirements(self, rule: Rule.Resolved) -> Requirements:
+        existing = self.memodict.get(rule)
+        if existing is not None:
+            return existing
+
+        state = self.initial_state
+
+        if state is not None and rule(state):
+            # The rule is satisfied by the state, so there are no missing requirements.
+            return self._memoize(rule, LogicalRequirementsExtractor.Requirements())
+
+        if isinstance(rule, HasAbility.Resolved):
+            rule: HasAbility.Resolved
+
+            return self._memoize(
+                rule, LogicalRequirementsExtractor.Requirements(abilities=CharacterAbility(rule.ability_as_int)))
+
+        if isinstance(rule, HasAnyAbilities.Resolved):
+            rule: HasAnyAbilities.Resolved
+
+            return self._memoize(
+                rule, LogicalRequirementsExtractor.Requirements(abilities=CharacterAbility(rule.abilities_as_int)))
+
+        if isinstance(rule, HasAllAbilities.Resolved):
+            rule: HasAllAbilities.Resolved
+
+            abilities = CharacterAbility(rule.abilities_as_int)
+            if state is not None:
+                state_abilities = CharacterAbility(state.count("COMBINED_ABILITIES", rule.player))
+                abilities = abilities & ~state_abilities
+
+            return self._memoize(rule, LogicalRequirementsExtractor.Requirements(abilities=abilities))
+
+        if isinstance(rule, Has.Resolved):
+            rule: Has.Resolved
+            if state is not None:
+                missing_count = rule.count - state.count(rule.item_name, rule.player)
+                counts = {rule.item_name: missing_count}
+            else:
+                counts = {rule.item_name: rule.count}
+            return self._memoize(rule, LogicalRequirementsExtractor.Requirements(item_counts=Counter(counts)))
+
+        if isinstance(rule, (HasAllCounts.Resolved, HasAnyCount.Resolved)):
+            rule: HasAllCounts.Resolved | HasAnyCount.Resolved
+            if state is not None:
+                counts = {
+                    item: count - state.count(item, rule.player) for item, count in rule.item_counts
+                }
+            else:
+                counts = dict(rule.item_counts)
+            return self._memoize(rule, LogicalRequirementsExtractor.Requirements(item_counts=Counter(counts)))
+
+        if isinstance(rule, (HasFromList.Resolved, HasGroup.Resolved)):
+            rule: HasFromList.Resolved | HasGroup.Resolved
+            # While it is likely that a player could achieve a count of 4 items through 2 of item A and 2 of item B,
+            # up to 4 of item A would still be logically relevant.
+            if rule.count == 1:
+                # The `state` can be ignored because if any one item was present, the rule would have returned True
+                # given `state`.
+                return self._memoize(
+                    rule, LogicalRequirementsExtractor.Requirements(item_counts=Counter(rule.item_names)))
+            else:
+                if state is not None:
+                    counts = {
+                        item: rule.count - state.count(item, rule.player) for item in rule.item_names
+                    }
+                else:
+                    counts = dict.fromkeys(rule.item_names, rule.count)
+                return self._memoize(rule, LogicalRequirementsExtractor.Requirements(item_counts=Counter(counts)))
+
+        if isinstance(rule, (HasAny.Resolved, HasAll.Resolved, HasFromListUnique.Resolved, HasGroupUnique.Resolved)):
+            rule: HasAny.Resolved | HasAll.Resolved | HasFromListUnique.Resolved | HasGroupUnique.Resolved
+            # If a HasAny rule was not satisfied, then the state must have none of the items.
+            if state is not None and not isinstance(rule, HasAny.Resolved):
+                item_names = [item for item in rule.item_names if not state.has(item, rule.player)]
+            else:
+                item_names = rule.item_names
+            return self._memoize(rule, LogicalRequirementsExtractor.Requirements(item_counts=Counter(item_names)))
+
+        if isinstance(rule, (And.Resolved, Or.Resolved)):
+            rule: And.Resolved | Or.Resolved
+            requirements = LogicalRequirementsExtractor.Requirements()
+            # todo?: Might there be some cases where Or.Resolved should be using `min(A[key], B[key])`?
+            for child in rule.children:
+                child_requirements = self.extract_requirements(child)
+                requirements |= child_requirements
+            return self._memoize(rule, requirements)
+
+        if isinstance(rule, WrapperRule.Resolved):
+            rule: WrapperRule.Resolved
+            return self._memoize(rule, self.extract_requirements(rule.child))
+
+        return self._memoize(rule, LogicalRequirementsExtractor.Requirements())

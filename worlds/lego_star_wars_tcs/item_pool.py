@@ -5,7 +5,7 @@ from operator import or_
 from typing import TYPE_CHECKING, Iterable
 
 from rule_builder.rules import Rule
-from BaseClasses import LocationProgressType, ItemClassification, Entrance, Location, Region
+from BaseClasses import LocationProgressType, ItemClassification, Entrance, Location, Region, CollectionState
 
 from .constants import (
     progression_deprioritized_skip_balancing,
@@ -13,12 +13,14 @@ from .constants import (
     CHAPTER_SPECIFIC_FLAGS,
     RARE_AND_USEFUL_ABILITIES,
 )
+from .data.areas import Area
 from .data.items.all_character_items import NORMAL_CHARACTER_TO_ITEM_DATA
 from .data.logic import CHAPTERS_BY_NUMBERS
 from .data.logic.extraction import (
     AbilityRequirements as AbilityRequirementsExtractor,
     CNFAbilityRequirementsExtractor,
     DEFAULT_ABILITY_COSTS,
+    LogicalRequirementsExtractor,
 )
 from .data.logic.types import Chapter
 from .items import (
@@ -116,27 +118,56 @@ class ItemCreator:
     _classification_lookup: dict[str, ItemClassification]
     _abilities_lookup: dict[str, CharacterAbility]
     _world: LegoStarWarsTCSWorld
+    logically_relevant_item_counts: Counter[str]
+    logically_relevant_abilities: CharacterAbility
 
-    def __init__(self,
-                 world: LegoStarWarsTCSWorld,
-                 logically_irrelevant_abilities: CharacterAbility):
+    def __init__(self, world: LegoStarWarsTCSWorld):
         """
         Create a class to help in create items in a performant manner, while stripping starting abilities from the
         created items.
         :param world: The world the created items will belong to.
-        :param logically_irrelevant_abilities: Abilities that are not required at all, to be stripped from created
-        items for improved generation performance.
         """
         self._world = world
-        self._initialize_effective_data_lookups(logically_irrelevant_abilities)
+        self._initialize_effective_data_lookups()
 
-    def _initialize_effective_data_lookups(self, logically_irrelevant_abilities: CharacterAbility) -> None:
+    def _initialize_effective_data_lookups(self) -> None:
         """
         Pre-calculate the effective character abilities and classification of each item, so that the creation of items
         with multiple copies can be sped up.
-        :param logically_irrelevant_abilities: These abilities are logically irrelevant to created items, so do not need
-         to be provided by created items, potentially changing the effective classifications of the items.
         """
+        world = self._world
+        starting_state = CollectionState(world.multiworld)
+        if world.is_universal_tracker():
+            # Remove starting items so that Universal Tracker does not remove abilities or demote the classification of
+            # items based on starting inventory that UT is going to discard before re-creating by calling
+            # world.create_item() as the starting inventory items are received from the AP server.
+            for item in world.multiworld.precollected_items[world.player]:
+                starting_state.remove(item)
+            # starting_state.prog_items[world.player].clear()
+        requirements_extractor = LogicalRequirementsExtractor(starting_state)
+        max_requirements = LogicalRequirementsExtractor.Requirements()
+        # todo?: Improvements could be made here because not all entrances to access a region need to be used.
+        #  Currently, the logic considers all, but some entrances could be accessible with only the starting items.
+        for spots in (world.get_locations(), world.get_entrances()):
+            for spot in spots:
+                if spot.access_rule(starting_state):
+                    # The rule can be satisfied with just the starting state.
+                    continue
+                requirements = requirements_extractor.extract_requirements(spot.access_rule)
+                max_requirements |= requirements
+        completion_condition = world.multiworld.completion_condition[world.player]
+        assert isinstance(completion_condition, Rule.Resolved), "Completion condition should always be a Rule.Resolved"
+        completion_requirements = requirements_extractor.extract_requirements(completion_condition)
+        max_requirements |= completion_requirements
+
+        missing_abilities = max_requirements.abilities
+        missing_item_counts = max_requirements.item_counts
+
+        # Abilities that are already provided by the starting inventory, or are not relevant to logic with this world's
+        # options do not need to be provided by created items, potentially changing the effective classifications of
+        # the items.
+        logically_irrelevant_abilities = ~missing_abilities
+
         effective_character_abilities: dict[str, CharacterAbility] = {}
 
         for name, char in CHARACTERS_AND_VEHICLES_BY_NAME.items():
@@ -150,7 +181,8 @@ class ItemCreator:
         effective_item_classifications: dict[str, ItemClassification] = {}
         effective_item_abilities: dict[str, CharacterAbility] = {}
         for item in self._world.item_name_to_id:
-            classification, effective_abilities = self._world.evaluate_effective_item(item, effective_character_abilities)
+            classification, effective_abilities = self._world.evaluate_effective_item(
+                item, effective_character_abilities, missing_item_counts)
             effective_item_classifications[item] = classification
             # The returned `effective_abiltiies` should be the same as what was in `effective_character_abilities`.
             # The returned `effective_abiltiies` is not actually needed here, but `effective_character_abilities` is not
@@ -160,6 +192,12 @@ class ItemCreator:
 
         self._classification_lookup = effective_item_classifications
         self._abilities_lookup = effective_item_abilities
+        self.logically_relevant_abilities = missing_abilities
+        self.logically_relevant_item_counts = missing_item_counts
+        assert world.effective_character_abilities is None, "world.effective_character_abilities is already set"
+        world.effective_character_abilities = effective_character_abilities
+        assert world.logical_item_counts is None, "world.logical_item_counts is already set"
+        world.logical_item_counts = missing_item_counts
 
     def create_item(self, name: str) -> LegoStarWarsTCSItem:
         """
@@ -1493,6 +1531,10 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
     """
     # todo: In the future, individual characters may be relevant to logic, e.g. Droideka, which should never be
     #  given deprioritized + skip_balancing.
+    #  For this, it will probably be necessary to count how many times each character is relevant to a rule (both
+    #  directly and also indirectly through its abilities), with some scaling based on how many characters satisfy that
+    #  rule. Alternatively, hardcoding for some more obvious cases, e.g. Droideka, General Grievous and
+    #  Yoda/Yoda (Ghost).
     # Give deprioritized + skip_balancing to characters with only common abilities, and that do not give access to
     # levels.
     non_level_access_character_items: list[LegoStarWarsTCSItem] = []
@@ -1506,7 +1548,8 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
             if abilities:
                 non_deprioritize_ability_counts.update(abilities)
             if chapters_unlock_with_characters:
-                if level_access_character_counts[item.name] == 0:
+                # todo: Remove the level_access_character_counts check now that precise logical amounts are determined.
+                if level_access_character_counts[item.name] == 0 and world.logical_item_counts[item.name] < 1:
                     assert abilities, (f"No abilities should mean the character item is not progression currently if"
                                        f" the character does not unlock levels, but {item.name} has no abilities and"
                                        f" does not unlock levels.")
@@ -1530,13 +1573,7 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
     assert all(ability.bit_count() == 1 for ability in non_deprioritize_ability_counts)
 
 
-def _create_universal_tracker_item_pool(
-        world: LegoStarWarsTCSWorld,
-        level_access_character_counts: Counter[str],
-        possible_pool_character_items: dict[str, GenericCharacterData],
-        pool_required_chapter_unlock_items: list[str],
-        item_pool_ability_requirements: ItemPoolAbilityRequirements,
-) -> list[LegoStarWarsTCSItem]:
+def _create_universal_tracker_item_pool(world: LegoStarWarsTCSWorld) -> list[LegoStarWarsTCSItem]:
     """
     Universal Tracker discards the item pool for the most part, it needs it to know what item names to try in
     the `/next_progression` client command.
@@ -1555,52 +1592,22 @@ def _create_universal_tracker_item_pool(
     relevant CharacterAbility, whose names match the Item Group names for characters with those abilities.
     :return: The created item pool for Universal Tracker.
     """
-    item_creator = ItemCreator(world, item_pool_ability_requirements.get_logically_irrelevant())
+    item_creator = ItemCreator(world)
 
     item_pool: list[LegoStarWarsTCSItem] = []
 
-    logically_relevant_abilities = ((item_pool_ability_requirements.required | item_pool_ability_requirements.optional)
-                                    & ~item_pool_ability_requirements.starting)
-
-    pool_required_characters: list[GenericCharacterData] = []
-    # Get characters that are required to access levels. Updates `item_pool_ability_requirements` as characters are
-    # appended.
-    _append_level_access_required_characters(
-        world,
-        pool_required_characters,
-        level_access_character_counts,
-        possible_pool_character_items,
-        item_pool_ability_requirements,
-    )
-
-    # Get the required extras names.
-    pool_required_extras, _non_required_extras = prepare_extras(world)
-
-    # Append required Extras items.
-    for extra_name in pool_required_extras:
-        item = item_creator.create_item(extra_name)
-        assert item.advancement
-        item_pool.append(item)
-
-    # Append character items that lock access to levels.
-    for character_data in pool_required_characters:
-        item = item_creator.create_item(character_data.name)
-        assert item.advancement
-        item_pool.append(item)
-
     # Append an event for each logically relevant ability. These events are created instead of creating one of every
     # possibly logically relevant character. The event names match the Item Groups.
-    for ability in logically_relevant_abilities:
+    for ability in item_creator.logically_relevant_abilities:
         item = world.create_item(ability_to_readable_group(ability))
         assert item.advancement
         item_pool.append(item)
 
-    # Get other required items that don't belong to any particular category, and don't have associated vanilla
-    # locations.
-    other_required_items, _starting_required_other_items = _get_additional_required_items(
-        world, pool_required_chapter_unlock_items)
-
-    for item_name in other_required_items:
+    # Append each logically relevant non-event item.
+    non_event_items = world.item_name_to_id
+    for item_name, count in item_creator.logically_relevant_item_counts.items():
+        if count < 1 or item_name not in non_event_items:
+            continue
         item = item_creator.create_item(item_name)
         assert item.advancement
         item_pool.append(item)
@@ -1634,15 +1641,9 @@ def _create_items(
     :return: The created item pool.
     """
     if world.is_universal_tracker():
-        return _create_universal_tracker_item_pool(
-            world,
-            level_access_character_counts,
-            possible_pool_character_items,
-            pool_required_chapter_unlock_items,
-            item_pool_ability_requirements
-        )
+        return _create_universal_tracker_item_pool(world)
 
-    item_creator = ItemCreator(world, item_pool_ability_requirements.get_logically_irrelevant())
+    item_creator = ItemCreator(world)
 
     # These abilities are provided by the starting characters, so these abilities can be stripped from other
     # characters, improving logic performance.
