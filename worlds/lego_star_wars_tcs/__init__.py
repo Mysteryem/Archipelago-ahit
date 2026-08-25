@@ -515,8 +515,9 @@ class LegoStarWarsTCSWorld(World):
         # be inspected to determine the classifications of items during create_items, which runs after create_regions,
         # but before set_rules.
 
-        from .rule_builder_optimise import optimise_rules
-        optimise_rules(self)
+        if not self.is_universal_tracker():
+            from .rule_builder_optimise import optimise_rules
+            optimise_rules(self)
 
     @classmethod
     def stage_fill_hook(cls,
