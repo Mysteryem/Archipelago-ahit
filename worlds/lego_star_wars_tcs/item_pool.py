@@ -168,6 +168,18 @@ class ItemCreator:
         missing_abilities = max_requirements.abilities
         missing_item_counts = max_requirements.item_counts
 
+        # Special handling for Super Gonk collect() override.
+        if missing_item_counts[Character.EVENT_SUPER_GONK_DROID.readable_name] > 0:
+            if world.options.logic_difficulty.normal_plus:
+                # Gonk Droid and Super Gonk are unique items where having more than 1 would never be relevant, so there
+                # is no need to check the existing counts because they should always be either 0 or 1.
+                missing_item_counts[Character.GONK_DROID.readable_name] = 1
+                missing_item_counts[Extra.SUPER_GONK.readable_name] = 1
+            else:
+                # Extras (besides Score Multipliers) are not considered by logic on the Base logic, so
+                # EVENT_SUPER_GONK_DROID will never be collected into a state.
+                del missing_item_counts[Character.EVENT_SUPER_GONK_DROID.readable_name]
+
         # Abilities that are already provided by the starting inventory, or are not relevant to logic with this world's
         # options do not need to be provided by created items, potentially changing the effective classifications of
         # the items.
