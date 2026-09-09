@@ -8,6 +8,8 @@ from ..macros import (
     CAN_GRAPPLE,
     CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
     can_jump_distance_rule,
+    HAS_IMPERIAL_OR_CAN_WEAR_HAT_AND_GRAPPLE,
+    HAS_CAN_WEAR_HAT_AND_GRAPPLE,
 )
 from ..option_filters import logic_options
 from ..rules import (
@@ -99,10 +101,11 @@ DEATH_STAR_ESCAPE = helper.make_chapter(
                     #  dying would achieve the same, but doing so is difficult without a pit to jump in.
                     # Use the Imperial Panel.
                     logic_options(
-                        # For carrying a hat across, strictly require GRAPPLE to start with because
+                        # For carrying a hat across, strictly require grappling with a hat to start with because
                         # CAN_WEAR_HAT_AND_DOUBLE_JUMP cannot get a second hat if they mess up.
-                        base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_GRAPPLE),
-                        # Allow CAN_WEAR_HAT_AND_DOUBLE_JUMP, and just don't mess up, or restart the level if you do.
+                        base=HAS_IMPERIAL_OR_CAN_WEAR_HAT_AND_GRAPPLE,
+                        # Allow CAN_WEAR_HAT_AND_DOUBLE_JUMP alone, and just don't mess up, or restart the level if you
+                        # do.
                         moderate=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_GRAPPLE | CAN_WEAR_HAT_AND_DOUBLE_JUMP),
                         # As with getting to the upper left area of the room, this is just enough jump height and run
                         # speed to make it up the extending platform at its lowest, and then have P2 push the spinner to
@@ -161,7 +164,8 @@ DEATH_STAR_ESCAPE = helper.make_chapter(
             ExitData(
                 R_STORMTROOPER_CORRIDOR_CHASE_THROUGH_TO_HANGAR,
                 logic_options(
-                    base=HasAbility(CAN_WEAR_HAT_AND_GRAPPLE) | HasAllAbilities(GRAPPLE | IMPERIAL),
+                    base=HasAllAbilities(GRAPPLE | IMPERIAL) | HAS_CAN_WEAR_HAT_AND_GRAPPLE,
+                    # Oil Glitch:
                     # One of the Stormtroopers across the gap is standing in range of the Imperial Panel. If he attempts
                     # to put his weapon away, he will instead activate the panel.
                     # To do this, aggro the enemies in this room, and then de-aggro by either swapping both characters

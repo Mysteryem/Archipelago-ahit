@@ -10,6 +10,7 @@ from ..macros import (
     CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
     HAS_ANY_YODA,
     HAS_EXTRA_DISTANCE_DOUBLE_JUMP,
+    HAS_IMPERIAL_OR_CAN_WEAR_HAT_AND_GRAPPLE,
 )
 from ..option_filters import logic_options, OT_HIGH_JUMP_ENABLED, ot_high_jump_ternary
 from ..rules import (
@@ -235,7 +236,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
                 R_AFTER_IMPERIAL_PHONES_ROOM_IMPERIAL_PANEL_AND_HOLDING_CELLS,
                 logic_options(
                     strict=False,
-                    base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_GRAPPLE)
+                    base=HAS_IMPERIAL_OR_CAN_WEAR_HAT_AND_GRAPPLE
                 # Allow Yoda ceiling clip past the door.
                 ).or_rule(apply_to="hard+", rule=HAS_ANY_YODA),
             ),
@@ -249,7 +250,7 @@ RESCUE_THE_PRINCESS = helper.make_chapter(
             #     "Pool Double Score Zone",
             #     # There might be an out-of-bounds through Yoda Clip to get under the floor and then into the elevator,
             #     # but it seems difficult because the bottom of the elevator has collision.
-            #     HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_GRAPPLE),
+            #     HAS_IMPERIAL_OR_CAN_WEAR_HAT_AND_GRAPPLE,
             # ),
             # There are no requirements to get here, and to get from the control room to the holding cells themselves
             # only requires pulling levers, which all jedi can do.

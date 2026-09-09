@@ -303,3 +303,29 @@ HAS_WALL_CLIMB = Character.GENERAL_GRIEVOUS.has() & HasAnyCharacterExcept(
  neutral, and then jumping again. Characters with large collision boxes are excluded."""
 
 HAS_0_53_JUMP_HEIGHT_CHARACTER = Character.has_any(Character.GAMORREAN_GUARD, Character.EVENT_SUPER_GONK_DROID)
+
+# Force Grapple leap can replace CAN_WEAR_HAT_AND_GRAPPLE.
+HAS_IMPERIAL_OR_CAN_WEAR_HAT_AND_GRAPPLE = logic_options(
+    base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_GRAPPLE),
+    normal=Or(
+        HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT_AND_GRAPPLE),
+        And(
+            Extra.FORCE_GRAPPLE_LEAP.has(),
+            # Ackbar, Jar Jar, Tarpals, Bodyguard and Grievous are the only non-jedi that can double jump, and none of
+            # them can wear hats, so all characters that can wear hats and double jump are jedi.
+            HasAbility(CAN_WEAR_HAT_AND_DOUBLE_JUMP),
+        )
+    )
+)
+HAS_CAN_WEAR_HAT_AND_GRAPPLE = logic_options(
+    base=HasAbility(CAN_WEAR_HAT_AND_GRAPPLE),
+    normal=Or(
+        HasAbility(CAN_WEAR_HAT_AND_GRAPPLE),
+        And(
+            Extra.FORCE_GRAPPLE_LEAP.has(),
+            # Ackbar, Jar Jar, Tarpals, Bodyguard and Grievous are the only non-jedi that can double jump, and none of
+            # them can wear hats, so all characters that can wear hats and double jump are jedi.
+            HasAbility(CAN_WEAR_HAT_AND_DOUBLE_JUMP),
+        )
+    )
+)
