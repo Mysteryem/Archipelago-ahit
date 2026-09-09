@@ -316,3 +316,7 @@ class TestAbilityCombinations(TestCase):
         self.assertIsInstance(rule, HasAny)
         self.assertEqual(set(rule.item_names), set())
 
+    def test_can_wear_hat_and_jedi(self):
+        rule = HasAbilityCombination.static_make_simpler_rule(CharacterAbility.CAN_WEAR_HAT | CharacterAbility.JEDI)
+        self.assertIsInstance(rule, HasAbility)
+        self.assertEqual(rule.ability, CharacterAbility.CAN_WEAR_HAT_AND_DOUBLE_JUMP)
