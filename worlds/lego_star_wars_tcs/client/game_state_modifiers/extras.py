@@ -2,12 +2,13 @@ import logging
 from typing import Mapping, Sequence, cast
 
 from ..common import StaticUChar
-from ..common_addresses import ShopType, EXTRAS_SHOP_START
+from ..common_addresses import ShopType, EXTRAS_SHOP_START, AREA_DATA_ID, CURRENT_P_AREA_DATA_ADDRESS
 from ..custom_save_data import CustomSaveDataSections
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent, OnLevelChangeEvent
 from ..type_aliases import ApItemId, BitMask, MemoryOffset, TCSContext
 from . import ItemReceiver
 
+from ...data.areas import Area
 from ...data.extras import Extra
 from ...data.items.extra_items import EXTRA_DATA
 from ...data.levels import Level
@@ -129,10 +130,37 @@ class AcquiredExtras(ItemReceiver):
 
     @staticmethod
     def restore_enabled_extras_from_save_data(ctx: TCSContext) -> None:
+        # todo: In the future, there will also need to be a ban of some Extras in
+        #  Challenges/Minikit Bonuses/Character Bonuses/Bounty Hunter Missions.
+        # If the player is in LEGO City or similar, prevent enabling score multipliers and other extras that are
+        #  banned from these levels.
+        banned_extras = set()
+        # fixme: The slot data event may fire before the current area address is updated. The current area should update
+        #  whenever the client is connected to the game (before connecting to a server), and subscribers to the event
+        #  should need to check if the slot data has been received and processed yet.
+        current_p_area_data = CURRENT_P_AREA_DATA_ADDRESS.get(ctx)
+        if current_p_area_data:
+            current_area_id = AREA_DATA_ID.get(ctx, current_p_area_data)
+            current_area = Area(current_area_id) if current_area_id in Area else None
+            if current_area in (Area.BONUS, Area.BONUS2):
+                banned_extras.update((
+                    Extra.STUD_MAGNET,
+                    Extra.CHARACTER_STUDS,
+                    Extra.SCORE_X2,
+                    Extra.SCORE_X4,
+                    Extra.SCORE_X6,
+                    Extra.SCORE_X8,
+                    Extra.SCORE_X10,
+                    Extra.POO_MONEY,
+                ))
+
         base_addr = CustomSaveDataSections.CUSTOM_SAVE_FLAGS2.get_address()
         extra_bits = ctx.read_bytes(base_addr, 6)
         for extra in Extra:
-            should_be_enabled = extra_bits[extra.get_shop_slot_byte()] & extra.get_shop_slot_mask() != 0
+            should_be_enabled = (
+                    extra not in banned_extras
+                    and extra_bits[extra.get_shop_slot_byte()] & extra.get_shop_slot_mask() != 0
+            )
             to_write = 1 if should_be_enabled else 0
             ctx.write_byte(extra.get_enabled_address(), to_write)
 
