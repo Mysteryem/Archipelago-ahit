@@ -962,10 +962,7 @@ class _NormalOptionsResolver:
             # Swap the min and max.
             min_required_count, max_required_count = max_required_count, min_required_count
             # Swap the options too, so that the spoiler will match.
-            self._deferred_adjust(
-                options.chapter_unlock_characters_min_count, min_required_count,
-                "The minimum chapter_unlock_characters count was greater than the maximum, the minimum and the"
-                " maximum have been swapped.")
+            self._deferred_adjust(options.chapter_unlock_characters_min_count, min_required_count)
             self._deferred_adjust(
                 options.chapter_unlock_characters_max_count, max_required_count,
                 "The maximum chapter_unlock_characters count was less than the minimum, the maximum and the"
@@ -980,10 +977,7 @@ class _NormalOptionsResolver:
                 # Swap the min and max.
                 min_extra_random_count, max_extra_random_count = max_extra_random_count, min_extra_random_count
                 # Swap the options too, so that the spoiler will match.
-                self._deferred_adjust(
-                    options.chapter_unlock_random_characters_extra_min_count, min_extra_random_count,
-                    "The minimum chapter_unlock_random_characters_extra count was greater than the maximum, the"
-                    " minimum and the maximum have been swapped.")
+                self._deferred_adjust(options.chapter_unlock_random_characters_extra_min_count, min_extra_random_count)
                 self._deferred_adjust(
                     options.chapter_unlock_random_characters_extra_max_count, max_extra_random_count,
                     "The maximum chapter_unlock_random_characters_extra count was less than the minimum, the"
