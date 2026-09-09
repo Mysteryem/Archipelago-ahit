@@ -4,8 +4,10 @@ from functools import reduce
 from operator import or_
 from typing import TYPE_CHECKING, Iterable
 
+import Utils
 from rule_builder.rules import Rule
 from BaseClasses import LocationProgressType, ItemClassification, Entrance, Location, Region, CollectionState
+from Fill import sweep_from_pool
 
 from .constants import (
     progression_deprioritized_skip_balancing,
@@ -14,7 +16,11 @@ from .constants import (
     RARE_AND_USEFUL_ABILITIES,
 )
 from .data.areas import Area
+from .data.characters import Character
+from .data.extras import Extra
+from .data.items import GenericCharacterData
 from .data.items.all_character_items import NORMAL_CHARACTER_TO_ITEM_DATA
+from .data.items.generic_items import NonDataItemName
 from .data.logic import CHAPTERS_BY_NUMBERS
 from .data.logic.extraction import (
     AbilityRequirements as AbilityRequirementsExtractor,
@@ -25,7 +31,6 @@ from .data.logic.extraction import (
 from .data.logic.types import Chapter
 from .items import (
     CHARACTERS_AND_VEHICLES_BY_NAME,
-    GenericCharacterData,
     LegoStarWarsTCSItem,
     EXTRAS_BY_NAME,
     PURCHASABLE_NON_POWER_BRICK_EXTRAS,
@@ -1157,9 +1162,13 @@ def prepare_extras(world: LegoStarWarsTCSWorld) -> tuple[list[str], list[str]]:
     return pool_required_extras, non_required_extras
 
 
-def _sort_for_preferred_extras(non_required_extras: list[str], world: LegoStarWarsTCSWorld) -> list[str]:
+def _split_for_preferred_extras(
+        non_required_extras: list[str],
+        world: LegoStarWarsTCSWorld
+) -> tuple[list[str], list[str]]:
     """
-    Sort preferred Extras to the front of `non_required_extras`. May run in-place on non_required_extras.
+    Split preferred Extras into a separate list from `non_required_extras`. May return `non_required_extras` as the
+    second return value if there are no preferred Extras.
 
     This is more complicated than it sounds because score multipliers are currently always progressive, and the player
     can specify how many score multipliers they prefer by using the non-progressive names of the score multipliers.
@@ -1169,7 +1178,7 @@ def _sort_for_preferred_extras(non_required_extras: list[str], world: LegoStarWa
     """
     preferred_extras = world.options.preferred_extras.value
     if not preferred_extras:
-        return non_required_extras
+        return [], non_required_extras
     # The score multipliers are in descending order because Score x10 means the player prefers all score multipliers
     # to be in the item pool
     individual_score_multipliers = [
@@ -1199,17 +1208,20 @@ def _sort_for_preferred_extras(non_required_extras: list[str], world: LegoStarWa
                             " present in `preferred_extras` because of the `not a.isdisjoint(b)` check, so the loop"
                             " should always break.")
 
+    # Sort preferred extras to the front by splitting the extras into two lists of preferred and non-preferred.
+    preferred_extras_list = []
+    non_preferred_extras_list = []
     if num_preferred_non_required_score_multipliers <= 0:
-        # Simply sort preferred extras to the front so that they get picked first.
-        non_required_extras.sort(key=lambda extra: -1 if extra in preferred_extras else 0)
-        return non_required_extras
+        # Simply split.
+        for item in non_required_extras:
+            if item in preferred_extras:
+                preferred_extras_list.append(item)
+            else:
+                non_preferred_extras_list.append(item)
     else:
         # Pick the Progressive Score Multipliers randomly for fairness.
         picked_preferred_score_multiplier_indices = world.random.sample(non_required_score_multiplier_indices,
                                                                         num_preferred_non_required_score_multipliers)
-        # Sort preferred extras to the front by splitting the extras into two lists of preferred and non-preferred.
-        preferred_extras_list = []
-        non_preferred_extras_list = []
         for i, item in enumerate(non_required_extras):
             if item in preferred_extras:
                 preferred_extras_list.append(item)
@@ -1217,7 +1229,21 @@ def _sort_for_preferred_extras(non_required_extras: list[str], world: LegoStarWa
                 preferred_extras_list.append(item)
             else:
                 non_preferred_extras_list.append(item)
-        return preferred_extras_list + non_preferred_extras_list
+    return preferred_extras_list, non_preferred_extras_list
+
+
+def _sort_for_preferred_extras(non_required_extras: list[str], world: LegoStarWarsTCSWorld) -> list[str]:
+    """
+    Sort preferred Extras to the front of `non_required_extras`. May run in-place on non_required_extras.
+
+    This is more complicated than it sounds because score multipliers are currently always progressive, and the player
+    can specify how many score multipliers they prefer by using the non-progressive names of the score multipliers.
+    :param non_required_extras: The names of all Extras items that are not required to be included in the item pool.
+    :param world: The world that is creating its item pool.
+    :return: A list of Extras item names, with preferred Extras sorted to the front.
+    """
+    preferred, non_preferred = _split_for_preferred_extras(non_required_extras, world)
+    return preferred + non_preferred
 
 
 def _get_additional_required_items(
@@ -1332,6 +1358,212 @@ def _balance_item_location_counts(
 
     return item_location_counts
 
+def _find_required_items_for_full_access(
+        world: LegoStarWarsTCSWorld,
+        item_creator: ItemCreator,
+        current_item_pool: list[LegoStarWarsTCSItem],
+        non_required_characters: list[GenericCharacterData],
+        non_required_extras: list[str],
+) -> list[LegoStarWarsTCSItem]:
+    """
+    Return a near-minimal list of items that need to be added to the multiworld item pool to ensure that all locations
+    are reachable.
+    :param world:
+    :param item_creator:
+    :param current_item_pool:
+    :param non_required_characters:
+    :param non_required_extras:
+    :return:
+    """
+    return _find_required_items_for_access(
+        world, item_creator, current_item_pool, non_required_characters, non_required_extras, world.get_locations()
+    )
+
+# This is not currently used because characters are currently always picked until all logically relevant abilities are
+# supplied by the pool, and almost all locations are always accessible with just the logically relevant abilities.
+def _find_required_items_for_minimal_access(
+        world: LegoStarWarsTCSWorld,
+        item_creator: ItemCreator,
+        current_item_pool: list[LegoStarWarsTCSItem],
+        non_required_characters: list[GenericCharacterData],
+        non_required_extras: list[str],
+) -> list[LegoStarWarsTCSItem]:
+    """
+    Return a near-minimal list of items that need to be added to the multiworld item pool to ensure that the goal is
+    reachable.
+    :param world:
+    :param item_creator:
+    :param current_item_pool:
+    :param non_required_characters:
+    :param non_required_extras:
+    :return:
+    """
+    # Goal location changes name depending on goal chapter if a goal chapter is set. For ease of compatibility, just
+    # iterate through the locations to find the "Victory" event.
+    # todo: Store the name of the victory location as an instance attribute on the world, or store the Victory event
+    #  item, whose `.location` can be used to get the victory location.
+    victory = [loc for loc in world.get_locations()
+               if (item := loc.item) is not None and item.name == "Victory" and item.is_event]
+    if len(victory) != 1:
+        raise Exception(f"Expected 1 Victory location, but got {victory}")
+    return _find_required_items_for_access(
+        world, item_creator, current_item_pool, non_required_characters, non_required_extras, victory
+    )
+
+def _find_required_items_for_access(
+        world: LegoStarWarsTCSWorld,
+        item_creator: ItemCreator,
+        current_item_pool: list[LegoStarWarsTCSItem],
+        available_characters: list[GenericCharacterData],
+        available_extras: list[str],
+        access_locations: Iterable[Location],
+) -> list[LegoStarWarsTCSItem]:
+    # - first produce a state with all the currently required items.
+    starting_pool_state = CollectionState(world.multiworld)
+    for item in current_item_pool:
+        if item.advancement:
+            starting_pool_state.collect(item, prevent_sweep=True)
+    # fixme: Score multipliers should already be determined as required?
+    # # - create and collect score multipliers as specified in item_creator.logically_relevant_item_counts because there
+    # # are no alternatives for rules that require score multipliers.
+    # new_pool_items = []
+    # score_multiplier_name = NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value
+    # relevant_multipliers = item_creator.logically_relevant_item_counts[score_multiplier_name]
+    # multipliers_to_create = starting_pool_state.count(score_multiplier_name, world.player) - relevant_multipliers
+    # for _ in range(multipliers_to_create):
+    #     score_multiplier_item = item_creator.create_item(score_multiplier_name)
+    #     new_pool_items.append(score_multiplier_item)
+    #     starting_pool_state.collect(score_multiplier_item, prevent_sweep=True)
+    # - sweep the state to use it as a base state
+    locations_to_sweep = {loc for loc in world.get_locations() if loc.advancement}
+    starting_pool_state.sweep_for_advancements(locations_to_sweep)
+    locations_to_sweep.difference_update(starting_pool_state.advancements)
+    # - find all unreachable locations, these will need to become reachable by items that will be added to the item
+    # pool, either directly, or indirectly by being able to pick up events
+    unreachable_with_starting_pool = [
+        loc for loc in access_locations
+        if (loc.advancement and loc not in starting_pool_state.advancements) or not loc.can_reach(starting_pool_state)
+    ]
+    if not unreachable_with_starting_pool:
+        # Every location is reachable already, so no additional items need to be created.
+        return []
+
+    required_locations_to_sweep = locations_to_sweep.intersection(access_locations)
+
+    # - filter out non-required extras/characters that are not in item_creator.logically_relevant_item_counts
+    # - extract preferred non-required extras and preferred non-required characters into their own list and shuffle
+    logically_relevant_counts = +item_creator.logically_relevant_item_counts
+    preferred_characters = world.options.preferred_characters.value
+    filtered_non_required_characters: list[str] = []
+    preferred_filtered_non_required_characters: list[str] = []
+    for character in available_characters:
+        character_name = character.name
+        if character_name in logically_relevant_counts and not starting_pool_state.has(character_name, world.player):
+            if character_name in preferred_characters:
+                preferred_filtered_non_required_characters.append(character_name)
+            else:
+                filtered_non_required_characters.append(character_name)
+    # Logically relevant Score Multipliers should always be required, so filter them out for simplicity.
+    filtered_available_extras = [
+        extra for extra in available_extras if extra != NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value
+    ]
+    preferred_non_required_extras, non_preferred_non_required_extras = _split_for_preferred_extras(
+        filtered_available_extras, world)
+    non_preferred_filtered_non_required_extras: list[str] = []
+    preferred_filtered_non_required_extras: list[str] = []
+    for extras, filtered_output in (
+            (preferred_non_required_extras, preferred_filtered_non_required_extras),
+            (non_preferred_non_required_extras, non_preferred_filtered_non_required_extras)
+    ):
+        for extra in extras:
+            if extra in logically_relevant_counts and not starting_pool_state.has(extra, world.player):
+                filtered_output.append(extra)
+    # - put the remaining non-required, logically relevant extras/characters into lists and shuffle
+    preferred_items = list(
+        map(item_creator.create_item,
+            preferred_filtered_non_required_characters + preferred_filtered_non_required_extras)
+    )
+    non_preferred_items = list(
+        map(item_creator.create_item, filtered_non_required_characters + non_preferred_filtered_non_required_extras)
+    )
+    world.random.shuffle(preferred_items)
+    world.random.shuffle(non_preferred_items)
+    # - combine both lists, putting the list of preferred items at the start, making the potential pool
+    potential_pool = preferred_items + non_preferred_items
+
+    # - assert that with all potential pool items, all locations are reachable
+    # Debug check to run on dev branch only.
+    if __debug__ and not Utils.is_frozen():
+        all_state = sweep_from_pool(starting_pool_state, potential_pool, locations_to_sweep)
+        still_unreachable = [loc for loc in unreachable_with_starting_pool if not loc.can_reach(all_state)]
+        if still_unreachable:
+            raise Exception(f"Item pool all-state could not reach locations: {sorted(still_unreachable)}")
+
+
+    # - collect one item at a time (and sweep uncollected pre-placed) until all locations are reached
+    #   (can see when to `locations_to_sweep_copy -= state.advancements` when state.advancements changes in length)
+    locations_maybe_still_unreachable = unreachable_with_starting_pool.copy()
+    sweep_locations_maybe_still_unreachable = locations_to_sweep.copy()
+    available_items = list(reversed(potential_pool))
+    current_pool_picks = []
+    collecting_state = starting_pool_state.copy()
+    while locations_maybe_still_unreachable and available_items:
+        loc = locations_maybe_still_unreachable.pop()
+        if not loc.can_reach(collecting_state):
+            item_to_collect = available_items.pop()
+            current_pool_picks.append(item_to_collect)
+            collecting_state.collect(item_to_collect, prevent_sweep=True)
+            # If there are still locations to sweep, sweep them.
+            if sweep_locations_maybe_still_unreachable:
+                advancements_before = len(collecting_state.advancements)
+                collecting_state.sweep_for_advancements(sweep_locations_maybe_still_unreachable)
+                # If the number of advancements changed by the sweep, then update the locations to sweep.
+                if len(collecting_state.advancements) != advancements_before:
+                    sweep_locations_maybe_still_unreachable.difference_update(collecting_state.advancements)
+            # Append the unreachable location back onto the end to try again next.
+            locations_maybe_still_unreachable.append(loc)
+        else:
+            # The location is reachable, so collect the item if there is one and it is advancement.
+            placed_item = loc.item
+            if placed_item is not None and placed_item.advancement:
+                collecting_state.collect(placed_item, prevent_sweep=True, location=loc)
+    # The state has reached all pre-placed advancements, so the expected count of advancements can be compared when
+    # all advancements are required to be reached.
+    all_advancements_required = required_locations_to_sweep == locations_to_sweep
+    expected_all_advancements_count = len(collecting_state.advancements)
+
+    # - with only the items that were collected in order to reach all locations, begin a binary search for items that
+    # are required, 'peeling off' items towards the end of the list first so that items towards the front (those which
+    # are preferred by the player) are most likely to be picked as required.
+    # todo: Can we create spheres, then copy the code from my playthrough calculation update that allows carried over
+    #  locations? The big difference is that most of the locations won't have items placed at them.
+    # todo: Binary search to eliminate items from being required might be faster.
+    required_pool_picks = []
+    non_advancements_to_check_reachable = [loc for loc in unreachable_with_starting_pool if not loc.advancement]
+    while current_pool_picks:
+        test_skip = current_pool_picks.pop()
+        test_state = sweep_from_pool(starting_pool_state, current_pool_picks + required_pool_picks, locations_to_sweep)
+        if all_advancements_required and len(test_state.advancements) != expected_all_advancements_count:
+            # One of the pre-placed advancements was not reachable, so the item is required to be in the item pool.
+            required_pool_picks.append(test_skip)
+        for loc in non_advancements_to_check_reachable:
+            if not loc.can_reach(test_state):
+                # One of the non-advancement locations was not reachable
+                required_pool_picks.append(test_skip)
+                break
+
+    # - assert that with all the items to add to the pool, all locations are reachable
+    # Debug check to run on dev branch only.
+    if __debug__ and not Utils.is_frozen():
+        all_state = sweep_from_pool(starting_pool_state, required_pool_picks, locations_to_sweep)
+        still_unreachable = [loc for loc in unreachable_with_starting_pool if not loc.can_reach(all_state)]
+        if still_unreachable:
+            raise Exception(f"Item pool full-accessibility-satisfied-state could not reach locations:"
+                            f" {sorted(still_unreachable)}")
+
+    return required_pool_picks
+
+
 
 def _create_pool(
         world: LegoStarWarsTCSWorld,
@@ -1391,15 +1623,59 @@ def _create_pool(
     for _ in range(world.minikit_bundle_count):
         add_to_pool(item_creator.create_item(world.minikit_bundle_name))
 
-    # Create as many non-required characters as there are reserved character locations.
-    required_excludable_count = item_location_counts.required_excludable
+    # Shuffle to ensure there is randomness when picking characters/extras.
     world.random.shuffle(non_required_characters)
+    world.random.shuffle(non_required_extras)
+
+    # The abilities to reach every location are determined earlier, and required Score Multipliers and characters
+    # required to unlock chapters are also determined earlier. However, it is possible that a location is not accessible
+    # with just abilities (and characters to unlock chapters), so any additional characters/extras necessary to reach
+    # these locations need to be added to the item pool.
+    # todo: Try finding all item pool required items this way; it might be too slow.
+    required_for_full_access = _find_required_items_for_full_access(
+        world, item_creator, item_pool, non_required_characters, non_required_extras)
+    if remaining_to_create < len(required_for_full_access):
+        world.option_error("There was not enough space in the item pool to ensure that all locations are reachable."
+                           " Enable more locations or reduce the requirements needed to access levels.")
+    for item in required_for_full_access:
+        add_to_pool(item)
+
+    required_for_full_access_item_names = {item.name for item in required_for_full_access}
+    # Characters and Extras (aside from Progressive Score Multipliers) are unique items.
+    assert len(required_for_full_access_item_names) == len(required_for_full_access), \
+        "No duplicates should be in the required items for full accessibility"
+
+    # todo: There might be a need to subtract from Extra reserved counts if too many characters are needed, or vice
+    #  versa.
+    # item_deficit = 0
+    reserved_non_required_character_count = item_location_counts.reserved_non_required_character
+    before_length = len(non_required_characters)
+    non_required_characters = [
+        data for data in non_required_characters if data.name not in required_for_full_access_item_names
+    ]
+    reserved_non_required_character_count -= (before_length - len(non_required_characters))
+    if reserved_non_required_character_count < 0:
+        # item_deficit += -reserved_non_required_character_count
+        reserved_non_required_character_count = 0
+
+    reserved_non_required_extras_count = item_location_counts.reserved_non_required_extra
+    before_length = len(non_required_extras)
+    non_required_extras = [extra for extra in non_required_extras if extra not in required_for_full_access_item_names]
+    reserved_non_required_extras_count -= (before_length - len(non_required_extras))
+    if reserved_non_required_extras_count < 0:
+        # item_deficit += -reserved_non_required_extras_count
+        reserved_non_required_extras_count = 0
+
+
     # Sort preferred characters first so that they are picked in preference.
     preferred_characters = world.options.preferred_characters.value
     if preferred_characters:
         non_required_characters.sort(key=lambda char: -1 if char.name in preferred_characters else 0)
-    picked_chars = non_required_characters[:item_location_counts.reserved_non_required_character]
-    leftover_chars = non_required_characters[item_location_counts.reserved_non_required_character:]
+
+    # Create as many non-required characters as there are reserved character locations.
+    required_excludable_count = item_location_counts.required_excludable
+    picked_chars = non_required_characters[:reserved_non_required_character_count]
+    leftover_chars = non_required_characters[reserved_non_required_character_count:]
     for char in picked_chars:
         item = item_creator.create_item(char.name)
         add_to_pool(item)
@@ -1407,12 +1683,11 @@ def _create_pool(
             required_excludable_count -= 1
 
     # Create as many non-required extras as there are reserved power brick locations.
-    world.random.shuffle(non_required_extras)
     # Sort preferred Extras first so that they are picked in preference.
     non_required_extras = _sort_for_preferred_extras(non_required_extras, world)
 
-    picked_extras = non_required_extras[:item_location_counts.reserved_non_required_extra]
-    leftover_extras = non_required_extras[item_location_counts.reserved_non_required_extra:]
+    picked_extras = non_required_extras[:reserved_non_required_extras_count]
+    leftover_extras = non_required_extras[reserved_non_required_extras_count:]
     for extra in picked_extras:
         item = item_creator.create_item(extra)
         add_to_pool(item)
