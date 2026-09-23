@@ -42,8 +42,8 @@ def chapters_iter() -> Iterable[Chapter]:
         yield from episode
 
 
-def chapters_test(test_func: Callable[[TestCase, Chapter], None]):
-    def test_chapters(self: TestCase):
+def chapters_test(test_func: "Callable[[TestEpisodes, Chapter], None]") -> "Callable[[TestEpisodes], None]":
+    def test_chapters(self: "TestEpisodes"):
         for chapter in chapters_iter():
             with self.subTest(chapter=(chapter.episode_number, chapter.chapter_number), chapter_name=chapter.name):
                 test_func(self, chapter)
