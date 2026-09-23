@@ -33,6 +33,8 @@ BATTLE_OVER_CORUSCANT = Chapter(
                     # Slave 1 just barely fits through the ship later in the level. To reduce confusion with newer
                     # players, and to potentially help with achieving True Jedi, any vehicle other than Slave 1 is
                     # expected for the base logic.
+                    # FIXME: This causes base logic to pick a TIE or TOW vehicle when starting with 3-1 because the rule
+                    #  optimises to `HasAnyAbility(VEHICLE_TIE | VEHICLE_TOW) or HasAny(*<other non-Slave 1-vehicles>)`
                     base=HasAbilityExceptCharacters(IS_A_VEHICLE, Character.SLAVE_1),
                     normal=True_(),
                 ),

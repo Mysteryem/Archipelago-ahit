@@ -149,6 +149,8 @@ DEATH_STAR_ESCAPE = helper.make_chapter(
                 R_AFTER_TOWER_TOP_IMPERIAL_DOOR,
                 logic_options(
                     base=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT),
+                    # todo: Allow triple jump and swap to Mouse Droid to go all the way around the door on the right
+                    #  side where the grapple swinging room would be if it was within the same level.
                     # Allow Yoda clipping over the door.
                     hard=HasAnyAbilities(IMPERIAL | CAN_WEAR_HAT) | CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS,
                 )

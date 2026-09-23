@@ -86,6 +86,7 @@ COUNT_DOOKU = Chapter(
                     # Allow jetpack hover across from the platform with the door release levers.
                     HasAllAbilities(CAN_DOUBLE_JUMP | JETPACK)
                 ),
+                # todo: There is a character swap upwarp that can grab this minikit.
                 moderate=Or(
                     # Allow triple jump.
                     HasAnyAbilities(HIGH_JUMP | JEDI),

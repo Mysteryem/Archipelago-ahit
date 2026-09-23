@@ -278,6 +278,8 @@ DISCOVERY_ON_KAMINO = Chapter(
                             HasAllAbilities(JEDI | ASTROMECH_PANEL),
                             CAN_YODA_CLIP,
                         ),
+                        # todo?: Drop in warp: https://youtu.be/W66qxVkOaPA?t=1768, I couldn't get it to work in Free
+                        #  Play, but maybe I'm doing it wrong.
                     ),
                 ),
                 new_level=Level.KAMINO_E,

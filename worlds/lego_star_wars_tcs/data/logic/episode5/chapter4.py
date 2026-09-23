@@ -410,6 +410,8 @@ DAGOBAH = helper.make_chapter(
                     # Allow skipping activating the platforms by just knowing where the platforms are and jumping across
                     # the swamp.
                     hard=Or(
+                        # todo: It seems Yoda can cross, by carefully picking which platforms to land on?
+                        #  see https://www.twitch.tv/videos/2822300963?t=1h5m10s
                         # Yoda is too short to double jump across without activating the platforms (he drowns), so this
                         # CAN_DOUBLE_JUMP logic is kept.
                         HasAllAbilities(CAN_BUILD_BRICKS | CAN_DOUBLE_JUMP),

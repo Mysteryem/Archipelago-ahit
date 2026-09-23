@@ -113,6 +113,7 @@ NEGOTIATIONS = Chapter(
                     # If you're swapping
                     hard=Or(
                         HasAbility(ASTROMECH_PANEL),
+                        # todo: Could you Wall Climb here? That would allow Jar Jar + Tarpals.
                         And(
                             Character.GENERAL_GRIEVOUS.has(),
                             HasAnyCharacterExcept(
