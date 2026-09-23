@@ -238,6 +238,11 @@ class TestEpisodes(TestCase):
                 scan_for_empty_and(rule)
 
     def test_rules_resolve(self):
+        # PyCharm sees that the ClassVar is not assigned, or something, and assumes it is actually an instance
+        # attribute, and then complains about access to a generic instance attribute from the class.
+        # Technically this is a bug in core AP because TypeVars cannot be used in ClassVars because it makes no sense
+        # when each instance of a generic class can have a different generic type.
+        # noinspection PyTypeChecker
         logic_difficulties = [
             LogicDifficulty(v) for v in LogicDifficulty.name_lookup.keys()
         ]
