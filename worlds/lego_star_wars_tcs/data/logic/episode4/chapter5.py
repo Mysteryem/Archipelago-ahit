@@ -172,7 +172,7 @@ DEATH_STAR_ESCAPE = helper.make_chapter(
                     # to passive characters, or have both players die simultaneously.
                     # If this Stormtrooper is killed, reinforcements appear to continue arriving until the Grapple point
                     # is build, so avoid building it until you get this trick, if needed.
-                    moderate=HasAbility(GRAPPLE),
+                    moderate=CAN_GRAPPLE,
                 ),
             ),
         ),
