@@ -14,7 +14,7 @@ from ..data.logic.types import Chapter
 
 from ..constants import GAME_NAME
 from ..items import CHARACTERS_AND_VEHICLES_BY_NAME
-from ..options import LogicDifficulty
+from ..options import LogicDifficulty, get_option_name
 
 
 _DUMP_EXTRACTION_RULE_TO_FILE = False
@@ -249,25 +249,20 @@ class TestEpisodes(TestCase):
         world_types = [AutoWorldRegister.world_types[GAME_NAME]] * len(logic_difficulties)
         options = [
             {
-                "logic_difficulty": difficulty.value
+                get_option_name(LogicDifficulty): difficulty.value,
             } for difficulty in logic_difficulties
         ]
 
-        # There is no region creation code currently, so CanReachRegion rules will fail with a KeyError.
-        ignore_key_errors = True
-
+        # Only bother with running up to `generate_early` because the rules for each chapter will be grabbed and
+        # resolved manually. CanReachRegion rules don't actually need their objects to exist because the resolved rules
+        # only store the names. CanReachLocation/CanReachEntrance rules do however, but are currently unused, so test
+        # performance can be increased by performing fewer generation steps.
         mw = setup_multiworld(world_types, steps=("generate_early",), seed=None, options=options)
         for world, logic_difficulty in zip(mw.worlds.values(), logic_difficulties):
             def test_function(_self, chapter: Chapter):
                 for owner_name, rule in self.chapter_rule_gen(chapter):
                     with self.subTest(rule=owner_name):
-                        if ignore_key_errors:
-                            try:
-                                rule.resolve(world)
-                            except KeyError as ex:
-                                self.skipTest(f"Missing region: {ex}")
-                        else:
-                            rule.resolve(world)
+                        rule.resolve(world)
 
             with self.subTest(difficulty=logic_difficulty.current_option_name):
                 chapters_test(test_function)(self)

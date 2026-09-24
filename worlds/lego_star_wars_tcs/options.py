@@ -1931,7 +1931,7 @@ _OPTION_TYPE_TO_ATTRIBUTE: Mapping[type[Option[Any]], str] = {
     v: k for k, v in LegoStarWarsTCSOptions.type_hints.items()
 }
 
-def get_attribute_name(o: type[Option[Any]]) -> str:
+def get_option_name(o: type[Option[Any]]) -> str:
     return _OPTION_TYPE_TO_ATTRIBUTE[o]
 
 
