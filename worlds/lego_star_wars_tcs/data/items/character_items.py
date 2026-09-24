@@ -105,6 +105,11 @@ class CharacterData(GenericCharacterData):
             abilities |= JEDI
             assert self.alignment is Alignment.EVIL, f"{self.name} is a Sith, but is not EVIL alignment."
 
+        # All Jedi/Sith, except Luke Skywalker (Dagobah) are trained Jedi that can lift the X-Wing at the end of
+        # 5-4 (Dagobah).
+        if JEDI in abilities and self.character is not Character.LUKE_SKYWALKER_DAGOBAH:
+            abilities |= TRAINED_JEDI
+
         # All characters that can Grapple happen to have Blasters.
         if GRAPPLE in abilities:
             abilities |= BLASTER

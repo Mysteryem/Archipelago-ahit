@@ -844,10 +844,7 @@ DAGOBAH = helper.make_chapter(
         R_FINAL_AREA_ACROSS_BRIDGE: (
             ExitData(
                 "Chapter Completion",
-                And(
-                    HasAbility(ASTROMECH_PANEL),
-                    HasAbilityExceptCharacters(JEDI, Character.LUKE_SKYWALKER_DAGOBAH),
-                ),
+                HasAllAbilities(ASTROMECH_PANEL | TRAINED_JEDI),
             ),
         ),
     },
