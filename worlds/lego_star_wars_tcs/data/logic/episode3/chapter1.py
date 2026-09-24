@@ -1,11 +1,10 @@
-from ..rules import HasAbility, HasAbilityExceptCharacters, True_
+from ..rules import HasAbility, True_
 from ..types import minikit_data, ExitData, Chapter, LocationData
 from ..option_filters import logic_options
 
 from ...areas import Area
-from ...characters import Character
 
-from ....character_ability import IS_A_VEHICLE, VEHICLE_BLASTER
+from ....character_ability import IS_A_VEHICLE, VEHICLE_BLASTER, FITS_EASILY_THROUGH_VENATOR
 
 NAME = "Battle Over Coruscant"
 
@@ -30,12 +29,15 @@ BATTLE_OVER_CORUSCANT = Chapter(
             ExitData(
                 R_AFTER_SECOND_DESTROYABLE_SHIP,
                 logic_options(
-                    # Slave 1 just barely fits through the ship later in the level. To reduce confusion with newer
-                    # players, and to potentially help with achieving True Jedi, any vehicle other than Slave 1 is
+                    # Slave 1 just barely fits through the ship later in the level. Imperial Shuttle is also a little
+                    # easy to accidentally crash in the same place. To reduce confusion with newer players, and to
+                    # potentially help with achieving True Jedi, any vehicle with max height no more than 2.5 is
                     # expected for the base logic.
-                    # FIXME: This causes base logic to pick a TIE or TOW vehicle when starting with 3-1 because the rule
-                    #  optimises to `HasAnyAbility(VEHICLE_TIE | VEHICLE_TOW) or HasAny(*<other non-Slave 1-vehicles>)`
-                    base=HasAbilityExceptCharacters(IS_A_VEHICLE, Character.SLAVE_1),
+                    # This excludes:
+                    # - Slave 1 (3.2 height)
+                    # - Imperial Shuttle (2.55 height)
+                    # TIE Fighter (and variations) and Millennium Falcon are the next tallest, at 2.0.
+                    base=HasAbility(FITS_EASILY_THROUGH_VENATOR),
                     normal=True_(),
                 ),
             ),
