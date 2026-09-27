@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from ..extras import Extra
 
-from . import EXTRA_ITEMS_BASE, GenericItemData, ItemType
+from . import EXTRA_ITEMS_BASE, GenericItemData
 
 
 @dataclass(frozen=True)
