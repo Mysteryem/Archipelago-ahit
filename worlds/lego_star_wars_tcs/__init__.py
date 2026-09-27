@@ -38,6 +38,7 @@ from .items import (
     ITEM_DATA_BY_NAME,
     CHARACTERS_AND_VEHICLES_BY_NAME,
     USEFUL_NON_PROGRESSION_CHARACTERS,
+    TOO_LOGICALLY_POWERFUL_CHARACTERS,
     MINIKITS_BY_COUNT,
     MINIKITS_BY_NAME,
     EXTRAS_BY_NAME,
@@ -354,6 +355,14 @@ class LegoStarWarsTCSWorld(World):
                 classification &= ~ItemClassification.useful
                 # And add progression classification.
                 classification |= ItemClassification.progression
+
+            # Some characters are really logically powerful so should be Prog+Useful, or at least Useful if they are not
+            # Progression. It is desirable to mark them as Skip Balancing to disallow progression balancing from moving
+            # them earlier.
+            if name in TOO_LOGICALLY_POWERFUL_CHARACTERS:
+                classification |= ItemClassification.useful
+                if ItemClassification.progression in classification:
+                    classification |= ItemClassification.skip_balancing
         else:
             if name in MINIKITS_BY_NAME:
                 # A goal macguffin.

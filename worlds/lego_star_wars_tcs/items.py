@@ -67,6 +67,18 @@ USEFUL_NON_PROGRESSION_CHARACTERS: set[str] = {
 }
 """Characters that should always have at least Useful Classification."""
 
+TOO_LOGICALLY_POWERFUL_CHARACTERS: set[str] = {
+    NON_VEHICLE_CHARACTER_TO_ITEM_DATA[c].name for c in
+    (
+        # Can access Bounty Hunter, Astromech and Protocol panels, as well as the usual benefits of being a Bounty
+        # Hunter, being able to jump, ride vehicles, shoot, melee and grapple.
+        Character.FOUR_LOM,
+        Character.IG_88,
+    )
+}
+"""Characters that should always have Useful Classification. When they are logically relevant they will be
+Progression + Useful + Skip Balancing."""
+
 
 ITEM_DATA_BY_NAME: Mapping[str, GenericItemData] = {data.name: data for data in ITEM_DATA}
 ITEM_DATA_BY_ID: Mapping[int, GenericItemData] = cast(dict[int, GenericItemData],
