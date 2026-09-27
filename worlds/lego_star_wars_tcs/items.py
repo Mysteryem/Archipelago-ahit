@@ -43,25 +43,29 @@ ITEM_DATA: list[GenericItemData] = [
 ]
 
 
-USEFUL_NON_PROGRESSION_CHARACTERS: set[Character] = {
-    # There is currently no Ghost logic for bypassing gas and other hazards, so give the Ghosts at least Useful
-    # classification.
-    Character.BEN_KENOBI_GHOST,
-    Character.ANAKIN_SKYWALKER_GHOST,
-    Character.YODA_GHOST,
-    # There is currently no glitch logic for the glitchy mess that is Yoda, so ensure Yoda is never excluded by making
-    # him Useful.
-    Character.YODA,
-    # The fastest character (1.8).
-    Character.DROIDEKA,
-    # The second-fastest character (1.5).
-    Character.WATTO,
-    # The third-fastest character when Super Gonk is active (1.44).
-    Character.GONK_DROID,
-    # Fastest vehicles.
-    Character.ANAKINS_POD,
-    Character.SEBULBAS_POD,
+USEFUL_NON_PROGRESSION_CHARACTERS: set[str] = {
+    NON_VEHICLE_CHARACTER_TO_ITEM_DATA[c].name for c in
+    (
+        # Ghosts are invincible and untargetable.
+        Character.BEN_KENOBI_GHOST,
+        Character.ANAKIN_SKYWALKER_GHOST,
+        Character.YODA_GHOST,
+        # Yoda is fast when jumping, and is usable in many tricks in higher logic difficulties.
+        Character.YODA,
+        # The fastest character (1.8).
+        Character.DROIDEKA,
+        # The second-fastest characters (1.5), though a bit clunky to use since they cannot jump properly, and either cannot
+        # attack at all, or have a very slow attack.
+        Character.WATTO,
+        Character.GEONOSIAN,
+        # The third-fastest character when Super Gonk is active (1.44), also has good jump height with Super Gonk active.
+        Character.GONK_DROID,
+        # Fastest vehicles.
+        Character.ANAKINS_POD,
+        Character.SEBULBAS_POD,
+    )
 }
+"""Characters that should always have at least Useful Classification."""
 
 
 ITEM_DATA_BY_NAME: Mapping[str, GenericItemData] = {data.name: data for data in ITEM_DATA}
