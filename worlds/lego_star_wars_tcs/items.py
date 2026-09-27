@@ -7,10 +7,11 @@ from .data.areas import Area
 from .data.characters import Character
 from .data.extras import Extra
 from .data.items import GenericItemData, GenericCharacterData
-from .data.items.character_items import NORMAL_CHARACTER_DATA, CharacterData, NON_VEHICLE_CHARACTER_TO_ITEM_DATA
+from .data.items.all_character_items import CHARACTER_TO_ITEM_DATA
+from .data.items.character_items import NORMAL_CHARACTER_DATA, CharacterData
 from .data.items.extra_items import EXTRA_DATA, ExtraData
 from .data.items.generic_items import GENERIC_DATA, MinikitItemData, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
-from .data.items.vehicle_items import VEHICLE_DATA, ALL_VEHICLE_CHARACTER_TO_ITEM_DATA
+from .data.items.vehicle_items import VEHICLE_DATA
 
 
 ItemType = Literal["Character", "Vehicle", "Extra", "Generic", "Minikit"]
@@ -44,7 +45,7 @@ ITEM_DATA: list[GenericItemData] = [
 
 
 USEFUL_NON_PROGRESSION_CHARACTERS: set[str] = {
-    NON_VEHICLE_CHARACTER_TO_ITEM_DATA[c].name for c in
+    CHARACTER_TO_ITEM_DATA[c].name for c in
     (
         # Ghosts are invincible and untargetable.
         Character.BEN_KENOBI_GHOST,
@@ -68,7 +69,7 @@ USEFUL_NON_PROGRESSION_CHARACTERS: set[str] = {
 """Characters that should always have at least Useful Classification."""
 
 TOO_LOGICALLY_POWERFUL_CHARACTERS: set[str] = {
-    NON_VEHICLE_CHARACTER_TO_ITEM_DATA[c].name for c in
+    CHARACTER_TO_ITEM_DATA[c].name for c in
     (
         # Can access Bounty Hunter, Astromech and Protocol panels, as well as the usual benefits of being a Bounty
         # Hunter, being able to jump, ride vehicles, shoot, melee and grapple.
@@ -89,10 +90,6 @@ PURCHASABLE_NON_POWER_BRICK_EXTRAS: tuple[ExtraData, ...] = tuple(
     [extra for extra in EXTRAS_BY_NAME.values()
      if extra.extra.purchase_cost is not None and extra.extra not in _POWER_BRICK_EXTRAS]
 )
-ALL_CHARACTERS_TO_ITEMS: Mapping[Character, GenericCharacterData] = {
-    **NON_VEHICLE_CHARACTER_TO_ITEM_DATA,
-    **ALL_VEHICLE_CHARACTER_TO_ITEM_DATA,
-}
 CHARACTERS_AND_VEHICLES_BY_NAME: Mapping[str, GenericCharacterData] = {
     data.name: data for data in ITEM_DATA if isinstance(data, GenericCharacterData)}
 LOGIC_CONSIDERED_CHARACTERS = {
