@@ -1,9 +1,9 @@
 from typing import Mapping, Sequence
 
 from .constants import CharacterAbility
+from .data.items import GenericCharacterData
+from .data.items.all_character_items import SENDABLE_CHARACTER_TO_ITEM_DATA
 from .items import (
-    CHARACTERS_AND_VEHICLES_BY_NAME,
-    GenericCharacterData,
     EXTRAS_BY_NAME,
     MINIKITS_BY_COUNT,
     CHAPTER_UNLOCKS,
@@ -11,15 +11,16 @@ from .items import (
 from .levels import CHAPTER_AREAS
 
 
-def _ability_to_character() -> Mapping[CharacterAbility, Sequence[GenericCharacterData]]:
+def _ability_to_sendable_character() -> Mapping[CharacterAbility, Sequence[GenericCharacterData]]:
     ability_to_character: dict[CharacterAbility, list[GenericCharacterData]] = {}
-    for char in CHARACTERS_AND_VEHICLES_BY_NAME.values():
+    for char in SENDABLE_CHARACTER_TO_ITEM_DATA.values():
         for ability in char.abilities:
             ability_to_character.setdefault(ability, []).append(char)
     return {k: tuple(v) for k, v in ability_to_character.items()}
 
 
-ABILITY_TO_CHARACTERS: Mapping[CharacterAbility, Sequence[GenericCharacterData]] = _ability_to_character()
+ABILITY_TO_SENDABLE_CHARACTERS: Mapping[CharacterAbility, Sequence[GenericCharacterData]]
+ABILITY_TO_SENDABLE_CHARACTERS = _ability_to_sendable_character()
 # ABILITY_TO_CHARACTER_NAMES: Mapping[CharacterAbility, Sequence[str]] = {
 #     ability: tuple(char.name for char in characters) for ability, characters in ABILITY_TO_CHARACTERS.items()
 # }
@@ -34,11 +35,11 @@ REVERSE_READABLE_ABILITY_TO_ABILITY = {ability_to_readable_group(ability): abili
 
 ITEM_GROUPS: dict[str, set[str]] = {
     **{ability_to_readable_group(ability): {c.name for c in characters if c.is_sendable}
-       for ability, characters in ABILITY_TO_CHARACTERS.items()},
-    "Non-Vehicle Characters": {c.name for c in CHARACTERS_AND_VEHICLES_BY_NAME.values()
-                               if c.item_type == "Character" and c.is_sendable},
-    "Vehicle Characters": {v.name for v in CHARACTERS_AND_VEHICLES_BY_NAME.values()
-                           if v.item_type == "Vehicle" and v.is_sendable},
+       for ability, characters in ABILITY_TO_SENDABLE_CHARACTERS.items()},
+    "Non-Vehicle Characters": {c.name for c in SENDABLE_CHARACTER_TO_ITEM_DATA.values()
+                               if c.item_type == "Character"},
+    "Vehicle Characters": {v.name for v in SENDABLE_CHARACTER_TO_ITEM_DATA.values()
+                           if v.item_type == "Vehicle"},
     **{
         f"{chapter.short_name} Story Unlock Characters": set(chapter.character_requirements)
         for chapter in CHAPTER_AREAS
@@ -47,7 +48,7 @@ ITEM_GROUPS: dict[str, set[str]] = {
         f"{chapter.short_name} Purchase Unlock Characters": set(chapter.alt_character_requirements)
         for chapter in CHAPTER_AREAS if chapter.alt_character_requirements
     },
-    "Characters": {c.name for c in CHARACTERS_AND_VEHICLES_BY_NAME.values() if c.is_sendable},
+    "Characters": {c.name for c in SENDABLE_CHARACTER_TO_ITEM_DATA.values()},
     "Extras": {e.name for e in EXTRAS_BY_NAME.values() if e.is_sendable} | {"Progressive Score Multiplier"},
     "Minikits": {m.name for m in MINIKITS_BY_COUNT.values() if m.is_sendable},
     "Episode Unlocks": {f"Episode {i} Unlock" for i in "123456"},
