@@ -20,9 +20,10 @@ from Options import (
 )
 
 from .constants import AP_WORLD_VERSION
+from .data.items.all_character_items import SENDABLE_CHARACTER_TO_ITEM_DATA
 from .levels import BOSS_UNIQUE_NAME_TO_CHAPTER, VEHICLE_CHAPTER_SHORTNAMES, EPISODE_TO_CHAPTER_AREAS, CHAPTER_AREAS
 from .locations import LEVEL_SHORT_NAMES_SET
-from .items import CHARACTERS_AND_VEHICLES_BY_NAME, EXTRAS_BY_NAME
+from .items import EXTRAS_BY_NAME
 from .item_groups import ITEM_GROUPS
 
 
@@ -1195,7 +1196,7 @@ class PreferredCharacters(OptionSet):
     """
     display_name = "Preferred Characters"
     rich_text_doc = True
-    valid_keys = {char.name for char in CHARACTERS_AND_VEHICLES_BY_NAME.values() if char.is_sendable}
+    valid_keys = {char.name for char in SENDABLE_CHARACTER_TO_ITEM_DATA.values()}
     default = frozenset({
         # Highest base movement speed or non-Extra-Toggle characters, lots of glitches.
         "Droideka",
