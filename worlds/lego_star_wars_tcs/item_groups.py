@@ -3,8 +3,9 @@ from typing import Mapping, Sequence
 from .constants import CharacterAbility
 from .data.items import GenericCharacterData
 from .data.items.all_character_items import SENDABLE_CHARACTER_TO_ITEM_DATA
+from .data.items.extra_items import EXTRA_DATA
+from .data.items.generic_items import NonDataItemName
 from .items import (
-    EXTRAS_BY_NAME,
     MINIKITS_BY_COUNT,
     CHAPTER_UNLOCKS,
 )
@@ -49,7 +50,7 @@ ITEM_GROUPS: dict[str, set[str]] = {
         for chapter in CHAPTER_AREAS if chapter.alt_character_requirements
     },
     "Characters": {c.name for c in SENDABLE_CHARACTER_TO_ITEM_DATA.values()},
-    "Extras": {e.name for e in EXTRAS_BY_NAME.values() if e.is_sendable} | {"Progressive Score Multiplier"},
+    "Extras": {e.name for e in EXTRA_DATA if e.is_sendable} | {NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value},
     "Minikits": {m.name for m in MINIKITS_BY_COUNT.values() if m.is_sendable},
     "Episode Unlocks": {f"Episode {i} Unlock" for i in "123456"},
     "Chapter Unlocks": {data.name for data in CHAPTER_UNLOCKS},
