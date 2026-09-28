@@ -94,3 +94,7 @@ GENERIC_DATA_BY_NAME: dict[str, GenericItemData] = {
 MINIKITS_BY_BUNDLE_SIZE: dict[int, MinikitItemData] = {
     data.bundle_size: data for data in GENERIC_DATA if isinstance(data, MinikitItemData)
 }
+
+MINIKITS_BY_NAME: dict[str, MinikitItemData] = {
+    data.name: data for data in MINIKITS_BY_BUNDLE_SIZE.values()
+}

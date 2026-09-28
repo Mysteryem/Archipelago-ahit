@@ -86,9 +86,6 @@ ITEM_DATA_BY_ID: Mapping[int, GenericItemData] = cast(dict[int, GenericItemData]
                                                       {data.code: data for data in ITEM_DATA if data.is_sendable})
 CHARACTERS_AND_VEHICLES_BY_NAME: Mapping[str, GenericCharacterData] = {
     data.name: data for data in ITEM_DATA if isinstance(data, GenericCharacterData)}
-GENERIC_BY_NAME: Mapping[str, GenericItemData] = {data.name: data for data in ITEM_DATA if data.item_type == "Generic"}
-MINIKITS_BY_NAME: Mapping[str, MinikitItemData] = {data.name: data for data in ITEM_DATA
-                                                   if isinstance(data, MinikitItemData)}
 NON_VEHICLE_CHARACTER_BY_INDEX: Mapping[Character, CharacterData] = {char.character: char
                                                                for char in CHARACTERS_AND_VEHICLES_BY_NAME.values()
                                                                if isinstance(char, CharacterData)}

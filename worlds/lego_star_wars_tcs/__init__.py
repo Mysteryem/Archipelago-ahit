@@ -28,6 +28,7 @@ from .constants import (
 )
 from .data.areas import PURCHASABLE_NON_POWER_BRICK_EXTRAS
 from .data.extras import Extra
+from .data.items.generic_items import MINIKITS_BY_NAME
 from .items import (
     ITEM_NAME_TO_ID,
     LegoStarWarsTCSItem,
@@ -36,7 +37,6 @@ from .items import (
     ITEM_DATA_BY_NAME,
     USEFUL_NON_PROGRESSION_CHARACTERS,
     TOO_LOGICALLY_POWERFUL_CHARACTERS,
-    MINIKITS_BY_NAME,
     SUPER_GONK_ITEMS,
     SUPER_GONK_DROID_ABILITIES_VALUE,
 )
