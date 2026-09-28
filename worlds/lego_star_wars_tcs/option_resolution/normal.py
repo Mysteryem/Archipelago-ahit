@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Generic, TypeVar, Any, Mapping, Iterable
 
 from Options import Option, OptionError
 
-from ..items import MINIKITS_BY_COUNT
+from ..data.items.generic_items import MINIKITS_BY_BUNDLE_SIZE
 from ..levels import (
     BOSS_UNIQUE_NAME_TO_CHAPTER,
     VEHICLE_CHAPTER_SHORTNAMES,
@@ -751,7 +751,7 @@ class _NormalOptionsResolver:
         return self._all_episodes_character_purchase_requirements
 
     def _resolve_minikit_options(self, enabled_non_goal_chapter_count: int, bundle_size: int) -> tuple[str, int, int]:
-        minikit_bundle_name = MINIKITS_BY_COUNT[bundle_size].name
+        minikit_bundle_name = MINIKITS_BY_BUNDLE_SIZE[bundle_size].name
         # todo?: Set self.available_minikits = 0 when self.options.minikit_goal_amount.value == 0 to remove minikits
         #  from the item pool?
         if self._minikit_goal_amount != 0 or self._enable_minikit_locations:

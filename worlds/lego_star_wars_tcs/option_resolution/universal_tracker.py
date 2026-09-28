@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from Options import Option
 
-from ..items import MINIKITS_BY_COUNT
+from ..data.items.generic_items import MINIKITS_BY_BUNDLE_SIZE
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
 from ..options import LegoStarWarsTCSOptions, OnlyUniqueBossesCountTowardsGoal, GoalChapterLocationsMode
 from ..slot_data import TCSSlotDataOptions, TCSDirectSlotDataOptions
@@ -86,7 +86,7 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, slot_data: TCSS
         # There are no minikits if the locations are not enabled and the goal does not require minikits.
         self.available_minikits = 0
     bundle_size = self.options.minikit_bundle_size.value
-    self.minikit_bundle_name = MINIKITS_BY_COUNT[bundle_size].name
+    self.minikit_bundle_name = MINIKITS_BY_BUNDLE_SIZE[bundle_size].name
     self.minikit_bundle_count = (self.available_minikits // bundle_size
                                  + (self.available_minikits % bundle_size != 0))
 

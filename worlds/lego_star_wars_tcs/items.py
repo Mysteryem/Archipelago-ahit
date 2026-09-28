@@ -113,7 +113,6 @@ ITEM_NAME_TO_ID: dict[str, int] = cast(
     {name: item.code for name, item in ITEM_DATA_BY_NAME.items() if item.is_sendable}
 )
 
-MINIKITS_BY_COUNT: Mapping[int, GenericItemData] = {bundle.bundle_size: bundle for bundle in MINIKITS_BY_NAME.values()}
 SUPER_GONK_ITEMS: frozenset[str] = frozenset(["Gonk Droid", "Super Gonk"])
 SUPER_GONK_DROID_ABILITIES_VALUE: int = (
     CHARACTERS_AND_VEHICLES_BY_NAME["Super Gonk Droid"].abilities
