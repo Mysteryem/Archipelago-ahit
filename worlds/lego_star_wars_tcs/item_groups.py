@@ -6,10 +6,9 @@ from .data.items import GenericCharacterData
 from .data.items.all_character_items import SENDABLE_CHARACTER_TO_ITEM_DATA
 from .data.areas import ALL_CHAPTER_AREAS
 from .data.items.extra_items import EXTRA_DATA
-from .data.items.generic_items import NonDataItemName, EPISODE_UNLOCKS
+from .data.items.generic_items import NonDataItemName, EPISODE_UNLOCKS, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
 from .items import (
     MINIKITS_BY_COUNT,
-    CHAPTER_UNLOCKS,
 )
 
 _SORTED_CHAPTER_AREAS: list[Area] = sorted(ALL_CHAPTER_AREAS)
@@ -57,7 +56,7 @@ ITEM_GROUPS: dict[str, set[str]] = {
     "Extras": {e.name for e in EXTRA_DATA if e.is_sendable} | {NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value},
     "Minikits": {m.name for m in MINIKITS_BY_COUNT.values() if m.is_sendable},
     "Episode Unlocks": {name.value for name in EPISODE_UNLOCKS.values()},
-    "Chapter Unlocks": {data.name for data in CHAPTER_UNLOCKS},
+    "Chapter Unlocks": set(CHAPTER_TO_CHAPTER_UNLOCK_ITEM.values()),
     "Junk": {
         name.value for name in (
             NonDataItemName.SILVER_STUD,
