@@ -1,8 +1,8 @@
 from collections import defaultdict
 from unittest import TestCase
 
-from ..items import LOGIC_CONSIDERED_CHARACTERS
 from ..character_ability import *
+from ..data.items.all_character_items import NORMAL_CHARACTER_TO_ITEM_DATA
 
 
 class TestAbilities(TestCase):
@@ -17,11 +17,11 @@ class TestAbilities(TestCase):
 
         ability_to_used_by: dict[CharacterAbility, set[CharacterAbility]] = defaultdict(set)
         used_abilities = CharacterAbility.NONE
-        for character in LOGIC_CONSIDERED_CHARACTERS.values():
-            for ability in character.abilities:
-                implied_dict[ability] &= character.abilities
-                used_abilities |= character.abilities
-                ability_to_used_by[ability].add(character.abilities)
+        for character_data in NORMAL_CHARACTER_TO_ITEM_DATA.values():
+            for ability in character_data.abilities:
+                implied_dict[ability] &= character_data.abilities
+                used_abilities |= character_data.abilities
+                ability_to_used_by[ability].add(character_data.abilities)
 
         cls.ability_to_used_by = {k: frozenset(ability_to_used_by[k]) for k in CharacterAbility}
         cls.unused_abilities = ~used_abilities

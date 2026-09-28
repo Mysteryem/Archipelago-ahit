@@ -86,11 +86,6 @@ ITEM_DATA_BY_ID: Mapping[int, GenericItemData] = cast(dict[int, GenericItemData]
                                                       {data.code: data for data in ITEM_DATA if data.is_sendable})
 CHARACTERS_AND_VEHICLES_BY_NAME: Mapping[str, GenericCharacterData] = {
     data.name: data for data in ITEM_DATA if isinstance(data, GenericCharacterData)}
-LOGIC_CONSIDERED_CHARACTERS = {
-    name: character for name, character in CHARACTERS_AND_VEHICLES_BY_NAME.items()
-    # todo: Mark unsendable, but event characters instead of hardcoding Super Gonk Droid like this.
-    if character.is_sendable or character.name == "Super Gonk Droid"
-}
 GENERIC_BY_NAME: Mapping[str, GenericItemData] = {data.name: data for data in ITEM_DATA if data.item_type == "Generic"}
 MINIKITS_BY_NAME: Mapping[str, MinikitItemData] = {data.name: data for data in ITEM_DATA
                                                    if isinstance(data, MinikitItemData)}
