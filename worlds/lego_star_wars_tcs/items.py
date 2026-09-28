@@ -106,7 +106,6 @@ NON_VEHICLE_CHARACTER_BY_INDEX: Mapping[Character, CharacterData] = {char.charac
 AP_NON_VEHICLE_CHARACTER_INDICES: AbstractSet[Character] = {char.character
                                                       for char in NON_VEHICLE_CHARACTER_BY_INDEX.values()
                                                       if char.is_sendable}
-CHAPTER_UNLOCKS = list(map(ITEM_DATA_BY_NAME.__getitem__, CHAPTER_TO_CHAPTER_UNLOCK_ITEM.values()))
 
 ITEM_NAME_TO_ID: dict[str, int] = cast(
     dict[str, int],
