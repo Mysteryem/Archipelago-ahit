@@ -15,6 +15,7 @@ from .constants import (
     CHAPTER_SPECIFIC_FLAGS,
     RARE_AND_USEFUL_ABILITIES,
 )
+from .data.areas import PURCHASABLE_NON_POWER_BRICK_EXTRAS
 from .data.characters import Character
 from .data.extras import Extra
 from .data.items import GenericCharacterData
@@ -32,7 +33,6 @@ from .data.logic.types import Chapter
 from .items import (
     CHARACTERS_AND_VEHICLES_BY_NAME,
     LegoStarWarsTCSItem,
-    PURCHASABLE_NON_POWER_BRICK_EXTRAS,
 )
 from .item_groups import ability_to_readable_group
 from .levels import (
@@ -1140,7 +1140,7 @@ def prepare_extras(world: LegoStarWarsTCSWorld) -> tuple[list[str], list[str]]:
     if not world.options.enable_starting_extras_locations:
         # The starting Extra purchases are vanilla, so don't include their Extras in the pool.
         for extra in PURCHASABLE_NON_POWER_BRICK_EXTRAS:
-            del possible_pool_extras[extra.name]
+            del possible_pool_extras[extra.readable_name]
 
     if world.options.start_with_detectors:
         detectors = {"Minikit Detector", "Power Brick Detector"}

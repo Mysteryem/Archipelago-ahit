@@ -84,12 +84,6 @@ Progression + Useful + Skip Balancing."""
 ITEM_DATA_BY_NAME: Mapping[str, GenericItemData] = {data.name: data for data in ITEM_DATA}
 ITEM_DATA_BY_ID: Mapping[int, GenericItemData] = cast(dict[int, GenericItemData],
                                                       {data.code: data for data in ITEM_DATA if data.is_sendable})
-EXTRAS_BY_NAME: Mapping[str, ExtraData] = {data.name: data for data in ITEM_DATA if isinstance(data, ExtraData)}
-_POWER_BRICK_EXTRAS: set[Extra] = cast(set[Extra], {area.extra for area in Area if area.is_chapter()})
-PURCHASABLE_NON_POWER_BRICK_EXTRAS: tuple[ExtraData, ...] = tuple(
-    [extra for extra in EXTRAS_BY_NAME.values()
-     if extra.extra.purchase_cost is not None and extra.extra not in _POWER_BRICK_EXTRAS]
-)
 CHARACTERS_AND_VEHICLES_BY_NAME: Mapping[str, GenericCharacterData] = {
     data.name: data for data in ITEM_DATA if isinstance(data, GenericCharacterData)}
 LOGIC_CONSIDERED_CHARACTERS = {

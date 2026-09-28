@@ -26,18 +26,17 @@ from .constants import (
     GAME_NAME,
     progression_deprioritized_skip_balancing,
 )
+from .data.areas import PURCHASABLE_NON_POWER_BRICK_EXTRAS
 from .data.extras import Extra
 from .items import (
     ITEM_NAME_TO_ID,
     LegoStarWarsTCSItem,
     ExtraData,
-    PURCHASABLE_NON_POWER_BRICK_EXTRAS,
     GenericCharacterData,
     ITEM_DATA_BY_NAME,
     USEFUL_NON_PROGRESSION_CHARACTERS,
     TOO_LOGICALLY_POWERFUL_CHARACTERS,
     MINIKITS_BY_NAME,
-    PURCHASABLE_NON_POWER_BRICK_EXTRAS,
     SUPER_GONK_ITEMS,
     SUPER_GONK_DROID_ABILITIES_VALUE,
 )
