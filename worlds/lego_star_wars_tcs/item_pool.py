@@ -34,7 +34,6 @@ from .items import (
     LegoStarWarsTCSItem,
     EXTRAS_BY_NAME,
     PURCHASABLE_NON_POWER_BRICK_EXTRAS,
-    GENERIC_BY_NAME,
 )
 from .item_groups import ability_to_readable_group
 from .levels import (
@@ -52,7 +51,7 @@ else:
     LegoStarWarsTCSWorld = object
 
 
-progressive_score_multiplier_name = GENERIC_BY_NAME["Progressive Score Multiplier"].name
+_PROGRESSIVE_SCORE_MULTIPLIER_NAME = NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value
 
 
 __all__ = [
@@ -1169,8 +1168,8 @@ def prepare_extras(world: LegoStarWarsTCSWorld) -> tuple[list[str], list[str]]:
 
     non_required_score_multipliers = 5 - required_score_multipliers
     assert 0 <= required_score_multipliers <= 5
-    pool_required_extras: list[str] = [progressive_score_multiplier_name] * required_score_multipliers
-    non_required_extras.extend([progressive_score_multiplier_name] * non_required_score_multipliers)
+    pool_required_extras: list[str] = [_PROGRESSIVE_SCORE_MULTIPLIER_NAME] * required_score_multipliers
+    non_required_extras.extend([_PROGRESSIVE_SCORE_MULTIPLIER_NAME] * non_required_score_multipliers)
     return pool_required_extras, non_required_extras
 
 
@@ -1201,7 +1200,7 @@ def _split_for_preferred_extras(
         "Score x2",
     ]
     non_required_score_multiplier_indices = [i for i, extra in enumerate(non_required_extras)
-                                             if extra == progressive_score_multiplier_name]
+                                             if extra == _PROGRESSIVE_SCORE_MULTIPLIER_NAME]
     if not non_required_score_multiplier_indices or preferred_extras.isdisjoint(individual_score_multipliers):
         num_preferred_non_required_score_multipliers = 0
     else:
@@ -1237,7 +1236,7 @@ def _split_for_preferred_extras(
         for i, item in enumerate(non_required_extras):
             if item in preferred_extras:
                 preferred_extras_list.append(item)
-            elif item == progressive_score_multiplier_name and i in picked_preferred_score_multiplier_indices:
+            elif item == _PROGRESSIVE_SCORE_MULTIPLIER_NAME and i in picked_preferred_score_multiplier_indices:
                 preferred_extras_list.append(item)
             else:
                 non_preferred_extras_list.append(item)
