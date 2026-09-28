@@ -24,7 +24,6 @@ from .constants import (
     CharacterAbility,
     GOLD_BRICK_EVENT_NAME,
     GAME_NAME,
-    CHAPTER_SPECIFIC_FLAGS,
     progression_deprioritized_skip_balancing,
 )
 from .data.extras import Extra
@@ -33,49 +32,24 @@ from .items import (
     LegoStarWarsTCSItem,
     ExtraData,
     PURCHASABLE_NON_POWER_BRICK_EXTRAS,
-    CharacterData,
     GenericCharacterData,
     ITEM_DATA_BY_NAME,
-    CHARACTERS_AND_VEHICLES_BY_NAME,
     USEFUL_NON_PROGRESSION_CHARACTERS,
     TOO_LOGICALLY_POWERFUL_CHARACTERS,
     MINIKITS_BY_NAME,
-    EXTRAS_BY_NAME,
     PURCHASABLE_NON_POWER_BRICK_EXTRAS,
     SUPER_GONK_ITEMS,
     SUPER_GONK_DROID_ABILITIES_VALUE,
 )
-from .levels import (
-    BonusArea,
-    ChapterArea,
-    CHAPTER_AREAS,
-    BONUS_AREAS,
-    EPISODE_TO_CHAPTER_AREAS,
-    CHAPTER_AREA_STORY_CHARACTERS,
-    ALL_AREA_REQUIREMENT_CHARACTERS,
-    VEHICLE_CHAPTER_SHORTNAMES,
-    SHORT_NAME_TO_CHAPTER_AREA,
-    POWER_BRICK_REQUIREMENTS,
-    ALL_MINIKITS_REQUIREMENTS,
-    BONUS_NAME_TO_BONUS_AREA,
-    BOSS_UNIQUE_NAME_TO_CHAPTER,
-    DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
-    CHAPTER_SPECIFIC_REQUIREMENTS,
-)
-from .locations import LegoStarWarsTCSLocation, LEVEL_SHORT_NAMES_SET, LegoStarWarsTCSShopLocation
+from .levels import ChapterArea, SHORT_NAME_TO_CHAPTER_AREA
+from .locations import LegoStarWarsTCSLocation, LegoStarWarsTCSShopLocation
 from .options import (
     LegoStarWarsTCSOptions,
-    StartingChapter,
     AllEpisodesCharacterPurchaseRequirements,
-    MinikitGoalAmount,
-    OnlyUniqueBossesCountTowardsGoal,
     OPTION_GROUPS,
-    GoalChapterLocationsMode,
-    ChapterUnlockRequirement,
     EpisodeUnlockRequirement,
 )
 from .option_resolution.common import resolve_options
-from .ridables import RIDABLES_REQUIREMENTS
 from .slot_data import TCSSlotDataOptions
 from .item_groups import ITEM_GROUPS, REVERSE_READABLE_ABILITY_TO_ABILITY
 
@@ -86,6 +60,12 @@ from .data.locations import LOCATION_NAME_TO_ID, LOCATION_GROUPS
 # 1 byte to write the length
 SLOT_NAME_MAX_BYTES = SAVE_DATA_MINIKITS_ELEMENT_SIZE - 1
 MULTIWORLD_SEED_NAME_MAX_BYTES = SAVE_DATA_MINIKITS_ELEMENT_SIZE - 1
+
+__all__ = [
+    "TCSUniversalTrackerAPWorldVersionMismatchError",
+    "LegoStarWarsTCSWebWorld",
+    "LegoStarWarsTCSWorld",
+]
 
 
 def launch_client(*args: str):
