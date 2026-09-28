@@ -90,3 +90,7 @@ GENERIC_DATA: list[GenericItemData] = [
 GENERIC_DATA_BY_NAME: dict[str, GenericItemData] = {
     data.name: data for data in GENERIC_DATA
 }
+
+MINIKITS_BY_BUNDLE_SIZE: dict[int, MinikitItemData] = {
+    data.bundle_size: data for data in GENERIC_DATA if isinstance(data, MinikitItemData)
+}
