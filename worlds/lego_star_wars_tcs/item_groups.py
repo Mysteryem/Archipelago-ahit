@@ -1,15 +1,18 @@
 from typing import Mapping, Sequence
 
 from .constants import CharacterAbility
+from .data.areas import Area
 from .data.items import GenericCharacterData
 from .data.items.all_character_items import SENDABLE_CHARACTER_TO_ITEM_DATA
+from .data.areas import ALL_CHAPTER_AREAS
 from .data.items.extra_items import EXTRA_DATA
 from .data.items.generic_items import NonDataItemName
 from .items import (
     MINIKITS_BY_COUNT,
     CHAPTER_UNLOCKS,
 )
-from .levels import CHAPTER_AREAS
+
+_SORTED_CHAPTER_AREAS: list[Area] = sorted(ALL_CHAPTER_AREAS)
 
 
 def _ability_to_sendable_character() -> Mapping[CharacterAbility, Sequence[GenericCharacterData]]:
@@ -42,12 +45,13 @@ ITEM_GROUPS: dict[str, set[str]] = {
     "Vehicle Characters": {v.name for v in SENDABLE_CHARACTER_TO_ITEM_DATA.values()
                            if v.item_type == "Vehicle"},
     **{
-        f"{chapter.short_name} Story Unlock Characters": set(chapter.character_requirements)
-        for chapter in CHAPTER_AREAS
+        f"{chapter.get_short_name()} Story Unlock Characters": {c.readable_name for c in chapter.get_story_characters()}
+        for chapter in _SORTED_CHAPTER_AREAS
     },
     **{
-        f"{chapter.short_name} Purchase Unlock Characters": set(chapter.alt_character_requirements)
-        for chapter in CHAPTER_AREAS if chapter.alt_character_requirements
+        f"{chapter.get_short_name()} Purchase Unlock Characters": {
+            c.readable_name for c in chapter.get_purchase_characters()
+        } for chapter in _SORTED_CHAPTER_AREAS if chapter.get_purchase_characters()
     },
     "Characters": {c.name for c in SENDABLE_CHARACTER_TO_ITEM_DATA.values()},
     "Extras": {e.name for e in EXTRA_DATA if e.is_sendable} | {NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value},
