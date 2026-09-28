@@ -15,7 +15,6 @@ from .constants import (
     CHAPTER_SPECIFIC_FLAGS,
     RARE_AND_USEFUL_ABILITIES,
 )
-from .data.areas import Area
 from .data.characters import Character
 from .data.extras import Extra
 from .data.items import GenericCharacterData
@@ -1145,7 +1144,7 @@ def prepare_extras(world: LegoStarWarsTCSWorld) -> tuple[list[str], list[str]]:
 
     if world.options.start_with_detectors:
         detectors = {"Minikit Detector", "Power Brick Detector"}
-        assert detectors <= set(possible_pool_extras.keys())
+        assert detectors.issubset(possible_pool_extras.keys())
         # The detector Extras are being given to the player at the start, so don't include their Extras in the pool.
         for extra_name in detectors:
             del possible_pool_extras[extra_name]
