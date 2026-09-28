@@ -20,6 +20,7 @@ from .data.characters import Character
 from .data.extras import Extra
 from .data.items import GenericCharacterData
 from .data.items.all_character_items import NORMAL_CHARACTER_TO_ITEM_DATA
+from .data.items.extra_items import EXTRA_DATA
 from .data.items.generic_items import NonDataItemName
 from .data.logic import CHAPTERS_BY_NUMBERS
 from .data.logic.extraction import (
@@ -32,7 +33,6 @@ from .data.logic.types import Chapter
 from .items import (
     CHARACTERS_AND_VEHICLES_BY_NAME,
     LegoStarWarsTCSItem,
-    EXTRAS_BY_NAME,
     PURCHASABLE_NON_POWER_BRICK_EXTRAS,
 )
 from .item_groups import ability_to_readable_group
@@ -1136,7 +1136,7 @@ def prepare_extras(world: LegoStarWarsTCSWorld) -> tuple[list[str], list[str]]:
      included in the item pool.
     """
     # Start with all sendable Extras as possible to add to the item pool.
-    possible_pool_extras = {name: extra for name, extra in EXTRAS_BY_NAME.items() if extra.is_sendable}
+    possible_pool_extras = {extra.name: extra for extra in EXTRA_DATA}
 
     if not world.options.enable_starting_extras_locations:
         # The starting Extra purchases are vanilla, so don't include their Extras in the pool.
