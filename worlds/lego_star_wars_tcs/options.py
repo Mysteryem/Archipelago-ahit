@@ -20,10 +20,10 @@ from Options import (
 )
 
 from .constants import AP_WORLD_VERSION
+from .data.extras import Extra
 from .data.items.all_character_items import SENDABLE_CHARACTER_TO_ITEM_DATA
 from .levels import BOSS_UNIQUE_NAME_TO_CHAPTER, VEHICLE_CHAPTER_SHORTNAMES, EPISODE_TO_CHAPTER_AREAS, CHAPTER_AREAS
 from .locations import LEVEL_SHORT_NAMES_SET
-from .items import EXTRAS_BY_NAME
 from .item_groups import ITEM_GROUPS
 
 
@@ -1228,17 +1228,9 @@ class PreferredExtras(OptionSet):
     """
     display_name = "Preferred Extras"
     rich_text_doc = True
-    valid_keys = {
-        # Progressive Score Multiplier is an AP-specific item, and this option does not support specifying multiple of
-        # an item, so the individual "Score x{number}" Extras are included as valid keys instead.
-        *(extra.name for extra in EXTRAS_BY_NAME.values() if extra.is_sendable
-          and extra.name != "Progressive Score Multiplier"),
-        "Score x2",
-        "Score x4",
-        "Score x6",
-        "Score x8",
-        "Score x10",
-    }
+    # Progressive Score Multiplier is an AP-specific item, and this option does not support specifying multiple of
+    # an item, so the individual "Score x{number}" Extras are included as valid keys instead.
+    valid_keys = {extra.readable_name for extra in Extra if extra.is_purchasable()}
     default = frozenset({
         # Out-of-logic access:
         # Out-of-logic SITH access
