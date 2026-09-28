@@ -55,10 +55,12 @@ ITEM_GROUPS: dict[str, set[str]] = {
     "Episode Unlocks": {f"Episode {i} Unlock" for i in "123456"},
     "Chapter Unlocks": {data.name for data in CHAPTER_UNLOCKS},
     "Junk": {
-        "Silver Stud",
-        "Gold Stud",
-        "Blue Stud",
-        "Purple Stud",
-        "Power Up",
-    },
+        name.value for name in (
+            NonDataItemName.SILVER_STUD,
+            NonDataItemName.GOLD_STUD,
+            NonDataItemName.BLUE_STUD,
+            NonDataItemName.PURPLE_STUD,
+            NonDataItemName.POWER_UP,
+        )
+    }
 }
