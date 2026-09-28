@@ -1,4 +1,5 @@
 from typing import TypedDict, TYPE_CHECKING
+from typing_extensions import deprecated
 from enum import IntEnum, IntFlag
 
 from .extras import Extra
@@ -174,6 +175,7 @@ class Area(IntEnum):
         return EPISODE_AREA_LOOKUP[episode][chapter]
 
     @staticmethod
+    @deprecated("Use Area IDs instead", category=None)  # category=None -> No runtime warning
     def from_short_name(short_name: str) -> "Area":
         """This method is deprecated as code should move to using Area objects directly, instead of using short names"""
         return _LEGACY_CHAPTER_SHORT_NAME_TO_AREA[short_name]
