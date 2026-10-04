@@ -20,8 +20,8 @@ from worlds.LauncherComponents import components, Component, launch_subprocess, 
 from worlds.generic.Rules import CollectionRule
 
 from . import constants, regions, item_pool
+from .character_ability import CharacterAbility
 from .constants import (
-    CharacterAbility,
     GOLD_BRICK_EVENT_NAME,
     GAME_NAME,
     progression_deprioritized_skip_balancing,
