@@ -1,4 +1,4 @@
-from typing import Optional, Literal, Mapping, AbstractSet, cast, TYPE_CHECKING
+from typing import Optional, Literal, Mapping, cast, TYPE_CHECKING
 
 from BaseClasses import Item, ItemClassification
 from .constants import GAME_NAME, progression_deprioritized_skip_balancing
@@ -8,9 +8,9 @@ from .data.characters import Character
 from .data.extras import Extra
 from .data.items import GenericItemData, GenericCharacterData
 from .data.items.all_character_items import CHARACTER_TO_ITEM_DATA
-from .data.items.character_items import NORMAL_CHARACTER_DATA, CharacterData
+from .data.items.character_items import NORMAL_CHARACTER_DATA
 from .data.items.extra_items import EXTRA_DATA, ExtraData
-from .data.items.generic_items import GENERIC_DATA, MinikitItemData, CHAPTER_TO_CHAPTER_UNLOCK_ITEM, MINIKITS_BY_NAME
+from .data.items.generic_items import GENERIC_DATA, MINIKITS_BY_NAME
 from .data.items.vehicle_items import VEHICLE_DATA
 from .options import AllEpisodesCharacterPurchaseRequirements, EpisodeUnlockRequirement
 
