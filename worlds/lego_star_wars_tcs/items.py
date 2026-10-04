@@ -1,4 +1,4 @@
-from typing import Optional, Literal, Mapping, cast, TYPE_CHECKING
+from typing import Optional, Mapping, cast, TYPE_CHECKING
 
 from BaseClasses import Item, ItemClassification
 from .constants import GAME_NAME, progression_deprioritized_skip_balancing
@@ -19,9 +19,6 @@ if TYPE_CHECKING:
     from . import LegoStarWarsTCSWorld
 else:
     LegoStarWarsTCSWorld = object
-
-
-ItemType = Literal["Character", "Vehicle", "Extra", "Generic", "Minikit"]
 
 
 class LegoStarWarsTCSItem(Item):
