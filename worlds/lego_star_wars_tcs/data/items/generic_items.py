@@ -1,7 +1,7 @@
 from enum import StrEnum
 
 from . import GenericItemData, GENERIC_ITEMS_BASE, MinikitItemData
-from ..areas import EPISODE_AREA_LOOKUP
+from ..areas import Area, EPISODE_AREA_LOOKUP
 
 class NonDataItemName(StrEnum):
     """
@@ -42,6 +42,8 @@ CHAPTER_TO_CHAPTER_UNLOCK_ITEM = {
     for chapter in range(1, 7)
     for episode in range(1, 7)
 }
+CHAPTER_UNLOCK_ITEM_TO_CHAPTER: dict[str, Area] = {v: k for k, v in CHAPTER_TO_CHAPTER_UNLOCK_ITEM.items()}
+assert len(CHAPTER_UNLOCK_ITEM_TO_CHAPTER) == len(CHAPTER_TO_CHAPTER_UNLOCK_ITEM)
 
 EPISODE_UNLOCKS: dict[int, NonDataItemName] = {
     1: NonDataItemName.EPISODE_1_UNLOCK,
@@ -51,6 +53,8 @@ EPISODE_UNLOCKS: dict[int, NonDataItemName] = {
     5: NonDataItemName.EPISODE_5_UNLOCK,
     6: NonDataItemName.EPISODE_6_UNLOCK,
 }
+EPISODE_UNLOCK_TO_EPISODE: dict[str, int] = {v: k for k, v in EPISODE_UNLOCKS.items()}
+assert len(EPISODE_UNLOCK_TO_EPISODE) == len(EPISODE_UNLOCKS)
 
 def _generic(code: int | None, name: str) -> GenericItemData:
     # Ensure any StrEnum is replaced with str.
