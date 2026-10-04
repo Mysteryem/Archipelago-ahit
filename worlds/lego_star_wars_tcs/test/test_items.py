@@ -1,9 +1,15 @@
 from unittest import TestCase
 
-from ..data.characters import UnlockMethod
+from BaseClasses import ItemClassification, CollectionState
+from . import LegoStarWarsWorldTestBase
+from ..data.characters import UnlockMethod, Character
+from ..data.extras import Extra
 from ..data.items import GenericCharacterData
+from ..data.items.all_character_items import CHARACTER_TO_ITEM_DATA
+from ..data.items.extra_items import ExtraData
 from ..data.shop import CHARACTER_SHOP_SLOTS
 from ..items import ITEM_DATA, CHARACTERS_AND_VEHICLES_BY_NAME
+from ..options import get_option_name, LogicDifficulty
 
 
 _MIN_ID = 1
@@ -71,3 +77,33 @@ class TestItems(TestCase):
                 self.assertIsNotNone(character.purchase_cost)
                 self.assertGreater(character.purchase_cost, 0)
 
+
+class TestSuperGonkDroidCollectOverride(LegoStarWarsWorldTestBase):
+    """The collect override for Super Gonk Droid uses string literals for performance. This test ensures the collect
+    override is working correctly."""
+    # At least Normal logic must be used, otherwise Extras are not Progression classification.
+    options = {
+        get_option_name(LogicDifficulty): LogicDifficulty.option_normal
+    }
+
+    def test_super_gonk_droid_collect_override_items(self):
+        world = self.world
+
+        gonk_droid = world.create_item(CHARACTER_TO_ITEM_DATA[Character.GONK_DROID].name)
+        self.assertIn(ItemClassification.progression, gonk_droid.classification)
+
+        super_gonk = world.create_item(ExtraData.from_extra(Extra.SUPER_GONK).name)
+        self.assertIn(ItemClassification.progression, super_gonk.classification)
+
+        event_super_gonk_data = CHARACTER_TO_ITEM_DATA[Character.EVENT_SUPER_GONK_DROID]
+
+        for item1, item2 in ((gonk_droid, super_gonk), (super_gonk, gonk_droid)):
+            state = CollectionState(world.multiworld)
+            self.assertFalse(state.has(item1.name, world.player))
+            self.assertFalse(state.has(item2.name, world.player))
+            self.assertFalse(state.has(event_super_gonk_data.name, world.player))
+
+            state.collect(item1, prevent_sweep=True)
+            self.assertFalse(state.has(event_super_gonk_data.name, world.player))
+            state.collect(item2, prevent_sweep=True)
+            self.assertTrue(state.has(event_super_gonk_data.name, world.player))
