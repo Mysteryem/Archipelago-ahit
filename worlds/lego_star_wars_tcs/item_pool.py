@@ -13,7 +13,6 @@ from .constants import (
     progression_deprioritized_skip_balancing,
     CharacterAbility,
     CHAPTER_SPECIFIC_FLAGS,
-    RARE_AND_USEFUL_ABILITIES,
 )
 from .data.areas import PURCHASABLE_NON_POWER_BRICK_EXTRAS
 from .data.characters import Character
@@ -874,7 +873,7 @@ def create_starting_characters_for_needed_starting_chapter_abilities(
     # Find all has_all_abilities without rare/useful abilities and prefer picking from those.
     non_rare_has_all_abilities = {
         has_all_abilities for has_all_abilities in missing_starting_chapter_ability_requirements
-        if has_all_abilities & RARE_AND_USEFUL_ABILITIES == 0
+        if not has_all_abilities.contains_rare_and_useful_abilities()
     }
     assert all(abilities & starting_abilities == 0 for abilities in missing_starting_chapter_ability_requirements), \
     ("Missing abilities should not have any abilities in common with the starting abilities because then the abilities"
