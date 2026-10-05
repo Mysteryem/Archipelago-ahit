@@ -20,19 +20,22 @@ from Options import (
 )
 
 from .constants import AP_WORLD_VERSION
+from .data.areas import ALL_CHAPTER_AREAS
 from .data.extras import Extra
 from .data.items.all_character_items import SENDABLE_CHARACTER_TO_ITEM_DATA
 from .levels import BOSS_UNIQUE_NAME_TO_CHAPTER, VEHICLE_CHAPTER_SHORTNAMES, EPISODE_TO_CHAPTER_AREAS, CHAPTER_AREAS
-from .locations import LEVEL_SHORT_NAMES_SET
 from .item_groups import ITEM_GROUPS
 
 
+_LEVEL_SHORT_NAMES_SET = {c.get_short_name() for c in ALL_CHAPTER_AREAS}
+
+
 CHAPTER_OPTION_KEYS: Mapping[str, AbstractSet[str]] = {
-    "All": LEVEL_SHORT_NAMES_SET,
-    "Prequel Trilogy": {chapter for chapter in LEVEL_SHORT_NAMES_SET if chapter[0] in "123"},
-    "Original Trilogy": {chapter for chapter in LEVEL_SHORT_NAMES_SET if chapter[0] in "456"},
-    **{f"Episode {s}": {chapter for chapter in LEVEL_SHORT_NAMES_SET if chapter[0] == s} for s in "123456"},
-    **{chapter: {chapter} for chapter in sorted(LEVEL_SHORT_NAMES_SET)},
+    "All": _LEVEL_SHORT_NAMES_SET,
+    "Prequel Trilogy": {chapter for chapter in _LEVEL_SHORT_NAMES_SET if chapter[0] in "123"},
+    "Original Trilogy": {chapter for chapter in _LEVEL_SHORT_NAMES_SET if chapter[0] in "456"},
+    **{f"Episode {s}": {chapter for chapter in _LEVEL_SHORT_NAMES_SET if chapter[0] == s} for s in "123456"},
+    **{chapter: {chapter} for chapter in sorted(_LEVEL_SHORT_NAMES_SET)},
 }
 
 
@@ -178,16 +181,16 @@ class ChapterChoice(ChoiceFromStringExtension):
     def to_short_name_set(self) -> set[str]:
         v = self.value
         if v == ChapterChoice.option_random_chapter:
-            return set(LEVEL_SHORT_NAMES_SET)
+            return set(_LEVEL_SHORT_NAMES_SET)
         elif v == ChapterChoice.option_random_non_vehicle:
-            return set(LEVEL_SHORT_NAMES_SET).difference(VEHICLE_CHAPTER_SHORTNAMES)
+            return set(_LEVEL_SHORT_NAMES_SET).difference(VEHICLE_CHAPTER_SHORTNAMES)
         elif v == ChapterChoice.option_random_vehicle:
             return set(VEHICLE_CHAPTER_SHORTNAMES)
         elif 1 <= v <= 6:
             return {chapter.short_name for chapter in EPISODE_TO_CHAPTER_AREAS[v]}
         else:
             key = self.current_key
-            assert key in LEVEL_SHORT_NAMES_SET, f"{key} is not a valid chapter shortname"
+            assert key in _LEVEL_SHORT_NAMES_SET, f"{key} is not a valid chapter shortname"
             return {key}
 
 
@@ -357,7 +360,7 @@ class GoalChapter(ChoiceFromStringExtension):
         if self.value == GoalChapter.option_no_goal_chapter:
             return None
         key = self.current_key
-        assert key in LEVEL_SHORT_NAMES_SET, f"{key} is not a valid chapter shortname"
+        assert key in _LEVEL_SHORT_NAMES_SET, f"{key} is not a valid chapter shortname"
         return key
 
 
