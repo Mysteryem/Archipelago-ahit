@@ -532,7 +532,7 @@ class AllowedChapters(ChapterOptionSet):
         # Enable only vehicle levels
         allowed_chapters:
           - 1-4
-          - 2-2
+          - 2-1
           - 2-5
           - 3-1
           - 4-6
