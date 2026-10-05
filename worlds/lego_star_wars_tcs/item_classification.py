@@ -74,13 +74,14 @@ def evaluate_effective_item(self: LegoStarWarsTCSWorld,
                             name: str,
                             effective_character_abilities_lookup: dict[str, CharacterAbility] | None = None,
                             relevant_item_counts: dict[str, int] | None = None,
+                            event: bool = False,
                             ) -> tuple[ItemClassification, CharacterAbility]:
     classification = ItemClassification.filler
     abilities = CharacterAbility.NONE
 
     item_data = ITEM_DATA_BY_NAME[name]
     code = item_data.code
-    if code is None or code < 1:
+    if not event and (code is None or code < 1):
         raise RuntimeError(f"Error: Item '{name}' cannot be created")
     assert item_data.code != -1
     if isinstance(item_data, ExtraData):
@@ -111,6 +112,29 @@ def evaluate_effective_item(self: LegoStarWarsTCSWorld,
         else:
             abilities = item_data.abilities & ~self.starting_character_abilities
 
+        # Special handling for Gonk Droid -> Super Gonk Droid
+        inherit_progression_from_super_gonk_droid = False
+        if item_data.character is Character.GONK_DROID:
+            # Check if Super Gonk should be progression classification.
+            super_gonk_extra_classification, _abilities = evaluate_effective_item(
+                self,
+                ExtraData.from_extra(Extra.SUPER_GONK).name,
+                effective_character_abilities_lookup,
+                relevant_item_counts,
+            )
+            if ItemClassification.progression in super_gonk_extra_classification:
+                # Check if Super Gonk Droid should be progression classification, and get its abilities.
+                super_gonk_droid_classification, _super_gonk_droid_abilities = evaluate_effective_item(
+                    self,
+                    CHARACTER_TO_ITEM_DATA[Character.EVENT_SUPER_GONK_DROID].name,
+                    effective_character_abilities_lookup,
+                    relevant_item_counts,
+                    event=True,
+                )
+                if ItemClassification.progression in super_gonk_droid_classification:
+                    # Super Gonk Droid is progression, so Gonk Droid should always be progression.
+                    inherit_progression_from_super_gonk_droid = True
+
         if self.character_chapter_access_counts[name] > 0:
             if self.character_chapter_access_counts[name] >= self.prog_useful_level_access_threshold_count:
                 # Characters that block access to a large number of chapters get progression + useful
@@ -126,6 +150,10 @@ def evaluate_effective_item(self: LegoStarWarsTCSWorld,
         elif abilities:
             # Characters, with only abilities where there are many other characters in the item pool providing those
             # abilities, are given deprioritized and skip_balancing classifications towards the end of create_items.
+            classification = ItemClassification.progression
+        elif inherit_progression_from_super_gonk_droid:
+            # Special handling for Super Gonk Droid so that if Super Gonk Droid is relevant to logic, Gonk Droid is also
+            # relevant to logic.
             classification = ItemClassification.progression
         elif name in _USEFUL_NON_PROGRESSION_CHARACTERS:
             # Force ghosts, glitchy characters and fast characters.

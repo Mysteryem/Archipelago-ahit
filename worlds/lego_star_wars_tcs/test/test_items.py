@@ -9,7 +9,7 @@ from ..data.items.all_character_items import CHARACTER_TO_ITEM_DATA
 from ..data.items.extra_items import ExtraData
 from ..data.shop import CHARACTER_SHOP_SLOTS
 from ..items import ITEM_DATA, CHARACTERS_AND_VEHICLES_BY_NAME
-from ..options import get_option_name, LogicDifficulty
+from ..options import get_option_name, LogicDifficulty, StartingChapter, EnabledChaptersCount, AllowedChapters
 
 
 _MIN_ID = 1
@@ -78,13 +78,25 @@ class TestItems(TestCase):
                 self.assertGreater(character.purchase_cost, 0)
 
 
-class TestSuperGonkDroidCollectOverride(LegoStarWarsWorldTestBase):
+class TestSuperGonkDroidCollectOverridePositive(LegoStarWarsWorldTestBase):
     """The collect override for Super Gonk Droid uses string literals for performance. This test ensures the collect
     override is working correctly."""
     # At least Normal logic must be used, otherwise Extras are not Progression classification.
+    # The starting chapter is changed to 1-4, a vehicle chapter, so that the starting characters for 1-1 do not obsolete
+    # Super Gonk Droid's abilities, causing Super Gonk Droid to be logically irrelevant, and causing Gonk Droid to be
+    # logically irrelevant.
+    # All chapters are enabled to ensure there is at least somewhere where Super Gonk Droid would be logically relevant.
     options = {
-        get_option_name(LogicDifficulty): LogicDifficulty.option_normal
+        get_option_name(LogicDifficulty): LogicDifficulty.option_normal,
+        get_option_name(StartingChapter): "1-4",
+        get_option_name(EnabledChaptersCount): EnabledChaptersCount.range_end,
     }
+
+    @property
+    def run_default_tests(self) -> bool:
+        # There are already tests for each Logic Difficulty, so there is no need to re-run the tests for Normal Logic
+        # Difficulty
+        return False
 
     def test_super_gonk_droid_collect_override_items(self):
         world = self.world
@@ -107,3 +119,33 @@ class TestSuperGonkDroidCollectOverride(LegoStarWarsWorldTestBase):
             self.assertFalse(state.has(event_super_gonk_data.name, world.player))
             state.collect(item2, prevent_sweep=True)
             self.assertTrue(state.has(event_super_gonk_data.name, world.player))
+
+class TestSuperGonkDroidCollectOverrideNegative(LegoStarWarsWorldTestBase):
+    """When no chapter is enabled that should make Super Gonk Droid logically relevant, then Gonk Droid should also not
+    be logically relevant, assuming chapter unlock requirements are not set to Random Characters, and Gonk Droid has
+    been picked for this."""
+    options = {
+        get_option_name(LogicDifficulty): LogicDifficulty.option_normal,
+        get_option_name(StartingChapter): "1-4",
+        get_option_name(EnabledChaptersCount): EnabledChaptersCount.range_end,
+        # Only the vehicle levels.
+        get_option_name(AllowedChapters): {
+            "1-4",
+            "2-1",
+            "2-5",
+            "3-1",
+            "4-6",
+            "5-1",
+            "5-3",
+            "6-6",
+        }
+    }
+
+    def test_super_gonk_droid_collect_override_items(self):
+        world = self.world
+
+        gonk_droid = world.create_item(CHARACTER_TO_ITEM_DATA[Character.GONK_DROID].name)
+        self.assertNotIn(ItemClassification.progression, gonk_droid.classification)
+
+        super_gonk = world.create_item(ExtraData.from_extra(Extra.SUPER_GONK).name)
+        self.assertNotIn(ItemClassification.progression, super_gonk.classification)
