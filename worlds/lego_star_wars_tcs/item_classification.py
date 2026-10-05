@@ -30,8 +30,6 @@ __all__ = [
 ]
 
 
-_EXTRA_TOGGLE_ITEM_NAME = ExtraData.from_extra(Extra.EXTRA_TOGGLE).name
-
 _USEFUL_NON_PROGRESSION_CHARACTERS: set[str] = {
     CHARACTER_TO_ITEM_DATA[c].name for c in
     (
@@ -85,16 +83,17 @@ def evaluate_effective_item(self: LegoStarWarsTCSWorld,
         raise RuntimeError(f"Error: Item '{name}' cannot be created")
     assert item_data.code != -1
     if isinstance(item_data, ExtraData):
+        extra = item_data.extra
         if relevant_item_counts is not None:
             if relevant_item_counts.get(name, 0) > 0:
                 classification = ItemClassification.progression
-            elif item_data not in PURCHASABLE_NON_POWER_BRICK_EXTRAS or name == _EXTRA_TOGGLE_ITEM_NAME:
+            elif extra not in PURCHASABLE_NON_POWER_BRICK_EXTRAS or extra is Extra.EXTRA_TOGGLE:
                 classification = ItemClassification.useful
         else:
-            if item_data in PURCHASABLE_NON_POWER_BRICK_EXTRAS:
+            if extra in PURCHASABLE_NON_POWER_BRICK_EXTRAS:
                 # Only Extra Toggle is useful out of these Extras due to the high movement speed Mouse Droid and a
                 # few logic uses.
-                if name == _EXTRA_TOGGLE_ITEM_NAME:
+                if extra is Extra.EXTRA_TOGGLE:
                     if self.options.logic_difficulty.normal_plus:
                         classification = ItemClassification.progression
                     else:
