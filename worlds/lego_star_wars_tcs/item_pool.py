@@ -33,6 +33,7 @@ from .items import (
     CHARACTERS_AND_VEHICLES_BY_NAME,
     LegoStarWarsTCSItem,
 )
+from .item_classification import evaluate_effective_item
 from .item_groups import ability_to_readable_group
 from .levels import (
     CHAPTER_AREA_STORY_CHARACTERS,
@@ -195,12 +196,12 @@ class ItemCreator:
         effective_item_classifications: dict[str, ItemClassification] = {}
         effective_item_abilities: dict[str, CharacterAbility] = {}
         for item in self._world.item_name_to_id:
-            classification, effective_abilities = self._world.evaluate_effective_item(
-                item, effective_character_abilities, missing_item_counts)
+            classification, effective_abilities = evaluate_effective_item(
+                self._world, item, effective_character_abilities, missing_item_counts)
             effective_item_classifications[item] = classification
             # The returned `effective_abiltiies` should be the same as what was in `effective_character_abilities`.
             # The returned `effective_abiltiies` is not actually needed here, but `effective_character_abilities` is not
-            # always available when `self.evaluate_effective_item()` is called.
+            # always available when `evaluate_effective_item()` is called.
             assert effective_abilities is effective_character_abilities.get(item, CharacterAbility.NONE)
             effective_item_abilities[item] = effective_abilities
 

@@ -36,8 +36,8 @@ from .items import (
     LegoStarWarsTCSItem,
     SUPER_GONK_ITEMS,
     SUPER_GONK_DROID_ABILITIES_VALUE,
-    evaluate_effective_item,
 )
+from .item_classification import evaluate_effective_item
 from .levels import ChapterArea, SHORT_NAME_TO_CHAPTER_AREA
 from .locations import LegoStarWarsTCSLocation, LegoStarWarsTCSShopLocation
 from .options import (
