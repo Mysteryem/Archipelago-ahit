@@ -379,18 +379,6 @@ class CharacterAbility(IntFlag):
         return self & _RARE_AND_USEFUL_ABILITIES != 0
 
 
-# Workaround for Python 3.10 support. Iterating Flag instances was only added in Python 3.11.
-# There is probably a better way to do this, but it will get the job done.
-if getattr(CharacterAbility.NONE, "__iter__", None) is None:
-    def __iter__(self: CharacterAbility):
-        none_flag = CharacterAbility.NONE
-        for flag in CharacterAbility:
-            if flag is not none_flag and flag in self:
-                yield flag
-    CharacterAbility.__iter__ = __iter__  # type: ignore
-    del __iter__
-
-
 # Humanoid Special Abilities. These are rather more obvious to players.
 ASTROMECH_PANEL = CharacterAbility.ASTROMECH_PANEL
 BLASTER = CharacterAbility.BLASTER
