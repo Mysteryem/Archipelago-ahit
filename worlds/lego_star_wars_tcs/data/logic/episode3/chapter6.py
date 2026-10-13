@@ -7,13 +7,18 @@ from ..macros import (
     HAS_P2_AI_DOUBLE_JUMP,
 )
 from ..option_filters import logic_options
-from ..rules import HasAbility, HasAnyAbilities, HasAbilityCombination, HasAbilityExceptCharacters
+from ..rules import (
+    HasAbility,
+    HasAnyAbilities,
+    HasAbilityCombination,
+    HasAbilityExceptCharacters,
+    HasAnyCharacterExcept,
+)
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
 from ...characters import Character
 from ...extras import Extra
-from ...items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from ...levels import Level
 
 from ....character_ability import *
@@ -37,40 +42,6 @@ ANY_DOUBLE_JUMP_EXCEPT_YODA_AND_ACKBAR = HasAnyAbilities(CAN_TRIPLE_JUMP_GREAT_D
 # More expensive and makes fewer assumptions but should be identical.
 ANY_DOUBLE_JUMP_EXCEPT_YODA_AND_ACKBAR_ER = HasAbilityExceptCharacters(
     CAN_DOUBLE_JUMP, Character.YODA, Character.YODA_GHOST, Character.ADMIRAL_ACKBAR)
-
-
-# todo: Replace with HasAnyCharacterExcept
-def _make_any_character_except_force_ghost() -> Rule:
-    ghosts = {Character.YODA_GHOST, Character.ANAKIN_SKYWALKER_GHOST, Character.BEN_KENOBI_GHOST}
-    abilities_union = CharacterAbility.NONE
-    for ghost in ghosts:
-        abilities_union |= NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA[ghost].abilities
-
-    # Vehicles are obviously no good either, since they cannot be brought into regular levels.
-    abilities_union |= CharacterAbility.ALL_VEHICLE_ABILITIES
-
-    # Having any of these abilities will mean having any character that is not a force ghost.
-    any_abilities = ~abilities_union
-    abilities_rule = HasAnyAbilities(any_abilities)
-
-    # Now find all non-ghost characters who don't share a single ability in common with `abilities_union`. Those
-    # characters will need to be checked for individually.
-    individual_check_characters: list[Character] = []
-    # Skip extra toggle characters.
-    for character_data in NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA.values():
-        if character_data.character in ghosts:
-            continue
-        if character_data.abilities & any_abilities == 0:
-            individual_check_characters.append(character_data.character)
-
-    if individual_check_characters:
-        return abilities_rule | Character.has_any(*individual_check_characters)
-    else:
-        return abilities_rule
-
-
-ANY_CHARACTER_EXCEPT_FORCE_GHOST = _make_any_character_except_force_ghost()
-del _make_any_character_except_force_ghost
 
 
 DARTH_VADER = Chapter(
@@ -255,7 +226,17 @@ DARTH_VADER = Chapter(
                 # invincible, so a non-ghost Jedi is needed.
                 # Additionally, P2's AI seems to break here when P2 is a Ghost, refusing to attack for some reason.
                 # Even if P2's AI did work, allowing AI P2 to kill you forces the fight to restart.
-                HasAbility(IS_NON_GHOST_JEDI),
+                logic_options(
+                    strict=False,
+                    base=HasAbility(IS_NON_GHOST_JEDI),
+                ).or_rule(
+                    apply_to="moderate+",
+                    # Jedi is required to reach here, so if the only Jedi the player has are Force Ghosts, then they
+                    # will need to drop in as P2 to a character that is not invincible (any non-Force Ghost).
+                    rule=HasAnyCharacterExcept(Character.YODA_GHOST,
+                                               Character.ANAKIN_SKYWALKER_GHOST,
+                                               Character.BEN_KENOBI_GHOST),
+                )
                 # Having no Jedi unlocked at all would send the AI into an infinite character swapping loop, which might
                 # prevent dealing damage to them. Either way, this sort of logic is not allowed in AP because going from
                 # not having a Jedi unlocked, to having a Ghost Jedi unlocked, would cause this entrance to go from
@@ -272,7 +253,9 @@ DARTH_VADER = Chapter(
                 #         # With no Jedi unlocked, or with only ghost Jedi unlocked, control both P1 and P2
                 #         # independently to complete the chapter.
                 #         HasAbility(CAN_DAMAGE_AT_CLOSE_RANGE) & ANY_CHARACTER_EXCEPT_FORCE_GHOST,
-                #         Extra.SUPER_ZAPPER.has() & HasAllAbilities(WEAPON_ZAPPER | DROID),
+                #         # Gas-immune non-ghosts covers all droids.
+                #         # todo: Check that Grievous' Bodyguard is damaged/killed by Super Zapper.
+                #         Extra.SUPER_ZAPPER.has() & HasAbility(WEAPON_ZAPPER) & HAS_GAS_IMMUNE_EXCEPT_GHOSTS,
                 #     ),
                 # ),
             ),
