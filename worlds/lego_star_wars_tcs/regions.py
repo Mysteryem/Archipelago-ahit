@@ -367,12 +367,13 @@ class _RegionBuilder:
         if chapter.area in world.enabled_bosses:
             assert chapter.area is not world.goal_chapter, ("The Goal Chapter should never be selected as an "
                                                               "enabled boss")
+            boss = world.boss_area_to_boss[chapter.area]
             if world.options.only_unique_bosses_count:
-                boss_event_item_name = world.boss_area_to_boss[chapter.area].unique_event_name
+                boss_event_item_name = boss.unique_event_name
             else:
                 boss_event_item_name = "Boss Defeated"
             world.add_event_pair(
-                f"{chapter.short_name} Defeat {legacy_chapter.boss}", completion_region, boss_event_item_name)
+                f"{chapter.short_name} Defeat {boss.unique_name}", completion_region, boss_event_item_name)
 
         return regions[start_region_internal_name]
 
