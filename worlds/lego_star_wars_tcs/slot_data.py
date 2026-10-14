@@ -331,7 +331,7 @@ class TCSSlotDataOptions(TCSDirectSlotDataOptions):
                 option_type: type[Option[Any]] = cls._get_option_type_from_hint(field_obj)
                 if field_name not in slot_data:
                     if not issubclass(option_type, OptionalSlotData):
-                        missing_required_fields.append(field_obj)
+                        missing_required_fields[option_type] = field_obj
                     else:
                         # Use the default/default_factory.
                         pass
