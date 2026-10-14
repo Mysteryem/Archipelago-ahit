@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Iterable, TypedDict, NotRequired
+from typing_extensions import deprecated
 
 from rule_builder.rules import (
     Rule,
     True_,
-    Or,
     CanReachRegion,
     CanReachLocation,
     CanReachEntrance,
@@ -157,9 +157,6 @@ class Chapter:
     regions_in_can_reach: Iterable[str] = ()
 
     name: str = field(init=False)
-    story_characters: frozenset[Character] = field(init=False)
-    purchase_characters: frozenset[Character] = field(init=False)
-    extra_toggle_characters: frozenset[Character] = field(init=False)
     start_level: Level = field(init=False)
     level_minikits: dict[Level, dict[str, MinikitData]] = field(init=False, default_factory=dict)
     region_to_level: dict[str, Level] = field(init=False, default_factory=dict)
@@ -169,20 +166,12 @@ class Chapter:
         name = self.area.readable_name
         object.__setattr__(self, "name", name)
 
-        # Get story/purchase/Extra Toggle characters from the Area.
-        purchase_characters = self.area.get_purchase_characters()
-        story_characters = self.area.get_story_characters()
-        extra_toggle_characters = self.area.get_extra_toggle_characters()
-        object.__setattr__(self, "story_characters", story_characters)
-        object.__setattr__(self, "purchase_characters", purchase_characters)
-        object.__setattr__(self, "extra_toggle_characters", extra_toggle_characters)
-
         start_level = self.area.get_first_playable_level()
         if start_level is None:
             raise Exception(f"First playable level for {self.name} is None")
         object.__setattr__(self, "start_level", start_level)
 
-        if self.extra_toggle_characters:
+        if self.area.get_extra_toggle_characters():
             # Add `| Has("Extra Toggle")` to rules that can be satisfied by having Extra Toggle.
             # It's important that replacements go in the following order:
             # 1) Un-nest rules, so that Extra Toggle rules can efficiently apply to And/Or rules.
@@ -269,25 +258,40 @@ class Chapter:
         yield self.power_brick
 
     @property
-    def area_id(self) -> int:
-        return self.area.area_index
-
-    @property
+    @deprecated("Access .area.get_chapter_episode() directly")
     def episode_number(self) -> int:
-        return self.area.episode_index + 1
+        return self.area.get_chapter_episode()
 
     @property
+    @deprecated("Access .area.get_chapter_number_in_episode() directly")
     def chapter_number(self) -> int:
-        return self.area.area_index + 1
+        return self.area.get_chapter_number_in_episode()
 
     @property
+    @deprecated("Access .area.story_true_jedi directly")
     def story_true_jedi(self) -> int:
         return self.area.story_true_jedi
 
     @property
+    @deprecated("Access .area.free_play_true_jedi directly")
     def free_play_true_jedi(self) -> int:
         return self.area.free_play_true_jedi
 
     @property
     def short_name(self) -> str:
         return f"{self.episode_number}-{self.chapter_number}"
+
+    @property
+    @deprecated("Access .area.get_story_characters() directly")
+    def story_characters(self) -> frozenset[Character]:
+        return self.area.get_story_characters()
+
+    @property
+    @deprecated("Access .area.get_purchase_characters() directly")
+    def purchase_characters(self) -> frozenset[Character]:
+        return self.area.get_purchase_characters()
+
+    @property
+    @deprecated("Access .area.get_extra_toggle_characters() directly")
+    def extra_toggle_characters(self) -> frozenset[Character]:
+        return self.area.get_extra_toggle_characters()

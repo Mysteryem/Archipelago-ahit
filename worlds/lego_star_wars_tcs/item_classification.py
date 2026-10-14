@@ -133,8 +133,8 @@ def _evaluate_effective_character_data(world: LegoStarWarsTCSWorld,
                 # Super Gonk Droid is progression, so Gonk Droid should always be progression.
                 inherit_progression_from_super_gonk_droid = True
 
-    if world.character_chapter_access_counts[name] > 0:
-        if world.character_chapter_access_counts[name] >= world.prog_useful_level_access_threshold_count:
+    if world.character_chapter_access_counts[item_data.character] > 0:
+        if world.character_chapter_access_counts[item_data.character] >= world.prog_useful_level_access_threshold_count:
             # Characters that block access to a large number of chapters get progression + useful
             # classification. This is functionally identical to progression classification, but some
             # games/clients may specially highlight progression + useful items.
@@ -227,7 +227,7 @@ def _evaluate_effective_other_data(world: LegoStarWarsTCSWorld,
             return ItemClassification.progression | ItemClassification.useful
     elif name in CHAPTER_UNLOCK_ITEM_TO_CHAPTER:
         # Chapter Unlock item.
-        if CHAPTER_UNLOCK_ITEM_TO_CHAPTER[name].get_short_name() in world.enabled_chapters:
+        if CHAPTER_UNLOCK_ITEM_TO_CHAPTER[name] in world.enabled_chapters:
             return ItemClassification.progression
     # Everything else.
     return ItemClassification.filler

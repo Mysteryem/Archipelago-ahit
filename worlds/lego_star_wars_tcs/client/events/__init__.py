@@ -2,14 +2,11 @@ import inspect
 import logging
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Callable, TypeVar, Any, ClassVar, Generic, Awaitable, overload, cast
-
-from Options import Option
+from typing import Callable, TypeVar, ClassVar, Generic, Awaitable, overload, cast
 
 from ..common import ClientComponent
 from ..common_addresses import AREA_DATA_ID, is_actively_playing
 from ..type_aliases import TCSContext
-from ... import options
 from ...slot_data import TCSSlotDataOptions
 
 debug_logger = logging.getLogger("TCS Debug")

@@ -129,8 +129,7 @@ class GoalManager(ClientComponent):
             has_sub_goals = True
             self.goal_bosses_count = goal_bosses_count
             enabled_boss_chapters = slot_data.enabled_bosses.value
-            self.enabled_boss_chapters = {Area.from_short_name(chapter)
-                                          for chapter in enabled_boss_chapters}
+            self.enabled_boss_chapters = enabled_boss_chapters.copy()
             only_unique_bosses_count = slot_data.only_unique_bosses_count
             self.goal_bosses_must_be_unique = (
                     only_unique_bosses_count != OnlyUniqueBossesCountTowardsGoal.option_disabled)
@@ -140,18 +139,13 @@ class GoalManager(ClientComponent):
             if self.goal_bosses_must_be_unique:
                 unique_bosses: dict[str, set[AreaId]] = {}
                 unique_bosses_to_chapters: dict[str, list[str]] = {}
-                for chapter in enabled_boss_chapters:
-                    area = Area.from_short_name(chapter)
-                    boss = Boss.from_area(area)
-                    if boss is None:
-                        _LOGGER.error(f"Could not find the boss for boss chapter {chapter} (area {area!r})")
-                        continue
+                for chapter_area in enabled_boss_chapters:
+                    boss = Boss.from_area(chapter_area)
                     if self.goal_bosses_anakin_as_vader and boss is Boss.ANAKIN:
-                        boss_name = Boss.VADER_TRAP.readable_name
-                    else:
-                        boss_name = boss.readable_name
-                    unique_bosses.setdefault(boss_name, set()).add(area)
-                    unique_bosses_to_chapters.setdefault(boss_name, []).append(area.get_short_name())
+                        boss = Boss.VADER_VADER
+                    boss_name = boss.unique_name
+                    unique_bosses.setdefault(boss_name, set()).add(chapter_area)
+                    unique_bosses_to_chapters.setdefault(boss_name, []).append(chapter_area.get_short_name())
                 self.enabled_unique_bosses = unique_bosses
                 sorted_bosses = sorted(unique_bosses_to_chapters.items(), key=lambda t: min(t[1]))
                 boss_strings = []
@@ -173,12 +167,12 @@ class GoalManager(ClientComponent):
                 self.enabled_unique_bosses = {}
                 sorted_boss_chapters = sorted(enabled_boss_chapters)
                 if len(sorted_boss_chapters) == 1:
-                    boss_chapters_text = sorted_boss_chapters[0]
+                    boss_chapters_text = sorted_boss_chapters[0].get_short_name()
                     boss_goal_info_text = (f"{self.goal_bosses_count} boss needs to be defeated. There is"
                                            f" {len(self.enabled_boss_chapters)} boss enabled, in {boss_chapters_text}")
                 else:
-                    boss_chapters_text = ", ".join(sorted_boss_chapters[:-1])
-                    boss_chapters_text += f" and {sorted_boss_chapters[-1]}"
+                    boss_chapters_text = ", ".join(map(Area.get_short_name, sorted_boss_chapters[:-1]))
+                    boss_chapters_text += f" and {sorted_boss_chapters[-1].get_short_name()}"
                     boss_goal_info_text = (f"{self.goal_bosses_count} bosses need to be defeated. There are"
                                            f" {len(self.enabled_boss_chapters)} bosses enabled, in"
                                            f" {boss_chapters_text}")
@@ -196,8 +190,7 @@ class GoalManager(ClientComponent):
             enabled_chapter_count = len(slot_data.enabled_chapters.value)
             if slot_data.enable_bonus_locations:
                 enabled_bonus_level_count = 0
-                for name in slot_data.enabled_bonuses.value:
-                    bonus_area = _BONUS_ROOM_BONUS_NAME_TO_AREA[name]
+                for bonus_area in slot_data.enabled_bonuses.value:
                     if not bonus_area.has_gold_brick():
                         continue
                     enabled_bonus_level_count += 1
@@ -215,7 +208,7 @@ class GoalManager(ClientComponent):
 
         goal_chapter = slot_data.goal_chapter
         if goal_chapter is not None:
-            self.goal_chapter_area_id = Area.from_short_name(goal_chapter.value)
+            self.goal_chapter_area_id = goal_chapter.value.value
         else:
             # No goal chapter required.
             self.goal_chapter_area_id = _NO_GOAL_CHAPTER

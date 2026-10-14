@@ -4,12 +4,12 @@ from ..events import subscribe_event, OnReceiveSlotDataEvent, OnAreaChangeEvent,
 from ..type_aliases import ApLocationId, TCSContext
 from ...ridables import BONUS_TO_RIDABLES
 
-from ...options import GoalChapterLocationsMode, Ridesanity
+from ...options import GoalChapterLocationsMode
 
-from ...data.areas import Area, BONUS_ROOM_BONUSES
+from ...data.areas import Area
 from ...data.characters import Character
 from ...data.locations import LOCATION_NAME_TO_ID
-from ...data.logic import CHAPTERS_BY_SHORT_NAME
+from ...data.logic import CHAPTERS_BY_AREA
 
 
 class RidesanityChecker(ClientComponent):
@@ -36,30 +36,28 @@ class RidesanityChecker(ClientComponent):
         goal_locations_removed = goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
         goal_chapter_option = slot_data.goal_chapter
         if goal_chapter_option is not None:
-            goal_chapter = Area.from_short_name(goal_chapter_option.value)
+            goal_chapter = goal_chapter_option.value
         else:
             goal_chapter = None
 
-        for bonus_name in slot_data.enabled_bonuses.value:
-            area = next(area for area in BONUS_ROOM_BONUSES if area.readable_name == bonus_name)
-            if area not in BONUS_TO_RIDABLES:
+        for bonus_area in slot_data.enabled_bonuses.value:
+            if bonus_area not in BONUS_TO_RIDABLES:
                 # No ridables in this bonus.
                 continue
-            self.ridables_by_area[area] = {
+            self.ridables_by_area[bonus_area] = {
                 ridable.character: LOCATION_NAME_TO_ID[ridable.character.get_ridesanity_location_name()]
-                for ridable in BONUS_TO_RIDABLES[area]
+                for ridable in BONUS_TO_RIDABLES[bonus_area]
             }
-        for short_name in slot_data.enabled_chapters.value:
-            chapter = CHAPTERS_BY_SHORT_NAME[short_name]
+        for chapter_area in slot_data.enabled_chapters.value:
+            chapter = CHAPTERS_BY_AREA[chapter_area]
             ridables = chapter.ridables
             if not ridables:
                 # No ridables in this chapter.
                 continue
-            area = chapter.area
-            if area is goal_chapter and goal_locations_removed:
+            if chapter_area is goal_chapter and goal_locations_removed:
                 # The Goal Chapter, with locations removed, should not send Ridesanity checks.
                 continue
-            self.ridables_by_area[area] = {
+            self.ridables_by_area[chapter_area] = {
                 character: LOCATION_NAME_TO_ID[character.get_ridesanity_location_name()]
                 for character in ridables.keys()
             }

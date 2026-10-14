@@ -1,5 +1,5 @@
 from enum import IntEnum, auto
-from typing import TypedDict, NotRequired
+from typing import TypedDict, NotRequired, Collection
 
 from rule_builder.rules import HasAny, Has, True_
 
@@ -135,7 +135,7 @@ class Character(IntEnum):
         return Has(self.readable_name)
 
     @staticmethod
-    def has_any(*characters: "Character") -> HasAny | Has | True_:
+    def _validate_characters_for_logic(characters: "Collection[Character]"):
         if not all(map(NORMAL_LOGIC_RELEVANT_CHARACTERS.__contains__, characters)):
             if any(map(EXTRA_TOGGLE_LOGIC_RELEVANT_CHARACTERS.__contains__, characters)):
                 raise ValueError("Cannot create rules that check for Extra Toggle characters because these never get"
@@ -145,12 +145,21 @@ class Character(IntEnum):
             else:
                 raise ValueError(f"Cannot create rules that check for characters that cannot be used in rules. Got"
                                  f" {characters}")
+
+    @staticmethod
+    def has_any(*characters: "Character") -> HasAny | Has | True_:
+        character_names = Character.to_logic_names(characters)
         if not characters:
             return True_()
-        if len(characters) == 1:
-            return Has(characters[0].readable_name)
+        if len(character_names) == 1:
+            return Has(character_names[0])
         else:
-            return HasAny(*[c.readable_name for c in characters])
+            return HasAny(*character_names)
+
+    @staticmethod
+    def to_logic_names(characters: "Collection[Character]"):
+        Character._validate_characters_for_logic(characters)
+        return [c.readable_name for c in characters]
 
     @staticmethod
     def from_sendable_name(sendable_name: str) -> "Character":

@@ -5,7 +5,6 @@ from ..macros import (
     CAN_GRAPPLE,
     CAN_SITH_FORCE,
     CAN_DAMAGE_AT_CLOSE_RANGE,
-    CAN_USE_SELF_DESTRUCT,
     HAS_ANY_YODA,
 )
 from ..option_filters import logic_options

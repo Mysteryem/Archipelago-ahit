@@ -1,5 +1,8 @@
 import itertools
+import random
+from collections import Counter
 from dataclasses import dataclass, fields
+from enum import Enum, auto
 from typing import Mapping, AbstractSet, Any, TypedDict, NotRequired
 
 from Options import (
@@ -20,22 +23,42 @@ from Options import (
 )
 
 from .constants import AP_WORLD_VERSION
-from .data.areas import ALL_CHAPTER_AREAS
+from .data.areas import ALL_CHAPTER_AREAS, Area, VEHICLE_CHAPTERS, EPISODE_AREA_LOOKUP
+from .data.bosses import Boss
+from .data.characters import Character
 from .data.extras import Extra
 from .data.items.all_character_items import SENDABLE_CHARACTER_TO_ITEM_DATA
-from .levels import BOSS_UNIQUE_NAME_TO_CHAPTER, VEHICLE_CHAPTER_SHORTNAMES, EPISODE_TO_CHAPTER_AREAS, CHAPTER_AREAS
 from .item_groups import ITEM_GROUPS
 
 
-_LEVEL_SHORT_NAMES_SET = {c.get_short_name() for c in ALL_CHAPTER_AREAS}
+CHAPTER_OPTION_KEYS: Mapping[str, AbstractSet[Area]] = {
+    "All": ALL_CHAPTER_AREAS,
+    "Prequel Trilogy": {chapter for chapter in ALL_CHAPTER_AREAS if 1 <= chapter.get_chapter_episode() <= 3},
+    "Original Trilogy": {chapter for chapter in ALL_CHAPTER_AREAS if 4 <= chapter.get_chapter_episode() <= 6},
+    **{
+        f"Episode {episode}": {chapter for chapter in ALL_CHAPTER_AREAS if chapter.get_chapter_episode() == episode}
+        for episode in range(1, 7)
+    },
+    **{
+        # todo?: Use get_long_name() instead? Note that some doc-comments will need updating.
+        chapter.get_short_name(): {chapter}
+        for chapter in sorted(ALL_CHAPTER_AREAS)
+    },
+}
 
 
-CHAPTER_OPTION_KEYS: Mapping[str, AbstractSet[str]] = {
-    "All": _LEVEL_SHORT_NAMES_SET,
-    "Prequel Trilogy": {chapter for chapter in _LEVEL_SHORT_NAMES_SET if chapter[0] in "123"},
-    "Original Trilogy": {chapter for chapter in _LEVEL_SHORT_NAMES_SET if chapter[0] in "456"},
-    **{f"Episode {s}": {chapter for chapter in _LEVEL_SHORT_NAMES_SET if chapter[0] == s} for s in "123456"},
-    **{chapter: {chapter} for chapter in sorted(_LEVEL_SHORT_NAMES_SET)},
+# Variable names cannot use hyphens, so the options for specific levels are set programmatically.
+# option_1-1 = 100
+# option_1-2 = 101
+# etc.
+_CHAPTER_AREA_OPTIONS = {
+    f"option_{chapter_area.get_chapter_episode()}-{chapter_area.get_chapter_number_in_episode()}": chapter_area.value
+    for chapter_area in sorted(ALL_CHAPTER_AREAS)
+}
+
+
+_BOSS_KEY_TO_BOSS = {
+    f"{boss.unique_name} ({boss.area.get_short_name()})": boss for boss in Boss if Boss is not boss.is_alt_boss
 }
 
 
@@ -43,7 +66,7 @@ class ChapterOptionSet(OptionSet):
     valid_keys = list(CHAPTER_OPTION_KEYS.keys())
 
     @property
-    def value_ungrouped(self) -> set[str]:
+    def value_ungrouped(self) -> set[Area]:
         """Ungroup all grouped chapters in .value into a single set of individual chapters."""
         return set().union(*(CHAPTER_OPTION_KEYS[key] for key in self.value))
 
@@ -158,40 +181,37 @@ class TextColorChoice(ChoiceFromStringExtension):
 
 class ChapterChoice(ChoiceFromStringExtension):
     """ChoiceFromStringExtension for picking Chapters"""
-    # Variable names cannot use hyphens, so the options for specific levels are set programmatically.
-    # option_1-1 = 11
-    # option_1-2 = 12
-    # etc.
-    locals().update({f"option_{episode}-{chapter}": int(f"{episode}{chapter}")
-                     for episode, chapter in itertools.product(range(1, 7), range(1, 7))})
-    option_random_chapter = -1
-    option_random_non_vehicle = -2
-    option_random_vehicle = -3
-    option_random_episode_1 = 1
-    option_random_episode_2 = 2
-    option_random_episode_3 = 3
-    option_random_episode_4 = 4
-    option_random_episode_5 = 5
-    option_random_episode_6 = 6
+    # Variable names cannot use hyphens, so the options for specific chapters are set programmatically.
+    locals().update(_CHAPTER_AREA_OPTIONS)
+    option_random_chapter = -7
+    option_random_non_vehicle = -8
+    option_random_vehicle = -9
+    option_random_episode_1 = -1
+    option_random_episode_2 = -2
+    option_random_episode_3 = -3
+    option_random_episode_4 = -4
+    option_random_episode_5 = -5
+    option_random_episode_6 = -6
 
     def is_singular_chapter(self) -> bool:
-        v = self.value
-        return 11 <= v <= 66 and 1 <= v // 10 <= 6 and 1 <= v % 10 <= 6
+        return self.value in Area
 
-    def to_short_name_set(self) -> set[str]:
+    def to_area_set(self) -> set[Area]:
         v = self.value
         if v == ChapterChoice.option_random_chapter:
-            return set(_LEVEL_SHORT_NAMES_SET)
+            return set(ALL_CHAPTER_AREAS)
         elif v == ChapterChoice.option_random_non_vehicle:
-            return set(_LEVEL_SHORT_NAMES_SET).difference(VEHICLE_CHAPTER_SHORTNAMES)
+            return set(ALL_CHAPTER_AREAS).difference(VEHICLE_CHAPTERS)
         elif v == ChapterChoice.option_random_vehicle:
-            return set(VEHICLE_CHAPTER_SHORTNAMES)
-        elif 1 <= v <= 6:
-            return {chapter.short_name for chapter in EPISODE_TO_CHAPTER_AREAS[v]}
+            return set(VEHICLE_CHAPTERS)
+        elif -6 <= v <= -1:
+            return set(ALL_CHAPTER_AREAS).intersection(EPISODE_AREA_LOOKUP[-v].values())
         else:
-            key = self.current_key
-            assert key in _LEVEL_SHORT_NAMES_SET, f"{key} is not a valid chapter shortname"
-            return {key}
+            assert self.is_singular_chapter()
+            return {Area(self.value)}
+
+    def __bool__(self):
+        raise Exception("__bool__ can be confusing with ChapterChoice options because Area.Negotiations (0) is falsey")
 
 
 class MinikitGoalAmount(NamedRange):
@@ -347,21 +367,41 @@ class GoalChapter(ChoiceFromStringExtension):
     """
     display_name = "Goal Chapter"
     rich_text_doc = True
-    option_no_goal_chapter = 0
+    option_no_goal_chapter = -1
     # Variable names cannot use hyphens, so the options for specific levels are set programmatically.
-    # option_1-1 = 11
-    # option_1-2 = 12
-    # etc.
-    locals().update({f"option_{episode}-{chapter}": int(f"{episode}{chapter}")
-                     for episode, chapter in itertools.product(range(1, 7), range(1, 7))})
-    default = 0
+    locals().update(_CHAPTER_AREA_OPTIONS)
+    option_random_chapter = -2
+    option_random_enabled_chapter = -3
+    option_random_enabled_non_boss_chapter = -4
+    default = -1
+    _random_chapter_picks = list(_CHAPTER_AREA_OPTIONS.values())
 
-    def to_short_name(self) -> str | None:
+    class ToBeDetermined(Enum):
+        RANDOM_ENABLED_TO_BE_DETERMINED = auto()
+        RANDOM_ENABLED_NON_BOSS_TO_BE_DETERMINED = auto()
+
+    def __init__(self, value: int):
+        if value == GoalChapter.option_random_chapter:
+            # Pick a random chapter instead.
+            value = random.choice(self._random_chapter_picks)
+        super().__init__(value)
+
+    def to_area(self) -> Area | None | ToBeDetermined:
         if self.value == GoalChapter.option_no_goal_chapter:
             return None
-        key = self.current_key
-        assert key in _LEVEL_SHORT_NAMES_SET, f"{key} is not a valid chapter shortname"
-        return key
+        if self.value == GoalChapter.option_random_enabled_chapter:
+            # to be determined.
+            return self.ToBeDetermined.RANDOM_ENABLED_TO_BE_DETERMINED
+        if self.value == GoalChapter.option_random_enabled_non_boss_chapter:
+            # to be determined.
+            return self.ToBeDetermined.RANDOM_ENABLED_NON_BOSS_TO_BE_DETERMINED
+        if self.value == GoalChapter.option_random_chapter:
+            raise AssertionError("Goal Chapter instances set to `random_chapter` should not be instantiable")
+        return Area(self.value)
+
+    @classmethod
+    def from_area(cls, area: Area):
+        return cls(area.value)
 
 
 class DefeatBossesGoalAmount(Range):
@@ -380,7 +420,7 @@ class DefeatBossesGoalAmount(Range):
     display_name = "Defeat Bosses Goal Amount"
     rich_text_doc = True
     range_start = 0
-    range_end = len(BOSS_UNIQUE_NAME_TO_CHAPTER)
+    range_end = len(_BOSS_KEY_TO_BOSS)
 
 
 class EnabledBossesCount(Range):
@@ -397,7 +437,7 @@ class EnabledBossesCount(Range):
     display_name = "Enabled Bosses Count"
     rich_text_doc = True
     range_start = 0
-    range_end = len(BOSS_UNIQUE_NAME_TO_CHAPTER)
+    range_end = len(_BOSS_KEY_TO_BOSS)
 
 
 class AllowedBosses(OptionSet):
@@ -429,8 +469,11 @@ class AllowedBosses(OptionSet):
     """
     display_name = "Allowed Bosses"
     rich_text_doc = True
-    valid_keys = list(BOSS_UNIQUE_NAME_TO_CHAPTER.keys())
-    default = list(BOSS_UNIQUE_NAME_TO_CHAPTER.keys())
+    valid_keys = list(_BOSS_KEY_TO_BOSS.keys())
+    default = list(_BOSS_KEY_TO_BOSS.keys())
+
+    def to_areas(self) -> set[Area]:
+        return {_BOSS_KEY_TO_BOSS[key].area for key in self.value}
 
 
 class OnlyUniqueBossesCountTowardsGoal(ChoiceFromStringExtension):
@@ -1033,8 +1076,12 @@ class ChapterStoryUnlockCharactersNotRequired(OptionSet):
     """
     display_name = "Remove Story Characters From Unlock Requirements"
     rich_text_doc = True
-    valid_keys = frozenset({"C-3PO", "R2-D2", "Chewbacca"})
+    _name_to_character = {c.readable_name: c for c in (Character.C_3PO, Character.R2_D2, Character.CHEWBACCA)}
+    valid_keys = frozenset(_name_to_character.keys())
     default = frozenset()
+
+    def to_character_set(self) -> set[Character]:
+        return {self._name_to_character[name] for name in self.value}
 
 
 class ChaptersThatCanRequirePurchaseCharacters(OptionSet):
@@ -1068,10 +1115,17 @@ class ChaptersThatCanRequirePurchaseCharacters(OptionSet):
     """
     display_name = "Allow Requiring Purchase Characters"
     rich_text_doc = True
-    valid_keys = frozenset({
-        chapter.short_name for chapter in CHAPTER_AREAS if chapter.character_shop_unlocks
-    })
+    REVERSE_LOOKUP: dict[str, Area] = {
+        # todo?: Use get_long_name() instead?
+        chapter.get_short_name(): chapter
+        for chapter in sorted(ALL_CHAPTER_AREAS) if chapter.get_purchase_characters()
+    }
+    valid_keys = frozenset(REVERSE_LOOKUP.keys())
     default = sorted(valid_keys)
+
+    def to_area_set(self) -> set[Area]:
+        """Ungroup all grouped chapters in .value into a single set of individual chapters."""
+        return {self.REVERSE_LOOKUP[v] for v in self.value}
 
 
 class RequirePurchaseCharactersInsteadOfStoryCharactersChance(NamedRange):
@@ -1104,6 +1158,9 @@ class RequirePurchaseCharactersInsteadOfStoryCharactersCustomChance(OptionCounte
     max = 100
     valid_keys = ChaptersThatCanRequirePurchaseCharacters.valid_keys
     default = dict.fromkeys(sorted(valid_keys), 50)
+
+    def to_area_counter(self) -> Counter[Area]:
+        return Counter({ChaptersThatCanRequirePurchaseCharacters.REVERSE_LOOKUP[k]: v for k, v in self.value.items()})
 
 
 class EpisodeUnlockRequirement(ChoiceFromStringExtension):
@@ -1165,7 +1222,7 @@ class StartingChapter(ChapterChoice):
     """
     display_name = "Starting Chapter"
     rich_text_doc = True
-    default = 11
+    default = Area.NEGOTIATIONS.value
 
 
 class RandomStartingLevelMaxStartingCharacters(Range):

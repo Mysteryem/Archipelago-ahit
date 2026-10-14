@@ -14,14 +14,14 @@ from .constants import (
     CharacterAbility,
     CHAPTER_SPECIFIC_FLAGS,
 )
-from .data.areas import PURCHASABLE_NON_POWER_BRICK_EXTRAS
+from .data.areas import PURCHASABLE_NON_POWER_BRICK_EXTRAS, VEHICLE_CHAPTERS, Area
 from .data.characters import Character
 from .data.extras import Extra
 from .data.items import GenericCharacterData
-from .data.items.all_character_items import NORMAL_CHARACTER_TO_ITEM_DATA
-from .data.items.extra_items import EXTRA_DATA
-from .data.items.generic_items import NonDataItemName
-from .data.logic import CHAPTERS_BY_NUMBERS
+from .data.items.all_character_items import SENDABLE_CHARACTER_TO_ITEM_DATA, CHARACTER_TO_ITEM_DATA
+from .data.items.extra_items import EXTRA_DATA, ExtraData
+from .data.items.generic_items import NonDataItemName, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
+from .data.logic import CHAPTERS_BY_AREA
 from .data.logic.extraction import (
     AbilityRequirements as AbilityRequirementsExtractor,
     CNFAbilityRequirementsExtractor,
@@ -36,9 +36,6 @@ from .items import (
 from .item_classification import evaluate_effective_item
 from .item_groups import ability_to_readable_group
 from .levels import (
-    CHAPTER_AREA_STORY_CHARACTERS,
-    VEHICLE_CHAPTER_SHORTNAMES,
-    SHORT_NAME_TO_CHAPTER_AREA,
     DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
 )
 from .locations import LegoStarWarsTCSShopLocation
@@ -167,16 +164,17 @@ class ItemCreator:
         missing_item_counts = max_requirements.item_counts
 
         # Special handling for Super Gonk collect() override.
-        if missing_item_counts[Character.EVENT_SUPER_GONK_DROID.readable_name] > 0:
+        super_gonk_droid_collect_name = CHARACTER_TO_ITEM_DATA[Character.EVENT_SUPER_GONK_DROID].name
+        if missing_item_counts[super_gonk_droid_collect_name] > 0:
             if world.options.logic_difficulty.normal_plus:
                 # Gonk Droid and Super Gonk are unique items where having more than 1 would never be relevant, so there
                 # is no need to check the existing counts because they should always be either 0 or 1.
-                missing_item_counts[Character.GONK_DROID.readable_name] = 1
-                missing_item_counts[Extra.SUPER_GONK.readable_name] = 1
+                missing_item_counts[SENDABLE_CHARACTER_TO_ITEM_DATA[Character.GONK_DROID].name] = 1
+                missing_item_counts[ExtraData.from_extra(Extra.SUPER_GONK).name] = 1
             else:
                 # Extras (besides Score Multipliers) are not considered by logic on the Base logic, so
                 # EVENT_SUPER_GONK_DROID will never be collected into a state.
-                del missing_item_counts[Character.EVENT_SUPER_GONK_DROID.readable_name]
+                del missing_item_counts[super_gonk_droid_collect_name]
 
         # Abilities that are already provided by the starting inventory, or are not relevant to logic with this world's
         # options do not need to be provided by created items, potentially changing the effective classifications of
@@ -474,12 +472,13 @@ class ItemLocationCounts:
         return self.expected_locations_to_fill - self.explicit_items_to_create
 
 
-def _determine_chapters(world: LegoStarWarsTCSWorld) -> tuple[set[str], set[str]]:
+def _determine_chapters(world: LegoStarWarsTCSWorld) -> tuple[set[Area], set[Area]]:
     """
-    Return the set of chapter short names that have locations, and the set of chapter short names that have non-excluded
-    locations.
+    Return the set of chapter Areas that have locations, and the set of chapter Areas that have non-excluded locations.
     """
-    if world.goal_chapter:
+    chapters_with_locations: set[Area]
+    chapters_with_non_excluded_locations: set[Area]
+    if world.goal_chapter is not None:
         if world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
             chapters_with_locations = world.enabled_chapters - {world.goal_chapter}
             chapters_with_non_excluded_locations = world.enabled_non_goal_chapters
@@ -497,7 +496,8 @@ def _determine_chapters(world: LegoStarWarsTCSWorld) -> tuple[set[str], set[str]
     return chapters_with_locations, chapters_with_non_excluded_locations
 
 
-def _create_possible_pool(world: LegoStarWarsTCSWorld) -> dict[str, GenericCharacterData]:
+# todo?: Return a set[GenericCharacterData] instead because each GenericCharacterData has .character?
+def _create_possible_pool(world: LegoStarWarsTCSWorld) -> dict[Character, GenericCharacterData]:
     # If Gunship Cavalry (Original), Pod Race (Original) and Anakin's Flight get updated to require Vehicles again,
     # then Republic Gunship, Anakin's Pod and Naboo Starfighter would be required items to included in the pool.
     # if not vehicle_chapters_enabled:
@@ -512,17 +512,17 @@ def _create_possible_pool(world: LegoStarWarsTCSWorld) -> dict[str, GenericChara
     #         possible_pool_character_items[vehicle.name] = vehicle
     # todo: Reserve spaces in the item pool for vehicles and non-vehicles separately, based on how many locations
     #  unlock characters of the each type.
-    vehicle_chapters_enabled = not VEHICLE_CHAPTER_SHORTNAMES.isdisjoint(world.enabled_chapters)
+    vehicle_chapters_enabled = not VEHICLE_CHAPTERS.isdisjoint(world.enabled_chapters)
 
-    possible_pool_character_items = {name: char for name, char in CHARACTERS_AND_VEHICLES_BY_NAME.items()
-                                     if char.is_sendable and (vehicle_chapters_enabled
-                                                              or char.item_type != "Vehicle")}
-    if world.goal_chapter and world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
+    possible_pool_character_items = {char: data for char, data in SENDABLE_CHARACTER_TO_ITEM_DATA.items()
+                                     if (vehicle_chapters_enabled or data.item_type != "Vehicle")}
+    if (world.goal_chapter is not None
+            and world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed):
         # Vehicle chapters could be disabled for normal chapters, but the goal chapter could be a vehicle chapter,
         # so the vehicles required for the goal chapter need to be forced into the item pool.
-        for name in CHAPTER_AREA_STORY_CHARACTERS[world.goal_chapter]:
-            if name not in possible_pool_character_items:
-                possible_pool_character_items[name] = CHARACTERS_AND_VEHICLES_BY_NAME[name]
+        for character in sorted(world.goal_chapter.get_story_characters()):
+            if character not in possible_pool_character_items:
+                possible_pool_character_items[character] = SENDABLE_CHARACTER_TO_ITEM_DATA[character]
 
     return possible_pool_character_items
 
@@ -626,14 +626,15 @@ def _get_chapter_completion_ability_requirements(
 
 def _create_starting_characters_for_character_locked_chapters(
         world: LegoStarWarsTCSWorld,
-        possible_pool_character_items: dict[str, GenericCharacterData],
+        possible_pool_character_items: dict[Character, GenericCharacterData],
         starting_chapter_characters: list[GenericCharacterData],
         starting_chapter_required_count: int,
         starting_chapter_ability_requirements: set[CharacterAbility],
 ) -> set[CharacterAbility]:
     if starting_chapter_required_count > len(starting_chapter_characters):
-        raise Exception(f"Too many starting_chapter_characters required for {world.starting_chapter}. Required"
-                        f" {starting_chapter_required_count}, but only {len(starting_chapter_characters)} exist.")
+        raise Exception(f"Too many starting_chapter_characters required for {world.starting_chapter!r}. Required"
+                        f" {starting_chapter_required_count}, but only {len(starting_chapter_characters)} exist"
+                        f"({starting_chapter_characters}).")
     skipped: list[GenericCharacterData]
     picked: list[GenericCharacterData]
     missing_requirements = starting_chapter_ability_requirements
@@ -715,22 +716,22 @@ def _create_starting_characters_for_character_locked_chapters(
     # TODO: Do the picked characters need to be set somewhere? Check where else world.starting_chapter is used.
     for character_data in picked:
         world.push_precollected(world.create_item(character_data.name))
-        del possible_pool_character_items[character_data.name]
+        del possible_pool_character_items[character_data.character]
 
     for character_data in skipped:
         # The skipped characters can be considered to no longer give access to the starting chapter, which could change
         # their classifications if they get created.
-        world.character_chapter_access_counts[character_data.name] -= 1
+        world.character_chapter_access_counts[character_data.character] -= 1
         # print(f"Reducing count of chapters locked by {character_data.name} because the starting chapter will be"
         #       f" unlocked by {picked} instead")
-        assert world.character_chapter_access_counts[character_data.name] >= 0
+        assert world.character_chapter_access_counts[character_data.character] >= 0
 
     return missing_requirements
 
 
 def create_starting_characters_for_random_character_locked_chapters(
         world: LegoStarWarsTCSWorld,
-        possible_pool_character_items: dict[str, GenericCharacterData],
+        possible_pool_character_items: dict[Character, GenericCharacterData],
         starting_chapter_ability_requirements: set[CharacterAbility],
 ) -> set[CharacterAbility]:
     """
@@ -745,16 +746,18 @@ def create_starting_characters_for_random_character_locked_chapters(
     `Or(*(HasAllAbilities(abilities) for abilities in return_value))`
     """
     starting_chapter = world.starting_chapter
-    required_count = world.chapter_required_character_counts[starting_chapter.short_name]
-    legacy_characters = world.chapter_random_character_requirements[starting_chapter.short_name].copy()
+    required_count = world.chapter_required_character_counts[starting_chapter]
+    starting_chapter_characters_data = [SENDABLE_CHARACTER_TO_ITEM_DATA[c] for c
+                                        in world.chapter_random_character_requirements[starting_chapter]]
 
     return _create_starting_characters_for_character_locked_chapters(
-        world, possible_pool_character_items, legacy_characters, required_count, starting_chapter_ability_requirements)
+        world, possible_pool_character_items, starting_chapter_characters_data, required_count,
+        starting_chapter_ability_requirements)
 
 
 def create_starting_characters_for_vanilla_character_locked_chapters(
         world: LegoStarWarsTCSWorld,
-        possible_pool_character_items: dict[str, GenericCharacterData],
+        possible_pool_character_items: dict[Character, GenericCharacterData],
         starting_chapter_ability_requirements: set[CharacterAbility],
 ) -> set[CharacterAbility]:
     """
@@ -769,21 +772,19 @@ def create_starting_characters_for_vanilla_character_locked_chapters(
     :return: Still missing starting chapter ability requirements as
     `Or(*(HasAllAbilities(abilities) for abilities in return_value))`.
     """
-    not_required = world.options.chapter_unlock_story_characters_not_required.value
+    not_required = world.options.chapter_unlock_story_characters_not_required.to_character_set()
 
-    legacy_starting_chapter = world.starting_chapter
-    starting_chapter = CHAPTERS_BY_NUMBERS[legacy_starting_chapter.episode][legacy_starting_chapter.number_in_episode]
-    required_count = world.chapter_required_character_counts[starting_chapter.short_name]
+    starting_chapter_area = world.starting_chapter
+    required_count = world.chapter_required_character_counts[starting_chapter_area]
 
     # Add characters necessary to unlock, *and complete* the starting chapter into starting inventory.
-    if starting_chapter.short_name in world.chapters_requiring_alt_characters:
-        characters_set = starting_chapter.purchase_characters
+    if starting_chapter_area in world.chapters_requiring_alt_characters:
+        characters_set = starting_chapter_area.get_purchase_characters()
     else:
-        characters_set = starting_chapter.story_characters
+        characters_set = starting_chapter_area.get_story_characters()
     # The story character names are a `set`, so sort before iterating to get a deterministic iteration order.
     # Also filter out characters that have been excluded from requirements.
-    characters = sorted(NORMAL_CHARACTER_TO_ITEM_DATA[char] for char in characters_set
-                        if char.readable_name not in not_required)
+    characters = sorted(SENDABLE_CHARACTER_TO_ITEM_DATA[char] for char in characters_set.difference(not_required))
 
     return _create_starting_characters_for_character_locked_chapters(
         world, possible_pool_character_items, characters, required_count, starting_chapter_ability_requirements)
@@ -792,10 +793,11 @@ def create_starting_characters_for_vanilla_character_locked_chapters(
 def pick_characters_to_fulfil_abilities(
         world: LegoStarWarsTCSWorld,
         abilities_to_fulfil: CharacterAbility,
-        possible_pool_character_items: dict[str, GenericCharacterData],
+        possible_pool_character_items: dict[Character, GenericCharacterData],
         abilities_to_ignore: CharacterAbility = CharacterAbility.NONE,
 ) -> list[GenericCharacterData]:
-
+    # PyCharm's type checker doesn't like considering the result of the bitwise operation to be sortable.
+    # noinspection PyTypeChecker
     abilities_to_fulfil_list = sorted(abilities_to_fulfil & ~abilities_to_ignore)
     if not abilities_to_fulfil_list:
         return []
@@ -828,6 +830,7 @@ def pick_characters_to_fulfil_abilities(
         for ability in character_data.abilities:
             characters_by_ability.setdefault(ability, []).append(character_data)
 
+    individual_ability: CharacterAbility
     for individual_ability in abilities_to_fulfil_list:
         if individual_ability in fulfilled_abilities:
             # A character picked earlier also had this ability, so there does not need to be another character
@@ -842,7 +845,9 @@ def pick_characters_to_fulfil_abilities(
         picks = candidates[0:max(1, round(len(candidates) * 0.25))]
         picked = world.random.choice(picks)
         picked_characters.append(picked)
-        del possible_pool_character_items[picked.name]
+        del possible_pool_character_items[picked.character]
+        # PyCharm's type checker seems to be unaware that IntFlags are iterable.
+        # noinspection PyTypeChecker
         fulfilled_abilities.update(picked.abilities)
         for ability in picked.abilities:
             # The ability is provided by the picked character, so it is no longer relevant for sorting future
@@ -853,7 +858,7 @@ def pick_characters_to_fulfil_abilities(
 
 def create_starting_characters_for_needed_starting_chapter_abilities(
         world: LegoStarWarsTCSWorld,
-        possible_pool_character_items: dict[str, GenericCharacterData],
+        possible_pool_character_items: dict[Character, GenericCharacterData],
         missing_starting_chapter_ability_requirements: set[CharacterAbility],
 ) -> None:
     """
@@ -913,9 +918,9 @@ def create_starting_characters_for_needed_starting_chapter_abilities(
     )
     picked_characters = world.random.choice(final_picks)[1]
 
-    for character in picked_characters:
-        world.push_precollected(world.create_item(character.name))
-        del possible_pool_character_items[character.name]
+    for character_data in picked_characters:
+        world.push_precollected(world.create_item(character_data.name))
+        del possible_pool_character_items[character_data.character]
 
     updated_starting_abilities = world.get_starting_inventory_abilities()
     for has_all_abilities in missing_starting_chapter_ability_requirements:
@@ -976,7 +981,7 @@ def determine_item_pool_abilities(
 def create_item_pool(world: LegoStarWarsTCSWorld):
     # Determine how many chapter worth's of locations are enabled.
     goal_chapter_locations_excluded = (
-            world.goal_chapter
+            world.goal_chapter is not None
             and world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded
     )
 
@@ -984,8 +989,7 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
 
     possible_pool_character_items = _create_possible_pool(world)
 
-    legacy_starting_chapter = world.starting_chapter
-    starting_chapter = CHAPTERS_BY_NUMBERS[legacy_starting_chapter.episode][legacy_starting_chapter.number_in_episode]
+    starting_chapter = CHAPTERS_BY_AREA[world.starting_chapter]
     starting_chapter_ability_requirements = _get_chapter_completion_ability_requirements(world, starting_chapter)
     if not starting_chapter_ability_requirements:
         raise Exception(f"Did not get any ability-only requirements for completing {starting_chapter.name}.")
@@ -1014,11 +1018,10 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
         )
     elif world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_chapter_item:
         chapters_unlock_with_characters = False
-        starting_chapter_short_name = world.starting_chapter.short_name
-        world.push_precollected(world.create_item(f"{starting_chapter_short_name} Unlock"))
-        pool_required_chapter_unlock_items = [f"{short_name} Unlock" for short_name in sorted(world.enabled_chapters)
-                                              if short_name != starting_chapter_short_name]
-        del starting_chapter_short_name
+        world.push_precollected(world.create_item(CHAPTER_TO_CHAPTER_UNLOCK_ITEM[world.starting_chapter]))
+        pool_required_chapter_unlock_items = [
+            CHAPTER_TO_CHAPTER_UNLOCK_ITEM[chapter_area] for chapter_area in sorted(world.enabled_chapters)
+            if chapter_area is not world.starting_chapter]
         missing_starting_ability_requirements = starting_chapter_ability_requirements
     else:
         raise Exception(f"Unexpected Chapter Unlock Requirement {world.options.chapter_unlock_requirement}")
@@ -1058,8 +1061,8 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
 def _append_level_access_required_characters(
         world: LegoStarWarsTCSWorld,
         pool_required_characters: list[GenericCharacterData],
-        level_access_character_counts: Counter[str],
-        possible_pool_character_items: dict[str, GenericCharacterData],
+        level_access_character_counts: Counter[Character],
+        possible_pool_character_items: dict[Character, GenericCharacterData],
         item_pool_ability_requirements: ItemPoolAbilityRequirements,
 ) -> None:
     if not world.options.chapter_unlock_requirement.is_characters():
@@ -1072,36 +1075,35 @@ def _append_level_access_required_characters(
     world.random.shuffle(enabled_chapters)
 
     if world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
-        excluded_story_characters = world.options.chapter_unlock_story_characters_not_required.value
+        excluded_story_characters = world.options.chapter_unlock_story_characters_not_required.to_character_set()
     else:
         excluded_story_characters = ()
 
     abilities_provided = CharacterAbility.NONE
 
-    for shortname in enabled_chapters:
-        chapter = SHORT_NAME_TO_CHAPTER_AREA[shortname]
-        if chapter == world.starting_chapter:
+    for chapter_area in enabled_chapters:
+        if chapter_area is world.starting_chapter:
             # Characters for the starting chapter are created separately.
             continue
         if is_random_characters:
-            legacy_characters = [data.name for data in world.chapter_random_character_requirements[shortname]]
+            characters = world.chapter_random_character_requirements[chapter_area]
         else:
             # Must be vanilla characters.
-            if shortname in world.chapters_requiring_alt_characters:
-                legacy_characters = sorted(chapter.alt_character_requirements)
+            if chapter_area in world.chapters_requiring_alt_characters:
+                characters = sorted(chapter_area.get_purchase_characters())
             else:
-                legacy_characters = sorted(c for c in chapter.character_requirements if c not in excluded_story_characters)
+                characters = sorted(chapter_area.get_story_characters().difference(excluded_story_characters))
 
         # Skip already created characters and excluded characters.
-        for legacy_character in legacy_characters:
-            assert level_access_character_counts[legacy_character] > 0
-            if legacy_character not in possible_pool_character_items:
+        for character in characters:
+            assert level_access_character_counts[character] > 0
+            if character not in possible_pool_character_items:
                 # This character has already been created.
                 continue
-            char = CHARACTERS_AND_VEHICLES_BY_NAME[legacy_character]
-            abilities_provided |= char.abilities
-            pool_required_characters.append(char)
-            del possible_pool_character_items[legacy_character]
+            char_data = SENDABLE_CHARACTER_TO_ITEM_DATA[character]
+            abilities_provided |= char_data.abilities
+            pool_required_characters.append(char_data)
+            del possible_pool_character_items[character]
 
     item_pool_ability_requirements.required &= ~abilities_provided
 
@@ -1109,22 +1111,22 @@ def _append_level_access_required_characters(
 def _append_remaining_required_characters(
         pool_required_characters: list[GenericCharacterData],
         world: LegoStarWarsTCSWorld,
-        possible_pool_character_items: dict[str, GenericCharacterData],
+        possible_pool_character_items: dict[Character, GenericCharacterData],
         item_pool_ability_requirements: ItemPoolAbilityRequirements,
 ) -> None:
-    possible_pool_character_names = list(possible_pool_character_items.values())
-    world.random.shuffle(possible_pool_character_names)
+    possible_pool_characters_data = list(possible_pool_character_items.values())
+    world.random.shuffle(possible_pool_characters_data)
     # Sort preferred characters first so that they are picked in preference.
     preferred_characters = world.options.preferred_characters.value
     if preferred_characters:
-        possible_pool_character_names.sort(key=lambda char: -1 if char.name in preferred_characters else 0)
+        possible_pool_characters_data.sort(key=lambda char: -1 if char.name in preferred_characters else 0)
 
-    for character in possible_pool_character_names:
-        if item_pool_ability_requirements.required & character.abilities:
+    for character_data in possible_pool_characters_data:
+        if item_pool_ability_requirements.required & character_data.abilities:
             # This character satisfied at least one of the remaining required abilities.
-            pool_required_characters.append(character)
-            item_pool_ability_requirements.required &= ~character.abilities
-            del possible_pool_character_items[character.name]
+            pool_required_characters.append(character_data)
+            item_pool_ability_requirements.required &= ~character_data.abilities
+            del possible_pool_character_items[character_data.character]
 
 
 def prepare_extras(world: LegoStarWarsTCSWorld) -> tuple[list[str], list[str]]:
@@ -1804,7 +1806,7 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
         world: LegoStarWarsTCSWorld,
         item_pool: list[LegoStarWarsTCSItem],
         chapters_unlock_with_characters: bool,
-        level_access_character_counts: Counter[str],
+        level_access_character_counts: Counter[Character],
 ) -> None:
     """
     Apply deprioritized and skip_balancing classifications to characters whose only abilities are commonly found within
@@ -1824,6 +1826,11 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
     # levels.
     non_level_access_character_items: list[LegoStarWarsTCSItem] = []
     non_deprioritize_ability_counts: Counter[CharacterAbility] = Counter()
+    level_access_character_item_name_counts: Counter[str] = Counter(
+        {
+            SENDABLE_CHARACTER_TO_ITEM_DATA[k].name: v for k, v in level_access_character_counts.items()
+        }
+    )
     for item in item_pool:
         if item.advancement and item.name in CHARACTERS_AND_VEHICLES_BY_NAME:
             if progression_deprioritized_skip_balancing in item.classification:
@@ -1831,10 +1838,11 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
                 continue
             abilities = item.abilities
             if abilities:
+                # PyCharm's type checker misses that CharacterAbility is Iterable[CharacterAbility].
+                # noinspection PyTypeChecker
                 non_deprioritize_ability_counts.update(abilities)
             if chapters_unlock_with_characters:
-                # todo: Remove the level_access_character_counts check now that precise logical amounts are determined.
-                if level_access_character_counts[item.name] == 0 and world.logical_item_counts[item.name] < 1:
+                if level_access_character_item_name_counts[item.name] == 0 and world.logical_item_counts[item.name] < 1:
                     assert abilities, (f"No abilities should mean the character item is not progression currently if"
                                        f" the character does not unlock levels, but {item.name} has no abilities and"
                                        f" does not unlock levels.")
@@ -1854,6 +1862,8 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
             item.classification |= progression_deprioritized_skip_balancing
             if abilities:
                 # Reduce the remaining ability counts from non-deprioritized characters
+                # PyCharm's type checker misses that CharacterAbility is Iterable[CharacterAbility].
+                # noinspection PyTypeChecker
                 non_deprioritize_ability_counts.subtract(abilities)
     assert all(ability.bit_count() == 1 for ability in non_deprioritize_ability_counts)
 
@@ -1902,8 +1912,8 @@ def _create_universal_tracker_item_pool(world: LegoStarWarsTCSWorld) -> list[Leg
 
 def _create_items(
         world: LegoStarWarsTCSWorld,
-        level_access_character_counts: Counter[str],
-        possible_pool_character_items: dict[str, GenericCharacterData],
+        level_access_character_counts: Counter[Character],
+        possible_pool_character_items: dict[Character, GenericCharacterData],
         non_excluded_chapter_count: int,
         goal_chapter_locations_excluded: bool,
         pool_required_chapter_unlock_items: list[str],

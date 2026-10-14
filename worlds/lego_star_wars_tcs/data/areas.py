@@ -1,4 +1,4 @@
-from typing import TypedDict, TYPE_CHECKING
+from typing import TypedDict, TYPE_CHECKING, Iterable
 from typing_extensions import deprecated
 from enum import IntEnum, IntFlag
 
@@ -132,12 +132,12 @@ class Area(IntEnum):
 
     def get_chapter_episode(self) -> int:
         if not self.is_chapter():
-            raise Exception(f"{self} is not a chapter.")
+            raise Exception(f"{self!r} is not a chapter.")
         return self.episode_index + 1
 
     def get_chapter_number_in_episode(self) -> int:
         if not self.is_chapter():
-            raise Exception(f"{self} is not a chapter.")
+            raise Exception(f"{self!r} is not a chapter.")
         return self.area_index + 1
 
     def is_character_bonus(self):
@@ -167,8 +167,23 @@ class Area(IntEnum):
     def get_short_name(self):
         """This is a legacy method, and should be considered deprecated."""
         if not self.is_chapter():
-            raise Exception(f"{self} is not a chapter.")
+            raise Exception(f"{self!r} is not a chapter.")
         return f"{self.episode_index + 1}-{self.area_index + 1}"
+
+    def get_long_name(self):
+        if self.is_chapter():
+            return f"{self.readable_name} ({self.get_short_name()})"
+        # LOSTTEMPLE is not locked behind a gold brick door.
+        # ANEWHOPE already has (Bonus Level) in its .readable_name to help tell it apart from Episode IV - A New Hope.
+        elif self.is_bonus_room_bonus() and self is not Area.LOSTTEMPLE and self is not Area.ANEWHOPE:
+            return f"{self.readable_name} (Gold Brick Bonus)"
+        else:
+            return self.readable_name
+
+    def __bool__(self):
+        # NEGOTIATIONS being falsey is confusing, but making it truthy would also be confusing because its value is
+        # falsey. So prevent use of Area instances in boolean operations.
+        raise Exception("Truthiness of Area objects is confusing. Use `area is not None` to check for absence instead.")
 
     @staticmethod
     def from_episode_chapter(episode: int, chapter: int) -> "Area":
@@ -179,6 +194,11 @@ class Area(IntEnum):
     def from_short_name(short_name: str) -> "Area":
         """This method is deprecated as code should move to using Area objects directly, instead of using short names"""
         return _LEGACY_CHAPTER_SHORT_NAME_TO_AREA[short_name]
+
+    @staticmethod
+    def to_human_readable_list(areas: "Iterable[Area]") -> list[str]:
+        """Small helper mostly intended for formatting areas to a human readable error message."""
+        return [a.get_long_name() for a in sorted(areas, key=int)]
 
     NEGOTIATIONS =      0, dict(episode_index= 0, area_index= 0, readable_name=               "Negotiations", flags=AreaFlag(0x0010), story_true_jedi=31000, free_play_true_jedi= 64000, extra=             Extra.SUPER_GONK, levels=[Level.EP1_FAILEDNEG_INTRO1, Level.EP1_FAILEDNEG_INTRO2, Level.NEGOTIATIONS_A, Level.NEGOTIATIONS_B, Level.NEGOTIATIONS_C, Level.FAILEDNEG_OUTRO, Level.NEGOTIATIONS_STATUS])
     GUNGAN =            1, dict(episode_index= 0, area_index= 1, readable_name=          "Invasion Of Naboo", flags=AreaFlag(0x0010), story_true_jedi=44000, free_play_true_jedi= 52000, extra=              Extra.POO_MONEY, levels=[Level.GUNGAN_INTRO1, Level.GUNGAN_INTRO2, Level.GUNGAN_A, Level.GUNGAN_B, Level.GUNGAN_C, Level.GUNGAN_E, Level.GUNGAN_OUTRO2, Level.GUNGAN_STATUS])
@@ -256,20 +276,22 @@ _AREA_TO_PURCHASE_CHARACTERS: "dict[Area, frozenset[Character]]" = {}
 _AREA_TO_EXTRA_TOGGLE_CHARACTERS: "dict[Area, frozenset[Character]]" = {}
 
 
-BONUS_ROOM_VEHICLE_BONUSES = frozenset({
+# Explicit frozenset[Area] type hints are provided, otherwise PyCharm tries to type the sets as containing literals, and
+# which messes with PyCharm's type inference when using the set for other purposes, e.g. iterating it.
+BONUS_ROOM_VEHICLE_BONUSES: frozenset[Area] = frozenset({
     Area.PODRACE,
     Area.BONUS_GUNSHIP,
     Area.ANAKINSFLIGHT,
 })
 
-BONUS_ROOM_BONUSES = BONUS_ROOM_VEHICLE_BONUSES | frozenset({
+BONUS_ROOM_BONUSES: frozenset[Area] = BONUS_ROOM_VEHICLE_BONUSES | frozenset({
     Area.ANEWHOPE,
     Area.BONUS,
     Area.BONUS2,
     Area.LOSTTEMPLE,
 })
 
-_TWO_PLAYER_ARCADE_ARES = frozenset({
+_TWO_PLAYER_ARCADE_ARES: frozenset[Area] = frozenset({
     Area.SENATE,
     Area.UTAPAU,
     Area.HOTH,
@@ -278,7 +300,7 @@ _TWO_PLAYER_ARCADE_ARES = frozenset({
     Area.NB_DAGOBAH,
 })
 
-VEHICLE_CHAPTERS = frozenset({
+VEHICLE_CHAPTERS: frozenset[Area] = frozenset({
     Area.PODSPRINT,
     Area.PURSUIT,
     Area.GUNSHIP,
@@ -289,7 +311,7 @@ VEHICLE_CHAPTERS = frozenset({
     Area.DEATHSTAR2BATTLE,
 })
 
-ALL_CHAPTER_AREAS = frozenset({area for area in Area if area.is_chapter()})
+ALL_CHAPTER_AREAS: frozenset[Area] = frozenset({area for area in Area if area.is_chapter()})
 assert VEHICLE_CHAPTERS < ALL_CHAPTER_AREAS
 
 

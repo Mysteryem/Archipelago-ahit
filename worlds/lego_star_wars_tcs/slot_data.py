@@ -1,15 +1,18 @@
 import dataclasses
 import typing
 from abc import ABC, abstractmethod
+from collections import Counter
 from dataclasses import dataclass, field, Field
 from types import UnionType, NoneType
-from typing import Any, TYPE_CHECKING, Iterable, cast, Union, Optional, get_origin, AbstractSet
+from typing import Any, TYPE_CHECKING, Iterable, Mapping, Union, Optional, get_origin, AbstractSet
 from typing_extensions import override
 
-from Options import Option, OptionSet, Range, FreeText, OptionCounter, OptionDict
+from Options import Option, Range
 from worlds.AutoWorld import World
 
 from . import constants
+from .data.areas import Area
+from .data.characters import Character
 from .options import (
     TCSDirectSlotDataOptions,
     MinikitGoalAmount,
@@ -28,6 +31,40 @@ class OptionalSlotData(ABC):
     @abstractmethod
     def is_present(world: LegoStarWarsTCSWorld) -> bool:
         ...
+
+
+class CustomJsonSerialize(ABC):
+    @abstractmethod
+    def to_json_serializable(self) -> Any:
+        ...
+
+
+class AreaOptionSet(Option[set[Area]]):
+    default = set()
+
+    def __init__(self, area_ids: Iterable[int]):
+        self.value = set(map(Area, area_ids))
+
+    @classmethod
+    def from_any(cls, data: Any) -> "AreaOptionSet":
+        if isinstance(data, Iterable):
+            return cls(data)
+        else:
+            raise TypeError(f"Cannot create {cls.__name__} from {data} of type {type(data)}")
+
+
+class AreaOption(Option[Area]):
+    default = Area.NEGOTIATIONS
+
+    def __init__(self, area_id: int):
+        self.value = Area(area_id)
+
+    @classmethod
+    def from_any(cls, data: Any) -> "AreaOption":
+        if isinstance(data, int):
+            return cls(data)
+        else:
+            raise TypeError(f"Cannot create {cls.__name__} from {data} of type {type(data)}")
 
 
 class ApWorldVersion(Option[tuple[int, int, int]]):
@@ -55,16 +92,16 @@ class LogicVersion(Range):
         return super().from_any(data)
 
 
-class EnabledChapters(OptionSet):
+class EnabledChapters(AreaOptionSet):
     @classmethod
-    def from_any(cls, data: Any) -> OptionSet:
+    def from_any(cls, data: Any) -> AreaOptionSet:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.enabled_chapters)
         return super().from_any(data)
 
 
-class EnabledEpisodes(Option[AbstractSet[int]]):
-    default = frozenset()
+class EnabledEpisodes(Option[set[int]]):
+    default = set()
 
     def __init__(self, episodes: Iterable[int]):
         self.value = set(episodes)
@@ -79,19 +116,19 @@ class EnabledEpisodes(Option[AbstractSet[int]]):
             raise TypeError(f"Cannot create EnabledEpisodes from {data} of type {type(data)}")
 
 
-class EnabledBonuses(OptionSet):
+class EnabledBonuses(AreaOptionSet):
     @classmethod
-    def from_any(cls, data: Any) -> OptionSet:
+    def from_any(cls, data: Any) -> AreaOptionSet:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.enabled_bonuses)
         return super().from_any(data)
 
 
-class StartingChapter(FreeText):
+class StartingChapter(AreaOption):
     @classmethod
-    def from_any(cls, data: Any) -> FreeText:
+    def from_any(cls, data: Any) -> AreaOption:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
-            return cls(data.starting_chapter.short_name)
+            return cls(data.starting_chapter)
         return super().from_any(data)
 
 
@@ -117,9 +154,9 @@ class MinikitGoalAmountDerived(Range):
         return super().from_any(data)
 
 
-class EnabledBosses(OptionSet):
+class EnabledBosses(AreaOptionSet):
     @classmethod
-    def from_any(cls, data: Any) -> OptionSet:
+    def from_any(cls, data: Any) -> AreaOptionSet:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.enabled_bosses)
         return super().from_any(data)
@@ -136,12 +173,17 @@ class GoalAreaCompletionCount(Range):
         return super().from_any(data)
 
 
-class GoalChapterShortName(FreeText, OptionalSlotData):
+class GoalChapterShortName(AreaOption, OptionalSlotData):
+    default = Area.EMPERORFIGHT
+
     @classmethod
-    def from_any(cls, data: Any) -> FreeText:
+    def from_any(cls, data: Any) -> AreaOption:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
-            return cls(data.goal_chapter if data.goal_chapter else "")
-        return super().from_any(data)
+            goal_chapter = data.goal_chapter
+            assert goal_chapter is not None, "is_present should prevent being called with no goal chapter"
+            return cls(goal_chapter)
+        else:
+            return super().from_any(data)
 
     @override
     @staticmethod
@@ -180,9 +222,9 @@ class ItemColors(Option[tuple[int, int, int, int, int, int, int]]):
         ))
 
 
-class ChaptersRequiringAltCharacters(OptionSet, OptionalSlotData):
+class ChaptersRequiringAltCharacters(AreaOptionSet, OptionalSlotData):
     @classmethod
-    def from_any(cls, data: Any) -> OptionSet:
+    def from_any(cls, data: Any) -> AreaOptionSet:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.chapters_requiring_alt_characters)
         return super().from_any(data)
@@ -193,42 +235,79 @@ class ChaptersRequiringAltCharacters(OptionSet, OptionalSlotData):
         return world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters
 
 
-class ChapterRequiredCharacterCounts(OptionCounter, OptionalSlotData):
+class ChapterRequiredCharacterCounts(Option[Counter[Area]], OptionalSlotData, CustomJsonSerialize):
+    default = Counter()
+
+    def __init__(self, chapter_ids: Mapping[int, int]):
+        self.value = Counter({Area(k): v for k, v in chapter_ids.items()})
+
     @classmethod
-    def from_any(cls, data: Any) -> OptionDict:
+    def from_any(cls, data: Any) -> Option[Counter[Area]]:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.chapter_required_character_counts)
-        return super().from_any(data)
+        elif isinstance(data, list):
+            # to_json_serializable writes the key-value pairs into a list as [k1, v1, k2, v2, ...].
+            it = iter(data)
+            return cls(dict(zip(it, it)))
+        else:
+            raise TypeError(f"Cannot create ChapterRequiredCharacterCounts from {data} of type {type(data)}")
 
     @override
     @staticmethod
     def is_present(world: LegoStarWarsTCSWorld) -> bool:
         return world.options.chapter_unlock_requirement.is_characters()
 
+    def to_json_serializable(self) -> Any:
+        # Because keys in json must be str, and for reduced server memory usage, the pairs are iterated into a list with
+        # each key immediately preceding its value.
+        return [x for pair in self.value.items() for x in pair]
 
-class ChapterRandomCharacterRequirements(Option[dict[str, list[int]]], OptionalSlotData):
+
+class ChapterRandomCharacterRequirements(Option[dict[Area, list[Character]]], OptionalSlotData, CustomJsonSerialize):
     default = {}
 
-    def __init__(self, value: dict[str, list[int]]):
-        self.value = value
+    def __init__(self, value: dict[int, list[int]]):
+        self.value = {Area(k): [Character(c) for c in v] for k, v in value.items()}
 
     @classmethod
-    def from_any(cls, data: typing.Any) -> Option[dict[str, list[int]]]:
+    def from_any(cls, data: typing.Any) -> Option[dict[Area, list[Character]]]:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls({
-                chapter: cast(list[int], [c.code for c in characters])
+                chapter: characters
                 for chapter, characters in data.chapter_random_character_requirements.items()
             })
-        if isinstance(data, dict):
-            return cls({
-                chapter: list(ids) for chapter, ids in data.items()
-            })
+        if isinstance(data, list):
+            from_list = {}
+            it = iter(data)
+            current_characters_value = None
+            for x in it:
+                # Keys are identified by being negative from inversion (^ -1).
+                if x < 0:
+                    # x is a key in the dict, so create a new list of values and put it into the dict.
+                    current_characters_value = []
+                    from_list[x ^ -1] = current_characters_value
+                else:
+                    # x is an element within a value in the dict, so append it to the current value.
+                    assert current_characters_value is not None, \
+                        "A key should always be found before the first value-element"
+                    current_characters_value.append(x)
+            return cls(from_list)
         raise TypeError(f"Cannot create ChapterRandomCharacterRequirements from {data} of type {type(data)}")
 
     @override
     @staticmethod
     def is_present(world: LegoStarWarsTCSWorld) -> bool:
         return world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_random_characters
+
+    def to_json_serializable(self) -> list[int]:
+        # Put the key-value pairs into a single list where each key is inverted to identify it. This decreases pickled
+        # size, compared to a list[list[int]], but the pickled bytes tend to be less compressible, so the multidata can
+        # end up slightly larger.
+        # However, a single list has smaller memory requirements, so that is what is being preferred because slot data
+        # is kept in memory by the AP server.
+        return [x for k, v in self.value.items() for x in (k.value ^ -1, *v)]
+
+
 
 _DIRECT_FIELD_NAMES: frozenset[str] = frozenset({field.name for field in dataclasses.fields(TCSDirectSlotDataOptions)})
 
@@ -287,9 +366,12 @@ class TCSSlotDataOptions(TCSDirectSlotDataOptions):
                 # There is no option instance, so do not include anything in slot data.
                 continue
             field_option: Option[Any] = getattr(self, field_name)
-            field_value = field_option.value
-            if isinstance(field_value, set):
-                field_value = sorted(field_value)
+            if isinstance(field_option, CustomJsonSerialize):
+                field_value = field_option.to_json_serializable()
+            else:
+                field_value = field_option.value
+                if isinstance(field_value, set):
+                    field_value = sorted(field_value)
             slot_data[field_name] = field_value
 
     @classmethod
@@ -310,8 +392,7 @@ class TCSSlotDataOptions(TCSDirectSlotDataOptions):
         return cls(**constructor_kwargs)
 
     @classmethod
-    def from_slot_data(cls, slot_data: dict[str, Any]) -> "TCSSlotDataOptions":
-        # todo: Need to handle defaults for options that are not present because of an older generator version
+    def from_slot_data(cls, slot_data: Mapping[str, Any]) -> "TCSSlotDataOptions":
         constructor_kwargs: dict[str, Any] = {}
         missing_required_fields: dict[Option[Any], Field[Any]] = {}
         for field_obj in dataclasses.fields(TCSSlotDataOptions):
@@ -352,3 +433,10 @@ class TCSSlotDataOptions(TCSDirectSlotDataOptions):
                     raise AssertionError(f"Missing default for {field_obj.name}")
                 # The default value/default_factory will be used.
         return cls(**constructor_kwargs)
+
+_OPTION_TYPE_TO_ATTRIBUTE: Mapping[type[Option[Any]], str] = {
+    TCSSlotDataOptions._get_option_type_from_hint(f): f.name for f in dataclasses.fields(TCSDirectSlotDataOptions)
+}
+
+def get_slot_data_name(o: type[Option[Any]]) -> str:
+    return _OPTION_TYPE_TO_ATTRIBUTE[o]

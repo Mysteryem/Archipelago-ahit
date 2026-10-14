@@ -23,7 +23,7 @@ from CommonClient import server_loop, gui_enabled, get_base_parser
 from .. import options, TCSUniversalTrackerAPWorldVersionMismatchError
 from ..constants import GAME_NAME, AP_WORLD_VERSION
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, ChapterArea
-from ..slot_data import TCSSlotDataOptions
+from ..slot_data import TCSSlotDataOptions, ApWorldVersion, get_slot_data_name
 from .client_text import ClientText, clean_string
 from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
 from .custom_save_data import CustomSaveDataSections, CUSTOM_SAVE_DATA_SECTION_SIZE
@@ -546,9 +546,11 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     def _validate_version(slot_data: typing.Mapping[str, typing.Any]) -> bool:
         # All versions of the TCS apworld should have written "apworld_version" into slot data, if it is absent then
         # there is an error.
+        # This accesses the slot data as its raw value because very old versions of the apworld will not have slot data
+        # that is parsable as TCSSlotDataoptions.
         # Ensure the read data from slot_data is a tuple rather than a list so that the comparisons with
         # AP_WORLD_VERSION work as expected.
-        server_apworld_version = tuple(slot_data["apworld_version"])
+        server_apworld_version = tuple(slot_data[get_slot_data_name(ApWorldVersion)])
         if AP_WORLD_VERSION != server_apworld_version:
             # If the major version does not match, the versions are incompatible.
             # If the minor version of the client is less than the server, then the versions are incompatible.

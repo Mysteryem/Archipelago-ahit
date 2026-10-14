@@ -562,36 +562,36 @@ BOSS_CHARACTERS_BY_SHORTNAME: dict[str, str] = {
 }
 
 # True Jedi that is difficult if not impossible in Free Play with just the Story characters for a level.
-DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI: set[str] = {
+DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI: set[Area] = {
     # I don't think this is possible, I tried before, even with maximum usage of Power Ups. Higher logic could probably
     # get this because they can jump to the top of the cylindrical area with all the Battle Droids, which has a bunch of
     # Blue Studs.
-    "1-6",
-    "2-6",  # I only managed 14180/22000
-    "3-3",  # Barely possible by re-entering and getting studs that replace minikits
-    "3-5",  # I managed only 40700/45000, even with 3 double jump slams to get 3 Blue Studs that were just too high.
+    Area.MAUL,
+    Area.DOOKU,  # I only managed 14180/22000
+    Area.GRIEVOUS,  # Barely possible by re-entering and getting studs that replace minikits
+    Area.TEMPLE,  # I managed only 40700/45000, even with 3 double jump slams to get 3 Blue Studs that were just too high.
     # Dying is easy in multiple areas, where even without deaths, it is barely possible.
-    "3-6",
+    Area.VADER,
     # It's pretty slow, but possible to overshoot by 20K studs while mostly wasting the two Power Ups. If it is possible
     # to get 9/10 TIE Fighters in the Turbolaser control area towards the very end, then return to the previous room via
     # the elevator, go back to the Turbolasers and destroy the last TIE Fighter before the Power Up runs out, then
     # doubling the studs that spawn (around 20K) would be a huge benefit.
-    # "4-4",
+    # Area.DEATHSTARRESCUE,
     # Possible to overshoot by 95K Studs, even without taking advantage of Power Ups, though it is slow, and a vehicle,
     # level, so dying a lot is expected. Vehicle chapters also just kind of suck for picking up studs. 4-6 could be
     # included in the difficult True Jedi if there are complaints.
-    # "4-6",
+    # Area.DEATHSTARBATTLE,
     # Apparently barely possible by re-entering and getting studs that replace minikits. I find this vehicle chapter
     # especially difficult to actually pick studs up off the ground, and dying is also easy in this chapter.
-    "5-1",
+    Area.HOTHBATTLE,
     # I only managed 53K/80K without deaths, but while wasting Power Ups. Even with Power Ups, 5-2 is looking clearly
     # impossible.
-    "5-2",
+    Area.HOTHESCAPE,
     # If no studs are lost from dying and Power Ups are used to their fullest, then 5-6 is just barely possible
     # without getting Minikit Blue Studs, but by only around 100-200 Studs.
-    "5-6",
+    Area.CLOUDCITYESCAPE,
     # I am assuming that the extra room where the door needs to be blown up is required to get True Jedi in 6-5.
-    "6-5",
+    Area.EMPERORFIGHT,
 }
 
 
@@ -782,31 +782,12 @@ ALL_AREA_REQUIREMENT_CHARACTERS: frozenset[str] = frozenset().union(
 SHORT_NAME_TO_CHAPTER_AREA = {area.short_name: area for area in CHAPTER_AREAS}
 EPISODE_TO_CHAPTER_AREAS = {i + 1: CHAPTER_AREAS[i * 6:(i + 1) * 6] for i in range(6)}
 AREA_ID_TO_CHAPTER_AREA = {area.area_id: area for area in CHAPTER_AREAS}
-STATUS_LEVEL_IDS = (
-        {area.status_level_id for area in CHAPTER_AREAS} | {area.status_level_id for area in BONUS_AREAS
-                                                            if area.status_level_id != -1}
-)
 AREA_ID_TO_BONUS_AREA = {area.area_id: area for area in BONUS_AREAS}
 
-VEHICLE_BONUS_AREA_NAMES: frozenset[str] = frozenset({
+_VEHICLE_BONUS_AREA_NAMES: frozenset[str] = frozenset({
     Area.PODRACE.readable_name,
     Area.ANAKINSFLIGHT.readable_name,
     Area.BONUS_GUNSHIP.readable_name,
 })
 
-assert all(name in BONUS_NAME_TO_BONUS_AREA for name in VEHICLE_BONUS_AREA_NAMES)
-
-VEHICLE_CHAPTER_SHORTNAMES: frozenset[str] = frozenset({
-    "1-4",
-    "2-1",
-    "2-5",
-    "3-1",
-    "4-6",
-    "5-1",
-    "5-3",
-    "6-6",
-})
-
-BOSS_UNIQUE_NAME_TO_CHAPTER: dict[str, ChapterArea] = {
-    chapter.unique_boss_name: chapter for chapter in CHAPTER_AREAS if chapter.boss
-}
+assert all(name in BONUS_NAME_TO_BONUS_AREA for name in _VEHICLE_BONUS_AREA_NAMES)

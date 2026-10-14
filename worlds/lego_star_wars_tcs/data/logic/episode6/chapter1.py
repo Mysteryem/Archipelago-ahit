@@ -1,4 +1,4 @@
-from rule_builder.rules import And, Or, True_, False_
+from rule_builder.rules import And, Or, True_
 
 from ..macros import (
     CAN_DAMAGE_AT_CLOSE_RANGE,

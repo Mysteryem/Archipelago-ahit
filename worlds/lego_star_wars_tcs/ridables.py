@@ -143,8 +143,6 @@ assert all(ridable.readable_name in RIDABLES_BY_NAME
 
 
 def get_ridable_requirements(area: Area, ridable_character: Character) -> Rule:
-    # todo: Requiring CAN_RIDE_VEHICLES is not strictly necessary currently because the player is always forced to start
-    #  with a Jedi.
     requirements = RIDABLES_REQUIREMENTS.get(area, {}).get(ridable_character, None)
     if requirements is None:
         return True_()

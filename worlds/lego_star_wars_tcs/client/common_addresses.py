@@ -4,7 +4,7 @@ from functools import cache
 
 from .common import StaticUChar, StaticFloat, StaticUint, StaticBOOL, FloatField, UCharField
 from .type_aliases import TCSContext
-from ..levels import AREA_ID_TO_CHAPTER_AREA
+from ..data.areas import ALL_CHAPTER_AREAS
 
 # To use: Iterate to find the first key that the address-to-convert is less than, then add the offset value.
 _GOG_TO_STEAM = {
@@ -250,7 +250,7 @@ def is_in_chapter_free_play(ctx: TCSContext, area_id: int | None = None) -> bool
     if area_id is None:
         area_id = CURRENT_AREA_ADDRESS.get(ctx)
 
-    if area_id not in AREA_ID_TO_CHAPTER_AREA:
+    if area_id not in ALL_CHAPTER_AREAS:
         # This eliminates Bonuses that have Free Play.
         return False
 

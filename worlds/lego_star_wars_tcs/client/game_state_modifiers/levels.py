@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, field
-from typing import AbstractSet, Callable
+from typing import AbstractSet, Callable, Iterable
 
 from .text_replacer import TextId
 from ..events import subscribe_event, OnAreaChangeEvent, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
@@ -156,7 +156,7 @@ class UnlockedChapterManager(ClientComponent):
         slot_data = event.slot_data
         ctx = event.context
 
-        enabled_chapters: list[str] = sorted(slot_data.enabled_chapters.value)
+        enabled_chapters: list[Area] = sorted(slot_data.enabled_chapters.value)
         enabled_episodes: list[int] = sorted(slot_data.enabled_episodes.value)
         episode_unlock_requirement = slot_data.episode_unlock_requirement
         all_episodes_character_purchase_requirements = slot_data.all_episodes_character_purchase_requirements
@@ -173,52 +173,39 @@ class UnlockedChapterManager(ClientComponent):
         if chapter_unlock_requirement == options.ChapterUnlockRequirement.option_random_characters:
             character_requirements_option = slot_data.chapter_random_character_requirements
             if character_requirements_option is None:
-                raise Exception("Random character requirements option is missing from slot data, but is required, please"
-                                " report this as a bug.")
-            from_slot_data: dict[str, list[ApItemId]] = character_requirements_option.value
-            self.random_character_chapter_requirements = {
-                Area.from_short_name(chapter_short_name): [CODE_TO_CHARACTER_DATA[code].character
-                                                           for code in character_codes]
-                for chapter_short_name, character_codes in from_slot_data.items()
-            }
+                raise Exception("Random character requirements option is missing from slot data, but is required, "
+                                "please report this as a bug.")
+            self.random_character_chapter_requirements = character_requirements_option.value.copy()
         else:
             self.random_character_chapter_requirements = {}
 
         num_enabled_episodes = len(enabled_episodes)
 
-        self.enabled_chapter_areas = set(map(
-            Area.from_short_name,
-            enabled_chapters
-        ))
+        self.enabled_chapter_areas = slot_data.enabled_chapters.value.copy()
 
         required_counts_option = slot_data.chapter_required_character_counts
-        required_counts: dict[str, int]
+        required_counts: dict[Area, int]
         if required_counts_option is None:
             required_counts = {}
         else:
             required_counts = required_counts_option.value
-        converted_to_areas = {Area.from_short_name(k): v for k, v in required_counts.items()}
-        self.per_chapter_required_character_count = converted_to_areas
+        self.per_chapter_required_character_count = required_counts
         alt_character_chapters_option = slot_data.chapters_requiring_alt_characters
+        chapters_requiring_alt_characters: Iterable[Area]
         if alt_character_chapters_option is None:
             chapters_requiring_alt_characters = ()
         else:
             chapters_requiring_alt_characters = alt_character_chapters_option.value
-        self.chapters_using_alt_characters = set(map(
-            Area.from_short_name,
-            chapters_requiring_alt_characters
-        ))
-        self.characters_excluded_from_unlocking_chapters = set(map(
-            Character.from_sendable_name,
-            slot_data.chapter_unlock_story_characters_not_required.value,
-        ))
+        self.chapters_using_alt_characters = set(chapters_requiring_alt_characters)
+        self.characters_excluded_from_unlocking_chapters = (
+            slot_data.chapter_unlock_story_characters_not_required.to_character_set())
 
         if len(enabled_chapters) == 1:
-            chapters_text = enabled_chapters[0]
+            chapters_text = enabled_chapters[0].get_short_name()
         else:
             sorted_chapters = sorted(enabled_chapters)
-            chapters_text = ", ".join(sorted_chapters[:-1])
-            chapters_text += f" and {sorted_chapters[-1]}"
+            chapters_text = ", ".join(map(Area.get_short_name, sorted_chapters[:-1]))
+            chapters_text += f" and {sorted_chapters[-1].get_short_name()}"
         chapters_info_text = f"Enabled Chapters for this slot: {chapters_text}"
         ctx.text_replacer.write_custom_string(TextId.SHOP_UNLOCKED_HINT_1, chapters_info_text)
 
@@ -244,8 +231,8 @@ class UnlockedChapterManager(ClientComponent):
         item_id_to_chapter_area: dict[int, list[Area]] = {}
         remaining_chapter_item_requirements: dict[Area, _RemainingChapterItemRequirements] = {}
 
-        if goal_chapter := slot_data.goal_chapter:
-            goal_area = Area.from_short_name(goal_chapter.value)
+        if (goal_chapter := slot_data.goal_chapter) is not None:
+            goal_area = goal_chapter.value
             # Add the requirement for the fake sub-goals item to the Goal Chapter so that it will only unlock once all
             # sub-goals have been completed.
             item_id_to_chapter_area[_SUB_GOAL_SPECIAL_ID] = [goal_area]
@@ -503,7 +490,7 @@ class UnlockedChapterManager(ClientComponent):
             multiplier = ctx.acquired_generic.current_score_multiplier
             if (not self.easy_true_jedi
                     and multiplier >= 2
-                    and chapter_area.get_short_name() in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI):
+                    and chapter_area in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI):
                 # The chapter has a difficult or impossible True Jedi without the use of Score x2, so remove Score x2
                 # from the multiplier.
                 multiplier //= 2

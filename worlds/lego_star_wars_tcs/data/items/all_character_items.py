@@ -38,6 +38,8 @@ current Area.
 SENDABLE_CHARACTER_TO_ITEM_DATA: dict[Character, GenericCharacterData] = {
     k: v for k, v in NORMAL_CHARACTER_TO_ITEM_DATA.items() if v.is_sendable
 }
+"""All characters that can be created and sent as AP items. This excludes Extra Toggle characters, and event-only
+characters e.g Super Gonk Droid."""
 
 CODE_TO_ITEM_DATA: dict[int, GenericCharacterData] = cast(dict[int, GenericCharacterData], {
     v.code: v for v in SENDABLE_CHARACTER_TO_ITEM_DATA.values()

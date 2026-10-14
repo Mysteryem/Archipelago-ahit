@@ -1,4 +1,4 @@
-from typing import Optional, Mapping, cast, TYPE_CHECKING
+from typing import Optional, Mapping, cast
 
 from BaseClasses import Item, ItemClassification
 from .constants import GAME_NAME

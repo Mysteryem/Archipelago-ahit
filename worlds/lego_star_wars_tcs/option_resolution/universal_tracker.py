@@ -3,12 +3,13 @@ from typing import TYPE_CHECKING, Any
 
 from Options import Option
 
+from ..data.areas import Area
+from ..data.bosses import Boss
+from ..data.characters import Character
 from ..data.items.generic_items import MINIKITS_BY_BUNDLE_SIZE
-from ..levels import SHORT_NAME_TO_CHAPTER_AREA, BONUS_NAME_TO_BONUS_AREA
-from ..options import LegoStarWarsTCSOptions, OnlyUniqueBossesCountTowardsGoal, GoalChapterLocationsMode
+from ..levels import BONUS_NAME_TO_BONUS_AREA
+from ..options import OnlyUniqueBossesCountTowardsGoal, GoalChapterLocationsMode
 from ..slot_data import TCSSlotDataOptions, TCSDirectSlotDataOptions
-
-from ..data.items.all_character_items import CODE_TO_ITEM_DATA
 
 
 if TYPE_CHECKING:
@@ -36,27 +37,27 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, slot_data: TCSS
     """Attributes normally derived from options during generate_early."""
     # Derived Chapter/Episode attributes.
     self.enabled_chapters = slot_data.enabled_chapters.value
-    self.enabled_episodes = set(slot_data.enabled_episodes.value)
+    self.enabled_episodes = slot_data.enabled_episodes.value
     # The enabled bonuses are set depending on the number of Gold Bricks available
     self.enabled_bonuses = slot_data.enabled_bonuses.value
-    self.starting_chapter = SHORT_NAME_TO_CHAPTER_AREA[slot_data.starting_chapter.value]
+    self.starting_chapter = slot_data.starting_chapter.value
     assert self.starting_episode == slot_data.starting_episode.value, ("Starting episode from slot_data did not match "
                                                                       "the starting chapter from slot_data.")
 
     # Derived Chapter Unlock requirements.
     alt_characters_option = slot_data.chapters_requiring_alt_characters
-    self.chapters_requiring_alt_characters = set() if alt_characters_option is None else alt_characters_option.value
+    if alt_characters_option is None:
+        self.chapters_requiring_alt_characters = set()
+    else:
+        self.chapters_requiring_alt_characters = alt_characters_option.value
 
     required_counts_option = slot_data.chapter_required_character_counts
     self.chapter_required_character_counts = {} if required_counts_option is None else required_counts_option.value
 
     random_requirements_option = slot_data.chapter_random_character_requirements
-    random_requirements: dict[str, list[int]]
+    random_requirements: dict[Area, list[Character]]
     random_requirements = {} if random_requirements_option is None else random_requirements_option.value
-    self.chapter_random_character_requirements = {
-        chapter: [CODE_TO_ITEM_DATA[c] for c in character_item_ids]
-        for chapter, character_item_ids in random_requirements.items()
-    }
+    self.chapter_random_character_requirements = random_requirements
 
     # Derived Goal attributes.
     self.enabled_bosses = slot_data.enabled_bosses.value
@@ -96,9 +97,9 @@ def _override_options_with_derived_rolled_values(self: LegoStarWarsTCSWorld):
     # Override the enable_chapter count to match the number that are enabled.
     self.options.enabled_chapters_count.value = len(self.enabled_chapters)
     # Unrandomize the starting chapter choice with the starting chapter that was actually picked.
-    self.options.starting_chapter.set_from_string(self.starting_chapter.short_name)
+    self.options.starting_chapter.value = self.starting_chapter.value
     # Override the allowed chapters with all the chapters that rolled as enabled.
-    self.options.allowed_chapters.value = set(self.enabled_chapters)
+    self.options.allowed_chapters.value = set(map(int, self.enabled_chapters))
     # Act as if there was no filtering of allowed chapter types.
     self.options.allowed_chapter_types.set_from_string("all")
 
@@ -112,16 +113,16 @@ def _compute_boss_names(self: LegoStarWarsTCSWorld):
             == OnlyUniqueBossesCountTowardsGoal.option_enabled_and_count_anakin_as_vader
     )
     if unique_bosses_only:
-        short_name_to_boss_character: dict[str, str] = {}
+        area_to_boss_character_override: dict[Area, Character | None] = {}
         for chapter in self.enabled_bosses:
-            boss_character = SHORT_NAME_TO_CHAPTER_AREA[chapter].boss
-            if unique_bosses_anakin_as_darth_vader and boss_character == "Anakin Skywalker":
-                boss_character = "Darth Vader"
-            assert boss_character is not None
-            short_name_to_boss_character[chapter] = boss_character
+            boss = Boss.from_area(chapter)
+            boss_character_override = None
+            if unique_bosses_anakin_as_darth_vader and boss.character is Character.ANAKIN_SKYWALKER_JEDI:
+                boss_character_override = Character.DARTH_VADER
+            area_to_boss_character_override[chapter] = boss_character_override
     else:
-        short_name_to_boss_character = {}
-    self.short_name_to_boss_character = short_name_to_boss_character
+        area_to_boss_character_override = {}
+    self.area_to_boss_character_override = area_to_boss_character_override
 
 
 def _compute_expected_gold_brick_event_count(self: LegoStarWarsTCSWorld):
@@ -137,8 +138,8 @@ def _compute_expected_gold_brick_event_count(self: LegoStarWarsTCSWorld):
         else:
             chapters_with_gold_bricks = len(self.enabled_non_goal_chapters)
         gold_bricks_from_chapters = chapters_with_gold_bricks * gold_bricks_per_chapter
-        areas_gen = (BONUS_NAME_TO_BONUS_AREA[area_name] for area_name in self.enabled_bonuses)
-        gold_bricks_from_bonuses = sum(area.gold_brick for area in areas_gen)
+        legacy_bonus_areas_gen = (BONUS_NAME_TO_BONUS_AREA[area.readable_name] for area in self.enabled_bonuses)
+        gold_bricks_from_bonuses = sum(legacy_bonus_area.gold_brick for legacy_bonus_area in legacy_bonus_areas_gen)
         self.expected_gold_brick_event_count = gold_bricks_from_chapters + gold_bricks_from_bonuses
     else:
         # Gold Brick events are only relevant when bonuses are enabled.

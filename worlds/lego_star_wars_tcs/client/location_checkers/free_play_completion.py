@@ -131,7 +131,7 @@ class FreePlayChapterCompletionChecker(ClientComponent):
         goal_locations_removed = goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
         goal_chapter_option: GoalChapterShortName | None = event.slot_data.goal_chapter
         if goal_chapter_option is not None:
-            goal_chapter = Area.from_short_name(goal_chapter_option.value)
+            goal_chapter = goal_chapter_option.value
         else:
             goal_chapter = None
         enabled_chapter_areas: set[Area] = set()

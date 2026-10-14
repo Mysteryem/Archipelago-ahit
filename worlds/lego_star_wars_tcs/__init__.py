@@ -21,15 +21,10 @@ from worlds.generic.Rules import CollectionRule
 
 from . import constants, regions, item_pool
 from .character_ability import CharacterAbility
-from .constants import (
-    GOLD_BRICK_EVENT_NAME,
-    GAME_NAME,
-    progression_deprioritized_skip_balancing,
-)
-from .data.areas import PURCHASABLE_NON_POWER_BRICK_EXTRAS
+from .constants import GOLD_BRICK_EVENT_NAME, GAME_NAME
+from .data.areas import Area
+from .data.bosses import Boss
 from .data.extras import Extra
-from .data.items import GenericCharacterData
-from .data.items.extra_items import ExtraData
 from .data.items.generic_items import MINIKITS_BY_NAME
 from .items import (
     ITEM_NAME_TO_ID,
@@ -38,14 +33,8 @@ from .items import (
     SUPER_GONK_DROID_ABILITIES_VALUE,
 )
 from .item_classification import evaluate_effective_item
-from .levels import ChapterArea, SHORT_NAME_TO_CHAPTER_AREA
 from .locations import LegoStarWarsTCSLocation, LegoStarWarsTCSShopLocation
-from .options import (
-    LegoStarWarsTCSOptions,
-    AllEpisodesCharacterPurchaseRequirements,
-    OPTION_GROUPS,
-    EpisodeUnlockRequirement,
-)
+from .options import LegoStarWarsTCSOptions, OPTION_GROUPS
 from .option_resolution.common import resolve_options
 from .slot_data import TCSSlotDataOptions
 from .item_groups import ITEM_GROUPS, REVERSE_READABLE_ABILITY_TO_ABILITY
@@ -122,7 +111,7 @@ class LegoStarWarsTCSWorld(World):
 
     PROG_USEFUL_LEVEL_ACCESS_THRESHOLD_PERCENT: ClassVar[float] = 1/6
     prog_useful_level_access_threshold_count: int = 6
-    character_chapter_access_counts: Counter[str]
+    character_chapter_access_counts: Counter[Character]
 
     starting_character_abilities: CharacterAbility = CharacterAbility.NONE
 
@@ -133,21 +122,21 @@ class LegoStarWarsTCSWorld(World):
     # correct ItemClassification for items.
     logical_item_counts: Counter[str] | None = None
 
-    enabled_chapters: set[str]
-    enabled_chapters_with_locations: set[str]  # Includes the Goal Chapter when it has locations.
-    enabled_non_goal_chapters: set[str]
+    enabled_chapters: set[Area]
+    enabled_chapters_with_locations: set[Area]  # Includes the Goal Chapter when it has locations.
+    enabled_non_goal_chapters: set[Area]
     enabled_episodes: set[int]
-    enabled_bonuses: set[str]
-    enabled_bosses: set[str]
-    short_name_to_boss_character: dict[str, str]
-    goal_chapter: str | None
-    chapters_requiring_alt_characters: set[str]
-    chapter_required_character_counts: dict[str, int]
-    chapter_extra_random_character_counts: dict[str, int]
-    chapter_random_character_requirements: dict[str, list[GenericCharacterData]]  # todo: dict[Chapter, list[Character]]
+    enabled_bonuses: set[Area]
+    enabled_bosses: set[Area]
+    boss_area_to_boss: dict[Area, Boss]
+    goal_chapter: Area | None
+    chapters_requiring_alt_characters: set[Area]
+    chapter_required_character_counts: dict[Area, int]
+    chapter_extra_random_character_counts: dict[Area, int]
+    chapter_random_character_requirements: dict[Area, list[Character]]
     spoiler_chapter_character_requirements: dict[str, tuple[int, list[str]]]
 
-    starting_chapter: ChapterArea = SHORT_NAME_TO_CHAPTER_AREA["1-1"]
+    starting_chapter: Area = Area.NEGOTIATIONS
     minikit_bundle_name: str = ""
     available_minikits: int = -1
     minikit_bundle_count: int = -1
@@ -171,7 +160,7 @@ class LegoStarWarsTCSWorld(World):
         self.enabled_episodes = set()
         self.enabled_bonuses = set()
         self.character_chapter_access_counts = Counter()
-        self.short_name_to_boss_character = {}
+        self.boss_area_to_boss = {}
         self.chapters_requiring_alt_characters = set()
         self.chapter_required_character_counts = {}
         self.spoiler_chapter_character_requirements = {}
@@ -204,7 +193,7 @@ class LegoStarWarsTCSWorld(World):
 
     @property
     def starting_episode(self) -> int:
-        return self.starting_chapter.episode
+        return self.starting_chapter.get_chapter_episode()
 
     def set_rule(self, spot: Location | Entrance, rule: CollectionRule | Rule[Any]) -> None:
         # Allow passing in resolved rules.
@@ -507,18 +496,18 @@ class LegoStarWarsTCSWorld(World):
     def write_spoiler_header(self, spoiler_handle: TextIO) -> None:
         super().write_spoiler_header(spoiler_handle)
 
-        spoiler_handle.write(f"Starting Chapter: {self.starting_chapter.short_name}\n")
+        spoiler_handle.write(f"Starting Chapter: {self.starting_chapter.get_long_name()}\n")
 
         enabled_episodes = sorted(self.enabled_episodes)
         spoiler_handle.write(f"Enabled Episodes: {enabled_episodes}\n")
 
-        enabled_chapters = sorted(self.enabled_chapters)
+        enabled_chapters = ", ".join(Area.to_human_readable_list(self.enabled_chapters))
         spoiler_handle.write(f"Enabled Chapters: {enabled_chapters}\n")
 
         enabled_bonuses = sorted(self.enabled_bonuses)
         spoiler_handle.write(f"Enabled Bonuses: {enabled_bonuses}\n")
 
-        enabled_bosses = sorted(self.enabled_bosses)
+        enabled_bosses = ", ".join(Area.to_human_readable_list(self.enabled_bosses))
         spoiler_handle.write(f"Enabled Bosses: {enabled_bosses}\n")
 
         if self.spoiler_chapter_character_requirements:

@@ -8,17 +8,16 @@ from rule_builder.options import OptionFilter
 
 from .constants import GOLD_BRICK_EVENT_NAME
 
-from .data.areas import Area, PURCHASABLE_NON_POWER_BRICK_EXTRAS, VEHICLE_CHAPTERS
+from .data.areas import Area, PURCHASABLE_NON_POWER_BRICK_EXTRAS, VEHICLE_CHAPTERS, EPISODE_AREA_LOOKUP
 from .data.characters import UnlockMethod, Character
 from .data.items.all_character_items import NORMAL_CHARACTER_TO_ITEM_DATA
 from .data.items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
-from .data.items.generic_items import NonDataItemName, EPISODE_UNLOCKS
+from .data.items.generic_items import NonDataItemName, EPISODE_UNLOCKS, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
 from .data.items import GenericCharacterData
-from .data.logic import CHAPTERS_BY_NUMBERS
+from .data.logic import CHAPTERS_BY_AREA
 from .data.logic.rules import HasAnyAbilities, HasAllAbilities
 from .data.logic.types import ExitData, Chapter
 from .data.shop import UNLOCK_REQUIREMENT_TO_CHARACTERS
-from .items import CHARACTERS_AND_VEHICLES_BY_NAME
 from .levels import (
     BonusArea,
     BONUS_AREAS,
@@ -106,7 +105,7 @@ class _RegionBuilder:
         else:
             abilities_rule =  HasAnyAbilities(main_ability_requirements)
 
-        if legacy_chapter.short_name in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI:
+        if legacy_chapter.area_id in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI:
             return abilities_rule & (Has(NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value)
                                      | OptionFilter(EasierTrueJedi, EasierTrueJedi.option_true))
         else:
@@ -134,10 +133,10 @@ class _RegionBuilder:
         goal_boss_count = world.options.defeat_bosses_goal_amount.value
         if goal_boss_count > 0:
             if world.options.only_unique_bosses_count:
-                bosses = {world.short_name_to_boss_character[chapter] for chapter in world.enabled_bosses}
-                boss_items = sorted(f"{boss} Defeated" for boss in bosses)
-                assert goal_boss_count <= len(boss_items)
-                rule &= HasFromListUnique(*boss_items, count=goal_boss_count)
+                bosses = {world.boss_area_to_boss[chapter] for chapter in world.enabled_bosses}
+                boss_item_names = [boss.unique_event_name for boss in bosses]
+                assert goal_boss_count <= len(boss_item_names)
+                rule &= HasFromListUnique(*boss_item_names, count=goal_boss_count)
             else:
                 rule &= Has("Boss Defeated", count=goal_boss_count)
 
@@ -153,22 +152,23 @@ class _RegionBuilder:
 
         return rule
 
-    def _create_chapter_entrance_rule(self, chapter: Chapter) -> tuple[Rule, set[str], int]:
+    def _create_chapter_entrance_rule(self, chapter: Chapter) -> tuple[Rule, set[Character], int]:
         world = self.world
-        short_name = chapter.short_name
+        area = chapter.area
         rule = chapter.extra_chapter_entrance_rules
-        characters: set[str]
+        characters: set[Character]
         if world.options.chapter_unlock_requirement.is_characters():
-            character_count = world.chapter_required_character_counts[short_name]
+            character_count = world.chapter_required_character_counts[chapter.area]
             if world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
-                if short_name in world.chapters_requiring_alt_characters:
-                    characters = {c.readable_name for c in chapter.purchase_characters}
+                if area in world.chapters_requiring_alt_characters:
+                    characters = set(area.get_purchase_characters())
                 else:
-                    characters = {c.readable_name for c in chapter.story_characters}
+                    characters = set(area.get_story_characters())
                     # Remove characters excluded from being included in requirements.
-                    characters.difference_update(world.options.chapter_unlock_story_characters_not_required.value)
+                    characters.difference_update(
+                        world.options.chapter_unlock_story_characters_not_required.to_character_set())
             elif world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_random_characters:
-                characters = {data.name for data in world.chapter_random_character_requirements[short_name]}
+                characters = set(world.chapter_random_character_requirements[chapter.area])
             else:
                 world.raise_error(AssertionError,
                                   "Unexpected chapter unlock requirement %s",
@@ -177,26 +177,27 @@ class _RegionBuilder:
             if len(characters) < 1:
                 world.raise_error(AssertionError,
                                   "At least one character should always be required, but %s is requiring %i",
-                                  short_name, character_count)
+                                  area.get_long_name(), character_count)
             if len(characters) < character_count:
                 world.raise_error(AssertionError,
                                   "The number of required characters should always be less than or equal to the"
                                   " available count, but %s is requiring %i characters and only has a max of %i"
                                   " available",
-                                  short_name, character_count, len(characters))
+                                  area.get_long_name(), character_count, len(characters))
 
+            character_names = Character.to_logic_names(characters)
             if len(characters) == character_count:
                 # HasFromListUnique does not perform this optimisation automatically.
-                rule &= HasAll(*characters)
+                rule &= HasAll(*character_names)
             else:
-                rule &= HasFromListUnique(*characters, count=character_count)
+                rule &= HasFromListUnique(*character_names, count=character_count)
         else:
-            rule &= Has(f"{short_name} Unlock")
+            rule &= Has(CHAPTER_TO_CHAPTER_UNLOCK_ITEM[area])
             characters = set()
             character_count = 0
 
         if world.options.episode_unlock_requirement == EpisodeUnlockRequirement.option_episode_item:
-            rule &= Has(f"Episode {chapter.episode_number} Unlock")
+            rule &= Has(EPISODE_UNLOCKS[area.get_chapter_episode()].value)
 
         return rule, characters, character_count
 
@@ -244,9 +245,10 @@ class _RegionBuilder:
 
         # Goal event.
         exclude_locations = False
-        is_goal_chapter = chapter.short_name == world.goal_chapter
+        is_goal_chapter = chapter.area is world.goal_chapter
         if is_goal_chapter:
-            world.add_event_pair(f"Complete Goal Chapter {world.goal_chapter}", completion_region, "Victory")
+            world.add_event_pair(
+                f"Complete Goal Chapter {world.goal_chapter.get_long_name()}", completion_region, "Victory")
 
             goal_chapter_locations_mode = world.options.goal_chapter_locations_mode.value
             if goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
@@ -302,7 +304,7 @@ class _RegionBuilder:
 
         # Character Purchases in the shop.
         # Character purchases unlocked upon completing the chapter (normally in Story mode).
-        for character in chapter.purchase_characters:
+        for character in chapter.area.get_purchase_characters():
             location_name = character.get_purchase_location_name()
             studs_cost = character.purchase_cost
             assert studs_cost is not None
@@ -346,7 +348,7 @@ class _RegionBuilder:
 
         # Story Character unlocks.
         if world.options.enable_story_character_unlock_locations:
-            for character in chapter.story_characters:
+            for character in chapter.area.get_story_characters():
                 self.story_character_unlock_regions.setdefault(character, []).append(completion_region)
 
         # Checks for riding unique characters.
@@ -362,11 +364,11 @@ class _RegionBuilder:
                     self.ridable_character_regions.setdefault(ridable_character, []).append(ridable_data)
 
         # Boss.
-        if chapter.short_name in world.enabled_bosses:
-            assert chapter.short_name != world.goal_chapter, ("The Goal Chapter should never be selected as an "
+        if chapter.area in world.enabled_bosses:
+            assert chapter.area is not world.goal_chapter, ("The Goal Chapter should never be selected as an "
                                                               "enabled boss")
             if world.options.only_unique_bosses_count:
-                boss_event_item_name = f"{world.short_name_to_boss_character[chapter.short_name]} Defeated"
+                boss_event_item_name = world.boss_area_to_boss[chapter.area].unique_event_name
             else:
                 boss_event_item_name = "Boss Defeated"
             world.add_event_pair(
@@ -378,15 +380,17 @@ class _RegionBuilder:
         world = self.world
         episode_room = world.create_region(f"Episode {episode_number} Room")
         self.cantina.connect(episode_room, f"Episode {episode_number} Door")
-        for chapter_number, chapter in CHAPTERS_BY_NUMBERS[episode_number].items():
-            if chapter.short_name not in world.enabled_chapters:
+        for chapter_area in EPISODE_AREA_LOOKUP[episode_number].values():
+            if chapter_area not in world.enabled_chapters:
                 continue
+            chapter_number = chapter_area.get_chapter_number_in_episode()
+            chapter = CHAPTERS_BY_AREA[chapter_area]
             chapter_start_region = self._create_chapter(chapter)
 
             t = self._create_chapter_entrance_rule(chapter)
             chapter_entrance_rule, characters_locking_access, character_count = t
             # Add Goal Chapter rules if this is the Goal Chapter.
-            if world.goal_chapter and world.goal_chapter == chapter.short_name:
+            if world.goal_chapter is chapter.area:
                 chapter_entrance_rule &= self.make_victory_rule()
 
             # Create the entrance.
@@ -394,9 +398,9 @@ class _RegionBuilder:
             episode_room.connect(chapter_start_region, main_entrance_name, chapter_entrance_rule)
 
             # Update the counts of chapters locked by each character.
-            sorted_character_names = sorted(characters_locking_access)
-            world.character_chapter_access_counts.update(sorted_character_names)
+            world.character_chapter_access_counts.update(characters_locking_access)
             # Prepare the requirements for writing to the spoiler.
+            sorted_character_names = sorted(c.readable_name for c in characters_locking_access)
             world.spoiler_chapter_character_requirements[chapter.short_name] = (character_count, sorted_character_names)
 
     def create_episodes(self) -> None:
@@ -409,9 +413,9 @@ class _RegionBuilder:
         world = self.world
 
         excluded_character_locations: frozenset[Character]
-        if (world.goal_chapter
+        if (world.goal_chapter is not None
                 and world.options.goal_chapter_locations_mode.value == GoalChapterLocationsMode.option_excluded):
-            excluded_character_locations = Area.from_short_name(world.goal_chapter).get_story_characters()
+            excluded_character_locations = world.goal_chapter.get_story_characters()
         else:
             excluded_character_locations = frozenset()
 
@@ -452,13 +456,14 @@ class _RegionBuilder:
         # chained together more easily.
         gold_brick_costs: dict[int, list[BonusArea]] = {}
         for legacy_area in BONUS_AREAS:
-            if legacy_area.name not in world.enabled_bonuses:
+            area = Area(legacy_area.area_id)
+            if area not in world.enabled_bonuses:
                 continue
             gold_bricks_required = legacy_area.gold_bricks_required
             if gold_bricks_required == 0:
                 # No Gold Bricks are required to watch the Indy Trailer, so put it in the Bonuses region directly.
                 assert legacy_area.name == "Indiana Jones Trailer"
-                world.add_location(Area(legacy_area.area_id).get_completion_name(), bonuses)
+                world.add_location(area.get_completion_name(), bonuses)
             else:
                 gold_brick_costs.setdefault(gold_bricks_required, []).append(legacy_area)
 
@@ -489,10 +494,12 @@ class _RegionBuilder:
                         self.story_character_unlock_regions.setdefault(character, []).append(area_region)
                 # todo: Item requirements have been removed for now because it is not currently possible to lock
                 #  access to the bonus levels.
-                if self.world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
-                    for item in legacy_area.item_requirements:
-                        if item in CHARACTERS_AND_VEHICLES_BY_NAME:
-                            world.character_chapter_access_counts[item] += 1
+                if legacy_area.item_requirements:
+                    raise Exception("Item requirements for legacy Bonus Areas are not implemented")
+                # if self.world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
+                #     for item in legacy_area.item_requirements:
+                #         if item in CHARACTERS_AND_VEHICLES_BY_NAME:
+                #             world.character_chapter_access_counts[item] += 1
                 assert legacy_area.gold_brick, "Every bonus that requires Gold Bricks to access should award a Gold Brick"
 
                 gold_brick = world.add_gold_brick_event(f"{legacy_area.name} - Gold Brick", area_region)
@@ -520,9 +527,9 @@ class _RegionBuilder:
         world = self.world
 
         excluded_goal_area: Area | None
-        if (world.goal_chapter
+        if (world.goal_chapter is not None
                 and world.options.goal_chapter_locations_mode.value == GoalChapterLocationsMode.option_excluded):
-            excluded_goal_area = Area.from_short_name(world.goal_chapter)
+            excluded_goal_area = world.goal_chapter
         else:
             excluded_goal_area = None
 
@@ -627,8 +634,7 @@ def determine_random_character_requirements(
     else:
         # If Bonus levels become locked by items again, then whether vehicle characters are added to the item pool
         # would also have to consider the enabled bonus levels.
-        legacy_vehicle_chapter_shortnames = {area.get_short_name() for area in VEHICLE_CHAPTERS}
-        vehicle_chapters_enabled = not legacy_vehicle_chapter_shortnames.isdisjoint(
+        vehicle_chapters_enabled = not VEHICLE_CHAPTERS.isdisjoint(
             world.enabled_chapters | {world.goal_chapter}
         )
 
@@ -672,7 +678,7 @@ def determine_random_character_requirements(
 
         world.log_debug("Random character pool: %s", pool)
 
-        finished_chapter_to_characters: dict[str, set[GenericCharacterData]] = {}
+        finished_chapter_to_characters: dict[Area, set[GenericCharacterData]] = {}
 
         for chapter in chapters:
             count_to_pick = character_count_per_chapter[chapter]
@@ -687,12 +693,12 @@ def determine_random_character_requirements(
             count_counts = Counter(individual_character_counts.values())
             world.log_debug("Character count counts: %s", sorted(count_counts.items()))
 
-        world.chapter_random_character_requirements = {k: sorted(v) for k, v in
+        world.chapter_random_character_requirements = {k: sorted(c.character for c in v) for k, v in
                                                        finished_chapter_to_characters.items()}
 
     for characters_list in world.chapter_random_character_requirements.values():
        for character in characters_list:
-           world.character_chapter_access_counts[character.name] += 1
+           world.character_chapter_access_counts[character] += 1
 
 
 
@@ -735,7 +741,7 @@ def create_regions(world: TCSWorld) -> None:
     builder.create_starting_purchases()
 
     # General Victory event.
-    if not world.goal_chapter:
+    if not world.goal_chapter is not None:
         builder.create_non_goal_chapter_victory()
 
     # For debugging.

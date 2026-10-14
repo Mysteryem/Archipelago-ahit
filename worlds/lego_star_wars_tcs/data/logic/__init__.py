@@ -1,3 +1,4 @@
+from ..areas import Area
 from .episode1 import CHAPTERS as EP1_CHAPTERS
 from .episode2 import CHAPTERS as EP2_CHAPTERS
 from .episode3 import CHAPTERS as EP3_CHAPTERS
@@ -11,6 +12,7 @@ __all__ = [
     "EPISODES",
     "CHAPTERS_BY_SHORT_NAME",
     "CHAPTERS_BY_NUMBERS",
+    "CHAPTERS_BY_AREA",
     "ALL_CHAPTERS",
 ]
 
@@ -43,6 +45,9 @@ CHAPTERS_BY_SHORT_NAME: dict[str, Chapter] = {
 CHAPTERS_BY_NUMBERS: dict[int, dict[int, Chapter]] = {
     i: {j: chapter for j, chapter in enumerate(episode, start=1)}
     for i, episode in enumerate(EPISODES, start=1)
+}
+CHAPTERS_BY_AREA: dict[Area, Chapter] = {
+    chapter.area: chapter for episode in EPISODES for chapter in episode
 }
 ALL_CHAPTERS: tuple[Chapter, ...] = (
     *EP1_CHAPTERS,
