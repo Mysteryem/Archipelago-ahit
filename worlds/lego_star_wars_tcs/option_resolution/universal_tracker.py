@@ -104,8 +104,8 @@ def _override_options_with_derived_rolled_values(self: LegoStarWarsTCSWorld):
     self.options.allowed_chapter_types.set_from_string("all")
 
 
-def _compute_boss_names(self: LegoStarWarsTCSWorld):
-    """Compute boss names when unique bosses are enabled."""
+def _compute_unique_bosses(self: LegoStarWarsTCSWorld, slot_data: TCSSlotDataOptions):
+    """Compute bosses when unique bosses are enabled."""
     unique_bosses_only = (
             self.options.only_unique_bosses_count != OnlyUniqueBossesCountTowardsGoal.option_disabled)
     unique_bosses_anakin_as_darth_vader = (
@@ -113,16 +113,15 @@ def _compute_boss_names(self: LegoStarWarsTCSWorld):
             == OnlyUniqueBossesCountTowardsGoal.option_enabled_and_count_anakin_as_vader
     )
     if unique_bosses_only:
-        area_to_boss_character_override: dict[Area, Character | None] = {}
-        for chapter in self.enabled_bosses:
+        boss_area_to_boss: dict[Area, Boss] = {}
+        for chapter in slot_data.enabled_bosses.value:
             boss = Boss.from_area(chapter)
-            boss_character_override = None
-            if unique_bosses_anakin_as_darth_vader and boss.character is Character.ANAKIN_SKYWALKER_JEDI:
-                boss_character_override = Character.DARTH_VADER
-            area_to_boss_character_override[chapter] = boss_character_override
+            if unique_bosses_anakin_as_darth_vader and boss is Boss.ANAKIN:
+                boss = Boss.VADER_VADER
+            boss_area_to_boss[chapter] = boss
     else:
-        area_to_boss_character_override = {}
-    self.area_to_boss_character_override = area_to_boss_character_override
+        boss_area_to_boss = {}
+    self.boss_area_to_boss = boss_area_to_boss
 
 
 def _compute_expected_gold_brick_event_count(self: LegoStarWarsTCSWorld):
@@ -151,5 +150,5 @@ def resolve_universal_tracker_options(self: LegoStarWarsTCSWorld, passthrough: d
     _direct_slot_data_options(self, slot_data_options)
     _derived_attributes_from_options(self, slot_data_options)
     _override_options_with_derived_rolled_values(self)
-    _compute_boss_names(self)
+    _compute_unique_bosses(self, slot_data_options)
     _compute_expected_gold_brick_event_count(self)
