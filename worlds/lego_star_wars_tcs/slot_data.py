@@ -173,7 +173,7 @@ class GoalAreaCompletionCount(Range):
         return super().from_any(data)
 
 
-class GoalChapterShortName(AreaOption, OptionalSlotData):
+class GoalChapterArea(AreaOption, OptionalSlotData):
     default = Area.EMPERORFIGHT
 
     @classmethod
@@ -325,7 +325,7 @@ class TCSSlotDataOptions(TCSDirectSlotDataOptions):
     goal_area_completion_count: GoalAreaCompletionCount
     item_colors: ItemColors
     logic_version: LogicVersion  # = field(default_factory=lambda: LogicVersion(1), metadata=_since(1, 4, 0)) # Example
-    goal_chapter: GoalChapterShortName | None = field(default=None)
+    goal_chapter: GoalChapterArea | None = field(default=None)
     chapters_requiring_alt_characters: ChaptersRequiringAltCharacters | None = field(default=None)
     chapter_required_character_counts: ChapterRequiredCharacterCounts | None = field(default=None)
     chapter_random_character_requirements: ChapterRandomCharacterRequirements | None = field(default=None)
