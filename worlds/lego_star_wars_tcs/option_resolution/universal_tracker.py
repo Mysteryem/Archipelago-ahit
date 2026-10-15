@@ -66,10 +66,6 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, slot_data: TCSS
     goal_chapter_option = slot_data.goal_chapter
     if goal_chapter_option is not None:
         self.goal_chapter = goal_chapter_option.value
-    else:
-        self.goal_chapter = None
-
-    if self.goal_chapter:
         assert self.goal_chapter in self.enabled_chapters
         self.enabled_non_goal_chapters = self.enabled_chapters - {self.goal_chapter}
         if self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
@@ -77,6 +73,7 @@ def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, slot_data: TCSS
         else:
             self.enabled_chapters_with_locations = self.enabled_non_goal_chapters
     else:
+        self.goal_chapter = None
         self.enabled_non_goal_chapters = self.enabled_chapters
 
     # Derived Minikit attributes.
@@ -132,7 +129,10 @@ def _compute_expected_gold_brick_event_count(self: LegoStarWarsTCSWorld):
                 + bool(self.options.enable_minikit_locations)
                 + bool(self.options.enable_true_jedi_locations)
         )
-        if self.goal_chapter and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal:
+        if (
+                self.goal_chapter is not None
+                and self.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal
+        ):
             chapters_with_gold_bricks = len(self.enabled_chapters)
         else:
             chapters_with_gold_bricks = len(self.enabled_non_goal_chapters)
