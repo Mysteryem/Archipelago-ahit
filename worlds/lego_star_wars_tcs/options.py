@@ -243,6 +243,7 @@ class MinikitGoalAmount(NamedRange):
     range_end = 360
     special_range_names = {
         "use_percentage_option": -1,
+        "disabled": 0,
     }
     default = -1
 
@@ -285,7 +286,7 @@ class MinikitGoalCompletionMethod(ChoiceFromStringExtension):
 
 # "Level" used here is as a user-facing term. The correct internal name is "Area". Internally, a "Level" refers to a
 # separately loaded section of an "Area".
-class CompleteLevelsGoalAmountPercentage(Range):
+class CompleteLevelsGoalAmountPercentage(NamedRange):
     """
     Require that a percentage of enabled Chapters and Gold Brick Door Bonuses (if Bonuses are enabled) must be completed
     as part of your goal.
@@ -297,6 +298,9 @@ class CompleteLevelsGoalAmountPercentage(Range):
     rich_text_doc = True
     range_start = 0
     range_end = 100
+    special_range_names = {
+        "disabled": 0,
+    }
     default = 0
 
 
@@ -404,7 +408,7 @@ class GoalChapter(ChoiceFromStringExtension):
         return cls(area.value)
 
 
-class DefeatBossesGoalAmount(Range):
+class DefeatBossesGoalAmount(NamedRange):
     """
     Choose how many bosses must be defeated to goal.
 
@@ -421,6 +425,10 @@ class DefeatBossesGoalAmount(Range):
     rich_text_doc = True
     range_start = 0
     range_end = len(_BOSS_KEY_TO_BOSS)
+    special_range_names = {
+        "disabled": 0,
+    }
+    default = 0
 
 
 class EnabledBossesCount(Range):
