@@ -339,7 +339,7 @@ class GoalManager(ClientComponent):
             for area_id in self.enabled_boss_chapters:
                 defeated = area_id in completed_area_ids
                 area = Area(area_id)
-                boss_name = Boss.from_area(area).readable_name
+                boss_name = Boss.from_area(area).unique_name
                 bosses_per_episode[area.episode_index + 1].append((area.area_index + 1, boss_name, defeated))
 
         for episode, bosses in bosses_per_episode.items():
