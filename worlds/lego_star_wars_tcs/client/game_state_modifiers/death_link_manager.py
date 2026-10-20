@@ -20,6 +20,7 @@ from ..events import (
 from ..type_aliases import TCSContext
 
 from ...data.areas import Area
+from ...slot_data import EnabledFeature
 
 _DEBUG_LOGGER = logging.getLogger("TCS Debug")
 
@@ -252,11 +253,11 @@ class DeathLinkManager(ClientComponent):
 
         slot_data = event.slot_data
 
-        self.death_link_enabled = bool(slot_data.death_link)
+        self.death_link_enabled = EnabledFeature.DEATH_LINK.is_enabled(slot_data)
         self.normal_death_link_amnesty = slot_data.death_link_amnesty.value
         self.vehicle_death_link_amnesty = slot_data.vehicle_death_link_amnesty.value
         self.death_link_stud_loss = slot_data.death_link_studs_loss.value
-        self.death_link_stud_loss_scaling = bool(slot_data.death_link_studs_loss_scaling)
+        self.death_link_stud_loss_scaling = EnabledFeature.DEATH_LINK_STUD_LOSS_SCALING.is_enabled(slot_data)
 
         if event.first_time_setup:
             # Write whether Death Link is enabled into slot data.

@@ -18,6 +18,7 @@ from ...data.areas import Area, BONUS_ROOM_BONUSES
 from ...data.bosses import Boss
 from ...data.items import MinikitItemData
 from ...data.items.generic_items import GENERIC_DATA
+from ...slot_data import EnabledFeature
 
 
 _MINIKIT_ITEMS: Mapping[ApItemId, int] = cast(dict[ApItemId, int], {
@@ -188,7 +189,7 @@ class GoalManager(ClientComponent):
         if self.goal_areas_count > 0:
             has_sub_goals = True
             enabled_chapter_count = len(slot_data.enabled_chapters.value)
-            if slot_data.enable_bonus_locations:
+            if EnabledFeature.BONUS_LOCATIONS.is_enabled(slot_data):
                 enabled_bonus_level_count = 0
                 for bonus_area in slot_data.enabled_bonuses.value:
                     if not bonus_area.has_gold_brick():
@@ -204,7 +205,7 @@ class GoalManager(ClientComponent):
             hints_page_3_goal_info_texts.append(areas_goal_info_text)
         self.goal_areas_relevant_bonus_area_ids = goal_areas_relevant_bonus_area_ids
 
-        self.kyber_bricks_goal_enabled = bool(slot_data.goal_requires_kyber_bricks)
+        self.kyber_bricks_goal_enabled = EnabledFeature.KYBER_BRICK_GOAL.is_enabled(slot_data)
 
         goal_chapter = slot_data.goal_chapter
         if goal_chapter is not None:

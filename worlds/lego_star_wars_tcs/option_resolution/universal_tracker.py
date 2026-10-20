@@ -1,16 +1,15 @@
 import dataclasses
 from typing import TYPE_CHECKING, Any
 
-from Options import Option
+from Options import Option, Toggle
 
 from ..data.areas import Area
 from ..data.bosses import Boss
 from ..data.characters import Character
 from ..data.items.generic_items import MINIKITS_BY_BUNDLE_SIZE
 from ..levels import BONUS_NAME_TO_BONUS_AREA
-from ..options import OnlyUniqueBossesCountTowardsGoal, GoalChapterLocationsMode
-from ..slot_data import TCSSlotDataOptions, TCSDirectSlotDataOptions
-
+from ..options import OnlyUniqueBossesCountTowardsGoal, GoalChapterLocationsMode, get_option_name
+from ..slot_data import TCSSlotDataOptions, TCSDirectSlotDataOptions, EnabledFeature
 
 if TYPE_CHECKING:
     from .. import LegoStarWarsTCSWorld
@@ -31,6 +30,20 @@ def _direct_slot_data_options(self: LegoStarWarsTCSWorld, slot_data: TCSSlotData
 
     # Exported to slot data through other means, but imported directly.
     options.minikit_goal_amount.value = slot_data.minikit_goal_amount.value
+
+
+def _enabled_feature_slot_data_options(self: LegoStarWarsTCSWorld, slot_data: TCSSlotDataOptions):
+    options = self.options
+    enabled_features = slot_data.enabled_optional_features.value
+    for feature in EnabledFeature:
+        option_type = feature.option_type
+        if option_type is None:
+            continue
+        option_attribute_name = get_option_name(option_type)
+        option_instance = getattr(options, option_attribute_name)
+        assert isinstance(option_instance, Toggle)
+        # Strictly speaking, Toggle uses int values 0 and 1, but bool extends int with those values, so this is okay.
+        option_instance.value = feature in enabled_features
 
 
 def _derived_attributes_from_options(self: LegoStarWarsTCSWorld, slot_data: TCSSlotDataOptions):
@@ -148,6 +161,7 @@ def _compute_expected_gold_brick_event_count(self: LegoStarWarsTCSWorld):
 def resolve_universal_tracker_options(self: LegoStarWarsTCSWorld, passthrough: dict[str, Any]):
     slot_data_options = TCSSlotDataOptions.from_slot_data(passthrough)
     _direct_slot_data_options(self, slot_data_options)
+    _enabled_feature_slot_data_options(self, slot_data_options)
     _derived_attributes_from_options(self, slot_data_options)
     _override_options_with_derived_rolled_values(self)
     _compute_unique_bosses(self, slot_data_options)

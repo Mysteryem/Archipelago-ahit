@@ -13,7 +13,7 @@ from ..common_addresses import (
     ChallengeMode,
     AREA_DATA_ID,
 )
-from ..type_aliases import TCSContext, ApItemId
+from ..type_aliases import TCSContext
 from ...items import ITEM_DATA_BY_ID
 from ...levels import DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI
 from ... import options
@@ -21,8 +21,9 @@ from ... import options
 from ...data.areas import Area, ALL_CHAPTER_AREAS
 from ...data.characters import Character
 from ...data.items import GenericItemData
-from ...data.items.all_character_items import CODE_TO_ITEM_DATA as CODE_TO_CHARACTER_DATA, CHARACTER_TO_ITEM_DATA
+from ...data.items.all_character_items import CHARACTER_TO_ITEM_DATA
 from ...data.items.generic_items import EPISODE_UNLOCKS, GENERIC_DATA_BY_NAME, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
+from ...slot_data import EnabledFeature
 
 
 _DEBUG_LOGGER = logging.getLogger("TCS Debug")
@@ -160,13 +161,13 @@ class UnlockedChapterManager(ClientComponent):
         enabled_episodes: list[int] = sorted(slot_data.enabled_episodes.value)
         episode_unlock_requirement = slot_data.episode_unlock_requirement
         all_episodes_character_purchase_requirements = slot_data.all_episodes_character_purchase_requirements
-        all_episodes_purchases_enabled = slot_data.enable_all_episodes_purchases
+        all_episodes_purchases_enabled = EnabledFeature.ALL_EPISODES_CHARACTER_PURCHASE_LOCATIONS.is_enabled(slot_data)
 
-        self.easy_true_jedi = bool(slot_data.easier_true_jedi)
+        self.easy_true_jedi = EnabledFeature.EASIER_TRUE_JEDI.is_enabled(slot_data)
         self._set_current_area_true_jedi_requirement(ctx)
 
         self.scale_true_jedi_with_score_multipliers = \
-            bool(slot_data.scale_true_jedi_with_score_multipliers)
+            EnabledFeature.SCALE_TRUE_JEDI_WITH_SCORE_MULTIPLIERS.is_enabled(slot_data)
 
         chapter_unlock_requirement = slot_data.chapter_unlock_requirement
 

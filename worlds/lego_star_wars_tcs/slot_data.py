@@ -3,11 +3,12 @@ import typing
 from abc import ABC, abstractmethod
 from collections import Counter
 from dataclasses import dataclass, field, Field
+from enum import IntFlag, verify, UNIQUE, CONTINUOUS, NAMED_FLAGS
 from types import UnionType, NoneType
 from typing import Any, TYPE_CHECKING, Iterable, Mapping, Union, Optional, get_origin, AbstractSet
 from typing_extensions import override
 
-from Options import Option, Range
+from Options import Option, Range, Toggle
 from worlds.AutoWorld import World
 
 from . import constants
@@ -18,12 +19,73 @@ from .options import (
     MinikitGoalAmount,
     ChapterUnlockRequirement,
     TextColorChoice,
+    EnableBonusLocations,
+    EnableStoryCharacterUnlockLocations,
+    EnableAllEpisodesCharacterPurchaseLocations,
+    EnableMinikitLocations,
+    EnableTrueJediLocations,
+    Ridesanity,
+    EnableNonPowerBrickExtraLocations,
+    EasierTrueJedi,
+    ScaleTrueJediWithScoreMultipliers,
+    LegoStarWarsTCSDeathLink,
+    DeathLinkStudLossScaling,
+    LogicExpectNonInfiniteTorpedoesPodRacer21,
+    UncapOriginalTrilogyHighJump,
+    GoalRequiresKyberBricks,
+    get_option_name,
 )
 
 if TYPE_CHECKING:
     from worlds.lego_star_wars_tcs import LegoStarWarsTCSWorld
 else:
     LegoStarWarsTCSWorld = object
+
+
+@verify(UNIQUE, CONTINUOUS, NAMED_FLAGS)
+class EnabledFeature(IntFlag):
+    # None is allowed for removed options and allows NONE to be implemented easier.
+    option_type: type[Toggle] | None
+
+    def __new__(cls, *args, **kwargs):
+        obj = int.__new__(cls, args[0])
+        obj._value_ = args[0]
+        return obj
+
+    def __init__(self, _id, option_type: type[Toggle]):
+        self.option_type = option_type
+
+    NONE = 0x0, None
+
+    # Universal Tracker provides no access to which locations are exist in the connected slot, so we unfortunately have
+    # to enabled location types into slot data.
+    BONUS_LOCATIONS = 0x1, EnableBonusLocations
+    STORY_CHARACTER_UNLOCK_LOCATIONS = 0x2, EnableStoryCharacterUnlockLocations
+    ALL_EPISODES_CHARACTER_PURCHASE_LOCATIONS = 0x4, EnableAllEpisodesCharacterPurchaseLocations
+    MINIKIT_LOCATIONS = 0x8, EnableMinikitLocations
+    TRUE_JEDI_LOCATIONS = 0x10, EnableTrueJediLocations
+    RIDESANITY_LOCATIONS = 0x20, Ridesanity
+    NON_POWER_BRICK_EXTRA_LOCATIONS = 0x40, EnableNonPowerBrickExtraLocations
+
+    EASIER_TRUE_JEDI = 0x80, EasierTrueJedi
+    SCALE_TRUE_JEDI_WITH_SCORE_MULTIPLIERS = 0x100, ScaleTrueJediWithScoreMultipliers
+
+    DEATH_LINK = 0x200, LegoStarWarsTCSDeathLink
+    DEATH_LINK_STUD_LOSS_SCALING = 0x400, DeathLinkStudLossScaling
+
+    LOGIC_EXPECT_2_1_TORPEDO_GATHERING = 0x800, LogicExpectNonInfiniteTorpedoesPodRacer21
+    LOGIC_UNCAP_OT_HIGH_JUMP = 0x1000, UncapOriginalTrilogyHighJump
+
+    KYBER_BRICK_GOAL = 0x2000, GoalRequiresKyberBricks
+
+    def is_enabled(self, slot_data: "TCSSlotDataOptions") -> bool:
+        return self in slot_data.enabled_optional_features.value
+
+
+# If one of the options changes type in the future, make sure EnabledFeature gets updated too, by raising an
+# AssertionError.
+assert all(feature.option_type is None or issubclass(feature.option_type, Toggle) for feature in EnabledFeature), \
+    "Non-Toggle option types in EnabledFeature are not supported."
 
 
 class OptionalSlotData(ABC):
@@ -160,6 +222,32 @@ class EnabledBosses(AreaOptionSet):
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.enabled_bosses)
         return super().from_any(data)
+
+
+class EnabledOptionalFeatures(Option[EnabledFeature]):
+    default = EnabledFeature.NONE
+
+    def __init__(self, flag_value: int):
+        self.value = EnabledFeature(flag_value)
+
+    @classmethod
+    def from_any(cls, data: typing.Any) -> "EnabledOptionalFeatures":
+        if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
+            flag = EnabledFeature.NONE
+            for flag_value in EnabledFeature:
+                option_type = flag_value.option_type
+                if option_type is None:
+                    continue
+                option_attribute_name = get_option_name(option_type)
+                option_instance = getattr(data.options, option_attribute_name)
+                assert isinstance(option_instance, Toggle)
+                if option_instance:
+                    flag |= flag_value
+            return cls(flag)
+        elif isinstance(data, int):
+            return cls(data)
+        else:
+            raise TypeError(f"Cannot create {cls.__name__} from {data} of type {type(data)}")
 
 
 class GoalAreaCompletionCount(Range):
@@ -324,6 +412,7 @@ class TCSSlotDataOptions(TCSDirectSlotDataOptions):
     enabled_bosses: EnabledBosses
     goal_area_completion_count: GoalAreaCompletionCount
     item_colors: ItemColors
+    enabled_optional_features: EnabledOptionalFeatures
     logic_version: LogicVersion  # = field(default_factory=lambda: LogicVersion(1), metadata=_since(1, 4, 0)) # Example
     goal_chapter: GoalChapterArea | None = field(default=None)
     chapters_requiring_alt_characters: ChaptersRequiringAltCharacters | None = field(default=None)

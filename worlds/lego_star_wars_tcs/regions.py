@@ -9,6 +9,7 @@ from rule_builder.options import OptionFilter
 from .constants import GOLD_BRICK_EVENT_NAME
 
 from .data.areas import Area, PURCHASABLE_NON_POWER_BRICK_EXTRAS, VEHICLE_CHAPTERS, EPISODE_AREA_LOOKUP
+from .data.bosses import Boss
 from .data.characters import UnlockMethod, Character
 from .data.items.all_character_items import NORMAL_CHARACTER_TO_ITEM_DATA
 from .data.items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
