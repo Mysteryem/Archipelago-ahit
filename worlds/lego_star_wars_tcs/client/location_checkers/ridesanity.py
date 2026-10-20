@@ -24,13 +24,9 @@ class RidesanityChecker(ClientComponent):
     @subscribe_event
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent):
         slot_data = event.slot_data
-        # Initialise
-        ridesanity_enabled = bool(slot_data.ridesanity)
 
-        self.ridables_by_area = {}
-
-        if not ridesanity_enabled:
-            return
+        # Find all ridables in enabled areas.
+        ridables_by_area = {}
 
         goal_chapter_locations_mode = slot_data.goal_chapter_locations_mode
         goal_locations_removed = goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
@@ -44,7 +40,7 @@ class RidesanityChecker(ClientComponent):
             if bonus_area not in BONUS_TO_RIDABLES:
                 # No ridables in this bonus.
                 continue
-            self.ridables_by_area[bonus_area] = {
+            ridables_by_area[bonus_area] = {
                 ridable.character: LOCATION_NAME_TO_ID[ridable.character.get_ridesanity_location_name()]
                 for ridable in BONUS_TO_RIDABLES[bonus_area]
             }
@@ -57,12 +53,12 @@ class RidesanityChecker(ClientComponent):
             if chapter_area is goal_chapter and goal_locations_removed:
                 # The Goal Chapter, with locations removed, should not send Ridesanity checks.
                 continue
-            self.ridables_by_area[chapter_area] = {
+            ridables_by_area[chapter_area] = {
                 character: LOCATION_NAME_TO_ID[character.get_ridesanity_location_name()]
                 for character in ridables.keys()
             }
 
-        self.ridables_by_area[Area.MAP] = {
+        ridables_by_area[Area.MAP] = {
             Character.MAPCAR: LOCATION_NAME_TO_ID[Character.MAPCAR.get_ridesanity_location_name()],
         }
 
@@ -71,6 +67,14 @@ class RidesanityChecker(ClientComponent):
             self.current_area = Area(current_area_id)
         else:
             self.current_area = None
+
+        # Filter out ridables that don't exist (e.g. ridesanity is not enabled).
+        self.ridables_by_area = {}
+        present_locations = event.context.server_locations
+        for area, ridables_dict in ridables_by_area.items():
+            present_ridables = {k: v for k, v in ridables_dict.items() if v in present_locations}
+            if present_ridables:
+                self.ridables_by_area[area] = present_ridables
 
         # If the player is currently riding a character that should send a check, they can just stop riding and then
         # start riding again for the check to send, so don't bother checking the current character IDs of the players.
