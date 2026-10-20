@@ -368,10 +368,12 @@ class _RegionBuilder:
         if chapter.area in world.enabled_bosses:
             assert chapter.area is not world.goal_chapter, ("The Goal Chapter should never be selected as an "
                                                               "enabled boss")
-            boss = world.boss_area_to_boss[chapter.area]
             if world.options.only_unique_bosses_count:
+                boss = world.boss_area_to_boss[chapter.area]
                 boss_event_item_name = boss.unique_event_name
             else:
+                boss = Boss.from_area(chapter.area)
+                # todo: Replace the literal with a shared global str.
                 boss_event_item_name = "Boss Defeated"
             world.add_event_pair(
                 f"{chapter.short_name} Defeat {boss.unique_name}", completion_region, boss_event_item_name)
