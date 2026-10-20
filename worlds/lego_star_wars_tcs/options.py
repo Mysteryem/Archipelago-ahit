@@ -368,6 +368,17 @@ class GoalChapter(ChoiceFromStringExtension):
     The Goal Chapter does not contribute towards other goals, it does not add Minikit items to the item pool, and will
     never contain an enabled boss.
 
+    Selecting ``Random Chapter`` will pick any chapter at random, as if you had used weights to set the weight of
+    ``No Goal Chapter`` to zero and the weight of every other chapter to the same number greater than zero. It is
+    recommended to use one of the special random options for the Starting Chapter when using ``Random Chapter``,
+    otherwise there is a chance that the Goal Chapter can roll the same chapter as the Starting Chapter, which is not
+    allowed.
+
+    Selecting ``Random Enabled Chapter`` will pick one of your enabled chapters at random.
+
+    Selecting ``Random Enabled Non Boss Chapter`` will pick one of your enabled chapters at random, excluding those that
+    have a chance to contain an Enabled Boss for the Defeat Bosses Goal.
+
     """
     display_name = "Goal Chapter"
     rich_text_doc = True

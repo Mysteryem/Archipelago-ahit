@@ -22,6 +22,7 @@ from ..options import (
     GoalChapterLocationsMode,
     ChapterUnlockRequirement,
     ChapterUnlockCharactersRequiredCountDistribution,
+    GoalChapter,
 )
 
 
@@ -91,7 +92,7 @@ class _NormalOptionsResolver:
     _enable_true_jedi_locations: bool = field(init=False)
     _kyber_bricks_required_for_goal: bool = field(init=False)
     _level_completions_required_for_goal: bool = field(init=False)
-    _goal_chapter: Area | None = field(init=False)
+    _goal_chapter: Area | None | GoalChapter.ToBeDetermined = field(init=False)
     _goal_chapter_locations_mode: GoalChapterLocationsMode = field(init=False)
 
     # A new attribute is used so that it is always possible to tell if the goal chapter was originally ToBeDetermined.
@@ -154,7 +155,7 @@ class _NormalOptionsResolver:
         ):
             self.world.option_error("At least one goal must be enabled.")
 
-    def _resolve_allowed_chapters(self) -> tuple[set[Area], set[Area], set[Area]]:
+    def _resolve_allowed_chapters_and_goal_chapter(self) -> tuple[set[Area], set[Area], set[Area]]:
 
         # Determine all available chapters to pick from.
         allowed_chapters = self._explicitly_allowed_chapters.value_ungrouped
@@ -1169,7 +1170,7 @@ class _NormalOptionsResolver:
             allowed_chapters,
             allowed_boss_chapters,
             original_allowed_boss_chapters
-        ) = self._resolve_allowed_chapters()
+        ) = self._resolve_allowed_chapters_and_goal_chapter()
         allowed_starting_chapters = self._resolve_allowed_starting_chapters(
             allowed_chapters, allowed_boss_chapters, original_allowed_boss_chapters)
 
