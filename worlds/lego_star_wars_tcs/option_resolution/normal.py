@@ -94,6 +94,10 @@ class _NormalOptionsResolver:
     _goal_chapter: Area | None = field(init=False)
     _goal_chapter_locations_mode: GoalChapterLocationsMode = field(init=False)
 
+    # A new attribute is used so that it is always possible to tell if the goal chapter was originally ToBeDetermined.
+    # This also provides clearer type hints that remove the possibility of being ToBeDetermined.
+    _resolved_goal_chapter: Area | None = None
+
     def _deferred_adjust(self, option: Option[_T], value: _T, warning: str | None = None, *warning_args):
         self.option_adjustments.append(_OptionAdjustment(option, value, warning, *warning_args))
 
@@ -172,6 +176,7 @@ class _NormalOptionsResolver:
 
         if self._goal_chapter is not None:
             # Players can pick to have the Goal Chapter be random from their enabled chapters.
+            resolved_goal_chapter: Area
             if isinstance(self._goal_chapter, GoalChapter.ToBeDetermined):
                 # Pick a chapter from those that are enabled.
                 if self._goal_chapter is GoalChapter.ToBeDetermined.RANDOM_ENABLED_TO_BE_DETERMINED:
@@ -197,13 +202,17 @@ class _NormalOptionsResolver:
 
                 picked_chapter = self.world.random.choice(sorted(pick_from))
                 self._deferred_adjust(self.options.goal_chapter, GoalChapter.from_area(picked_chapter))
-                self._goal_chapter = picked_chapter
+                resolved_goal_chapter = picked_chapter
+            else:
+                # The goal chapter must be a specifically chosen Area.
+                resolved_goal_chapter = self._goal_chapter
             # The goal chapter is special and is always picked, when enabled, and does not count towards the enabled
             # chapter count.
-            allowed_chapters.discard(self._goal_chapter)
+            allowed_chapters.discard(resolved_goal_chapter)
             # The goal chapter can never be a boss chapter because access to the goal chapter requires completing all
             # other goals.
-            allowed_boss_chapters.discard(self._goal_chapter)
+            allowed_boss_chapters.discard(resolved_goal_chapter)
+            self._resolved_goal_chapter = resolved_goal_chapter
 
         return allowed_chapters, allowed_boss_chapters, original_allowed_boss_chapters
 
@@ -236,7 +245,7 @@ class _NormalOptionsResolver:
                 starting_chapter = next(iter(starting_chapters))
 
                 # The starting chapter is not allowed to be the goal chapter.
-                if starting_chapter == self._goal_chapter:
+                if starting_chapter is self._resolved_goal_chapter:
                     world.option_error("The individually chosen starting chapter '%s' is not allowed to be the same as"
                                        " the Goal Chapter.", starting_chapter.get_long_name())
 
@@ -256,6 +265,12 @@ class _NormalOptionsResolver:
                 ):
                         allowed_boss_chapters.add(starting_chapter)
             else:
+                goal_chapter_str: str
+                goal_chapter = self._resolved_goal_chapter
+                if goal_chapter is None:
+                    goal_chapter_str = "No Goal Chapter"
+                else:
+                    goal_chapter_str = goal_chapter.get_long_name()
                 world.option_error("None of the chosen possible starting chapters were chosen to be possible to be"
                                    " enabled."
                                    " At least one starting chapter must be allowed to be enabled."
@@ -270,7 +285,7 @@ class _NormalOptionsResolver:
                                    sorted(self._explicitly_allowed_chapters.value),
                                    Area.to_human_readable_list(allowed_boss_chapters),
                                    Area.to_human_readable_list(allowed_chapters),
-                                   self._goal_chapter.get_long_name())
+                                   goal_chapter_str)
 
         return allowed_starting_chapters
 
@@ -298,7 +313,7 @@ class _NormalOptionsResolver:
                                   len(allowed_chapters),
                                   len(allowed_chapters))
             enabled_non_goal_chapters_count = len(allowed_chapters)
-        elif enabled_non_goal_chapters_count == 36 and self._goal_chapter is not None:
+        elif enabled_non_goal_chapters_count == 36 and self._resolved_goal_chapter is not None:
             # The Goal Chapter is enabled separately. There isn't really a need to warn for this.
             self._deferred_adjust(self.options.enabled_chapters_count, 35)
         del self._enabled_chapters_count
@@ -736,18 +751,18 @@ class _NormalOptionsResolver:
         # Finally set the enabled chapters.
         enabled_chapters_with_locations = set(tentative_enabled_chapters)
 
-        if (self._goal_chapter is not None
+        if (self._resolved_goal_chapter is not None
                 and self._goal_chapter_locations_mode != GoalChapterLocationsMode.option_removed):
             # The goal chapter contains locations in addition to being the goal.
-            enabled_chapters_with_locations.add(self._goal_chapter)
+            enabled_chapters_with_locations.add(self._resolved_goal_chapter)
 
         enabled_episodes = {area.get_chapter_episode() for area in enabled_chapters_with_locations}
 
-        if (self._goal_chapter is not None
+        if (self._resolved_goal_chapter is not None
                 and self._goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed):
             # It is possible that the Goal Chapter could be the only chapter in its episode, so there are no locations
             # in an episode, just the goal. The episode should still be considered enabled in this case.
-            enabled_episodes.add(self._goal_chapter.get_chapter_episode())
+            enabled_episodes.add(self._resolved_goal_chapter.get_chapter_episode())
 
         return enabled_bosses, enabled_chapters_with_locations, enabled_episodes
 
@@ -831,7 +846,7 @@ class _NormalOptionsResolver:
         expected_gold_brick_event_count: int
         if self._enable_bonus_locations:
             total_chapters_with_gold_bricks = enabled_chapter_count
-            if (self._goal_chapter is not None
+            if (self._resolved_goal_chapter is not None
                     and self._goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal):
                 # The Goal Chapter contributes Gold Bricks if it has non-excluded locations.
                 total_chapters_with_gold_bricks += 1
@@ -888,7 +903,7 @@ class _NormalOptionsResolver:
             # If the Goal Chapter is enabled and has normal locations, so has Gold Bricks, then the Gold Bricks in the
             # Goal Chapter will not be usable to access Bonus Levels that can contribute level completion towards the
             # goal.
-            if (self._goal_chapter is not None
+            if (self._resolved_goal_chapter is not None
                     and self._goal_chapter_locations_mode == GoalChapterLocationsMode.option_normal
                     and enabled_bonuses):
                 gold_bricks_per_chapter = (
@@ -1023,7 +1038,7 @@ class _NormalOptionsResolver:
             self.world.chapter_extra_random_character_counts = extra_dict
 
         # Roll for the required count of characters per chapter.
-        goal_chapter = self._goal_chapter
+        goal_chapter = self._resolved_goal_chapter
         non_special_chapters = sorted(c for c in enabled_chapters
                                       if c is not starting_chapter and c is not goal_chapter)
         if min_required_count == max_required_count:
@@ -1190,9 +1205,9 @@ class _NormalOptionsResolver:
 
         enabled_chapters = enabled_chapters_with_locations
         enabled_chapters_with_locations_count = enabled_non_goal_chapter_count
-        if self._goal_chapter is not None:
+        if self._resolved_goal_chapter is not None:
             if self._goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed:
-                enabled_chapters = enabled_chapters_with_locations | {self._goal_chapter}
+                enabled_chapters = enabled_chapters_with_locations | {self._resolved_goal_chapter}
             else:
                 enabled_chapters_with_locations_count += 1
 
@@ -1216,7 +1231,7 @@ class _NormalOptionsResolver:
             expected_gold_brick_event_count
         ) = self._resolve_available_bonuses_and_expected_gold_brick_counts(enabled_non_goal_chapter_count)
 
-        enabled_non_goal_chapters = enabled_chapters - {self._goal_chapter}
+        enabled_non_goal_chapters = enabled_chapters - {self._resolved_goal_chapter}
         goal_area_completion_count = self._resolve_goal_area_completion_count(
             enabled_non_goal_chapters, enabled_bonuses)
 
@@ -1233,7 +1248,7 @@ class _NormalOptionsResolver:
         world.minikit_bundle_count = minikit_bundle_count
         world.enabled_bonuses = enabled_bonuses
         world.expected_gold_brick_event_count = expected_gold_brick_event_count
-        world.goal_chapter = self._goal_chapter
+        world.goal_chapter = self._resolved_goal_chapter
         world.goal_area_completion_count = goal_area_completion_count
 
     def resolve_normal_options(self):
