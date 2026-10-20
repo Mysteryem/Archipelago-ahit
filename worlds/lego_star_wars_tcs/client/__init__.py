@@ -724,6 +724,9 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 ]
             ))
         elif cmd == "SetReply":
+            # todo: After receiving Gold Bricks to write into save data, mark some part of ctx as dirty and get the
+            #  client to forcefully autosave the game (Set 0x921e0c/0x921e08 to 1 if the save timers
+            #  (0x00921E10/0x00921E14) are not > 0.0, todo: Check if these addresses were GOG or Steam).
             key: str = args["key"]
             if self._is_datastorage_key(key, COMPLETED_FREE_PLAY_KEY_PREFIX):
                 value = args["value"]
@@ -879,6 +882,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             return
 
         if self.auth is None:
+            # todo: Rework client data clearing to run here for slot name changes within the same multiworld.
             self.auth_status = AuthStatus.NEED_INFO
             await self.set_auth()
 

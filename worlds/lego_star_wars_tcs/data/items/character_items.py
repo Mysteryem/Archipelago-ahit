@@ -330,7 +330,7 @@ def generic_yoda(character: Character, is_ghost: bool = False):
         alignment = Alignment.PASSIVE
     else:
         alignment = Alignment.GOOD
-    # todo: what is the effective run_speed with the lightsaber out?
+    # todo: what is the effective run_speed with the lightsaber out and jumping?
     return CharacterData.ap_item(character, abilities, 0.8, 0.44, 0.6133333, alignment)
 
 

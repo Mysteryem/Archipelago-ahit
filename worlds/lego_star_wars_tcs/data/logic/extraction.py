@@ -344,6 +344,7 @@ class ItemRequirementsExtractor:
         if isinstance(rule, (And.Resolved, Or.Resolved)):
             rule: And.Resolved | Or.Resolved
             requirements = Counter()
+            # todo?: Might there be some cases where Or.Resolved should be using `min(A[key], B[key])`?
             for child in rule.children:
                 # Union of counters A and B performs element-wise `result[key] = max(A[key], B[key])`.
                 child_requirements = self.extract_item_requirements(child)

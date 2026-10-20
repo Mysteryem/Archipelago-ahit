@@ -553,6 +553,7 @@ class HasAbilityCombination(InLevelRule, game=GAME_NAME):
                 if common_abilities is not ~CharacterAbility.NONE:
                     common_abilities_for_each_combination.append(common_abilities)
 
+            # todo: Create a False_() rule when no matching characters.
             characters_rule = HasAny(*all_matching_characters)
 
             # If there are lots of characters that match this, check for having any of the common abilities of each

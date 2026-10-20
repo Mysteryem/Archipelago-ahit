@@ -155,6 +155,7 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
                 apply_to = "base+"
 
         if apply_to.endswith("+"):
+            # TODO: When either argument is LogicOptions, try to deduplicate when `base is normal` etc.
             slice_to_use = _PLUS_DIFFICULTY_TO_SLICE[apply_to]
             difficulty_names = _DIFFICULTIES[slice_to_use]
             logic = self

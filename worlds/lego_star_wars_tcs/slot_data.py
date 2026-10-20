@@ -403,7 +403,7 @@ _DIRECT_FIELD_NAMES: frozenset[str] = frozenset({field.name for field in datacla
 @dataclass
 class TCSSlotDataOptions(TCSDirectSlotDataOptions):
     apworld_version: ApWorldVersion
-    enabled_chapters: EnabledChapters
+    enabled_chapters: EnabledChapters  # todo: make optional and deduce from chapter_required_character_counts when present
     enabled_episodes: EnabledEpisodes
     enabled_bonuses: EnabledBonuses
     starting_chapter: StartingChapter
@@ -416,6 +416,7 @@ class TCSSlotDataOptions(TCSDirectSlotDataOptions):
     logic_version: LogicVersion  # = field(default_factory=lambda: LogicVersion(1), metadata=_since(1, 4, 0)) # Example
     goal_chapter: GoalChapterArea | None = field(default=None)
     chapters_requiring_alt_characters: ChaptersRequiringAltCharacters | None = field(default=None)
+    # todo?: combine counts and requirements into a single option
     chapter_required_character_counts: ChapterRequiredCharacterCounts | None = field(default=None)
     chapter_random_character_requirements: ChapterRandomCharacterRequirements | None = field(default=None)
 

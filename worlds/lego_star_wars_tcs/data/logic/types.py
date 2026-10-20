@@ -171,6 +171,7 @@ class Chapter:
             raise Exception(f"First playable level for {self.name} is None")
         object.__setattr__(self, "start_level", start_level)
 
+        # TODO: Defer rule optimisation until generation time
         if self.area.get_extra_toggle_characters():
             # Add `| Has("Extra Toggle")` to rules that can be satisfied by having Extra Toggle.
             # It's important that replacements go in the following order:

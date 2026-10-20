@@ -18,6 +18,8 @@ class CharCategory(ctypes.Structure):
 
 VANILLA_CATEGORIES = [
     "Jedi",  # CharacterDataFlag3.JEDI
+    # todo?: In normal+ logic, when Dark Side has been unlocked, the BADDIE flag could be removed from this category to
+    #  make P2's AI able to complete the 2-2 Dark Side force 'puzzle' without having a Sith character unlocked.
     "JediBaddie",  # CharacterDataFlag3.JEDI | CharacterDataFlag3.BADDIE
     "BountyHunter",  # CharacterDataFlag3.BOUNTY_HUNTER | CharacterDataFlag3.BLASTER | CharacterDataFlag3.ZIPUP
     "Teleport",  # CharacterDataFlag3.TELEPORT (shortie)

@@ -985,6 +985,7 @@ def create_item_pool(world: LegoStarWarsTCSWorld):
             and world.options.goal_chapter_locations_mode == GoalChapterLocationsMode.option_excluded
     )
 
+    # FIXME: chapters_with_locations is unused
     chapters_with_locations, chapters_with_non_excluded_locations = _determine_chapters(world)
 
     possible_pool_character_items = _create_possible_pool(world)
@@ -1842,6 +1843,8 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
                 # noinspection PyTypeChecker
                 non_deprioritize_ability_counts.update(abilities)
             if chapters_unlock_with_characters:
+                # FIXME: Remove the level_access_character_item_name_counts check now that precise logical amounts are
+                #  determined.
                 if level_access_character_item_name_counts[item.name] == 0 and world.logical_item_counts[item.name] < 1:
                     assert abilities, (f"No abilities should mean the character item is not progression currently if"
                                        f" the character does not unlock levels, but {item.name} has no abilities and"
