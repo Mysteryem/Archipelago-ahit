@@ -525,7 +525,7 @@ class TCSSlotDataOptions(TCSDirectSlotDataOptions):
         return cls(**constructor_kwargs)
 
 _OPTION_TYPE_TO_ATTRIBUTE: Mapping[type[Option[Any]], str] = {
-    TCSSlotDataOptions._get_option_type_from_hint(f): f.name for f in dataclasses.fields(TCSDirectSlotDataOptions)
+    TCSSlotDataOptions._get_option_type_from_hint(f): f.name for f in dataclasses.fields(TCSSlotDataOptions)
 }
 
 def get_slot_data_name(o: type[Option[Any]]) -> str:
