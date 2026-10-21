@@ -132,7 +132,7 @@ GUNSHIP_CAVALRY = Chapter(
                 # - Zam's Airspeeder
                 # - Droid Trifighter
                 # - Vulture Droid
-                moderate=True_(),
+                hard=True_(),
             ),
             pickup_name="m_pup3",
         ),
