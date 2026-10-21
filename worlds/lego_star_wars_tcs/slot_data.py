@@ -484,11 +484,12 @@ class TCSSlotDataOptions(TCSDirectSlotDataOptions):
     @classmethod
     def from_slot_data(cls, slot_data: Mapping[str, Any]) -> "TCSSlotDataOptions":
         constructor_kwargs: dict[str, Any] = {}
-        missing_required_fields: dict[Option[Any], Field[Any]] = {}
+        missing_required_fields: dict[type[Option[Any]], Field[Any]] = {}
         for field_obj in dataclasses.fields(TCSSlotDataOptions):
             field_name = field_obj.name
             if field_name in _DIRECT_FIELD_NAMES:
                 option_type = field_obj.type
+                assert isinstance(option_type, type)
                 assert issubclass(option_type, Option), \
                     "All direct slot data fields should have a type hint that is an Option subclass"
                 if field_name not in slot_data:
