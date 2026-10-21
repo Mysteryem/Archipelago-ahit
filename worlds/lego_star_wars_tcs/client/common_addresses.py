@@ -5,6 +5,7 @@ from functools import cache
 from .common import StaticUChar, StaticFloat, StaticUint, StaticBOOL, FloatField, UCharField
 from .type_aliases import TCSContext
 from ..data.areas import ALL_CHAPTER_AREAS
+from ..data.levels import Level
 
 # To use: Iterate to find the first key that the address-to-convert is less than, then add the offset value.
 _GOG_TO_STEAM = {
@@ -301,10 +302,6 @@ class CantinaRoom(IntEnum):
 
 # -- Game state addresses.
 
-# This value is slightly unstable and occasionally changes to 0 while playing. It is also set to 2 in Mos Espa Pod Race
-# for some reason.
-# Importantly, this value is *not* 0 when watching a Story cutscene, and is instead 1.
-PAUSED_OR_STATUS_WHEN_0_ADDRESS = 0x9737f8
 # This address is usually -1/255 while playing or paused, 1 while tabbed out and 0 while both paused and tabbed out.
 # It is a more unstable than the previous value, while playing, however.
 # Notably, if window focus is forced by setting 0x827610 to 1, thus allowing the game to run in the background, then
@@ -325,11 +322,15 @@ def is_actively_playing(ctx: TCSContext):
 
     Returns False in cases like having a menu open, having the game paused, or having the game tabbed out.
     """
+    current_level_id = ctx.read_current_level_id()
+    if current_level_id not in Level:
+        return False
+    if not Level(current_level_id).is_playable():
+        # Handles Status screens
+        return False
     return (
-            # Handles pause and status screens.
-            ctx.read_uchar(PAUSED_OR_STATUS_WHEN_0_ADDRESS) != 0
             # Handles tabbing out.
-            and ctx.read_uchar(TABBED_OUT_WHEN_1_ADDRESS) != 1
+            ctx.read_uchar(TABBED_OUT_WHEN_1_ADDRESS) != 1
             # Handles pause menu and other menus.
             and ctx.read_uchar(OPENED_MENU_DEPTH_ADDRESS) == 0
             # Handles same-level screen transitions.
