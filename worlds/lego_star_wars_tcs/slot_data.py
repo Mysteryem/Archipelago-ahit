@@ -5,10 +5,10 @@ from collections import Counter
 from dataclasses import dataclass, field, Field
 from enum import IntFlag, verify, UNIQUE, CONTINUOUS, NAMED_FLAGS
 from types import UnionType, NoneType
-from typing import Any, TYPE_CHECKING, Iterable, Mapping, Union, Optional, get_origin, AbstractSet
+from typing import Any, TYPE_CHECKING, Iterable, Mapping, Union, Optional, get_origin, Self, TypeVar, cast
 from typing_extensions import override
 
-from Options import Option, Range, Toggle
+from Options import Option, Range, Toggle, T
 from worlds.AutoWorld import World
 
 from . import constants
@@ -101,42 +101,64 @@ class CustomJsonSerialize(ABC):
         ...
 
 
-class AreaOptionSet(Option[set[Area]]):
+T_ITERABLE = TypeVar("T_ITERABLE", bound=Iterable)
+T_MAPPING = TypeVar("T_MAPPING", bound=Mapping)
+
+
+_MISSING = object()
+
+
+class NamelessValuesOption(Option[T], ABC):
+    """Helper for options that do not use name_lookup so would crash when trying to str/repr them without overriding
+    get_option_name."""
+    # Core AP does not allow Option subclasses without `default` set, so something needs to be set.
+    default = _MISSING
+    @classmethod
+    def get_option_name(cls, value: T) -> str:
+        return str(value)
+
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        if cls.default is _MISSING:
+            raise Exception(f"Option class {cls.__name__} needs default value")
+
+
+class AreaOptionSet(NamelessValuesOption[set[Area]]):
     default = set()
 
     def __init__(self, area_ids: Iterable[int]):
         self.value = set(map(Area, area_ids))
 
     @classmethod
-    def from_any(cls, data: Any) -> "AreaOptionSet":
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, Iterable):
             return cls(data)
         else:
             raise TypeError(f"Cannot create {cls.__name__} from {data} of type {type(data)}")
 
 
-class AreaOption(Option[Area]):
+class AreaOption(NamelessValuesOption[Area]):
     default = Area.NEGOTIATIONS
 
     def __init__(self, area_id: int):
         self.value = Area(area_id)
 
     @classmethod
-    def from_any(cls, data: Any) -> "AreaOption":
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, int):
             return cls(data)
         else:
             raise TypeError(f"Cannot create {cls.__name__} from {data} of type {type(data)}")
 
 
-class ApWorldVersion(Option[tuple[int, int, int]]):
+class ApWorldVersion(NamelessValuesOption[tuple[int, int, int]]):
     default = (0, 0, 0)
 
     def __init__(self, version: tuple[int, int, int]):
         self.value = version
 
     @classmethod
-    def from_any(cls, data: Any) -> Option[tuple[int, int, int]]:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(constants.AP_WORLD_VERSION)
         major, minor, patch = data
@@ -148,28 +170,28 @@ class LogicVersion(Range):
     range_end = 999_999_999
 
     @classmethod
-    def from_any(cls, data: Any) -> Range:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(constants.UT_LOGIC_VERSION)
-        return super().from_any(data)
+        return cast(Self, super().from_any(data))
 
 
 class EnabledChapters(AreaOptionSet):
     @classmethod
-    def from_any(cls, data: Any) -> AreaOptionSet:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.enabled_chapters)
-        return super().from_any(data)
+        return cast(Self, super().from_any(data))
 
 
-class EnabledEpisodes(Option[set[int]]):
+class EnabledEpisodes(NamelessValuesOption[set[int]]):
     default = set()
 
     def __init__(self, episodes: Iterable[int]):
         self.value = set(episodes)
 
     @classmethod
-    def from_any(cls, data: Any) -> Option[AbstractSet[int]]:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.enabled_episodes)
         elif isinstance(data, Iterable):
@@ -180,18 +202,18 @@ class EnabledEpisodes(Option[set[int]]):
 
 class EnabledBonuses(AreaOptionSet):
     @classmethod
-    def from_any(cls, data: Any) -> AreaOptionSet:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.enabled_bonuses)
-        return super().from_any(data)
+        return cast(Self, super().from_any(data))
 
 
 class StartingChapter(AreaOption):
     @classmethod
-    def from_any(cls, data: Any) -> AreaOption:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.starting_chapter)
-        return super().from_any(data)
+        return cast(Self, super().from_any(data))
 
 
 class StartingEpisode(Range):
@@ -199,10 +221,10 @@ class StartingEpisode(Range):
     range_end = 6
 
     @classmethod
-    def from_any(cls, data: Any) -> Range:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.starting_episode)
-        return super().from_any(data)
+        return cast(Self, super().from_any(data))
 
 
 class MinikitGoalAmountDerived(Range):
@@ -210,28 +232,28 @@ class MinikitGoalAmountDerived(Range):
     range_end = MinikitGoalAmount.range_end
 
     @classmethod
-    def from_any(cls, data: Any) -> Range:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.goal_minikit_count)
-        return super().from_any(data)
+        return cast(Self, super().from_any(data))
 
 
 class EnabledBosses(AreaOptionSet):
     @classmethod
-    def from_any(cls, data: Any) -> AreaOptionSet:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.enabled_bosses)
-        return super().from_any(data)
+        return cast(Self, super().from_any(data))
 
 
-class EnabledOptionalFeatures(Option[EnabledFeature]):
+class EnabledOptionalFeatures(NamelessValuesOption[EnabledFeature]):
     default = EnabledFeature.NONE
 
     def __init__(self, flag_value: int):
         self.value = EnabledFeature(flag_value)
 
     @classmethod
-    def from_any(cls, data: typing.Any) -> "EnabledOptionalFeatures":
+    def from_any(cls, data: typing.Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             flag = EnabledFeature.NONE
             for flag_value in EnabledFeature:
@@ -255,23 +277,23 @@ class GoalAreaCompletionCount(Range):
     range_end = 36 + 6  # Chapters (36) + Bonuses (6, the Indy Trailer does not count).
 
     @classmethod
-    def from_any(cls, data: Any) -> Range:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.goal_area_completion_count)
-        return super().from_any(data)
+        return cast(Self, super().from_any(data))
 
 
 class GoalChapterArea(AreaOption, OptionalSlotData):
     default = Area.EMPERORFIGHT
 
     @classmethod
-    def from_any(cls, data: Any) -> AreaOption:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             goal_chapter = data.goal_chapter
             assert goal_chapter is not None, "is_present should prevent being called with no goal chapter"
             return cls(goal_chapter)
         else:
-            return super().from_any(data)
+            return cast(Self, super().from_any(data))
 
     @override
     @staticmethod
@@ -279,14 +301,14 @@ class GoalChapterArea(AreaOption, OptionalSlotData):
         return world.goal_chapter is not None
 
 
-class ItemColors(Option[tuple[int, int, int, int, int, int, int]]):
+class ItemColors(NamelessValuesOption[tuple[int, int, int, int, int, int, int]]):
     default = (TextColorChoice.option_white_ffffff,) * 7
 
     def __init__(self, colors: tuple[int, int, int, int, int, int, int]):
         self.value = colors
 
     @classmethod
-    def from_any(cls, data: Any) -> Option[tuple[int, int, int, int, int, int, int]]:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.options.item_colors_to_slot_data())
         (
@@ -312,10 +334,10 @@ class ItemColors(Option[tuple[int, int, int, int, int, int, int]]):
 
 class ChaptersRequiringAltCharacters(AreaOptionSet, OptionalSlotData):
     @classmethod
-    def from_any(cls, data: Any) -> AreaOptionSet:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.chapters_requiring_alt_characters)
-        return super().from_any(data)
+        return cast(Self, super().from_any(data))
 
     @override
     @staticmethod
@@ -323,14 +345,14 @@ class ChaptersRequiringAltCharacters(AreaOptionSet, OptionalSlotData):
         return world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters
 
 
-class ChapterRequiredCharacterCounts(Option[Counter[Area]], OptionalSlotData, CustomJsonSerialize):
+class ChapterRequiredCharacterCounts(NamelessValuesOption[Counter[Area]], OptionalSlotData, CustomJsonSerialize):
     default = Counter()
 
     def __init__(self, chapter_ids: Mapping[int, int]):
         self.value = Counter({Area(k): v for k, v in chapter_ids.items()})
 
     @classmethod
-    def from_any(cls, data: Any) -> Option[Counter[Area]]:
+    def from_any(cls, data: Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls(data.chapter_required_character_counts)
         elif isinstance(data, list):
@@ -351,14 +373,16 @@ class ChapterRequiredCharacterCounts(Option[Counter[Area]], OptionalSlotData, Cu
         return [x for pair in self.value.items() for x in pair]
 
 
-class ChapterRandomCharacterRequirements(Option[dict[Area, list[Character]]], OptionalSlotData, CustomJsonSerialize):
+class ChapterRandomCharacterRequirements(NamelessValuesOption[dict[Area, list[Character]]],
+                                         OptionalSlotData,
+                                         CustomJsonSerialize):
     default = {}
 
     def __init__(self, value: dict[int, list[int]]):
         self.value = {Area(k): [Character(c) for c in v] for k, v in value.items()}
 
     @classmethod
-    def from_any(cls, data: typing.Any) -> Option[dict[Area, list[Character]]]:
+    def from_any(cls, data: typing.Any) -> Self:
         if isinstance(data, World) and isinstance(data, LegoStarWarsTCSWorld):
             return cls({
                 chapter: characters
