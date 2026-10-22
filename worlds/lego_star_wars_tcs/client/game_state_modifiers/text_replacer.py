@@ -233,7 +233,9 @@ class TextReplacer(ClientComponent):
                 self.ctx.write_uint(v.address_of_pointer_to_vanilla_string, v.pointer_to_vanilla_string, raw=True)
             # Finally free the allocated memory.
             for v in data.values():
-                self.ctx.free(v.pointer_to_allocated_string)
+                pointer = v.pointer_to_allocated_string
+                if pointer is not None:
+                    self.ctx.free(pointer)
         finally:
             self.localized_string_data = {}
 

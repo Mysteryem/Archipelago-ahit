@@ -434,31 +434,21 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.uncap_high_jump = UncapHighJump()
         self.cantina_reloader = CantinaReloader()
         self.level_specific_fixes = LevelSpecificFixes()
+        self.text_display = InGameTextDisplay()
+        # It is not ideal to leak `self` in __init__. The TextReplacer methods could be updated to include a TCSContext
+        # parameter if needed, instead of leaking `self`. Alternatively, the TextReplacer could be created only when
+        # successfully connecting to the game.
+        self.text_replacer = TextReplacer(self)
         self.permanent_components = (
             self.uncap_high_jump,
             self.cantina_reloader,
             self.locked_cantina_door_info,
             self.level_specific_fixes,
+            self.text_replacer,
+            self.text_display,
         )
 
-        self.text_display = InGameTextDisplay()
-        self.death_link_manager = DeathLinkManager()
-        self.shop_names_replacer = ShopNamesReplacer()
-        self.auto_collect_pickups = AutoCollectPickups()
-
-        # It is not ideal to leak `self` in __init__. The TextReplacer methods could be updated to include a TCSContext
-        # parameter if needed, instead of leaking `self`. Alternatively, the TextReplacer could be created only when
-        # successfully connecting to the game.
-        self.text_replacer = TextReplacer(self)
-
-        self.unlocked_chapter_manager = UnlockedChapterManager()
-        self.free_play_completion_checker = FreePlayChapterCompletionChecker()
-        self.true_jedi_and_power_brick_and_minikit_brick_checker = TrueJediAndPowerBrickAndMinikitBrickChecker()
-        self.minikit_checker = MinikitChecker()
-        self.purchased_extras_checker = PurchasedExtrasChecker()
-        self.purchased_characters_checker = PurchasedCharactersChecker()
-        self.bonus_area_completion_checker = BonusAreaCompletionChecker()
-        self.ridesanity_checker = RidesanityChecker()
+        self._reset_non_permanent_components()
 
         self.client_expected_idx = 0
 
@@ -966,19 +956,17 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             return False
 
     async def unhook_game_process(self):
-        if self.game_process is not None:
+        try:
+            self.text_display.on_unhook_game_process()
             try:
                 self.text_replacer.on_unhook_game_process()
             except (PymemError, WinAPIError):
                 pass
-            finally:
-                self.text_display = InGameTextDisplay()
+        finally:
+            if self.game_process is not None:
                 self.game_process.close_process()
                 self.game_process = None
-                logger.info("Unhooked game process")
-        # Create a new TextReplacer so that if the game is restarted without the client being restarted, then the client
-        # won't try to read/write to memory that was only applicable to the previous game instance.
-        self.text_replacer = TextReplacer(self)
+            logger.info("Unhooked game process")
 
     @property
     def _game_process(self) -> pymem.Pymem:
@@ -1327,23 +1315,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         else:
             logger.warning(f"Received unknown item with AP ID {code}")
 
-    def reset_persisted_client_data(self, clear_text_display_queue=True):
-        """
-        Reset all client state.
-
-        Used when deliberately disconnecting from a server.
-        """
-        self.finished_game = False
-        self.locations_checked.clear()
-        # Event manager must be set before other attributes, so that the event manager can look for methods that are
-        # subscribing to events on the other attributes.
-        self.event_manager = EventManager()
-        # Some of the components are permanent, so need to be manually subscribed to the new EventManager.
-        for client_component in self.permanent_components:
-            self.event_manager.subscribe_events(client_component)
-
-        self.text_display = InGameTextDisplay()
-
+    def _reset_non_permanent_components(self):
         self.acquired_extras = AcquiredExtras()
         self.acquired_characters = AcquiredCharacters()
         self.acquired_generic = AcquiredGeneric()
@@ -1366,14 +1338,29 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.goal_manager = GoalManager()
         self.power_up_receiver = PowerUpReceiver()
 
-        self.shop_names_replacer.reset_persisted_client_data(self)
         self.shop_names_replacer = ShopNamesReplacer()
         self.auto_collect_pickups = AutoCollectPickups()
 
-        if clear_text_display_queue:
-            self.text_display.message_queue.clear()
-
         self.death_link_manager = DeathLinkManager()
+
+    def reset_persisted_client_data(self):
+        """
+        Reset all client state.
+
+        Used when deliberately disconnecting from a server.
+        """
+        self.finished_game = False
+        self.locations_checked.clear()
+        # Event manager must be set before other attributes, so that the event manager can look for methods that are
+        # subscribing to events on the other attributes.
+        self.event_manager = EventManager()
+        # Some of the components are permanent, so need to be manually subscribed to the new EventManager.
+        for client_component in self.permanent_components:
+            self.event_manager.subscribe_events(client_component)
+
+        self.shop_names_replacer.reset_persisted_client_data(self)
+        self._reset_non_permanent_components()
+
 
     def reset_client_received_items(self):
         """

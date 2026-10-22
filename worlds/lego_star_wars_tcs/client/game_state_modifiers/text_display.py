@@ -65,7 +65,7 @@ class InGameTextDisplay(ClientComponent):
         self.next_allowed_clean_time = max(now + int((display_duration_s + 1) * 1_000_000_000),
                                            self.next_allowed_message_time)
 
-    def on_unhook_game_process(self, ctx: TCSContext) -> None:
+    def on_unhook_game_process(self) -> None:
         self.message_queue.clear()
         if self.memory_dirty:
             # The TCSContext's TextReplacer will restore all replaced texts back to their vanilla text.
