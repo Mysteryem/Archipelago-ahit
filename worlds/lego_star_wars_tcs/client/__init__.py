@@ -62,6 +62,7 @@ from .game_state_modifiers.patches import apply_game_patches
 from .game_state_modifiers.auto_collect_pickups import AutoCollectPickups
 from .game_version_check import get_game_version, GameVersion, gog_to_steam
 
+from ..data.levels import Level
 from ..data.locations import LOCATION_NAME_TO_ID
 
 
@@ -1162,16 +1163,14 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 and self.read_uchar(CANTINA_ROOM_ID) == CantinaRoom.SHOP_ROOM.value  # and in the room with the shops.
                 and (shop_type is None or self.read_uchar(ACTIVE_SHOP_TYPE_ADDRESS) == shop_type.value))
 
-    def _load_level(self, level_id: int, reset_door: bool = False, hard_reset: bool = False):
+    def _load_level(self, level: Level, reset_door: bool = False, hard_reset: bool = False):
         """
 
-        :param level_id: ID of the level to load
+        :param level: The level to load
         :param reset_door: Reset the saved door. The saved door controls where the player spawns
         :param hard_reset: Fully reload the level, even when the player is in the level already
         :return:
         """
-        if not 0 <= level_id <= 333:
-            raise ValueError(f"{level_id} is not a valid level ID")
         if self.is_in_game():
             # Based on BrickBench, with addresses converted to Steam addresses.
             if reset_door:
@@ -1182,7 +1181,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             level_data_start_addr = self.read_uint(0x951b98)
             # Each level struct is 0x130 bytes. Level IDs are consecutive according to the order they are defined in
             # LEVELS.TXT.
-            target_level_data_addr = level_data_start_addr + 0x130 * level_id
+            target_level_data_addr = level_data_start_addr + 0x130 * level.value
             self.write_uint(0x951ba0, target_level_data_addr)
             # Some sort of flag that BrickBench sets. I don't know what this does.
             self.write_uint(0x93d870, 1)
@@ -1199,8 +1198,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 # to fix.
                 return False
             else:
-                # The Cantina's level ID is 325
-                self._load_level(325, hard_reset=hard)
+                self._load_level(Level.MAP, hard_reset=hard)
                 return True
         return False
 
