@@ -12,6 +12,10 @@ class LevelFlag(IntFlag):
     UNKNOWN0x2 = 0x2
     UNKNOWN0x4 = 0x4
     UNKNOWN0x8 = 0x8
+    # Only Status levels, TITLES and CREDITS do not have these flags. These flags seem to be common for levels that
+    # exist in a regular 3D world (technically the titles and status levels are also a fully 3D world, but they act more
+    # like 2D).
+    EXISTS_IN_REGULAR_LEVEL = UNKNOWN0x2 | UNKNOWN0x4 | UNKNOWN0x8
     FLAT_TERRAIN = 0x10
     INTRO_LEVEL = 0x20
     MIDTRO_LEVEL = 0x40  # Also known as cutscene_level internally
@@ -67,7 +71,7 @@ class Level(IntEnum):
         return LevelFlag.STATUS_LEVEL in self.flags
 
     def is_playable(self) -> bool:
-        return LevelFlag.ALL_CUTSCENE_FLAGS & self.flags == 0 and not self.is_status()
+        return LevelFlag.ALL_CUTSCENE_FLAGS & self.flags == 0 and LevelFlag.EXISTS_IN_REGULAR_LEVEL in self.flags
 
     TITLES = 0, LevelFlag(0x5)
     EP1_FAILEDNEG_INTRO1 = 1, LevelFlag(0x2e)
