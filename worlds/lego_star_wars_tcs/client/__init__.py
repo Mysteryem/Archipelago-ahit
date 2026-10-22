@@ -1163,7 +1163,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 and self.read_uchar(CANTINA_ROOM_ID) == CantinaRoom.SHOP_ROOM.value  # and in the room with the shops.
                 and (shop_type is None or self.read_uchar(ACTIVE_SHOP_TYPE_ADDRESS) == shop_type.value))
 
-    def _load_level(self, level: Level, reset_door: bool = False, hard_reset: bool = False):
+    def load_level(self, level: Level, reset_door: bool = False, hard_reset: bool = False):
         """
 
         :param level: The level to load
@@ -1198,7 +1198,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                 # to fix.
                 return False
             else:
-                self._load_level(Level.MAP, hard_reset=hard)
+                self.load_level(Level.MAP, hard_reset=hard)
                 return True
         return False
 

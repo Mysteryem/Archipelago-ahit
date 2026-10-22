@@ -23,6 +23,7 @@ from ...data.characters import Character
 from ...data.items import GenericItemData
 from ...data.items.all_character_items import CHARACTER_TO_ITEM_DATA
 from ...data.items.generic_items import EPISODE_UNLOCKS, GENERIC_DATA_BY_NAME, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
+from ...data.levels import Level
 from ...slot_data import EnabledFeature
 
 
@@ -522,16 +523,17 @@ class UnlockedChapterManager(ClientComponent):
         self._set_current_area_true_jedi_requirement(event.context, event.new_p_area_data, current_area)
         # Check that the chapter is being played in Free Play.
         if not IS_CHARACTER_SWAPPING_ENABLED.get(ctx):
+            # todo: Can we block entry to Story in another way?
             # The player must be in Story, Superstory or a Bounty Hunter Mission.
             # todo: Find a way to tell apart Story, Superstory and Bounty Hunter Missions while in the level itself.
             #  Currently, the client can only tell them apart on the 'status' screen.
+            ctx.load_level(Level.MAP, hard_reset=True)
             ctx.text_display.priority_messages("Chapters should only be played in Free Play",
                                                "Other modes are not currently part of the randomizer.")
         else:
             if not ChallengeMode.NO_CHALLENGE.is_set(ctx):
                 # The player is in Challenge mode.
-                ctx.text_display.priority_messages("Chapters should only be played in Free Play",
-                                                   "Challenge mode is not currently part of the randomizer")
+                ctx.text_display.priority_messages("Challenge mode is not currently part of the randomizer.")
 
     def is_chapter_enabled(self, chapter: Area):
         return chapter in self.enabled_chapter_areas
