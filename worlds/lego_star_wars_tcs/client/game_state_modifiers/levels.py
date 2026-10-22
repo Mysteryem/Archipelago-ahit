@@ -533,6 +533,8 @@ class UnlockedChapterManager(ClientComponent):
         else:
             if not ChallengeMode.NO_CHALLENGE.is_set(ctx):
                 # The player is in Challenge mode.
+                # Challenge mode uses the Free Play roster, so does not grant access to anything the player should not
+                # already have access to, so there is no need to kick the player back to the Cantina.
                 ctx.text_display.priority_messages("Challenge mode is not currently part of the randomizer.")
 
     def is_chapter_enabled(self, chapter: Area):
