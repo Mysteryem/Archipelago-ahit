@@ -970,6 +970,8 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.auth_status = AuthStatus.NOT_AUTHENTICATED
         self.server_seed_name = None
         if not allow_autoreconnect:
+            # fixme: CommonClient's connect() calls disconnect(), meaning that the initial client components get
+            #  replaced. This is not really a problem, just unnecessary (and doubles up some of the logging).
             self.reset_persisted_client_data()
             self.last_connected_slot = None
             self.last_connected_seed_name = None
