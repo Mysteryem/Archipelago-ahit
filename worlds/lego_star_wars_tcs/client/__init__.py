@@ -25,7 +25,15 @@ from ..constants import GAME_NAME, AP_WORLD_VERSION
 from ..levels import SHORT_NAME_TO_CHAPTER_AREA, ChapterArea
 from ..slot_data import TCSSlotDataOptions, ApWorldVersion, get_slot_data_name
 from .client_text import ClientText, clean_string
-from .common_addresses import ShopType, CantinaRoom, GameState1, OPENED_MENU_DEPTH_ADDRESS, CURRENT_P_AREA_DATA_ADDRESS
+from .common_addresses import (
+    ShopType,
+    CantinaRoom,
+    GameState1,
+    OPENED_MENU_DEPTH_ADDRESS,
+    CURRENT_P_AREA_DATA_ADDRESS,
+    CHARACTER_CHARACTER_DATA_POINTER,
+    CHARACTER_DATA_ID,
+)
 from .custom_save_data import CustomSaveDataSections, CUSTOM_SAVE_DATA_SECTION_SIZE
 from .location_checkers.free_play_completion import FreePlayChapterCompletionChecker
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
@@ -1301,14 +1309,14 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         if character_address == 0:
             # NULL pointer
             return 0
-        character_data_address = self.read_uint(character_address + 0x50, raw=True)
+        character_data_address = CHARACTER_CHARACTER_DATA_POINTER.get(self, character_address)
         return character_data_address
 
     def _get_character_id(self, character_data_address) -> int | None:
         if character_data_address == 0:
             return None
         # Character ID is the first 2 bytes
-        character_id = self.read_ushort(character_data_address + 0x0, raw=True)
+        character_id = CHARACTER_DATA_ID.get(self, character_data_address)
         return character_id
 
     def _get_player_character_id(self, player: int) -> int | None:
