@@ -2,13 +2,19 @@ import asyncio
 import logging
 import time
 from enum import IntEnum
+from random import Random
 
 from Utils import async_start
 
 from . import ClientComponent
 from .studs import give_studs
 from ..common import StaticUint, FloatField
-from ..common_addresses import CURRENT_AREA_ADDRESS, player_character_entity_iter
+from ..common_addresses import (
+    CURRENT_AREA_ADDRESS,
+    player_character_entity_iter,
+    CHARACTER_CHARACTER_DATA_POINTER,
+    CHARACTER_DATA_ID,
+)
 from ..custom_save_data import CustomSaveFlags1
 from ..events import (
     subscribe_event,
@@ -20,6 +26,8 @@ from ..events import (
 from ..type_aliases import TCSContext
 
 from ...data.areas import Area
+from ...data.characters import Character, UnlockMethod
+from ...data.items.all_character_items import CHARACTER_TO_ITEM_DATA
 from ...slot_data import EnabledFeature
 
 _DEBUG_LOGGER = logging.getLogger("TCS Debug")
@@ -219,6 +227,145 @@ _CHARACTER_RESPAWN_TIMER = FloatField(0x1010)
 Usually set by the game when a player dies, but can be set manually before killing a player, to make them wait a
 different amount of time before they respawn, so long as it is set greater than 0.0
 """
+
+_PLAYER_SPECIFIC_VEHICLE_DEATH_MESSAGES: tuple[str, ...] = (
+    "{alias}'s P{player} crashed their {character}",
+    "{alias}'s P{player}'s {character} crashed",
+    "{alias}'s P{player}'s {character} exploded",
+)
+_VEHICLE_DEATH_MESSAGES: tuple[str, ...] = (
+    "{alias} crashed their {character}",
+    "{alias}'s {character} crashed",
+    "{alias}'s {character} exploded",
+)
+_PLAYER_SPECIFIC_NON_VEHICLE_DEATH_MESSAGES: tuple[str, ...] = (
+    "{alias}'s P{player} broke their {character} minifigure",
+    "{alias}'s P{player}'s {character} minifigure broke",
+)
+_NON_VEHICLE_DEATH_MESSAGES: tuple[str, ...] = (
+    "{alias} broke their {character} minifigure",
+    "{alias}'s {character} minifigure broke",
+)
+_PLAYER_SPECIFIC_STATIONARY_RIDABLE_DEATH_MESSAGES: tuple[str, ...] = (
+    "{alias}'s P{players}'s {character} exploded",
+)
+_STATIONARY_RIDABLE_DEATH_MESSAGES: tuple[str, ...] = (
+    "{alias}'s {character} exploded",
+)
+_PLAYER_SPECIFIC_FALLBACK_DEATH_MESSAGES: tuple[str, ...] = (
+    "{alias}'s P{player} lost their studs",
+)
+_PLAYER_SPECIFIC_ANIMAL_RIDABLE_DEATH_MESSAGES: tuple[str, ...] = (
+    "{alias}'s P{player} broke their {character} minifigure",
+    "{alias}'s P{player}'s {character} minifigure broke",
+    "{alias}'s P{player}'s {character} died",
+)
+_ANIMAL_RIDABLE_DEATH_MESSAGES: tuple[str, ...] = (
+    "{alias} broke their {character} minifigure",
+    "{alias}'s {character} minifigure broke",
+    "{alias}'s {character} died",
+)
+_FALLBACK_DEATH_MESSAGES: tuple[str, ...] = (
+    "{alias} lost their studs",
+)
+_ANIMAL_RIDABLES: frozenset[Character] = frozenset({
+    Character.BANTHA,
+    Character.BOMARRMONK,  # I guess a brain in a jar still counts as an animal.
+    Character.DEWBACK,
+    Character.TAUNTAUN,
+    # Controllable as an Extra Toggle character in minikit bonuses rather than ridable.
+    Character.WAMPA,
+    Character.RANCOR,
+})
+# Many of these are probably impossible to kill, since damaging a vehicle usually just ejects the player.
+_VEHICLE_RIDABLES: frozenset[Character] = frozenset({
+    Character.ATAT,
+    Character.ATST,
+    Character.MAPCAR,
+    Character.CLONEWALKER,
+    Character.CLOUDCAR,
+    Character.FIRETRUCK,
+    Character.FLASHSPEEDER,
+    Character.SPEEDER_LAND,
+    Character.LIFEBOAT,
+    Character.MOONCAR,
+    Character.SERVICE_CAR,
+    Character.SPEEDERBIKE,
+    Character.SNOWMOB,
+    Character.STAP,
+    Character.TOWNCAR,
+    Character.TRACTOR,
+    Character.WOOKIEFLYER,
+    # Controllable in minikit bonuses rather than ridable.
+    *[c for c in Character if c.unlock_method is UnlockMethod.MINIKIT]
+})
+# I don't think any of these can be killed because they are stationary. The player is just ejected instead.
+_STATIONARY_RIDABLES: frozenset[Character] = frozenset({
+    Character.BASKETCANNON,
+    Character.BIGGUN,
+    Character.GRABBERCONTROL,
+    Character.CATAPULT,
+    Character.MOSCANNON,
+    Character.CANNON,
+    Character.TROOPERCANNON,
+})
+
+def _make_character_to_death_link_messages() -> dict[Character, tuple[tuple[str, ...], tuple[str, ...]]]:
+    vehicle = (_PLAYER_SPECIFIC_VEHICLE_DEATH_MESSAGES, _VEHICLE_DEATH_MESSAGES)
+    non_vehicle = (_PLAYER_SPECIFIC_NON_VEHICLE_DEATH_MESSAGES, _NON_VEHICLE_DEATH_MESSAGES)
+    stationary_ridable = (_PLAYER_SPECIFIC_STATIONARY_RIDABLE_DEATH_MESSAGES, _STATIONARY_RIDABLE_DEATH_MESSAGES)
+    animal_ridable = (_PLAYER_SPECIFIC_ANIMAL_RIDABLE_DEATH_MESSAGES, _ANIMAL_RIDABLE_DEATH_MESSAGES)
+    fallback = (_FALLBACK_DEATH_MESSAGES, _FALLBACK_DEATH_MESSAGES)
+    d: dict[Character, tuple[tuple[str, ...], tuple[str, ...]]] = {}
+    for character in Character:
+        if character in CHARACTER_TO_ITEM_DATA:
+            item_data = CHARACTER_TO_ITEM_DATA[character]
+            if item_data.item_type == "Vehicle":
+                d[character] = vehicle
+            else:
+                d[character] = non_vehicle
+        else:
+            if character in _STATIONARY_RIDABLES:
+                d[character] = stationary_ridable
+            elif character in _ANIMAL_RIDABLES:
+                d[character] = animal_ridable
+            else:
+                d[character] = fallback
+    return d
+_CHARACTER_TO_DEATH_LINK_MESSAGES: dict[Character, tuple[tuple[str, ...], tuple[str, ...]]]
+_CHARACTER_TO_DEATH_LINK_MESSAGES = _make_character_to_death_link_messages()
+
+
+_RANDOM: Random = Random()
+def _get_death_message_for_character(ctx: TCSContext, character_id: int, player_number: int | None) -> str | None:
+    # Get the current player's name.
+    slot = ctx.slot
+    if slot is None:
+        return None
+    player_name = ctx.player_names.get(slot)
+    if player_name is None:
+        return None
+
+    if character_id not in Character:
+        # This branch may be hit deliberately if it is not possible to determine which player has died.
+        return _RANDOM.choice(_FALLBACK_DEATH_MESSAGES).format(alias=player_name, player=player_number)
+
+    c = Character(character_id)
+    character_name = c.readable_name
+    if character_name == "?":
+        # Probably shouldn't happen, but fall back to automatically getting a name from the enum constant name.
+        character_name = c.name.replace("_", " ").title()
+    if c in _CHARACTER_TO_DEATH_LINK_MESSAGES:
+        messages_tuple = _CHARACTER_TO_DEATH_LINK_MESSAGES[c]
+        if player_number is not None:
+            # Player-specific.
+            format_messages = messages_tuple[0]
+        else:
+            # Not player-specific.
+            format_messages = messages_tuple[1]
+    else:
+        format_messages = _FALLBACK_DEATH_MESSAGES
+    return _RANDOM.choice(format_messages).format(alias=player_name, player=player_number, character=character_name)
 
 
 class DeathLinkManager(ClientComponent):
@@ -423,9 +570,42 @@ class DeathLinkManager(ClientComponent):
                 amnesty_remaining = self.normal_death_amnesty_remaining
 
         if send_death:
+            player_character_ids = {}
+            dead_players: dict[int, float] = {}
+
+            for player_number, character_address in player_character_entity_iter(ctx):
+                c_data = CHARACTER_CHARACTER_DATA_POINTER.get(ctx, character_address)
+                if not c_data:
+                    # Somehow NULL.
+                    continue
+                player_character_ids[player_number] = CHARACTER_DATA_ID.get(ctx, c_data)
+                if _CharacterDeathState.get(ctx, character_address) is not _CharacterDeathState.ALIVE:
+                    respawn_timer = _CHARACTER_RESPAWN_TIMER.get(ctx, character_address)
+                    dead_players[player_number] = respawn_timer
+
+            custom_death_message = None
+            if dead_players:
+                # If both players happen to be dead, prefer the one with the most recent death (largest respawn timer).
+                for dead_player, _ in sorted(dead_players.items(), key=lambda x: x[1], reverse=True):
+                    specific_player_number = dead_player if len(player_character_ids) > 1 else None
+                    death_message = _get_death_message_for_character(
+                        ctx, player_character_ids.get(dead_player, -1), specific_player_number)
+                    if death_message is not None:
+                        custom_death_message = death_message
+                        break
+            elif len(player_character_ids) == 1:
+                # If there is only one player character, assume it was them that died.
+                character_id = next(iter(player_character_ids.values()))
+                custom_death_message = _get_death_message_for_character(ctx, character_id, None)
+            else:
+                # No players are dead and both players are active, so there is no way to make a reasonable guess at who
+                # died, e.g. both players are active and one of them died in 3-1 or 3-6, where dying instantly reloads a
+                # checkpoint. By providing an invalid Character ID, the fallback messages will be used.
+                custom_death_message = _get_death_message_for_character(ctx, -1, None)
+
             ctx.text_display.priority_message("DeathLink: Death Sent")
             # todo: This could probably be a fire-and-forget task.
-            await ctx.send_death()
+            await ctx.send_death(custom_death_message if custom_death_message else "")
             # Ideally, we would kill any other player characters too, just like when receiving a death, but in levels
             # where death instantly respawns the player at an earlier checkpoint, this would result in the player, that
             # died, dying a second time after respawning at the checkpoint.

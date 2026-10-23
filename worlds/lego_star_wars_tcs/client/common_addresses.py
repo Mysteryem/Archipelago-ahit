@@ -2,7 +2,7 @@ from bisect import bisect_right
 from enum import IntEnum, IntFlag
 from functools import cache
 
-from .common import StaticUChar, StaticFloat, StaticUint, StaticBOOL, FloatField, UCharField
+from .common import StaticUChar, StaticFloat, StaticUint, StaticBOOL, FloatField, UCharField, UShortField, UintField
 from .type_aliases import TCSContext
 from ..data.areas import ALL_CHAPTER_AREAS
 from ..data.levels import Level
@@ -136,6 +136,8 @@ def player_character_entity_iter(ctx: TCSContext):
 
 
 CHARACTER_POWER_UP_TIMER = FloatField(0xdec)
+CHARACTER_CHARACTER_DATA_POINTER = UintField(0x50)
+CHARACTER_DATA_ID = UShortField(0x0)
 
 
 # It looks like AREA IDs tend to use 4 bytes, even though they only need 1 byte.
