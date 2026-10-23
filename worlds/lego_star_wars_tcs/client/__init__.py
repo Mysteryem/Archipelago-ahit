@@ -72,7 +72,7 @@ try:
         TrackerGameContext as CommonContext,
         TrackerCommandProcessor as ClientCommandProcessor,
     )
-except ImportError as ex:
+except ImportError:
     from CommonClient import CommonContext, ClientCommandProcessor
     UNIVERSAL_TRACKER_LOADED = False
 else:
@@ -343,6 +343,74 @@ class LegoStarWarsTheCompleteSagaCommandProcessor(ClientCommandProcessor):
                 logger.info("Death Link enabled.")
             else:
                 logger.info("Death Link disabled.")
+
+    def _impl_cmd_debug_memory_peek(self, num_bytes_to_read: str, *addresses: str, delay: int = 0):
+        ctx = self.ctx
+        if not isinstance(ctx, LegoStarWarsTheCompleteSagaContext):
+            return
+        if not addresses:
+            logger.info("At least one address is required")
+            return
+        process = ctx.game_process
+        if process is None:
+            logger.info("The client is not connected to the game. The command cannot run.")
+            return
+        try:
+            bytes_to_read = int(num_bytes_to_read)
+            if bytes_to_read > 256:
+                logger.info("Too many bytes to read, maximum is 256, but got %i", bytes_to_read)
+                return
+            if bytes_to_read < 1:
+                logger.info("Too few bytes to read, minimum is 1, but got %i", bytes_to_read)
+                return
+            address_ints: list[int] = [int(addr, base=16) for addr in addresses]
+        except ValueError as ex:
+            logger.info("Could not parse command arguments: %s", ex)
+        else:
+            if delay > 0:
+                import time
+                # The client freezes for the duration, so there is no point logging and then sleeping 1s at a time in a
+                # loop.
+                time.sleep(delay)
+            path = []
+            # The first address is absolute, and is assumed to be intended for the GOG version of the game, so must be
+            # adjusted if the player is playing the STEAM version of the game.
+            last_address = ctx.adjust_gog_address(address_ints[0])
+            for offset_address in address_ints[1:]:
+                last_address_points_to = process.read_uint(last_address)
+                path.append(last_address)
+                if last_address_points_to == 0:
+                    logger.info("%#x is a null pointer; stopping here.", last_address)
+                    return
+                else:
+                    next_address = last_address_points_to + offset_address
+                    logger.info("%#x points to %#x. Adding offset of %#x gives %#x.",
+                                last_address, last_address_points_to, offset_address, next_address)
+                    last_address = next_address
+            value = process.read_bytes(last_address, bytes_to_read)
+            logger.info("At %#x, read %i bytes to get: %s", last_address, bytes_to_read, value.hex())
+
+    def _cmd_debug_memory_peek(self, num_bytes_to_read: str, *addresses: str):
+        """Debug command to peek at the game's memory, given the number of bytes to read, and a series of offset
+        addresses in hexadecimal. The APWorld developer may provide you a command to run to help identify issues you are
+        having."""
+        self._impl_cmd_debug_memory_peek(num_bytes_to_read, *addresses, delay=0)
+
+    def _cmd_debug_delayed_memory_peek(self, seconds_delay: str, num_bytes_to_read: str, *addresses: str):
+        """Debug command to peek at the game's memory after a delay, given the number of bytes to read, and a series of
+        offset addresses in hexadecimal. The APWorld developer may provide you a command to run to help identify issues
+        you are having. The client will freeze for the duration of the delay."""
+        try:
+            seconds_delay = int(seconds_delay)
+            if seconds_delay < 0:
+                raise ValueError("Minimum delay is 0 seconds")
+            if seconds_delay > 10:
+                raise ValueError("Maximum delay is 10 seconds")
+        except ValueError as ex:
+            logger.info("Could not parse seconds_delay as an integer: %s", ex)
+        else:
+            self._impl_cmd_debug_memory_peek(num_bytes_to_read, *addresses, delay=seconds_delay)
+
 
 
 class LegoStarWarsTheCompleteSagaContext(CommonContext):
