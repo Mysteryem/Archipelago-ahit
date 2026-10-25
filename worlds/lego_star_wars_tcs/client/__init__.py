@@ -72,6 +72,14 @@ from .game_version_check import get_game_version, GameVersion, gog_to_steam
 
 from ..data.levels import Level
 from ..data.locations import LOCATION_NAME_TO_ID
+from ..data_storage import (
+    DATA_STORAGE_KEY_SUFFIX,
+    COMPLETED_FREE_PLAY_KEY_PREFIX,
+    COMPLETED_TRUE_JEDI_KEY_PREFIX,
+    COMPLETED_10_MINIKITS_KEY_PREFIX,
+    COMPLETED_BONUSES_KEY_PREFIX,
+    COLLECTED_POWER_BRICKS_KEY_PREFIX,
+)
 
 
 # Universal Tracker client integration.
@@ -250,14 +258,6 @@ UNUSED_AREA_DWORD_SLOT_NAME_START = UNUSED_AREA_DWORD_SEED_NAME_HASH_END
 UNUSED_AREA_DWORD_SLOT_NAME_END = UNUSED_AREA_DWORD_SLOT_NAME_START + 16
 UNUSED_AREA_DWORD_SLOT_NAME_AREAS = slice(UNUSED_AREA_DWORD_SLOT_NAME_START,
                                           UNUSED_AREA_DWORD_SLOT_NAME_END)
-
-DATA_STORAGE_KEY_SUFFIX = "{team}_{slot}"
-
-COMPLETED_FREE_PLAY_KEY_PREFIX = "tcs_completed_free_play_"
-COMPLETED_TRUE_JEDI_KEY_PREFIX = "tcs_completed_true_jedi_"
-COMPLETED_10_MINIKITS_KEY_PREFIX = "tcs_completed_10_minikits_"
-COMPLETED_BONUSES_KEY_PREFIX = "tcs_completed_bonuses_"
-COLLECTED_POWER_BRICKS_KEY_PREFIX = "tcs_collected_power_bricks_"
 
 LEVEL_ID_KEY_PREFIX = "tcs_current_level_id_"
 CANTINA_ROOM_KEY_PREFIX = "tcs_cantina_room_"
@@ -538,7 +538,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             self.event_manager.subscribe_events(value)
 
     def _get_datastorage_key(self, key_prefix: str):
-        return key_prefix + DATA_STORAGE_KEY_SUFFIX.format(team=self.team, slot=self.slot)
+        return key_prefix + DATA_STORAGE_KEY_SUFFIX.format(team=self.team, player=self.slot)
 
     def _is_datastorage_key(self, to_check: str, prefix: str):
         return to_check.startswith(prefix) and to_check == self._get_datastorage_key(prefix)

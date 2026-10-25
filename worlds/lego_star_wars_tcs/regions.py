@@ -67,11 +67,16 @@ class _RegionBuilder:
     goal_requires_area_completion: bool = field(init=False)
     """Whether the goal requires completing areas."""
 
+    ut_deferred_events: bool = field(init=False)
+    """Whether UT Deferred Events are enabled."""
+
     def __post_init__(self) -> None:
         # Create the origin region.
         self.cantina = self.world.create_region(self.world.origin_region_name)
 
         self.goal_requires_area_completion = self.world.goal_area_completion_count > 0
+
+        self.ut_deferred_events = self.world.is_universal_tracker_deferred_entrances()
 
     def _get_score_multiplier_rule(self, studs_cost: int) -> Rule:
         count = self.world.get_score_multiplier_requirement(studs_cost)
@@ -112,11 +117,47 @@ class _RegionBuilder:
         else:
             return abilities_rule
 
-    @staticmethod
-    def _make_all_minikits_rule(minikit_locations: list[Location]) -> Rule:
+    def _add_10_minikits_gold_brick_event(self, area: Area, minikit_locations: list[Location]) -> None:
+        # Minikits are generally in order of appearance within a level, so put the event in the same region as
+        # the last minikit.
+        event_region = minikit_locations[-1].parent_region
+        assert event_region is not None
+        all_minikits_loc = self.world.add_gold_brick_event(area.get_all_minikits_gold_brick_event_name(),
+                                                           event_region)
         # The last minikit location is generally the furthest into the level, so construct the rule such that it checks
         # the locations in reverse.
-        return And(*(CanReachLocation(loc.name) for loc in reversed(minikit_locations)))
+        all_minikits_rule = And(*(CanReachLocation(loc.name) for loc in reversed(minikit_locations)))
+        self.world.set_rule(all_minikits_loc, all_minikits_rule)
+
+    def _add_ut_deferred_10_minikits_gold_brick_event(self, area: Area, minikit_locations: list[Location]) -> None:
+        # Create an event in the same region, with the same rule, as each Minikit location.
+        # This is a workaround for https://github.com/ArchipelagoMW/Archipelago/issues/6391.
+        # The 10 minikit Gold Brick event checks CanReachLocation for all 10 minikit locations. Normally, this is
+        # no problem because the rule is specified on a location, however, with Universal Tracker Deferred Events
+        # enabled, the rule is moved to an Entrance, meaning that Indirect Conditions would need to be registered
+        # for any regions the locations could check for access to. Rule Builder is supposed to handle this
+        # automatically, but does not.
+        ut_event_item_name = area.get_long_name() + " Minikit (UT Event)"
+        for minikit_location in minikit_locations:
+            ut_event_location_name = minikit_location.name + "(UT Event)"
+            parent_region = minikit_location.parent_region
+            assert parent_region is not None
+            event_loc = self.world.add_event_pair(ut_event_location_name, parent_region, ut_event_item_name)
+            if minikit_location.access_rule is not Location.access_rule:
+                self.world.set_rule(event_loc, minikit_location.access_rule)
+        # Logic performance in Universal Tracker is nowhere near as important, so the parent region of any minikit
+        # location would suffice, rather than preferring a specific parent region.
+        entrance_parent_region = minikit_locations[-1].parent_region
+        assert entrance_parent_region is not None
+        region_name = area.get_all_minikits_gold_brick_event_name()
+        event_region = self.world.create_region(region_name)
+        self.world.add_gold_brick_event(area.get_all_minikits_gold_brick_event_name(), event_region)
+        # In UT deferred events, the rule is on the entrance instead of on the location.
+        entrance_rule = Has(ut_event_item_name, len(minikit_locations))
+        entrance = entrance_parent_region.create_exit(name=region_name)
+        self.world.set_rule(entrance, entrance_rule)
+        # Add the entrance and event region to the dict on the world.
+        self.world.ut_disconnected_10_minikits_gold_brick_events[area] = (entrance, event_region)
 
     @staticmethod
     def _exclude_location(location: Location) -> None:
@@ -213,7 +254,7 @@ class _RegionBuilder:
         region_data_stack: list[tuple[str, tuple[ExitData, ...]]] = [(start_region_internal_name, start_region_exits)]
         create_region = self.world.create_region
         prefix_name = area.prefix_name
-        regions = {}
+        regions: dict[str, Region] = {}
         resolved_rule: Rule.Resolved
         entrances_to_create: list[tuple[Region, str, str | None, Rule | Rule.Resolved]] = []
         while region_data_stack:
@@ -264,17 +305,28 @@ class _RegionBuilder:
         # Completion Location + Events.
         completion_name = area.get_completion_name()
         completion_location = self.world.add_location(completion_name, completion_region)
+
+        # With Universal Tracker deferred events enabled, completion events and purchase characters are moved to a
+        # region locked behind a deferred entrance.
+        if self.ut_deferred_events:
+            post_completion_region = create_region(completion_region.name + " (UT Deferred)")
+            entrance_to_post_completion = completion_region.create_exit(completion_name + " (Event)")
+            self.world.ut_disconnected_free_play_completion_events[area] = (entrance_to_post_completion,
+                                                                            post_completion_region)
+        else:
+            post_completion_region = completion_region
+
         if exclude_locations:
             self._exclude_location(completion_location)
         if create_gold_bricks:
             # Completion Gold Brick event.
-            world.add_gold_brick_event(f"{completion_name} - Gold Brick", completion_region)
+            world.add_gold_brick_event(area.get_completion_gold_brick_event_name(), post_completion_region)
         # Area completion.
         # The goal chapter does not contribute to Area Completion because the Goal Chapter requires completing
         # all other goals before it will unlock.
         if self.goal_requires_area_completion and not is_goal_chapter:
             # "Level" here is as a user-facing term, with the meaning of "Area" internally.
-            world.add_event_pair(area.get_completion_name() + " (Event)", completion_region, "Level Completion")
+            world.add_event_pair(area.get_completion_event_name(), post_completion_region, "Level Completion")
 
         # True Jedi (legacy logic).
         if world.options.enable_true_jedi_locations:
@@ -288,8 +340,18 @@ class _RegionBuilder:
                 self._exclude_location(true_jedi_location)
             if create_gold_bricks:
                 # True Jedi Gold Brick event.
-                true_jedi_event = world.add_gold_brick_event(f"{true_jedi_name} - Gold Brick", completion_region)
-                world.set_rule(true_jedi_event, legacy_rule)
+                true_jedi_event_name = area.get_true_jedi_gold_brick_event_name()
+                if self.ut_deferred_events:
+                    true_jedi_event_region = create_region(area.get_true_jedi_gold_brick_event_name())
+                    true_jedi_event_entrance = completion_region.create_exit(true_jedi_event_name)
+                    self.world.ut_disconnected_true_jedi_gold_brick_events[area] = (true_jedi_event_entrance,
+                                                                                    true_jedi_event_region)
+                    world.add_gold_brick_event(true_jedi_event_name, true_jedi_event_region)
+                    # The rule gets placed on the entrance rather, than the location, in the case of deferred events.
+                    world.set_rule(true_jedi_event_entrance, legacy_rule)
+                else:
+                    true_jedi_event = world.add_gold_brick_event(true_jedi_event_name, completion_region)
+                    world.set_rule(true_jedi_event, legacy_rule)
 
         # Power Brick Location.
         extra = chapter.area.extra
@@ -298,8 +360,19 @@ class _RegionBuilder:
         power_brick_region = regions[chapter.power_brick.region]
         studs_cost = extra.purchase_cost
         assert studs_cost is not None
-        power_brick_loc = world.add_shop_location(power_brick_location_name, power_brick_region, studs_cost)
-        world.set_rule(power_brick_loc, self._add_score_multiplier_rule(chapter.power_brick.rule, studs_cost))
+        if self.ut_deferred_events:
+            power_brick_event_name = area.prefix_name("Power Brick (Event)")
+            extra_purchase_region = create_region(power_brick_event_name)
+            entrance_to_extra_purchase = power_brick_region.create_exit(power_brick_event_name)
+            # Set the Power Brick's rule on the entrance.
+            world.set_rule(entrance_to_extra_purchase, chapter.power_brick.rule)
+            power_brick_loc = world.add_shop_location(power_brick_location_name, extra_purchase_region, studs_cost)
+            # Set the Purchase cost rule on the location.
+            world.set_rule(power_brick_loc, self._get_score_multiplier_rule(studs_cost))
+            self.world.ut_disconnected_power_brick_events[area] = (entrance_to_extra_purchase, extra_purchase_region)
+        else:
+            power_brick_loc = world.add_shop_location(power_brick_location_name, power_brick_region, studs_cost)
+            world.set_rule(power_brick_loc, self._add_score_multiplier_rule(chapter.power_brick.rule, studs_cost))
         if exclude_locations:
             self._exclude_location(power_brick_loc)
 
@@ -309,7 +382,7 @@ class _RegionBuilder:
             location_name = character.get_purchase_location_name()
             studs_cost = character.purchase_cost
             assert studs_cost is not None
-            purchase_location = world.add_shop_location(location_name, completion_region, studs_cost)
+            purchase_location = world.add_shop_location(location_name, post_completion_region, studs_cost)
             world.set_rule(purchase_location, self._get_score_multiplier_rule(studs_cost))
             if exclude_locations:
                 self._exclude_location(purchase_location)
@@ -329,14 +402,10 @@ class _RegionBuilder:
                 for loc in minikit_locations:
                     self._exclude_location(loc)
             if create_gold_bricks:
-                # Minikits are generally in order of appearance within a level, so put the event in the same region as
-                # the last minikit.
-                # todo: Technically, higher logic would potentially be able to get this early in some levels that have
-                #  minikit duplication glitches.
-                event_region = minikit_locations[-1].parent_region
-                assert event_region is not None
-                all_minikits_loc = world.add_gold_brick_event(area.prefix_name("Collect All Minikits"), event_region)
-                world.set_rule(all_minikits_loc, self._make_all_minikits_rule(minikit_locations))
+                if self.ut_deferred_events:
+                    self._add_ut_deferred_10_minikits_gold_brick_event(area, minikit_locations)
+                else:
+                    self._add_10_minikits_gold_brick_event(area, minikit_locations)
         elif world.options.minikit_goal_amount != 0:
             # If Minikit locations are disabled, but the goal requires Minikits, the Chapter Completion location
             # is instead treated as if it was the vanilla location for a 10 Minikits bundle.
@@ -350,6 +419,8 @@ class _RegionBuilder:
         # Story Character unlocks.
         if world.options.enable_story_character_unlock_locations:
             for character in chapter.area.get_story_characters():
+                # These unlock as soon as the chapter is completed, so should not be locked behind a deferred chapter
+                # completion event.
                 self.story_character_unlock_regions.setdefault(character, []).append(completion_region)
 
         # Checks for riding unique characters.
@@ -375,8 +446,13 @@ class _RegionBuilder:
                 boss = Boss.from_area(chapter.area)
                 # todo: Replace the literal with a shared global str.
                 boss_event_item_name = "Boss Defeated"
+            # Bosses are currently implemented in the client by requiring the chapter to be completed, so the boss event
+            # can just go in `post_completion_region`.
             world.add_event_pair(
-                f"{chapter.short_name} Defeat {boss.unique_name}", completion_region, boss_event_item_name)
+                chapter.area.get_boss_defeat_event_name(boss),
+                post_completion_region,
+                boss_event_item_name,
+            )
 
         return regions[start_region_internal_name]
 
@@ -506,12 +582,22 @@ class _RegionBuilder:
                 #             world.character_chapter_access_counts[item] += 1
                 assert legacy_area.gold_brick, "Every bonus that requires Gold Bricks to access should award a Gold Brick"
 
-                gold_brick = world.add_gold_brick_event(f"{legacy_area.name} - Gold Brick", area_region)
+                if self.ut_deferred_events:
+                    post_completion_region = world.create_region(area.get_completion_name() + " (UT Deferred)")
+                    to_post_completion = area_region.create_exit(area.get_completion_name() + " (Event)")
+                    world.set_rule(to_post_completion, completion_rule)
+                    world.ut_disconnected_bonus_completion_events[area] = (to_post_completion, post_completion_region)
+                else:
+                    post_completion_region = area_region
+
+                gold_brick = world.add_gold_brick_event(area.get_completion_gold_brick_event_name(),
+                                                        post_completion_region)
                 world.set_rule(gold_brick, completion_rule)
 
                 if self.goal_requires_area_completion:
                     # "Level" here is as a user-facing term, with the meaning of "Area" internally.
-                    world.add_event_pair(f"{legacy_area.name} Completion (Event)", area_region, "Level Completion")
+                    world.add_event_pair(area.get_completion_goal_progress_event_name(), post_completion_region,
+                                         "Level Completion")
 
                 if world.options.ridesanity:
                     # Checks for riding unique characters

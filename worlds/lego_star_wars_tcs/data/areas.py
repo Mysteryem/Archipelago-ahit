@@ -7,6 +7,7 @@ from .levels import Level
 
 
 if TYPE_CHECKING:
+    from .bosses import Boss
     from .characters import Character
 
 
@@ -155,22 +156,43 @@ class Area(IntEnum):
     def has_gold_brick(self):
         return AreaFlag.NO_GOLD_BRICK not in self.flags
 
-    def prefix_name(self, name: str):
+    def prefix_name(self, name: str) -> str:
         return f"{self.readable_name} - {name}"
 
-    def get_true_jedi_name(self):
+    def get_true_jedi_name(self) -> str:
         return self.prefix_name("True Jedi")
 
-    def get_completion_name(self):
+    def get_completion_name(self) -> str:
         return self.prefix_name("Completion")
 
-    def get_short_name(self):
+    def get_completion_event_name(self) -> str:
+        return self.get_completion_name() + " (Event)"
+
+    def get_completion_goal_progress_event_name(self) -> str:
+        return self.get_completion_name() + " (Event - Goal Progress)"
+
+    def get_completion_gold_brick_event_name(self) -> str:
+        return self.get_completion_name() + " - Gold Brick"
+
+    def get_boss_defeat_event_name(self, boss: "Boss") -> str:
+        return f"{self.get_long_name()} Defeat {boss.unique_name}"
+
+    def get_true_jedi_gold_brick_event_name(self) -> str:
+        return f"{self.get_true_jedi_name()} - Gold Brick"
+
+    def get_all_minikits_gold_brick_event_name(self) -> str:
+        return f"{self.get_long_name()} - Collect All Minikits Gold Brick"
+
+    def get_power_brick_event_name(self) -> str:
+        return f"{self.get_long_name()} - Power Brick (Event)"
+
+    def get_short_name(self) -> str:
         """This is a legacy method, and should be considered deprecated."""
         if not self.is_chapter():
             raise Exception(f"{self!r} is not a chapter.")
         return f"{self.episode_index + 1}-{self.area_index + 1}"
 
-    def get_long_name(self):
+    def get_long_name(self) -> str:
         if self.is_chapter():
             return f"{self.readable_name} ({self.get_short_name()})"
         # LOSTTEMPLE is not locked behind a gold brick door.

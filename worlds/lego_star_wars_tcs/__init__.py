@@ -1,7 +1,7 @@
 import json
 import logging
 from collections import Counter
-from typing import Mapping, Any, NoReturn, Callable, ClassVar, TextIO
+from typing import Mapping, Any, NoReturn, Callable, ClassVar, TextIO, Iterable
 
 from BaseClasses import (
     Region,
@@ -42,6 +42,13 @@ from .item_groups import ITEM_GROUPS, REVERSE_READABLE_ABILITY_TO_ABILITY
 from .data.characters import Character
 from .data.levels import SAVE_DATA_MINIKITS_ELEMENT_SIZE
 from .data.locations import LOCATION_NAME_TO_ID, LOCATION_GROUPS
+from .data_storage import (
+    COMPLETED_FREE_PLAY_KEY,
+    COMPLETED_TRUE_JEDI_KEY,
+    COMPLETED_10_MINIKITS_KEY,
+    COMPLETED_BONUSES_KEY,
+    COLLECTED_POWER_BRICKS_KEY,
+)
 
 # 1 byte to write the length
 SLOT_NAME_MAX_BYTES = SAVE_DATA_MINIKITS_ELEMENT_SIZE - 1
@@ -108,6 +115,21 @@ class LegoStarWarsTCSWorld(World):
     glitches_item_name: str = "UT_GLITCHED"
     # Custom item name for use in UT with `/manually_collect` to adjust glitched logic to show all higher difficulties.
     glitches_all_item_name: str = "UT_GLITCHED_ALL"
+    ut_disconnected_free_play_completion_events: dict[Area, tuple[Entrance, Region]]
+    ut_disconnected_true_jedi_gold_brick_events: dict[Area, tuple[Entrance, Region]]
+    ut_disconnected_10_minikits_gold_brick_events: dict[Area, tuple[Entrance, Region]]
+    ut_disconnected_bonus_completion_events: dict[Area, tuple[Entrance, Region]]
+    ut_disconnected_power_brick_events: dict[Area, tuple[Entrance, Region]]
+    ut_disconnected_boss_events: dict[Area, tuple[Entrance, Region]]
+    ut_datastorage_key_to_disconnected_dict: dict[str, Iterable[dict[Area, tuple[Entrance, Region]]]]
+    # Universal-Tracker-specific attribute. The attribute name cannot be changed.
+    found_entrances_datastorage_key: ClassVar[tuple[str, ...]] = (
+        COMPLETED_FREE_PLAY_KEY,
+        COMPLETED_TRUE_JEDI_KEY,
+        COMPLETED_10_MINIKITS_KEY,
+        COMPLETED_BONUSES_KEY,
+        COLLECTED_POWER_BRICKS_KEY,
+    )
 
     PROG_USEFUL_LEVEL_ACCESS_THRESHOLD_PERCENT: ClassVar[float] = 1/6
     prog_useful_level_access_threshold_count: int = 6
@@ -166,6 +188,37 @@ class LegoStarWarsTCSWorld(World):
         self.spoiler_chapter_character_requirements = {}
         self.chapter_extra_random_character_counts = {}
         self.chapter_random_character_requirements = {}
+        # UT-specific attributes are deliberately only set when generating under Universal Tracker, so an AttributeError
+        # will occur in normal generation if normal generation tries to access one of these attributes.
+        if self.is_universal_tracker():
+            self.ut_disconnected_free_play_completion_events = {}
+            self.ut_disconnected_true_jedi_gold_brick_events = {}
+            self.ut_disconnected_10_minikits_gold_brick_events = {}
+            self.ut_disconnected_bonus_completion_events = {}
+            self.ut_disconnected_power_brick_events = {}
+            self.ut_disconnected_boss_events = {}
+            self.ut_datastorage_key_to_disconnected_dict = {
+                k.format(team=0, player=self.player): v for k, v in {
+                    COMPLETED_FREE_PLAY_KEY: (
+                        self.ut_disconnected_free_play_completion_events,
+                        # Bosses are currently implemented by completing the chapter, so share the same datastorage key.
+                        self.ut_disconnected_boss_events,
+                    ),
+                    COMPLETED_TRUE_JEDI_KEY: (
+                        self.ut_disconnected_true_jedi_gold_brick_events,
+                    ),
+                    COMPLETED_10_MINIKITS_KEY: (
+                        self.ut_disconnected_10_minikits_gold_brick_events,
+                    ),
+                    COMPLETED_BONUSES_KEY: (
+                        # TODO: Bonus completion should use the same datastorage as free play completion.
+                        self.ut_disconnected_bonus_completion_events,
+                    ),
+                    COLLECTED_POWER_BRICKS_KEY: (
+                        self.ut_disconnected_power_brick_events,
+                    ),
+                }.items()
+            }
 
     def log_info(self, message: str, *args) -> None:
         logger.info("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
@@ -190,6 +243,11 @@ class LegoStarWarsTCSWorld(World):
         # The `generation_is_fake` attribute is added by Universal Tracker to allow detection of generation with
         # Universal Tracker rather than real generation.
         return hasattr(self.multiworld, "generation_is_fake")
+
+    def is_universal_tracker_deferred_entrances(self) -> bool:
+        """Return whether Universal Tracker deferred entrances are enabled."""
+        return (self.is_universal_tracker()
+                and getattr(self.multiworld, "enforce_deferred_connections", "default") != "off")
 
     @property
     def starting_episode(self) -> int:
@@ -530,3 +588,27 @@ class LegoStarWarsTCSWorld(World):
                 f" does not have matching logic with the version of your installed apworld ({constants.AP_WORLD_VERSION})."
             )
         return slot_data
+
+    def reconnect_found_entrances(self, found_key: str, data_storage_value: Any):
+        """UT-specific method for handling deferred entrances. The name of the method must not be changed."""
+        self.log_info("Received data storage key %s with value %s", found_key, data_storage_value)
+        if found_key not in self.ut_datastorage_key_to_disconnected_dict:
+            # Probably should not happen, but who knows with Universal Tracker.
+            return
+        if data_storage_value is None:
+            # Likely means that no value has been set on the server's datastorage yet.
+            return
+        if not isinstance(data_storage_value, Iterable):
+            raise Exception(f"Expected an Iterable for datastorage key {found_key}, but got {data_storage_value} of "
+                            f"type {type(data_storage_value)}")
+        area_to_disconnected_entrance_dicts = self.ut_datastorage_key_to_disconnected_dict[found_key]
+        for area_to_disconnected_entrance in area_to_disconnected_entrance_dicts:
+            for area_id in data_storage_value:
+                if area_id not in area_to_disconnected_entrance:
+                    # The player could theoretically complete a disabled level (e.g. playing without the client being
+                    # connected), and the client might write read that completed level from the save data and send the
+                    # completion to datastorage.
+                    continue
+                entrance, region = area_to_disconnected_entrance[area_id]
+                if entrance.connected_region is None:
+                    entrance.connect(region)
