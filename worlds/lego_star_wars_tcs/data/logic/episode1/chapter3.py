@@ -131,10 +131,17 @@ ESCAPE_FROM_NABOO = Chapter(
         "Stack Boxes Minikit": minikit_data(
             R_ROOFTOPS_SPAWN,
             logic_options(
+                strict=False,
                 # Destroy the doors, force the columns into boxes, stack the boxes and then high jump up.
                 base=HasAllAbilities(JEDI | HIGH_JUMP),
+            ).or_rule(
+                # Take the first grapple, jump onto the window sill, then jump and jetpack hover across.
+                apply_to="normal+",
+                rule=HasAbility(JETPACK),
+            ).or_rule(
                 # Triple High Jump can reach the minikit without stacking any boxes.
-                moderate=HasAllAbilities(JEDI | HIGH_JUMP) | HasAbility(CAN_HIGH_JUMP_SLAM)
+                apply_to="moderate+",
+                rule=HasAbility(CAN_HIGH_JUMP_SLAM),
             ),
             pickup_name="mk_0",
         ),
