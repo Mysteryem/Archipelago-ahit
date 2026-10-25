@@ -481,9 +481,9 @@ class _RegionBuilder:
             previous_gold_brick_region = region
 
             for legacy_area in areas:
-                area_region = world.create_region(legacy_area.name)
-                region.connect(area_region)
                 area = Area(legacy_area.area_id)
+                area_region = world.create_region(area.readable_name)
+                region.connect(area_region)
 
                 # Completion location.
                 completion_rule = (
