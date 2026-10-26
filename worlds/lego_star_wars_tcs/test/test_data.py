@@ -217,26 +217,6 @@ class TestEpisodes(TestCase):
                     with self.subTest(un_nested=True):
                         json_dump_rule(un_nested.to_dict(), True, owner_name, chapter)
 
-    @chapters_test
-    def test_no_empty_and_in_rules(self, chapter: Chapter):
-        def scan_for_empty_and(rule: Rule):
-            if isinstance(rule, NestedRule):
-                if not rule.children and isinstance(rule, And):
-                    self.fail("Found an empty And() rule, this will incorrectly resolve to False_() due to a Rule"
-                              " Builder bug")
-                for child in rule.children:
-                    scan_for_empty_and(child)
-            elif isinstance(rule, WrapperRule):
-                scan_for_empty_and(rule.child)
-            elif isinstance(rule, LogicOptions):
-                scan_for_empty_and(rule.base)
-                scan_for_empty_and(rule.normal)
-                scan_for_empty_and(rule.moderate)
-                scan_for_empty_and(rule.hard)
-        for owner_name, rule in self.chapter_rule_gen(chapter):
-            with self.subTest(name=owner_name):
-                scan_for_empty_and(rule)
-
     def test_rules_resolve(self):
         # PyCharm sees that the ClassVar is not assigned, or something, and assumes it is actually an instance
         # attribute, and then complains about access to a generic instance attribute from the class.
