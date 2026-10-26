@@ -595,37 +595,37 @@ DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI: set[Area] = {
 }
 
 
-CHAPTER_SPECIFIC_REQUIREMENTS: dict[str, tuple[CharacterAbility, CharacterAbility | None]] = {
+CHAPTER_SPECIFIC_REQUIREMENTS: dict[Area, tuple[CharacterAbility, CharacterAbility | None]] = {
     # Mos Espa Pod Race does not require any Vehicle abilities, but does require having at least one vehicle character
     # unlocked, so extra logic is needed to ensure the player actually has a vehicle character.
-    "1-4": (IS_A_VEHICLE, None),
+    Area.PODSPRINT: (IS_A_VEHICLE, None),
     # There is a Hat Machine in Level D, which you can take all the way back to behind spawn to the Imperial Panel with
     # a Minikit behind.
     # All the characters that can wear hats can jump and can make it back to the panel.
     # todo: Maybe the most basic logic level should use (CAN_WEAR_HAT_AND_GRAPPLE or CAN_WEAR_HAT_AND_DOUBLE_JUMP)
     #  because CAN_WEAR_HAT on its own requires either a tight jump, or jumping off a small garbage bin than can be
     #  destroyed by accident.
-    "4-3": (CAN_WEAR_HAT, CharacterAbility.IMPERIAL),
+    Area.MOSEISLEY: (CAN_WEAR_HAT, CharacterAbility.IMPERIAL),
     # There is a section where a Stormtrooper helmet needs to be taken across a gap that requires grappling if you want
     # to keep the hat.
-    "4-4": (CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE, CharacterAbility.IMPERIAL),
+    Area.DEATHSTARRESCUE: (CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE, CharacterAbility.IMPERIAL),
     # In 4-5, there is an Imperial Hat Machine with an Imperial panel that requires grappling across a gap to reach
     # (Level A), so, if the player has no Imperial character, they need a BLASTER character that can wear hats.
     # This additionally covers a later use of an Imperial Hat Machine where the panel is at the top of an elevator
     # (level B), and another later use of an Imperial Hat Machine where the panel is at the end of a Zipup, across a gap
     # (level C).
-    "4-5": (CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE, CharacterAbility.IMPERIAL),
-    "5-4": (CharacterAbility.ASTROMECH_DROID, None),
+    Area.DEATHSTARESCAPE: (CharacterAbility.CAN_WEAR_HAT_AND_GRAPPLE, CharacterAbility.IMPERIAL),
+    Area.DAGOBAH: (CharacterAbility.ASTROMECH_DROID, None),
     # In 5-5, there is an Imperial Hat Machine with an Imperial panel that requires double-jumping across a gap to
     # reach, so, if the player has no Imperial character, they need a Jedi/Sith that can wear hats.
     # This gets its own flag, instead of being JEDI | CAN_WEAR_HAT, for logic performance reasons. The complexity comes
     # from the fact that characters may have additional flags, but the logic system prefers to store only the combined
     # flag of all currently usable abilities.
-    "5-5": (CharacterAbility.CAN_WEAR_HAT_AND_DOUBLE_JUMP, CharacterAbility.IMPERIAL),
+    Area.CLOUDCITYTRAP: (CharacterAbility.CAN_WEAR_HAT_AND_DOUBLE_JUMP, CharacterAbility.IMPERIAL),
     # Level A has a Hat Machine where you need to walk to an elevator with the hat.
-    "5-6": (CAN_WEAR_HAT, CharacterAbility.IMPERIAL),
+    Area.CLOUDCITYESCAPE: (CAN_WEAR_HAT, CharacterAbility.IMPERIAL),
     # The level is played in Story with a character than can wear hats instead of needing a bounty hunter.
-    "6-1": (CAN_WEAR_HAT, CharacterAbility.BOUNTY_HUNTER),
+    Area.JABBASPALACE: (CAN_WEAR_HAT, CharacterAbility.BOUNTY_HUNTER),
 }
 """
 Chapter completions that require logic that is specific to that chapter.
@@ -635,83 +635,6 @@ The first element of each value are the abilities that would normally be used in
 The second element of each value is an optional alternative ability that can be used instead, but often requires a rarer
 ability. 
 """
-
-
-# TODO: Record Level IDs, these would mostly be there to help make map switching in the tracker easier, and would
-#  serve as a record of data that might be useful for others.
-_CHAPTER_AREAS = [
-    # area -1/255 = Cantina, AreaData* index ??
-    ChapterArea("Negotiations", 1, 1, 0x86e114, (3, 4, 5), 7, 0, 31000, 64000, 0),
-    ChapterArea("Invasion of Naboo", 1, 2, 0x86e120, (10, 11, 12, 13), 15, 1, 44000, 52000, 1),
-    ChapterArea("Escape From Naboo", 1, 3, 0x86e12c, (19, 20, 21, 22), 24, 2, 48000, 60000, 2),
-    ChapterArea("Mos Espa Pod Race", 1, 4, 0x86e138, (36,), 37, 3, 45000, 45000, 3),
-    # area 4 = Bonus: Pod Race (Original), AreaData* index 49
-    ChapterArea("Retake Theed Palace", 1, 5, 0x86e150, (41, 42, 43, 44, 45, 46), 48, 5, 60000, 100000, 4),
-    ChapterArea("Darth Maul", 1, 6, 0x86e15c, (50, 51, 52, 53, 54), 55, 6, 31000, 64000, 5),
-    # area 7 = EP1 Ending
-    # area 8 = EP1 Character Bonus, AreaData* index 37
-    # area 9 = EP1 Minikit Bonus. Episode Bonus doors show the Minikit Bonus Area ID rather than Character Bonus Area ID
-    # AreaData* index 43
-    ChapterArea("Bounty Hunter Pursuit", 2, 1, 0x86e18c, (62, 63, 64, 65, 66), 68, 10, 35000, 45000, 6),
-    ChapterArea("Discovery On Kamino", 2, 2, 0x86e198, (71, 72, 73, 74, 75), 78, 11, 50000, 65000, 7),
-    ChapterArea("Droid Factory", 2, 3, 0x86e1a4, (82, 83, 84, 85, 86, 87), 88, 12, 40000, 55000, 8),
-    ChapterArea("Jedi Battle", 2, 4, 0x86e1b0, (90,), 92, 13, 8000, 16000, 9),
-    ChapterArea("Gunship Cavalry", 2, 5, 0x86e1bc, (93, 94), 95, 14, 30000, 40000, 10),
-    # area 15 = Bonus: Gunship Cavalry (Original), AreaData* index 51
-    ChapterArea("Count Dooku", 2, 6, 0x86e1d4, (100, 101), 103, 16, 10000, 22000, 11),
-    # area 17 = EP2 Ending
-    # area 18 = EP2 Character Bonus, AreaData* index 38
-    # area 19 = EP2 Minikit Bonus, AreaData* index 44
-    ChapterArea("Battle Over Coruscant", 3, 1, 0x86e204, (110,), 111, 20, 75000, 75000, 12),
-    ChapterArea("Chancellor In Peril", 3, 2, 0x86e210, (112, 113, 114, 115, 116, 117, 118), 121, 21, 60000, 80000, 14),
-    ChapterArea("General Grievous", 3, 3, 0x86e21c, (122,), 123, 22, 3300, 5000, 15),
-    ChapterArea("Defense Of Kashyyyk", 3, 4, 0x86e228, (124, 125, 126, 127), 128, 23, 65000, 90000, 16),
-    ChapterArea("Ruin Of The Jedi", 3, 5, 0x86e234, (131, 132, 133), 134, 24, 35000, 75000, 17),
-    ChapterArea("Darth Vader", 3, 6, 0x86e240, (136, 137, 138), 139, 25, 25000, 45000, 18),
-    # area 26 = EP3 Ending
-    # area 27 = EP3 Character Bonus, AreaData* index 39
-    # area 28 = EP3 Minikit Bonus, AreaData* index 45
-    # area 29 = Bonus: A New Hope, AreaData* index 52
-    ChapterArea("Secret Plans", 4, 1, 0x86e27c, (153, 154, 155, 156), 159, 30, 28000, 40000, 19),
-    ChapterArea("Through The Jundland Wastes", 4, 2, 0x86e288, (161, 162, 163, 164, 165), 167, 31, 60000, 90000, 20),
-    ChapterArea("Mos Eisley Spaceport", 4, 3, 0x86e294, (169, 170, 171, 172, 173), 177, 32, 60000, 100000, 21),
-    ChapterArea("Rescue The Princess", 4, 4, 0x86e2a0, (180, 181, 182, 183, 184), 185, 33, 60000, 80000, 22),
-    ChapterArea("Death Star Escape", 4, 5, 0x86e2ac, (187, 188, 189, 190), 192, 34, 45000, 65000, 23),
-    ChapterArea("Rebel Attack", 4, 6, 0x86e2b8, (197, 198, 199, 200), 203, 35, 30000, 45000, 24),
-    # area 36 = EP4 Ending
-    # area 37 = EP4 Character Bonus, AreaData* index 40
-    # area 38 = EP4 Minikit Bonus, AreaData* index 46
-    ChapterArea("Hoth Battle", 5, 1, 0x86e2e8, (213, 214, 215, 216, 217), 219, 39, 25000, 35000, 25),
-    ChapterArea("Escape From Echo Base", 5, 2, 0x86e2f4, (221, 222, 223, 224, 225), 228, 40, 40000, 80000, 26),
-    ChapterArea("Falcon Flight", 5, 3, 0x86e300, (230, 231, 232, 233), 236, 41, 30000, 48000, 27),
-    ChapterArea("Dagobah", 5, 4, 0x86e30c, (238, 239, 240, 241, 242), 244, 42, 52000, 72000, 28),
-    # 5-5 levels are after 5-6 levels for some reason.
-    ChapterArea("Cloud City Trap", 5, 5, 0x86e318, (253, 254, 255), 257, 43, 14000, 22000, 29),
-    ChapterArea("Betrayal Over Bespin", 5, 6, 0x86e324, (247, 248, 249), 251, 44, 34000, 60000, 30),
-    # area 45 = EP5 Ending
-    # area 46 = EP5 Character Bonus, AreaData* index 41
-    # area 47 = EP5 Minikit Bonus, AreaData* index 47
-    ChapterArea("Jabba's Palace", 6, 1, 0x86e354, (265, 266, 267, 268), 271, 48, 43000, 60000, 31),
-    ChapterArea("The Great Pit Of Carkoon", 6, 2, 0x86e360, (273, 274, 275), 277, 49, 50000, 65000, 32),
-    ChapterArea("Speeder Showdown", 6, 3, 0x86e36c, (278,), 279, 50, 55000, 70000, 33),
-    ChapterArea("The Battle Of Endor", 6, 4, 0x86e378, (281, 282, 283, 284), 286, 51, 90000, 110000, 34),
-    ChapterArea("Jedi Destiny", 6, 5, 0x86e384, (299, 300), 301, 52, 35000, 80000, 35),
-    ChapterArea("Into The Death Star", 6, 6, 0x86e390, (288, 289, 290, 291, 292, 293, 294), 297, 53, 35000, 40000, 36),
-    # area 54 = EP6 Ending
-    # area 55 = EP6 Character Bonus, AreaData* index 42
-    # area 56 = EP6 Minikit Bonus, AreaData* index 48
-    # area 57 = Bonus: New Town
-    # area 58 = Bonus: Anakin's Flight, AreaData* index 50
-    # area 59 = Bonus: Lego City
-    # area 60 = Two Player Arcade (Senate) (also used by the door in the cantina)
-    # area 61 = Two Player Arcade (Utapau)
-    # area 62 = Two Player Arcade (Hoth)
-    # area 63 = Two Player Arcade (Kamino)
-    # area 64 = Two Player Arcade (Kashyyyk)
-    # area 65 = Two Player Arcade (Dagobah)
-    # area 66 = Cantina
-    # area 67 = Bonus: Trailers door (technically belongs to LostTemple, but the level is unfinished, and inaccessible)
-]
 
 
 # todo: Need to consider the Gold Brick shop eventually. Also Bounty Hunter missions. Also Challenges. Also
@@ -765,5 +688,4 @@ BONUS_AREAS = [
     BonusArea(Area.LOSTTEMPLE.readable_name, 0x86e505, (), 0x0, -1, 67, gold_brick=False)
 ]
 
-AREA_ID_TO_CHAPTER_AREA = {area.area_id: area for area in _CHAPTER_AREAS}
 AREA_ID_TO_BONUS_AREA = {area.area_id: area for area in BONUS_AREAS}

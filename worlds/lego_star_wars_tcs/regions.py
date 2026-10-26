@@ -6,7 +6,8 @@ from BaseClasses import Region, LocationProgressType, Location
 from rule_builder.rules import Rule, Has, True_, CanReachLocation, And, HasAll, HasFromListUnique
 from rule_builder.options import OptionFilter
 
-from .constants import GOLD_BRICK_EVENT_NAME
+from .character_ability import CharacterAbility
+from .constants import GOLD_BRICK_EVENT_NAME, CHAPTER_SPECIFIC_FLAGS
 
 from .data.areas import Area, PURCHASABLE_NON_POWER_BRICK_EXTRAS, VEHICLE_CHAPTERS, EPISODE_AREA_LOOKUP
 from .data.bosses import Boss
@@ -22,8 +23,8 @@ from .data.shop import UNLOCK_REQUIREMENT_TO_CHARACTERS
 from .levels import (
     BonusArea,
     BONUS_AREAS,
-    AREA_ID_TO_CHAPTER_AREA,
     DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
+    CHAPTER_SPECIFIC_REQUIREMENTS,
 )
 from .options import GoalChapterLocationsMode, ChapterUnlockRequirement, EpisodeUnlockRequirement, EasierTrueJedi
 from .ridables import (
@@ -96,22 +97,40 @@ class _RegionBuilder:
 
     @staticmethod
     def _get_legacy_true_jedi_rule(area: Area):
-        """True Jedi logic has not been defined yet, so the legacy rule is used."""
-        legacy_chapter = AREA_ID_TO_CHAPTER_AREA[area]
-        # The logic is not fully prepared for this currently, so the entrance rule is also set to require
-        # all the logical abilities of the Story characters of the Chapter, which will be overly
-        # restrictive for many locations, but overly restrictive logic cannot result in impossible seeds.
+        """True Jedi logic has not been defined yet, so a legacy rule based on the story characters is used."""
+        # The logic is not fully prepared for this currently, so the rule is set to require all the logical abilities of
+        # the Story characters of the Chapter, which will be overly restrictive for many locations, but overly
+        # restrictive logic cannot result in impossible seeds.
         # A few chapters have chapter-specific logical requirements that get stripped from the requirements
         # of other chapters.
-        main_ability_requirements = legacy_chapter.completion_main_ability_requirements
-        alt_ability_requirements = legacy_chapter.completion_alt_ability_requirements
+        base_abilities: CharacterAbility = CharacterAbility.NONE
+        for character in area.get_story_characters():
+            base_abilities |= NORMAL_CHARACTER_TO_ITEM_DATA[character].abilities
+        # Strip all chapter-specific flags. If there are any that are relevant to this chapter, they will be re-added in
+        # the next step.
+        base_abilities &= ~CHAPTER_SPECIFIC_FLAGS
+        # Add any chapter-specific flags and set possible alternatives
+        alt_ability_requirements: CharacterAbility | None = None
+        if chapter_specific_requirement := CHAPTER_SPECIFIC_REQUIREMENTS.get(area):
+            story_logic, alternative_ability = chapter_specific_requirement
+            main_ability_requirements = base_abilities | story_logic
+            if alternative_ability is not None and alternative_ability not in base_abilities:
+                # Define an alternative set of requirements.
+                alt_ability_requirements = (base_abilities & ~story_logic) | alternative_ability
+        else:
+            main_ability_requirements = base_abilities
+        if main_ability_requirements is CharacterAbility.NONE:
+            raise AssertionError("Every chapter should have at least one CharacterAbility requirement.")
+        if alt_ability_requirements is CharacterAbility.NONE:
+            raise AssertionError("Every chapter's alternate requiremenents should have at least one CharacterAbility"
+                                 " requirement.")
 
         if alt_ability_requirements:
             abilities_rule = HasAnyAbilities(main_ability_requirements) | HasAnyAbilities(alt_ability_requirements)
         else:
             abilities_rule =  HasAnyAbilities(main_ability_requirements)
 
-        if legacy_chapter.area_id in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI:
+        if area in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI:
             return abilities_rule & (Has(NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value)
                                      | OptionFilter(EasierTrueJedi, EasierTrueJedi.option_true))
         else:
