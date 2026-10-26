@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 from BaseClasses import ItemClassification
 
 from .character_ability import CharacterAbility
-from .constants import progression_deprioritized_skip_balancing
 from .data.areas import PURCHASABLE_NON_POWER_BRICK_EXTRAS
 from .data.characters import Character
 from .data.extras import Extra
@@ -194,7 +193,7 @@ def _evaluate_effective_other_data(world: LegoStarWarsTCSWorld,
             if world.options.accessibility == "minimal" or world.minikit_bundle_count > 10:
                 # Minikits are sorted first for minimal players in stage_fill_hook to reduce generation
                 # failures, so should always be deprioritized for minimal players.
-                return progression_deprioritized_skip_balancing
+                return ItemClassification.progression_deprioritized_skip_balancing
             else:
                 # If there are only very few bundles, e.g. the bundles are 10 minikits at a time and there are
                 # not many in the pool, then don't use deprioritized classification.

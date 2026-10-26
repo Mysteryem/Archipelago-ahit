@@ -10,7 +10,6 @@ from BaseClasses import LocationProgressType, ItemClassification, Entrance, Loca
 from Fill import sweep_from_pool
 
 from .constants import (
-    progression_deprioritized_skip_balancing,
     CharacterAbility,
     CHAPTER_SPECIFIC_FLAGS,
 )
@@ -1834,7 +1833,7 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
     )
     for item in item_pool:
         if item.advancement and item.name in CHARACTERS_AND_VEHICLES_BY_NAME:
-            if progression_deprioritized_skip_balancing in item.classification:
+            if ItemClassification.progression_deprioritized_skip_balancing in item.classification:
                 # Don't count abilities from characters that are already deprioritized + skip_balancing.
                 continue
             abilities = item.abilities
@@ -1862,7 +1861,7 @@ def _apply_deprioritized_and_skip_balancing_to_characters(
                 break
         else:
             # None of the abilities were uncommon, so add the deprioritize and skip balancing classifications.
-            item.classification |= progression_deprioritized_skip_balancing
+            item.classification |= ItemClassification.progression_deprioritized_skip_balancing
             if abilities:
                 # Reduce the remaining ability counts from non-deprioritized characters
                 # PyCharm's type checker misses that CharacterAbility is Iterable[CharacterAbility].
