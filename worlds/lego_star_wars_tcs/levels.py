@@ -2,7 +2,7 @@ import struct
 from dataclasses import dataclass, field
 from typing import ClassVar, NamedTuple
 
-from .constants import (
+from .character_ability import (
     CharacterAbility,
     HIGH_JUMP,
     IMPERIAL,
@@ -23,8 +23,8 @@ from .constants import (
     CAN_PUSH_OBJECTS,
     CAN_RIDE_VEHICLES,
     IS_A_VEHICLE,
-    CHAPTER_SPECIFIC_FLAGS,
 )
+from .constants import CHAPTER_SPECIFIC_FLAGS
 from .data.areas import EPISODE_AREA_LOOKUP, Area
 from .data.characters import AREA_TO_PURCHASE_CHARACTERS, Character
 from .items import CHARACTERS_AND_VEHICLES_BY_NAME
@@ -779,7 +779,6 @@ ALL_AREA_REQUIREMENT_CHARACTERS: frozenset[str] = frozenset().union(
     *BONUS_AREA_REQUIREMENT_CHARACTERS
 )
 
-SHORT_NAME_TO_CHAPTER_AREA = {area.short_name: area for area in CHAPTER_AREAS}
 EPISODE_TO_CHAPTER_AREAS = {i + 1: CHAPTER_AREAS[i * 6:(i + 1) * 6] for i in range(6)}
 AREA_ID_TO_CHAPTER_AREA = {area.area_id: area for area in CHAPTER_AREAS}
 AREA_ID_TO_BONUS_AREA = {area.area_id: area for area in BONUS_AREAS}

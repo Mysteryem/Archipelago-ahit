@@ -22,8 +22,7 @@ from .data.shop import UNLOCK_REQUIREMENT_TO_CHARACTERS
 from .levels import (
     BonusArea,
     BONUS_AREAS,
-    SHORT_NAME_TO_CHAPTER_AREA,
-    ChapterArea,
+    AREA_ID_TO_CHAPTER_AREA,
     DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
 )
 from .options import GoalChapterLocationsMode, ChapterUnlockRequirement, EpisodeUnlockRequirement, EasierTrueJedi
@@ -96,8 +95,9 @@ class _RegionBuilder:
         return to_add & base_rule
 
     @staticmethod
-    def _get_legacy_true_jedi_rule(legacy_chapter: ChapterArea):
+    def _get_legacy_true_jedi_rule(area: Area):
         """True Jedi logic has not been defined yet, so the legacy rule is used."""
+        legacy_chapter = AREA_ID_TO_CHAPTER_AREA[area]
         # The logic is not fully prepared for this currently, so the entrance rule is also set to require
         # all the logical abilities of the Story characters of the Chapter, which will be overly
         # restrictive for many locations, but overly restrictive logic cannot result in impossible seeds.
@@ -244,7 +244,6 @@ class _RegionBuilder:
         return rule, characters, character_count
 
     def _create_chapter(self, chapter: Chapter) -> Region:
-        legacy_chapter = SHORT_NAME_TO_CHAPTER_AREA[chapter.short_name]
         area = chapter.area
         world = self.world
 
@@ -334,7 +333,7 @@ class _RegionBuilder:
             # With full True Jedi logic, the True Jedi location would likely end up in the start region because of score
             # multipliers when True Jedi is not set to scale with score multipliers.
             true_jedi_location = world.add_location(true_jedi_name, completion_region)
-            legacy_rule = self._get_legacy_true_jedi_rule(legacy_chapter)
+            legacy_rule = self._get_legacy_true_jedi_rule(area)
             world.set_rule(true_jedi_location, legacy_rule)
             if exclude_locations:
                 self._exclude_location(true_jedi_location)
