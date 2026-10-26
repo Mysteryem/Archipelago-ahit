@@ -424,7 +424,7 @@ class UnlockedChapterManager(ClientComponent):
                             temporary_story_completion = {area}
                             if self.last_area_door != area:
                                 # Force the selection in the menu to "Free Play" instead of "Story" or "Challenge".
-                                # This is only done when the ChapterArea changes, so that users can still choose "Story"
+                                # This is only done when the Area changes, so that users can still choose "Story"
                                 # or "Challenge" if they really want to (not currently useful).
                                 ChapterDoorGameMode.FREE_PLAY.set(ctx)
                                 self.last_area_door = area
