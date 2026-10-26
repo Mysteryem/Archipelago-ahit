@@ -1,7 +1,6 @@
 import asyncio
 import traceback
 import colorama
-import hashlib
 
 import ModuleUpdate
 import Utils
@@ -22,7 +21,7 @@ from CommonClient import server_loop, gui_enabled, get_base_parser
 
 from .. import options, TCSUniversalTrackerAPWorldVersionMismatchError
 from ..constants import GAME_NAME, AP_WORLD_VERSION
-from ..levels import SHORT_NAME_TO_CHAPTER_AREA, ChapterArea
+from ..levels import SHORT_NAME_TO_CHAPTER_AREA
 from ..slot_data import TCSSlotDataOptions, ApWorldVersion, get_slot_data_name
 from .client_text import ClientText, clean_string
 from .common_addresses import (
@@ -1108,18 +1107,6 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
     def free(self, address: MemoryAddress) -> None:
         self._game_process.free(address)
-
-    @staticmethod
-    def hash_seed_name(seed_name: str) -> bytes:
-        encoded = seed_name.encode("utf-8", errors="replace")
-        # 16 bytes
-        hashed = hashlib.md5(encoded).digest()
-        # The default, unused values in each of the sections of 4 bytes we're writing to is 1200.0f.
-        # In the tiny chance that the seed name hashes to the same bytes as these default values
-        if hashed == ChapterArea.UNUSED_CHALLENGE_BEST_TIME_VALUE * 4:
-            # Pick something else.
-            hashed = bytes(range(16))
-        return hashed
 
     def write_seed_name(self, seed_name: str):
         assert not self.is_seed_name_set(), "Error: The multiworld seed name is already set into the save-data."
