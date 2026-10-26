@@ -48,6 +48,7 @@ from .data_storage import (
     COMPLETED_10_MINIKITS_KEY,
     COMPLETED_BONUSES_KEY,
     COLLECTED_POWER_BRICKS_KEY,
+    MINIKIT_GOAL_SUBMITTED_KEY,
 )
 
 # 1 byte to write the length
@@ -124,6 +125,8 @@ class LegoStarWarsTCSWorld(World):
     ut_disconnected_power_brick_events: dict[Area, tuple[Entrance, Region]]
     ut_disconnected_boss_events: dict[Area, tuple[Entrance, Region]]
     ut_datastorage_key_to_disconnected_dict: dict[str, Iterable[dict[Area, tuple[Entrance, Region]]]]
+    ut_minikit_goal_submitted_key: str
+    ut_minikit_goal_disconnected_entrance: tuple[Entrance, Region] | None = None
     # Universal-Tracker-specific attribute. The attribute name cannot be changed.
     found_entrances_datastorage_key: ClassVar[tuple[str, ...]] = (
         COMPLETED_FREE_PLAY_KEY,
@@ -131,6 +134,7 @@ class LegoStarWarsTCSWorld(World):
         COMPLETED_10_MINIKITS_KEY,
         COMPLETED_BONUSES_KEY,
         COLLECTED_POWER_BRICKS_KEY,
+        MINIKIT_GOAL_SUBMITTED_KEY,
     )
 
     PROG_USEFUL_LEVEL_ACCESS_THRESHOLD_PERCENT: ClassVar[float] = 1/6
@@ -221,6 +225,7 @@ class LegoStarWarsTCSWorld(World):
                     ),
                 }.items()
             }
+            self.ut_minikit_goal_submitted_key = MINIKIT_GOAL_SUBMITTED_KEY.format(team=0, player=self.player)
 
     def log_info(self, message: str, *args) -> None:
         logger.info("Lego Star Wars TCS (%s): " + message, self.player_name, *args)
@@ -591,12 +596,7 @@ class LegoStarWarsTCSWorld(World):
             )
         return slot_data
 
-    def reconnect_found_entrances(self, found_key: str, data_storage_value: Any):
-        """UT-specific method for handling deferred entrances. The name of the method must not be changed."""
-        self.log_info("Received data storage key %s with value %s", found_key, data_storage_value)
-        if found_key not in self.ut_datastorage_key_to_disconnected_dict:
-            # Probably should not happen, but who knows with Universal Tracker.
-            return
+    def _ut_connect_deferred_area_events(self, found_key: str, data_storage_value: Iterable[Any]) -> None:
         if data_storage_value is None:
             # Likely means that no value has been set on the server's datastorage yet.
             return
@@ -614,3 +614,22 @@ class LegoStarWarsTCSWorld(World):
                 entrance, region = area_to_disconnected_entrance[area_id]
                 if entrance.connected_region is None:
                     entrance.connect(region)
+
+    def _ut_connect_minikit_goal_submitted_event(self, data_storage_value: Any) -> None:
+        if not data_storage_value:
+            return
+        if (disconnected_entrance_pair := self.ut_minikit_goal_disconnected_entrance) is not None:
+            entrance, region = disconnected_entrance_pair
+            if entrance.connected_region is None:
+                entrance.connect(region)
+
+    def reconnect_found_entrances(self, found_key: str, data_storage_value: Any):
+        """UT-specific method for handling deferred entrances. The name of the method must not be changed."""
+        self.log_info("Received data storage key %s with value %s", found_key, data_storage_value)
+        if found_key in self.ut_datastorage_key_to_disconnected_dict:
+            self._ut_connect_deferred_area_events(found_key, data_storage_value)
+        elif found_key == self.ut_minikit_goal_submitted_key:
+            self._ut_connect_minikit_goal_submitted_event(data_storage_value)
+        else:
+            # Probably should not happen, but who knows with Universal Tracker.
+            pass

@@ -26,7 +26,13 @@ from .levels import (
     DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
     CHAPTER_SPECIFIC_REQUIREMENTS,
 )
-from .options import GoalChapterLocationsMode, ChapterUnlockRequirement, EpisodeUnlockRequirement, EasierTrueJedi
+from .options import (
+    GoalChapterLocationsMode,
+    ChapterUnlockRequirement,
+    EpisodeUnlockRequirement,
+    EasierTrueJedi,
+    MinikitGoalCompletionMethod,
+)
 from .ridables import (
     BONUS_TO_RIDABLES,
     get_ridable_requirements,
@@ -188,7 +194,25 @@ class _RegionBuilder:
 
         # Minikits goal.
         if world.goal_minikit_count > 0:
-            rule &= Has(world.minikit_bundle_name, count=world.goal_minikit_bundle_count)
+            if (self.ut_deferred_events
+                    and self.world.options.minikit_goal_completion_method ==
+                    MinikitGoalCompletionMethod.option_junkyard_minikit_display):
+                # Create a deferred event for submitting the minikits goal.
+                submit_minikit_goal_event_name = "Submit Minikits at the Cantina Junkyard Minikit Display"
+                minikit_goal_submitted_region = world.create_region(submit_minikit_goal_event_name)
+                world.add_event_pair(submit_minikit_goal_event_name, minikit_goal_submitted_region)
+
+                # Put the normal rule on the entrance to the region the deferred event is in.
+                entrance = minikit_goal_submitted_region.create_exit(submit_minikit_goal_event_name)
+                world.set_rule(entrance, Has(world.minikit_bundle_name, count=world.goal_minikit_bundle_count))
+
+                # Make the goal rule require the deferred event.
+                rule &= Has(submit_minikit_goal_event_name)
+
+                # Set the disconnected entrance on the world.
+                world.ut_minikit_goal_disconnected_entrance = (entrance, minikit_goal_submitted_region)
+            else:
+                rule &= Has(world.minikit_bundle_name, count=world.goal_minikit_bundle_count)
 
         # Bosses goal
         goal_boss_count = world.options.defeat_bosses_goal_amount.value

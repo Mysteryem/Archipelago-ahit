@@ -77,6 +77,7 @@ from ..data_storage import (
     COMPLETED_10_MINIKITS_KEY_PREFIX,
     COMPLETED_BONUSES_KEY_PREFIX,
     COLLECTED_POWER_BRICKS_KEY_PREFIX,
+    MINIKIT_GOAL_SUBMITTED_PREFIX,
 )
 
 
@@ -259,9 +260,6 @@ UNUSED_AREA_DWORD_SLOT_NAME_AREAS = slice(UNUSED_AREA_DWORD_SLOT_NAME_START,
 
 LEVEL_ID_KEY_PREFIX = "tcs_current_level_id_"
 CANTINA_ROOM_KEY_PREFIX = "tcs_cantina_room_"
-# By writing whether the minikit goal has been submitted to datastorage, only one player in same-slot co-op needs to
-# submit the minikits to the minikit display in the cantina's junkyard.
-MINIKIT_GOAL_SUBMITTED_PREFIX = "tcs_minikit_goal_submitted_"
 
 
 class LegoStarWarsTheCompleteSagaCommandProcessor(ClientCommandProcessor):
