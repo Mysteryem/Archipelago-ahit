@@ -21,7 +21,6 @@ from CommonClient import server_loop, gui_enabled, get_base_parser
 
 from .. import options, TCSUniversalTrackerAPWorldVersionMismatchError
 from ..constants import GAME_NAME, AP_WORLD_VERSION
-from ..levels import SHORT_NAME_TO_CHAPTER_AREA
 from ..slot_data import TCSSlotDataOptions, ApWorldVersion, get_slot_data_name
 from .client_text import ClientText, clean_string
 from .common_addresses import (
@@ -33,7 +32,7 @@ from .common_addresses import (
     CHARACTER_CHARACTER_DATA_POINTER,
     CHARACTER_DATA_ID,
 )
-from .custom_save_data import CustomSaveDataSections, CUSTOM_SAVE_DATA_SECTION_SIZE
+from .custom_save_data import CustomSaveDataSections, CUSTOM_SAVE_DATA_SECTION_SIZE, CustomSaveFlags2
 from .location_checkers.free_play_completion import FreePlayChapterCompletionChecker
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
 from .location_checkers.minikits import MinikitChecker
@@ -1326,21 +1325,16 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             self.current_p2_character_id = p2_character_id
 
     def set_game_expected_idx(self, idx: int) -> None:
-        # The expected idx is stored in the unused 4 bytes at the end of Negotiations' (1-1's) save data.
-        negotiations = SHORT_NAME_TO_CHAPTER_AREA["1-1"]
-        self.write_uint(negotiations.address + negotiations.UNUSED_CHALLENGE_BEST_TIME_OFFSET, idx)
+        """Set the expected idx into the custom save flags."""
+        addr = CustomSaveFlags2.get_addr(CustomSaveFlags2.ap_last_received_index)
+        assert CustomSaveFlags2.ap_last_received_index.size == 4
+        self.write_uint(addr, idx)
 
     def get_game_expected_idx(self) -> int:
-        # Retrieve the expected idx from the unused 4 bytes at the end of Negotiations' (1-1's) save data.
-        negotiations = SHORT_NAME_TO_CHAPTER_AREA["1-1"]
-        expected_idx = self.read_uint(negotiations.address + negotiations.UNUSED_CHALLENGE_BEST_TIME_OFFSET)
-        # The default value for new save files is 1200.0f.
-        # 1_150_681_088 == struct.unpack("i", struct.pack("f", 1200))
-        if expected_idx == 1_150_681_088:
-            # Yes, the client will break if you send it this many items, but that should never happen right?
-            return 0
-        else:
-            return expected_idx
+        """Retrieve the expected idx from the custom save flags."""
+        addr = CustomSaveFlags2.get_addr(CustomSaveFlags2.ap_last_received_index)
+        assert CustomSaveFlags2.ap_last_received_index.size == 4
+        return self.read_uint(addr)
 
     def give_item(self, code: int) -> bool:
         if code in STUDS_AP_ID_TO_VALUE:

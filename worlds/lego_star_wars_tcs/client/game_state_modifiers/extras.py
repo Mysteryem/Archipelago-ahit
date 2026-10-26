@@ -3,7 +3,7 @@ from typing import Mapping, Sequence, cast
 
 from ..common import StaticUChar
 from ..common_addresses import ShopType, EXTRAS_SHOP_START, AREA_DATA_ID, CURRENT_P_AREA_DATA_ADDRESS
-from ..custom_save_data import CustomSaveDataSections
+from ..custom_save_data import CustomSaveFlags2
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnGameWatcherTickEvent, OnLevelChangeEvent
 from ..type_aliases import ApItemId, BitMask, MemoryOffset, TCSContext
 from . import ItemReceiver
@@ -73,6 +73,9 @@ _NON_RANDOMIZED_BITS_IN_RANDOMIZED_BYTES, _RANDOMIZED_EXTRAS_IN_PARTIALLY_RANDOM
 )
 
 _START_ADDRESS = _UNLOCKED_EXTRAS_ADDRESS + _MIN_RANDOMIZED_BYTE
+# 6 bytes are needed (44 // 8 = 5, 44 % 8 != 0)
+_CUSTOM_SAVE_DATA_ENABLED_EXTRAS_LENGTH = 6
+assert _CUSTOM_SAVE_DATA_ENABLED_EXTRAS_LENGTH == CustomSaveFlags2.enabled_extras_bits.size
 
 
 class AcquiredExtras(ItemReceiver):
@@ -154,8 +157,8 @@ class AcquiredExtras(ItemReceiver):
                     Extra.POO_MONEY,
                 ))
 
-        base_addr = CustomSaveDataSections.CUSTOM_SAVE_FLAGS2.get_address()
-        extra_bits = ctx.read_bytes(base_addr, 6)
+        base_addr = CustomSaveFlags2.get_addr(CustomSaveFlags2.enabled_extras_bits)
+        extra_bits = ctx.read_bytes(base_addr, _CUSTOM_SAVE_DATA_ENABLED_EXTRAS_LENGTH)
         for extra in Extra:
             should_be_enabled = (
                     extra not in banned_extras
@@ -166,13 +169,12 @@ class AcquiredExtras(ItemReceiver):
 
     @staticmethod
     def save_enabled_extras_to_save_data(ctx: TCSContext) -> None:
-        # 5 bytes are needed (44 // 8 = 5)
-        custom_save_data_array = bytearray(6)
+        custom_save_data_array = bytearray(_CUSTOM_SAVE_DATA_ENABLED_EXTRAS_LENGTH)
         for extra in Extra:
             is_enabled = bool(ctx.read_uchar(extra.get_enabled_address()))
             if is_enabled:
                 custom_save_data_array[extra.get_shop_slot_byte()] |= extra.get_shop_slot_mask()
-        base_addr = CustomSaveDataSections.CUSTOM_SAVE_FLAGS2.get_address()
+        base_addr = CustomSaveFlags2.get_addr(CustomSaveFlags2.enabled_extras_bits)
         ctx.write_bytes(base_addr, bytes(custom_save_data_array), len(custom_save_data_array))
 
     @subscribe_event

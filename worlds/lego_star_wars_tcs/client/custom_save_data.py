@@ -1,21 +1,34 @@
+from ctypes import Structure, c_byte, c_uint32, c_char, sizeof
 from enum import IntEnum, IntFlag
+from typing import Protocol, TYPE_CHECKING, TypeVar, ClassVar
 
 from .type_aliases import TCSContext
 
-from ..data.levels import Level, SAVE_DATA_MINIKITS_ELEMENT_SIZE
+from ..data.levels import Level
 from ..data.logic import ALL_CHAPTERS
 
-# Comments explaining save data structure assume the following import:
-# from ctypes import *
+T = TypeVar("T")
+
+# ctypes.CField was not public until Python 3.14, so a Protocol is defined to represent it.
+class CField(Protocol[T]):
+    @property
+    def offset(self) -> int: ...
+
+    @property
+    def size(self) -> int: ...
+
+    @property
+    def type(self) -> T: ...
 
 # Every Level that does not have minikits still writes the full 84 bytes of minikits data into the save data.
-# class LevelMinikitSavaData(Structure):
-#     __fields__ = [
-#         ("minikits", (c_char * 8) * 10),
-#         # The size of the minikit_count field is not clear to me, but only the first byte is ever used.
-#         ("minikit_count", c_byte),
-#         ("unknown", c_byte * 3),
-#     ]
+class LevelMinikitSavaData(Structure):
+    _fields_ = [
+        ("minikits", (c_char * 8) * 10),
+        # The size of the minikit_count field is not clear to me, but only the first byte is ever used.
+        ("minikit_count", c_byte),
+        ("unknown", c_byte * 3),
+    ]
+assert(sizeof(LevelMinikitSavaData) == 84)
 # There are a limited number of minikits within each Level belonging to an Area that actually has minikits, so the vast
 # majority of Levels will never use the full array of 10 minikit names. For simplicity, only Levels belonging to Areas
 # without minikits are used currently.
@@ -57,7 +70,7 @@ def _make_levels_free_space() -> list[Level]:
 _LEVELS_WITHOUT_MINIKITS: list[Level] = _make_levels_free_space()
 del _make_levels_free_space
 
-CUSTOM_SAVE_DATA_SECTION_SIZE = SAVE_DATA_MINIKITS_ELEMENT_SIZE
+CUSTOM_SAVE_DATA_SECTION_SIZE = sizeof(LevelMinikitSavaData)
 
 _CUSTOM_SAVE_FLAGS_1_ADDRESS = 0x86e506
 
@@ -168,3 +181,23 @@ class CustomSaveDataSections(IntEnum):
         return ctx.read_uchar(self.get_address()) == 0
 
 assert max(CustomSaveDataSections) < len(_LEVELS_WITHOUT_MINIKITS)
+
+
+class CustomSaveFlags2(Structure):
+    _fields_ = [
+        ("enabled_extras_bits", c_byte * 6),
+        ("ap_last_received_index", c_uint32),
+    ]
+
+    # PyCharm's code completion and type checking cannot handle Structure types, so give it some hints.
+    if TYPE_CHECKING:
+        enabled_extras_bits: CField[c_byte * 6] = CField()  # type: ignore
+        ap_last_received_index: CField[c_uint32] = CField()  # type: ignore
+
+    _BASE_ADDR: ClassVar[int] = CustomSaveDataSections.CUSTOM_SAVE_FLAGS2.get_address()
+
+    @staticmethod
+    def get_addr(field: CField) -> int:
+        return CustomSaveFlags2._BASE_ADDR + field.offset
+
+assert sizeof(CustomSaveFlags2) <= sizeof(LevelMinikitSavaData)
