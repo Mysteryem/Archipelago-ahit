@@ -9,10 +9,8 @@ from rule_builder.rules import Rule
 from BaseClasses import LocationProgressType, ItemClassification, Entrance, Location, Region, CollectionState
 from Fill import sweep_from_pool
 
-from .constants import (
-    CharacterAbility,
-    CHAPTER_SPECIFIC_FLAGS,
-)
+from .character_ability import CharacterAbility
+from .constants import CHAPTER_SPECIFIC_FLAGS
 from .data.areas import PURCHASABLE_NON_POWER_BRICK_EXTRAS, VEHICLE_CHAPTERS, Area
 from .data.characters import Character
 from .data.extras import Extra

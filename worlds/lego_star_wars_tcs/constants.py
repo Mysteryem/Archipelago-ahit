@@ -3,6 +3,14 @@ from pkgutil import get_data
 
 from .character_ability import *
 
+__all__ = [
+    "GAME_NAME",
+    "AP_WORLD_VERSION",
+    "UT_LOGIC_VERSION",
+    "CHAPTER_SPECIFIC_FLAGS",
+    "GOLD_BRICK_EVENT_NAME",
+]
+
 _MANIFEST = json.loads(get_data("worlds.lego_star_wars_tcs", "archipelago.json"))
 
 GAME_NAME = _MANIFEST["game"]
