@@ -639,7 +639,7 @@ ability.
 
 # TODO: Record Level IDs, these would mostly be there to help make map switching in the tracker easier, and would
 #  serve as a record of data that might be useful for others.
-CHAPTER_AREAS = [
+_CHAPTER_AREAS = [
     # area -1/255 = Cantina, AreaData* index ??
     ChapterArea("Negotiations", 1, 1, 0x86e114, (3, 4, 5), 7, 0, 31000, 64000, 0),
     ChapterArea("Invasion of Naboo", 1, 2, 0x86e120, (10, 11, 12, 13), 15, 1, 44000, 52000, 1),
@@ -761,32 +761,9 @@ BONUS_AREAS = [
               )),
     # The bonus level was never completed, so there is just the trailer to watch (which can be skipped immediately).
     # No gold brick for watching the trailer, but it does unlock the shop slot for purchasing Indiana Jones in vanilla
-    # todo: Add the Purchase Indiana Jones location.
     # It looks like the unfinished Indiana Jones level would have been Area 67, though this is inaccessible.
     BonusArea(Area.LOSTTEMPLE.readable_name, 0x86e505, (), 0x0, -1, 67, gold_brick=False)
 ]
-BONUS_NAME_TO_BONUS_AREA = {bonus.name: bonus for bonus in BONUS_AREAS}
 
-# todo: Rewrite this to be cleaner, probably by splitting the BonusGameLevelArea requirements into characters and other
-#  items.
-BONUS_AREA_REQUIREMENT_CHARACTERS = [
-    [item for item in area.item_requirements if item not in ("Progressive Bonus Level", "Gold Brick")]
-    for area in BONUS_AREAS
-]
-
-ALL_AREA_REQUIREMENT_CHARACTERS: frozenset[str] = frozenset().union(
-    *CHAPTER_AREA_STORY_CHARACTERS.values(),
-    *BONUS_AREA_REQUIREMENT_CHARACTERS
-)
-
-EPISODE_TO_CHAPTER_AREAS = {i + 1: CHAPTER_AREAS[i * 6:(i + 1) * 6] for i in range(6)}
-AREA_ID_TO_CHAPTER_AREA = {area.area_id: area for area in CHAPTER_AREAS}
+AREA_ID_TO_CHAPTER_AREA = {area.area_id: area for area in _CHAPTER_AREAS}
 AREA_ID_TO_BONUS_AREA = {area.area_id: area for area in BONUS_AREAS}
-
-_VEHICLE_BONUS_AREA_NAMES: frozenset[str] = frozenset({
-    Area.PODRACE.readable_name,
-    Area.ANAKINSFLIGHT.readable_name,
-    Area.BONUS_GUNSHIP.readable_name,
-})
-
-assert all(name in BONUS_NAME_TO_BONUS_AREA for name in _VEHICLE_BONUS_AREA_NAMES)

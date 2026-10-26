@@ -7,7 +7,7 @@ from ..data.areas import Area
 from ..data.bosses import Boss
 from ..data.characters import Character
 from ..data.items.generic_items import MINIKITS_BY_BUNDLE_SIZE
-from ..levels import BONUS_NAME_TO_BONUS_AREA
+from ..levels import AREA_ID_TO_BONUS_AREA
 from ..options import OnlyUniqueBossesCountTowardsGoal, GoalChapterLocationsMode, get_option_name
 from ..slot_data import TCSSlotDataOptions, TCSDirectSlotDataOptions, EnabledFeature
 
@@ -150,7 +150,7 @@ def _compute_expected_gold_brick_event_count(self: LegoStarWarsTCSWorld):
         else:
             chapters_with_gold_bricks = len(self.enabled_non_goal_chapters)
         gold_bricks_from_chapters = chapters_with_gold_bricks * gold_bricks_per_chapter
-        legacy_bonus_areas_gen = (BONUS_NAME_TO_BONUS_AREA[area.readable_name] for area in self.enabled_bonuses)
+        legacy_bonus_areas_gen = (AREA_ID_TO_BONUS_AREA[area] for area in self.enabled_bonuses)
         gold_bricks_from_bonuses = sum(legacy_bonus_area.gold_brick for legacy_bonus_area in legacy_bonus_areas_gen)
         self.expected_gold_brick_event_count = gold_bricks_from_chapters + gold_bricks_from_bonuses
     else:

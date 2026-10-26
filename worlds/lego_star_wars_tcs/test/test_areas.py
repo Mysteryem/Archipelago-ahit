@@ -22,16 +22,6 @@ class TestAreas(TestCase):
             else:
                 self.assertIsNone(extra)
 
-    # todo: This test needs a more involved replacement by running generation, collecting all the story characters for a
-    #  chapter and then asserting that the Chapter Completion region of that chapter is reachable.
-    # def test_main_ability_requirements_satisfied_by_story_characters(self):
-    #     for area in CHAPTER_AREAS:
-    #         with self.subTest(area.name):
-    #             story_character_abilities = CharacterAbility.NONE
-    #             for character in area.character_requirements:
-    #                 story_character_abilities |= CHARACTERS_AND_VEHICLES_BY_NAME[character].abilities
-    #             self.assertLessEqual(area.completion_main_ability_requirements, story_character_abilities)
-
     def test_playable_level_ids(self):
         all_ids_so_far = set()
         for area in Area:
