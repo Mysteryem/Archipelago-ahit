@@ -69,6 +69,8 @@ def launch_client(*args: str):
 
 components.append(Component("Lego Star Wars: The Complete Saga Client",
                             func=launch_client,
+                            supports_uri=True,
+                            game_name=GAME_NAME,
                             component_type=Type.CLIENT))
 
 
