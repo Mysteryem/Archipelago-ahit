@@ -1,7 +1,6 @@
-import itertools
 import random
 from collections import Counter
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Mapping, AbstractSet, Any, TypedDict, NotRequired
 
@@ -22,7 +21,6 @@ from Options import (
     Option,
 )
 
-from .constants import AP_WORLD_VERSION
 from .data.areas import ALL_CHAPTER_AREAS, Area, VEHICLE_CHAPTERS, EPISODE_AREA_LOOKUP
 from .data.bosses import Boss
 from .data.characters import Character
