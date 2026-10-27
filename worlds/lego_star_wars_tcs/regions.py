@@ -420,7 +420,8 @@ class _RegionBuilder:
 
         # Character Purchases in the shop.
         # Character purchases unlocked upon completing the chapter (normally in Story mode).
-        for character in chapter.area.get_purchase_characters():
+        purchase_characters = area.get_purchase_characters()
+        for character in purchase_characters:
             location_name = character.get_purchase_location_name()
             studs_cost = character.purchase_cost
             assert studs_cost is not None
@@ -428,7 +429,7 @@ class _RegionBuilder:
             world.set_rule(purchase_location, self._get_score_multiplier_rule(studs_cost))
             if exclude_locations:
                 self._exclude_location(purchase_location)
-        world.character_unlock_location_count += len(chapter.purchase_characters)
+        world.character_unlock_location_count += len(purchase_characters)
 
         # Minikits.
         minikits_from_chapter = 0

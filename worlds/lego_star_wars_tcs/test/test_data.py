@@ -139,21 +139,21 @@ class TestEpisodes(TestCase):
 
     @chapters_test
     def test_story_characters(self, chapter: Chapter):
-        for character in chapter.purchase_characters:
+        for character in chapter.area.get_purchase_characters():
             self.assertCharacterUsableInChapterRequirements(character.readable_name)
 
     @chapters_test
     def test_purchase_characters(self, chapter: Chapter):
-        for character in chapter.purchase_characters:
+        for character in chapter.area.get_purchase_characters():
             self.assertCharacterUsableInChapterRequirements(character.readable_name)
             self.assertGreater(character.purchase_cost, 0)
 
     def test_purchase_characters_unique_per_chapter(self):
         seen_characters = set()
         for chapter in chapters_iter():
-            for character in chapter.purchase_characters:
+            for character in chapter.area.get_purchase_characters():
                 self.assertNotIn(character, seen_characters, f"{character} from {chapter.short_name} already found.")
-            seen_characters.update(chapter.purchase_characters)
+            seen_characters.update(chapter.area.get_purchase_characters())
 
     @staticmethod
     def chapter_rule_gen(chapter: Chapter) -> Iterable[tuple[str, Rule]]:
