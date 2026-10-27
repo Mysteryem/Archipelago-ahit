@@ -45,7 +45,7 @@ def chapters_iter() -> Iterable[Chapter]:
 def chapters_test(test_func: "Callable[[TestEpisodes, Chapter], None]") -> "Callable[[TestEpisodes], None]":
     def test_chapters(self: "TestEpisodes"):
         for chapter in chapters_iter():
-            with self.subTest(chapter=(chapter.episode_number, chapter.chapter_number), chapter_name=chapter.name):
+            with self.subTest(chapter=(chapter.area.get_long_name()), chapter_name=chapter.name):
                 test_func(self, chapter)
     return test_chapters
 
@@ -112,13 +112,14 @@ class TestEpisodes(TestCase):
         seen_by_episode = {episode_number: set() for episode_number in range(1, 7)}
         allowed_chapter_numbers = range(1, 7)
         for chapter in chapters_iter():
-            self.assertIn(chapter.episode_number, seen_by_episode)
-            self.assertIn(chapter.chapter_number, allowed_chapter_numbers)
+            area = chapter.area
+            self.assertIn(area.get_chapter_episode(), seen_by_episode)
+            self.assertIn(area.get_chapter_number_in_episode(), allowed_chapter_numbers)
 
-            seen_chapters = seen_by_episode[chapter.episode_number]
-            self.assertNotIn(chapter.chapter_number, seen_chapters)
+            seen_chapters = seen_by_episode[area.get_chapter_episode()]
+            self.assertNotIn(area.get_chapter_number_in_episode(), seen_chapters)
 
-            seen_chapters.add(chapter.chapter_number)
+            seen_chapters.add(area.get_chapter_number_in_episode())
 
     @chapters_test
     def test_regions_are_used(self, chapter: Chapter):
@@ -250,8 +251,9 @@ class TestEpisodes(TestCase):
     def test_chapters_by_numbers(self):
         for episode_number, chapters in CHAPTERS_BY_NUMBERS.items():
             for chapter_number, chapter in chapters.items():
-                self.assertEqual(episode_number, chapter.episode_number)
-                self.assertEqual(chapter_number, chapter.chapter_number)
+                area = chapter.area
+                self.assertEqual(episode_number, area.get_chapter_episode())
+                self.assertEqual(chapter_number, area.get_chapter_number_in_episode())
 
     def test_chapters_by_short_name(self):
         for short_name, chapter in CHAPTERS_BY_SHORT_NAME.items():

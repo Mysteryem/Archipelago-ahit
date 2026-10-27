@@ -259,16 +259,6 @@ class Chapter:
         yield self.power_brick
 
     @property
-    @deprecated("Access .area.get_chapter_episode() directly")
-    def episode_number(self) -> int:
-        return self.area.get_chapter_episode()
-
-    @property
-    @deprecated("Access .area.get_chapter_number_in_episode() directly")
-    def chapter_number(self) -> int:
-        return self.area.get_chapter_number_in_episode()
-
-    @property
     @deprecated("Access .area.story_true_jedi directly")
     def story_true_jedi(self) -> int:
         return self.area.story_true_jedi
@@ -280,7 +270,7 @@ class Chapter:
 
     @property
     def short_name(self) -> str:
-        return f"{self.episode_number}-{self.chapter_number}"
+        return self.area.get_short_name()
 
     @property
     @deprecated("Access .area.get_story_characters() directly")
