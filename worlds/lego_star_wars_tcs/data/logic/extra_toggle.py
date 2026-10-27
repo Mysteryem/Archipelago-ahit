@@ -71,8 +71,9 @@ class ExtraToggleRuleReplacer(RuleReplacer):
         extra_toggle_abilities_union = CharacterAbility.NONE
         extra_toggle_abilities_unique_combinations: set[CharacterAbility] = set()
         extra_toggle_name_to_abilities: dict[str, CharacterAbility] = {}
-        if chapter.extra_toggle_characters:
-            for character in chapter.extra_toggle_characters:
+        extra_toggle_characters = chapter.area.get_extra_toggle_characters()
+        if extra_toggle_characters:
+            for character in extra_toggle_characters:
                 character_data = NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA[character]
                 extra_toggle_abilities_union |= character_data.abilities
                 extra_toggle_abilities_unique_combinations.add(character_data.abilities)
@@ -193,7 +194,7 @@ class ExtraToggleRuleReplacer(RuleReplacer):
                 return ExtraTogglePrepare(rule)
             else:
                 required_distance = rule.distance
-                for character in self.chapter.extra_toggle_characters:
+                for character in self.chapter.area.get_extra_toggle_characters():
                     character_data = NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA[character]
                     if character_data.single_jump_distance >= required_distance:
                         # Found a character that can jump the required distance.

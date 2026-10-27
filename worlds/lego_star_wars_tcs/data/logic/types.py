@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from typing import Iterable, TypedDict, NotRequired
-from typing_extensions import deprecated
 
 from rule_builder.rules import (
     Rule,
@@ -259,30 +258,5 @@ class Chapter:
         yield self.power_brick
 
     @property
-    @deprecated("Access .area.story_true_jedi directly")
-    def story_true_jedi(self) -> int:
-        return self.area.story_true_jedi
-
-    @property
-    @deprecated("Access .area.free_play_true_jedi directly")
-    def free_play_true_jedi(self) -> int:
-        return self.area.free_play_true_jedi
-
-    @property
     def short_name(self) -> str:
         return self.area.get_short_name()
-
-    @property
-    @deprecated("Access .area.get_story_characters() directly")
-    def story_characters(self) -> frozenset[Character]:
-        return self.area.get_story_characters()
-
-    @property
-    @deprecated("Access .area.get_purchase_characters() directly")
-    def purchase_characters(self) -> frozenset[Character]:
-        return self.area.get_purchase_characters()
-
-    @property
-    @deprecated("Access .area.get_extra_toggle_characters() directly")
-    def extra_toggle_characters(self) -> frozenset[Character]:
-        return self.area.get_extra_toggle_characters()

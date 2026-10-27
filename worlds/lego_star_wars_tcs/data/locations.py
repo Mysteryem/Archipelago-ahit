@@ -62,7 +62,7 @@ def _make_location_name_to_id() -> dict[str, int]:
 
             # Purchase Characters.
             area_purchases_location_group = f"{area.readable_name} Character Purchases"
-            for character in chapter.purchase_characters:
+            for character in area.get_purchase_characters():
                 location_name = character.get_purchase_location_name()
                 register(location_name, CHARACTERS_OFFSET + character,
                          area.readable_name, "Character Purchases", area_purchases_location_group)
@@ -88,9 +88,10 @@ def _make_location_name_to_id() -> dict[str, int]:
             all_ridables.update(chapter.ridables.keys())
 
             # Update story characters.
-            all_level_completion_character_unlocks.update(chapter.story_characters)
+            story_characters = area.get_story_characters()
+            all_level_completion_character_unlocks.update(story_characters)
             area_level_completion_character_unlock_group = f"Level Completion Character Unlocks - {area.readable_name}"
-            for character in chapter.story_characters:
+            for character in story_characters:
                 location_name = character.get_level_completion_unlock_location_name()
                 LOCATION_GROUPS[area_level_completion_character_unlock_group].add(location_name)
 
