@@ -592,10 +592,10 @@ def _get_chapter_completion_ability_requirements(
         path = list(reversed(reverse_path))
 
     extractor = CNFAbilityRequirementsExtractor(ignore_can_reach_region)
-    extra_chapter_entrance_rule = chapter.extra_chapter_entrance_rules.resolve(world)
+    extra_chapter_entrance_rule = chapter.extra_entrance_rules.resolve(world)
     extra_entrance_requirements = extractor.extract_ability_requirements(extra_chapter_entrance_rule)
     if extra_entrance_requirements is None:
-        raise Exception(f"No valid extra_chapter_entrance_rules ability requirements for {chapter.name}")
+        raise Exception(f"No valid extra_entrance_rules ability requirements for {chapter.name}")
     and_has_any_abilities: set[CharacterAbility] = extra_entrance_requirements
 
     for entrance in path:

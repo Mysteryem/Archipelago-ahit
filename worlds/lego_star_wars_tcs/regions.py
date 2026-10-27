@@ -240,7 +240,7 @@ class _RegionBuilder:
     def _create_chapter_entrance_rule(self, chapter: Chapter) -> tuple[Rule, set[Character], int]:
         world = self.world
         area = chapter.area
-        rule = chapter.extra_chapter_entrance_rules
+        rule = chapter.extra_entrance_rules
         characters: set[Character]
         if world.options.chapter_unlock_requirement.is_characters():
             character_count = world.chapter_required_character_counts[chapter.area]

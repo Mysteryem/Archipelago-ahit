@@ -115,13 +115,13 @@ class ChapterHelper:
             power_brick: LocationData,
             # TODO: Add wip_true_jedi_rule
             ridables: dict[Character, LocationData | tuple[LocationData, ...]] | None = None,
-            extra_chapter_entrance_rules: Rule | None = None,
+            extra_entrance_rules: Rule | None = None,
             intended_completion_path: IntendedCompletionPath | None = None,
     ):
         if ridables is None:
             ridables = {}
-        if extra_chapter_entrance_rules is None:
-            extra_chapter_entrance_rules = True_()
+        if extra_entrance_rules is None:
+            extra_entrance_rules = True_()
         if intended_completion_path is None:
             intended_completion_path = {}
         return Chapter(
@@ -131,7 +131,7 @@ class ChapterHelper:
             minikits=minikits,
             power_brick=power_brick,
             ridables=ridables,
-            extra_chapter_entrance_rules=extra_chapter_entrance_rules,
+            extra_entrance_rules=extra_entrance_rules,
             regions_in_can_reach=self._regions_used_in_can_reach,
             intended_completion_path=intended_completion_path,
         )
@@ -146,13 +146,13 @@ class Chapter:
     power_brick: LocationData
     intended_completion_path: IntendedCompletionPath = field(default_factory=dict)
     """The intended traversal route through the chapter. This is used to determine what abilities are required to
-    complete the chapter, based on extracting abilities from the entrance rules, and any extra_chapter_entrance_rules.
+    complete the chapter, based on extracting abilities from the entrance rules, and any extra_entrance_rules.
     
     The start region and Chapter Completion region are implicit."""
 
     # TODO: Add wip_true_jedi_rule
     ridables: dict[Character, LocationData | tuple[LocationData, ...]] = field(default_factory=dict)
-    extra_chapter_entrance_rules: Rule = field(default_factory=True_)
+    extra_entrance_rules: Rule = field(default_factory=True_)
     regions_in_can_reach: Iterable[str] = ()
 
     name: str = field(init=False)

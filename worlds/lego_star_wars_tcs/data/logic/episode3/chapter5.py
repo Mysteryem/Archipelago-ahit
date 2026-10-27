@@ -54,7 +54,7 @@ RUIN_OF_THE_JEDI = Chapter(
         ),
     },
     # There are enemies at the start, so have the base logic expect fighting them.
-    extra_chapter_entrance_rules=logic_options(
+    extra_entrance_rules=logic_options(
         base=BASE_CAN_DAMAGE_AT_CLOSE_RANGE,
         normal=True_(),
     ),

@@ -29,7 +29,7 @@ _CAN_DEFLECT_BOLTS_TO_DESTROY_THINGS = logic_options(
 REBEL_ATTACK = Chapter(
     area=Area.DEATHSTARBATTLE,
     start_region=R_SPAWN,
-    extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
+    extra_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         R_SPAWN: (
             ExitData(

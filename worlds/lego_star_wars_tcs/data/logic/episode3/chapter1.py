@@ -15,7 +15,7 @@ R_AFTER_SECOND_DESTROYABLE_SHIP = "After Second Destroyable Ship"
 BATTLE_OVER_CORUSCANT = Chapter(
     area=Area.DOGFIGHT,
     start_region=R_SPACE_BATTLE_SPAWN,
-    extra_chapter_entrance_rules=logic_options(
+    extra_entrance_rules=logic_options(
         # In base logic, expect a blaster vehicle to fight back at the start.
         base=HasAbility(VEHICLE_BLASTER),
         # The first 2 minikits can be collected by ramming into them.

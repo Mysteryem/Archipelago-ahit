@@ -19,7 +19,7 @@ R_CONTROL_SHIP_BATTLE_MINIKITS = "Control Ship Battle Minikits"
 GUNSHIP_CAVALRY = Chapter(
     area=Area.GUNSHIP,
     start_region=R_SPAWN,
-    extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
+    extra_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         R_SPAWN: (
             ExitData(

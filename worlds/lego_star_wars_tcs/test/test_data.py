@@ -185,7 +185,7 @@ class TestEpisodes(TestCase):
         if chapter.power_brick.er_rule is not None:
             yield "Power Brick (ER)", chapter.power_brick.er_rule
 
-        yield "Extra Chapter Entrance Rules", chapter.extra_chapter_entrance_rules
+        yield "Extra Chapter Entrance Rules", chapter.extra_entrance_rules
 
     def _check_top_level_rule(self, rule: Rule, logic_options_allowed: bool = True):
         if isinstance(rule, LogicOptions):

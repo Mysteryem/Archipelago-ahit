@@ -25,7 +25,7 @@ R_ESCAPE_PART_3 = "Escape Part 3"
 INTO_THE_DEATH_STAR = Chapter(
     area=Area.DEATHSTAR2BATTLE,
     start_region=R_STAR_DESTROYER_BATTLE,
-    extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
+    extra_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         R_STAR_DESTROYER_BATTLE: (
             ExitData(

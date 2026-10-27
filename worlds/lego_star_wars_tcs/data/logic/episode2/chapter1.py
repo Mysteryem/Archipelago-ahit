@@ -26,7 +26,7 @@ CAN_SHOOT_ALLOW_TORPEDOES = HasAbility(VEHICLE_BLASTER) | CAN_DESTROY_OBJECTS_WI
 BOUNTY_HUNTER_PURSUIT = Chapter(
     area=Area.PURSUIT,
     start_region=R_SPAWN,
-    extra_chapter_entrance_rules=HasAbility(IS_A_VEHICLE),
+    extra_entrance_rules=HasAbility(IS_A_VEHICLE),
     regions={
         R_SPAWN: (
             ExitData(R_FIRST_FORCEFIELD_TRAP, new_level=Level.PURSUIT_B),
