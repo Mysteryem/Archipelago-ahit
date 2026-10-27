@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Iterable, TypedDict, NotRequired
+from typing import Iterable, TypedDict, NotRequired, ClassVar
 
 from rule_builder.rules import (
     Rule,
@@ -10,7 +10,7 @@ from rule_builder.rules import (
 )
 
 from .extra_toggle import ExtraToggleRuleReplacer
-from .rule_replacement import NestedAndInLevelRuleSimplifierRuleReplacer
+from .rule_replacement import NestedAndInLevelRuleSimplifierRuleReplacer, RuleReplacer
 from ..areas import Area
 from ..characters import Character
 from ..levels import Level
@@ -137,27 +137,22 @@ class ChapterHelper:
         )
 
 
-@dataclass(frozen=True)
-class Chapter:
+@dataclass(frozen=True, kw_only=True)
+class LogicArea:
+    COMPLETION_REGION_NAME: ClassVar[str] = "Level Completion"
     area: Area
     start_region: str
     regions: dict[str, tuple[ExitData, ...]]
-    minikits: dict[str, MinikitData]
-    power_brick: LocationData
     intended_completion_path: IntendedCompletionPath = field(default_factory=dict)
     """The intended traversal route through the chapter. This is used to determine what abilities are required to
     complete the chapter, based on extracting abilities from the entrance rules, and any extra_entrance_rules.
     
     The start region and Chapter Completion region are implicit."""
-
-    # TODO: Add wip_true_jedi_rule
     ridables: dict[Character, LocationData | tuple[LocationData, ...]] = field(default_factory=dict)
     extra_entrance_rules: Rule = field(default_factory=True_)
     regions_in_can_reach: Iterable[str] = ()
-
     name: str = field(init=False)
     start_level: Level = field(init=False)
-    level_minikits: dict[Level, dict[str, MinikitData]] = field(init=False, default_factory=dict)
     region_to_level: dict[str, Level] = field(init=False, default_factory=dict)
 
     def __post_init__(self):
@@ -183,24 +178,10 @@ class Chapter:
         else:
             rule_optimizer = RULE_OPTIMIZER
 
-        for region_name, exits in self.regions.items():
-            self.regions[region_name] = tuple(
-                rule_optimizer.replace_rule_data(exit_) for exit_ in exits
-            )
-        for minikit_name, minikit_data in self.minikits.items():
-            self.minikits[minikit_name] = rule_optimizer.replace_rule_data(minikit_data)
-        for ridable_character, ridable_data in self.ridables.items():
-            if isinstance(ridable_data, tuple):
-                self.ridables[ridable_character] = tuple(
-                    rule_optimizer.replace_rule_data(ridable_datum) for ridable_datum in ridable_data
-                )
-            else:
-                self.ridables[ridable_character] = rule_optimizer.replace_rule_data(ridable_data)
-        replaced_power_brick_data = rule_optimizer.replace_rule_data(self.power_brick)
-        object.__setattr__(self, "power_brick", replaced_power_brick_data)
+        self._post_init_optimize_rules(rule_optimizer)
 
-        # Automatically add in the Chapter Completion region because it is the same in every Chapter.
-        self.regions["Chapter Completion"] = ()
+        # Automatically add in the Completion region because it is the same for each type of playable area.
+        self.regions[self.COMPLETION_REGION_NAME] = ()
 
         # FIFO queue Depth-First-Search. DFS vs BFS doesn't matter here, only that every region is visited, and every
         # exit is tried.
@@ -211,8 +192,8 @@ class Chapter:
 
             if region_name in region_to_level:
                 # Check that an alternative route has not propagated a different level name.
-                # The "Chapter Completion" region's level is set automatically, so is ignored by this check.
-                if region_to_level[region_name] != region_level and region_name != "Chapter Completion":
+                # The COMPLETION_REGION_NAME region's level is set automatically, so is ignored by this check.
+                if region_to_level[region_name] != region_level and region_name != self.COMPLETION_REGION_NAME:
                     raise Exception(f"Already found that {region_name} is in level {region_to_level[region_name]}, but"
                                     f"now also found it in {region_level}.")
                 continue
@@ -227,15 +208,60 @@ class Chapter:
                         region_queue.append((exit_data.to_region, region_level))
 
         # Automatically set the Level of the Chapter Completion region to the status level of this area.
-        region_to_level["Chapter Completion"] = self.area.get_status_level()
+        region_to_level[self.COMPLETION_REGION_NAME] = self.area.get_status_level()
 
         # Check that there exists a path to each region from self.start_region.
         for region_name in self.regions:
             if region_name not in region_to_level:
                 raise Exception(f"No path to the {region_name} region was found.")
 
+    def _post_init_optimize_rules(self, rule_optimizer: RuleReplacer):
+        for region_name, exits in self.regions.items():
+            self.regions[region_name] = tuple(
+                rule_optimizer.replace_rule_data(exit_) for exit_ in exits
+            )
+        for ridable_character, ridable_data in self.ridables.items():
+            if isinstance(ridable_data, tuple):
+                self.ridables[ridable_character] = tuple(
+                    rule_optimizer.replace_rule_data(ridable_datum) for ridable_datum in ridable_data
+                )
+            else:
+                self.ridables[ridable_character] = rule_optimizer.replace_rule_data(ridable_data)
+
+    @property
+    def all_in_level_location_data(self) -> Iterable[LocationData]:
+        """Yield all unique location data for locations found in this playable area.
+
+        Does not include locations that become accessible once the area is completed (these are always in the
+        COMPLETION_REGION_NAME region of the level, and most of the data for these locations is defined elsewhere)."""
+        for ridable_data in self.ridables.values():
+            if isinstance(ridable_data, tuple):
+                yield from ridable_data
+            else:
+                yield ridable_data
+
+
+@dataclass(frozen=True, kw_only=True)
+class Chapter(LogicArea):
+    COMPLETION_REGION_NAME = "Chapter Completion"
+    minikits: dict[str, MinikitData]
+    power_brick: LocationData
+    level_minikits: dict[Level, dict[str, MinikitData]] = field(init=False, default_factory=dict)
+
+    def _post_init_optimize_rules(self, rule_optimizer: RuleReplacer):
+        super()._post_init_optimize_rules(rule_optimizer)
+
+        for minikit_name, minikit_data in self.minikits.items():
+            self.minikits[minikit_name] = rule_optimizer.replace_rule_data(minikit_data)
+
+        replaced_power_brick_data = rule_optimizer.replace_rule_data(self.power_brick)
+        object.__setattr__(self, "power_brick", replaced_power_brick_data)
+
+    def __post_init__(self):
+        super().__post_init__()
+
         for location_name, minikit in self.minikits.items():
-            level = region_to_level[minikit.region]
+            level = self.region_to_level[minikit.region]
             if level in self.level_minikits:
                 minikits_dict = self.level_minikits[level]
             else:
@@ -245,16 +271,8 @@ class Chapter:
 
     @property
     def all_in_level_location_data(self) -> Iterable[LocationData]:
-        """Yield all locations that are guaranteed to be unique to this chapter and are found within the chapter itself.
-
-        Does not include locations that become accessible once the chapter is completed (these are always in the Chapter
-        Completion region of the level, and most of the data for these locations is defined elsewhere)."""
+        yield from super().all_in_level_location_data
         yield from self.minikits.values()
-        for ridable_data in self.ridables.values():
-            if isinstance(ridable_data, tuple):
-                yield from ridable_data
-            else:
-                yield ridable_data
         yield self.power_brick
 
     @property

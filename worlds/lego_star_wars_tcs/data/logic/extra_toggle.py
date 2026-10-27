@@ -25,9 +25,9 @@ from ...data.items.character_items import NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DA
 
 
 if TYPE_CHECKING:
-    from .types import Chapter
+    from .types import LogicArea
 else:
-    Chapter = object
+    LogicArea = object
 
 
 @dataclasses.dataclass
@@ -59,19 +59,19 @@ PRE_RULE_OPTIMIZER = NestedOptimizerRuleReplacer()
 
 
 class ExtraToggleRuleReplacer(RuleReplacer):
-    chapter: Chapter
+    logic_area: LogicArea
     extra_toggle_abilities_union: CharacterAbility
     extra_toggle_abilities_unique_combinations: set[CharacterAbility]
     extra_toggle_name_to_abilities: dict[str, CharacterAbility]
     adding_extra_toggle_rules: bool = False
     shared_replacer: NestedAndInLevelRuleSimplifierRuleReplacer
 
-    def __init__(self, chapter: Chapter, shared_replacer: NestedAndInLevelRuleSimplifierRuleReplacer):
+    def __init__(self, logic_area: LogicArea, shared_replacer: NestedAndInLevelRuleSimplifierRuleReplacer):
         super().__init__()
         extra_toggle_abilities_union = CharacterAbility.NONE
         extra_toggle_abilities_unique_combinations: set[CharacterAbility] = set()
         extra_toggle_name_to_abilities: dict[str, CharacterAbility] = {}
-        extra_toggle_characters = chapter.area.get_extra_toggle_characters()
+        extra_toggle_characters = logic_area.area.get_extra_toggle_characters()
         if extra_toggle_characters:
             for character in extra_toggle_characters:
                 character_data = NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA[character]
@@ -81,7 +81,7 @@ class ExtraToggleRuleReplacer(RuleReplacer):
         self.extra_toggle_abilities_union = extra_toggle_abilities_union
         self.extra_toggle_abilities_unique_combinations = extra_toggle_abilities_unique_combinations
         self.extra_toggle_name_to_abilities = extra_toggle_name_to_abilities
-        self.chapter = chapter
+        self.logic_area = logic_area
         self.shared_replacer = shared_replacer
 
     def start_replace(self, rule: Rule, difficulty: Difficulty) -> Rule:
@@ -194,7 +194,7 @@ class ExtraToggleRuleReplacer(RuleReplacer):
                 return ExtraTogglePrepare(rule)
             else:
                 required_distance = rule.distance
-                for character in self.chapter.area.get_extra_toggle_characters():
+                for character in self.logic_area.area.get_extra_toggle_characters():
                     character_data = NON_VEHICLE_EXTRA_CHARACTER_TO_ITEM_DATA[character]
                     if character_data.single_jump_distance >= required_distance:
                         # Found a character that can jump the required distance.
