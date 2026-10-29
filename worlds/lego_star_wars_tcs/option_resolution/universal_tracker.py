@@ -1,5 +1,5 @@
 import dataclasses
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar, Generic
 
 from Options import Option, Toggle
 
@@ -15,6 +15,46 @@ if TYPE_CHECKING:
     from .. import LegoStarWarsTCSWorld
 else:
     LegoStarWarsTCSWorld = object
+
+
+T = TypeVar("T")
+_MISSING = object()
+
+
+class UTAttribute(Generic[T]):
+    """Descriptor for marking attributes as being specific to generating with Universal Tracker. Primarily used for
+    tooling, and marking attributes that belong to Universal Tracker's API so require a specific attribute name.
+
+    Unlike ``property``, also works for ClassVar attributes."""
+    _default: T
+    _private_name: str
+
+    # noinspection PyUnusedLocal
+    def __init__(self, default: T = _MISSING, *, ut_api: bool = False):
+        """
+
+        :param default: Default value for this attribute, set on the class itself.
+        :param ut_api: Set to True to identify that the attribute is part of Universal Tracker's API, meaning that its
+        name must match the API in order to function correctly. Has no runtime effect.
+        """
+        self._default = default
+
+    def __set_name__(self, owner, name):
+        self._private_name = "_ut_attribute_" + name
+        if self._default is not _MISSING:
+            setattr(owner, self._private_name, self._default)
+
+    def __get__(self, instance, owner=None) -> T:
+        return getattr(instance, self._private_name)
+
+    def __set__(self, instance, value: T):
+        setattr(instance, self._private_name, value)
+
+    def __delete__(self, instance):
+        delattr(instance, self._private_name)
+
+    def has_default(self) -> bool:
+        return self._default is not _MISSING
 
 
 def _direct_slot_data_options(self: LegoStarWarsTCSWorld, slot_data: TCSSlotDataOptions):

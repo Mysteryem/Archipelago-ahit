@@ -36,6 +36,7 @@ from .item_classification import evaluate_effective_item
 from .locations import LegoStarWarsTCSLocation, LegoStarWarsTCSShopLocation
 from .options import LegoStarWarsTCSOptions, OPTION_GROUPS
 from .option_resolution.common import resolve_options
+from .option_resolution.universal_tracker import UTAttribute
 from .slot_data import TCSSlotDataOptions
 from .item_groups import ITEM_GROUPS, REVERSE_READABLE_ABILITY_TO_ABILITY
 
@@ -113,28 +114,31 @@ class LegoStarWarsTCSWorld(World):
 
     origin_region_name = "Cantina"
 
-    # Requires Universal Tracker 0.2.12 or newer because the game name contains a colon.
-    ut_can_gen_without_yaml = True  # Used by Universal Tracker to allow generation without player yaml.
-    glitches_item_name: str = "UT_GLITCHED"
+    # Universal Tracker 0.2.12 or newer is required because the game name contains a colon.
+    ut_can_gen_without_yaml: bool = UTAttribute(True, ut_api=True)
+    glitches_item_name: str = UTAttribute("UT_GLITCHED", ut_api=True)
     # Custom item name for use in UT with `/manually_collect` to adjust glitched logic to show all higher difficulties.
-    glitches_all_item_name: str = "UT_GLITCHED_ALL"
-    ut_disconnected_free_play_completion_events: dict[Area, tuple[Entrance, Region]]
-    ut_disconnected_true_jedi_gold_brick_events: dict[Area, tuple[Entrance, Region]]
-    ut_disconnected_10_minikits_gold_brick_events: dict[Area, tuple[Entrance, Region]]
-    ut_disconnected_bonus_completion_events: dict[Area, tuple[Entrance, Region]]
-    ut_disconnected_power_brick_events: dict[Area, tuple[Entrance, Region]]
-    ut_disconnected_boss_events: dict[Area, tuple[Entrance, Region]]
-    ut_datastorage_key_to_disconnected_dict: dict[str, Iterable[dict[Area, tuple[Entrance, Region]]]]
-    ut_minikit_goal_submitted_key: str
-    ut_minikit_goal_disconnected_entrance: tuple[Entrance, Region] | None = None
-    # Universal-Tracker-specific attribute. The attribute name cannot be changed.
-    found_entrances_datastorage_key: ClassVar[tuple[str, ...]] = (
-        COMPLETED_FREE_PLAY_KEY,
-        COMPLETED_TRUE_JEDI_KEY,
-        COMPLETED_10_MINIKITS_KEY,
-        COMPLETED_BONUSES_KEY,
-        COLLECTED_POWER_BRICKS_KEY,
-        MINIKIT_GOAL_SUBMITTED_KEY,
+    glitches_all_item_name: str = UTAttribute("UT_GLITCHED_ALL")
+    ut_disconnected_free_play_completion_events: dict[Area, tuple[Entrance, Region]] = UTAttribute()
+    ut_disconnected_true_jedi_gold_brick_events: dict[Area, tuple[Entrance, Region]] = UTAttribute()
+    ut_disconnected_10_minikits_gold_brick_events: dict[Area, tuple[Entrance, Region]] = UTAttribute()
+    ut_disconnected_bonus_completion_events: dict[Area, tuple[Entrance, Region]] = UTAttribute()
+    ut_disconnected_power_brick_events: dict[Area, tuple[Entrance, Region]] = UTAttribute()
+    ut_disconnected_boss_events: dict[Area, tuple[Entrance, Region]] = UTAttribute()
+    ut_datastorage_key_to_disconnected_dict: dict[str, Iterable[dict[Area, tuple[Entrance, Region]]]] = UTAttribute()
+    ut_minikit_goal_submitted_key: str = UTAttribute()
+    ut_minikit_goal_disconnected_entrance: tuple[Entrance, Region] | None  = UTAttribute(None)
+    # noinspection PyClassVar
+    found_entrances_datastorage_key: ClassVar[tuple[str, ...]] = UTAttribute(
+        (
+            COMPLETED_FREE_PLAY_KEY,
+            COMPLETED_TRUE_JEDI_KEY,
+            COMPLETED_10_MINIKITS_KEY,
+            COMPLETED_BONUSES_KEY,
+            COLLECTED_POWER_BRICKS_KEY,
+            MINIKIT_GOAL_SUBMITTED_KEY,
+        ),
+        ut_api=True,
     )
 
     PROG_USEFUL_LEVEL_ACCESS_THRESHOLD_PERCENT: ClassVar[float] = 1/6
