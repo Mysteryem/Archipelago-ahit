@@ -98,6 +98,11 @@ class Area(IntEnum):
         status_level = self.levels[-1]
         if status_level.is_status():
             return status_level
+        # Workaround for the Area not being fully implemented in the game.
+        if self is Area.LOSTTEMPLE:
+            # Just pretend the Area's only level is also the status level for the Area.
+            assert status_level is Level.LOSTTEMPLE_A
+            return status_level
         else:
             raise Exception(f"{self!r} does not have a status level")
 

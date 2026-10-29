@@ -23,7 +23,7 @@ _STATUS_LEVEL_FLAGS_ADDRESS = StaticUint(0x87a6f8)
 
 
 # The value is usually just 0b0 for incomplete, or 0b1 for complete. The client uses the custom value 0b11 to mark
-# chapters as being completed in Free Play because the game does not specifically store whether a chapter has been
+# chapters as being completed in Free Play because the game does not specifically store whether an area has been
 # completed in Free Play, and the game happily write to the save data whatever the client writes into the save data
 # loaded into memory.
 _CUSTOM_COMPLETED_IN_FREE_PLAY = 0b11
@@ -73,9 +73,15 @@ _STATUS_LEVEL_FREE_PLAY_COMPLETION_NEGATIVE_REQUIREMENTS = int(
 # These status level flags are not enough to tell apart Free Play and Challenge mode, so an additional explicit check
 # for Challenge mode needs to be performed.
 
+# Anakin's Flight and A New Hope also have both Story and Free Play available, so are handled using the Free Play
+# completion checker.
+_ALL_FREE_PLAY_AREAS = frozenset(
+    ALL_CHAPTER_AREAS.union((Area.ANAKINSFLIGHT, Area.ANEWHOPE))
+)
+
 
 _STATUS_LEVEL_TO_AREA: dict[Level, Area] = {
-    area.get_status_level(): area for area in ALL_CHAPTER_AREAS
+    area.get_status_level(): area for area in _ALL_FREE_PLAY_AREAS
 }
 _STATUS_LEVEL_TO_AP_ID: dict[Level, ApLocationId] = {
     status_level: LOCATION_NAME_TO_ID[area.get_completion_name()]
@@ -85,10 +91,10 @@ _STATUS_LEVEL_TO_AP_ID: dict[Level, ApLocationId] = {
 
 def _is_status_level_free_play_completion(ctx: TCSContext) -> bool:
     """
-    Return whether the current status Level is being shown as part of chapter completion in Free Play.
+    Return whether the current status Level is being shown as part of area completion in Free Play.
 
-    The status Level for each chapter Area is used when tallying up Studs/Minikits etc. when returning to the
-    Cantina, both for chapter completion and for 'Save and Exit'.
+    The status Level for each Area is used when tallying up Studs/Minikits etc. when returning to the Cantina, both for
+    area completion and for 'Save and Exit'.
 
     The result is undefined if the player is not currently in a status Level.
     """
@@ -100,27 +106,27 @@ def _is_status_level_free_play_completion(ctx: TCSContext) -> bool:
             and ChallengeMode.NO_CHALLENGE.is_set(ctx))
 
 
-# TODO: How quickly can a player reasonably skip through the chapter completion screen? Do we need to check for chapter
+# TODO: How quickly can a player reasonably skip through the area completion screen? Do we need to check for area
 #  completion with a higher frequency than how often the game watcher is checking?
-class FreePlayChapterCompletionChecker(ClientComponent):
+class FreePlayAreaCompletionChecker(ClientComponent):
     """
-    Check if the player has completed a free play chapter by looking for the ending screen that tallies up new
+    Check if the player has completed a free play area by looking for the ending screen that tallies up new
     studs/minikits.
 
-    There appears to be no persistent storage in the game's memory or save data for whether a chapter has been completed
+    There appears to be no persistent storage in the game's memory or save data for whether an area has been completed
     in Free Play, so the client must poll the game state and track completions itself in the case of disconnecting from
     the server.
     """
 
     sent_locations: set[ApLocationId]
     completed_free_play: set[Area]
-    enabled_chapter_areas: set[Area]
+    enabled_free_play_areas: set[Area]
     chapter_completion_locations: dict[Area, list[ApLocationId]]
 
     def __init__(self):
         self.sent_locations = set()
         self.completed_free_play = set()
-        self.enabled_chapter_areas = set()
+        self.enabled_free_play_areas = set()
         self.chapter_completion_locations = {}
 
     @subscribe_event
@@ -134,39 +140,40 @@ class FreePlayChapterCompletionChecker(ClientComponent):
             goal_chapter = goal_chapter_option.value
         else:
             goal_chapter = None
-        enabled_chapter_areas: set[Area] = set()
-        for area in ALL_CHAPTER_AREAS:
-            chapter_locations = [LOCATION_NAME_TO_ID[area.get_completion_name()]]
+        enabled_free_play_areas: set[Area] = set()
+        for area in _ALL_FREE_PLAY_AREAS:
+            completion_id = LOCATION_NAME_TO_ID[area.get_completion_name()]
+            # Determine if an area is enabled by whether the completion location exists.
+            # This is more robust against world bugs than relying on slot data.
+            area_exists = completion_id in ctx.server_locations or (area is goal_chapter and goal_locations_removed)
+            if not area_exists:
+                continue
+            enabled_free_play_areas.add(area)
+            other_area_locations = []
             # If the Goal Chapter had its locations removed, it should not send Level Completion Character Unlock
-            # checks when completing the chapter.
+            # checks when completing the area.
             if not (area is goal_chapter and goal_locations_removed):
                 for story_character in area.get_story_characters():
                     loc_name = story_character.get_level_completion_unlock_location_name()
-                    chapter_locations.append(LOCATION_NAME_TO_ID[loc_name])
-            enabled_chapter_locations = [loc_id for loc_id in chapter_locations if loc_id in ctx.server_locations]
-            # Determine if a chapter is enabled by whether any of the chapter locations exist.
-            # This is more robust against world bugs than relying on slot data.
-            if enabled_chapter_locations:
-                enabled_chapter_areas.add(area)
-                self.chapter_completion_locations[area] = enabled_chapter_locations
-            else:
-                # There shouldn't be any present, but ensure that no data from disable chapters is present.
-                self.completed_free_play.discard(area)
-                self.sent_locations.difference_update(chapter_locations)
-        self.enabled_chapter_areas = enabled_chapter_areas
+                    other_area_locations.append(LOCATION_NAME_TO_ID[loc_name])
+            enabled_area_locations = [loc_id for loc_id in other_area_locations if loc_id in ctx.server_locations]
+            enabled_area_locations.append(completion_id)
+
+            self.chapter_completion_locations[area] = enabled_area_locations
+        self.enabled_free_play_areas = enabled_free_play_areas
 
         # Read any completions from save data. This should catch cases where the player has temporarily lost connection
-        # to the server, completed a chapter, and then automatically reconnected to the server. The save data will be
-        # read and should update datastorage.
+        # to the server, completed an area, and then automatically reconnected to the server. The save data will be read
+        # and should update datastorage.
         self.read_completed_free_play_from_save_data(ctx)
 
     def read_completed_free_play_from_save_data(self, ctx: TCSContext):
-        enabled_chapter_areas = self.enabled_chapter_areas
+        enabled_free_play_areas = self.enabled_free_play_areas
         completed_areas: list[Area] = []
-        for area in ALL_CHAPTER_AREAS:
-            if enabled_chapter_areas is not None and area not in enabled_chapter_areas:
+        for area in _ALL_FREE_PLAY_AREAS:
+            if enabled_free_play_areas is not None and area not in enabled_free_play_areas:
                 continue
-            # Either the chapter is enabled, or the player has not connected yet, so it is not known if the chapter is
+            # Either the area is enabled, or the player has not connected yet, so it is not known if the area is
             # enabled.
             # The first byte is whether the area has been completed.
             unlocked_byte = ctx.read_uchar(area.save_data_address)

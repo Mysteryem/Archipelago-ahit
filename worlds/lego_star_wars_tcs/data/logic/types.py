@@ -242,6 +242,15 @@ class LogicArea:
 
 
 @dataclass(frozen=True, kw_only=True)
+class GoldBrickBonus(LogicArea):
+    gold_brick_requirement: int
+
+    @property
+    def rewards_gold_brick(self) -> bool:
+        return self.gold_brick_requirement > 0
+
+
+@dataclass(frozen=True, kw_only=True)
 class Chapter(LogicArea):
     COMPLETION_REGION_NAME = "Chapter Completion"
     minikits: dict[str, MinikitData]

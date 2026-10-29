@@ -6,11 +6,8 @@ from Options import Option, OptionError
 from ..data.areas import Area, VEHICLE_CHAPTERS
 from ..data.bosses import Boss
 from ..data.items.generic_items import MINIKITS_BY_BUNDLE_SIZE
-from ..levels import (
-    BonusArea,
-    BONUS_AREAS,
-    AREA_ID_TO_BONUS_AREA,
-)
+from ..data.logic.gold_brick_bonuses import GOLD_BRICK_BONUSES, AREA_TO_GOLD_BRICK_BONUS
+from ..data.logic.types import GoldBrickBonus
 from ..options import (
     LegoStarWarsTCSOptions,
     StartingChapter,
@@ -862,18 +859,18 @@ class _NormalOptionsResolver:
             # Enable Bonuses that do not require more Gold Bricks than are logically available.
             # Enabled Bonuses can also reward a Gold Brick, so those will also add +1 available Gold Brick.
             available_gold_bricks = available_gold_bricks_from_chapters
-            bonuses_by_gold_brick_cost: dict[int, list[BonusArea]] = {}
-            for legacy_area in BONUS_AREAS:
-                bonuses_by_gold_brick_cost.setdefault(legacy_area.gold_bricks_required, []).append(legacy_area)
+            bonuses_by_gold_brick_cost: dict[int, list[GoldBrickBonus]] = {}
+            for bonus in GOLD_BRICK_BONUSES:
+                bonuses_by_gold_brick_cost.setdefault(bonus.gold_brick_requirement, []).append(bonus)
             # Sort by lowest cost first, and then iterate.
-            for gold_brick_cost, legacy_areas in sorted(bonuses_by_gold_brick_cost.items(), key=lambda t: t[0]):
+            for gold_brick_cost, bonuses in sorted(bonuses_by_gold_brick_cost.items(), key=lambda t: t[0]):
                 if gold_brick_cost > available_gold_bricks:
                     # The Bonuses have been sorted by lowest Gold Brick cost first, so all remaining Bonuses will
                     # have even higher requirements that cannot be met.
                     break
-                for legacy_area in legacy_areas:
-                    enabled_bonuses.add(Area(legacy_area.area_id))
-                    if legacy_area.gold_brick:
+                for bonus in bonuses:
+                    enabled_bonuses.add(bonus.area)
+                    if bonus.rewards_gold_brick:
                         available_gold_bricks += 1
             # An assertion checks that the expected count matches the count created.
             expected_gold_brick_event_count = available_gold_bricks
@@ -896,7 +893,7 @@ class _NormalOptionsResolver:
             # requirement.
             chapter_areas_count = len(enabled_non_goal_chapters)
             # Only bonuses that award a Gold Brick on completion count towards the goal count.
-            bonus_areas_count = sum(AREA_ID_TO_BONUS_AREA[area].gold_brick for area in enabled_bonuses)
+            bonus_areas_count = sum(AREA_TO_GOLD_BRICK_BONUS[area].rewards_gold_brick for area in enabled_bonuses)
             available_areas_count = chapter_areas_count + bonus_areas_count
             goal_area_completion_count = max(1,
                                              round(available_areas_count * complete_areas_goal_amount_percentage / 100))
@@ -913,14 +910,14 @@ class _NormalOptionsResolver:
                         + bool(self._enable_true_jedi_locations)
                 )
                 chapter_gold_bricks = chapter_areas_count * gold_bricks_per_chapter
-                gold_brick_bonuses = [AREA_ID_TO_BONUS_AREA[area] for area in enabled_bonuses
-                                      if AREA_ID_TO_BONUS_AREA[area].gold_brick]
+                gold_brick_bonuses = [AREA_TO_GOLD_BRICK_BONUS[area] for area in enabled_bonuses
+                                      if AREA_TO_GOLD_BRICK_BONUS[area].rewards_gold_brick]
                 # Sort lower requirement bonuses first.
-                gold_brick_bonuses.sort(key=lambda bonus_area: bonus_area.gold_bricks_required)
+                gold_brick_bonuses.sort(key=lambda bonus_area: bonus_area.gold_brick_requirement)
                 pre_goal_gold_bricks = chapter_gold_bricks
                 pre_goal_completable_bonuses = 0
                 for area in gold_brick_bonuses:
-                    if area.gold_bricks_required > pre_goal_gold_bricks:
+                    if area.gold_brick_requirement > pre_goal_gold_bricks:
                         # The bonuses were sorted on order of ascending gold brick requirements, so no other bonuses are
                         # reachable before the goal.
                         break

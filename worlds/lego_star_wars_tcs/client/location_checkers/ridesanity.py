@@ -2,7 +2,6 @@ from . import ClientComponent
 from ..common_addresses import CURRENT_AREA_ADDRESS
 from ..events import subscribe_event, OnReceiveSlotDataEvent, OnAreaChangeEvent, OnPlayerCharacterIdChangeEvent
 from ..type_aliases import ApLocationId, TCSContext
-from ...ridables import BONUS_TO_RIDABLES
 
 from ...options import GoalChapterLocationsMode
 
@@ -10,6 +9,7 @@ from ...data.areas import Area
 from ...data.characters import Character
 from ...data.locations import LOCATION_NAME_TO_ID
 from ...data.logic import CHAPTERS_BY_AREA
+from ...data.logic.gold_brick_bonuses import AREA_TO_GOLD_BRICK_BONUS
 
 
 class RidesanityChecker(ClientComponent):
@@ -36,26 +36,21 @@ class RidesanityChecker(ClientComponent):
         else:
             goal_chapter = None
 
-        for bonus_area in slot_data.enabled_bonuses.value:
-            if bonus_area not in BONUS_TO_RIDABLES:
-                # No ridables in this bonus.
+        logic_areas = [
+            *(AREA_TO_GOLD_BRICK_BONUS[bonus_area] for bonus_area in slot_data.enabled_bonuses.value),
+            *(CHAPTERS_BY_AREA[chapter_area] for chapter_area in slot_data.enabled_chapters.value),
+        ]
+        for logic_area in logic_areas:
+            rideables = logic_area.ridables
+            if not rideables:
+                # No rideables in this LogicArea
                 continue
-            ridables_by_area[bonus_area] = {
-                ridable.character: LOCATION_NAME_TO_ID[ridable.character.get_ridesanity_location_name()]
-                for ridable in BONUS_TO_RIDABLES[bonus_area]
-            }
-        for chapter_area in slot_data.enabled_chapters.value:
-            chapter = CHAPTERS_BY_AREA[chapter_area]
-            ridables = chapter.ridables
-            if not ridables:
-                # No ridables in this chapter.
-                continue
-            if chapter_area is goal_chapter and goal_locations_removed:
+            if logic_area.area is goal_chapter and goal_locations_removed:
                 # The Goal Chapter, with locations removed, should not send Ridesanity checks.
                 continue
-            ridables_by_area[chapter_area] = {
+            ridables_by_area[logic_area] = {
                 character: LOCATION_NAME_TO_ID[character.get_ridesanity_location_name()]
-                for character in ridables.keys()
+                for character in rideables.keys()
             }
 
         ridables_by_area[Area.MAP] = {

@@ -33,7 +33,7 @@ from .common_addresses import (
     CHARACTER_DATA_ID,
 )
 from .custom_save_data import CustomSaveDataSections, CUSTOM_SAVE_DATA_SECTION_SIZE, CustomSaveFlags2
-from .location_checkers.free_play_completion import FreePlayChapterCompletionChecker
+from .location_checkers.free_play_completion import FreePlayAreaCompletionChecker
 from .location_checkers.bonus_level_completion import BonusAreaCompletionChecker
 from .location_checkers.minikits import MinikitChecker
 from .location_checkers.ridesanity import RidesanityChecker
@@ -458,7 +458,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     client_expected_idx: int
 
     # Location checkers.
-    free_play_completion_checker: FreePlayChapterCompletionChecker
+    free_play_completion_checker: FreePlayAreaCompletionChecker
     true_jedi_and_power_brick_and_minikit_brick_checker: TrueJediAndPowerBrickAndMinikitBrickChecker
     minikit_checker: MinikitChecker
     purchased_extras_checker: PurchasedExtrasChecker
@@ -1382,7 +1382,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.current_p_area_data = 0
         self.current_cantina_room = CantinaRoom.UNKNOWN
 
-        self.free_play_completion_checker = FreePlayChapterCompletionChecker()
+        self.free_play_completion_checker = FreePlayAreaCompletionChecker()
         self.true_jedi_and_power_brick_and_minikit_brick_checker = TrueJediAndPowerBrickAndMinikitBrickChecker()
         self.minikit_checker = MinikitChecker()
         self.purchased_extras_checker = PurchasedExtrasChecker()

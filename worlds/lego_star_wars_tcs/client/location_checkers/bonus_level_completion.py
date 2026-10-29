@@ -15,10 +15,11 @@ _DEBUG_LOGGER = logging.getLogger("TCS Debug")
 _AREA_COMPLETION = UCharField(0x1)
 _INDY_TRAILER_WATCHED = StaticUChar(0x86e505)
 
+_FREE_PLAY_BONUSES = (Area.ANAKINSFLIGHT, Area.ANEWHOPE)
 
 _ALL_STORY_COMPLETION_CHECKS: dict[Area, tuple[ApLocationId, MemoryAddress]] = {
     area: (LOCATION_NAME_TO_ID[area.get_completion_name()], area.save_data_address + _AREA_COMPLETION)
-    for area in BONUS_ROOM_BONUSES
+    for area in BONUS_ROOM_BONUSES if area not in _FREE_PLAY_BONUSES
 }
 # The Indiana Jones trailer has its own part of memory that it writes to, to mark that it has been watched, rather than
 # marking the Lost Temple Area's save-data as completed.

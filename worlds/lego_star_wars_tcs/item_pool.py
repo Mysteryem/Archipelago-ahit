@@ -32,7 +32,7 @@ from .items import (
 )
 from .item_classification import evaluate_effective_item
 from .item_groups import ability_to_readable_group
-from .levels import (
+from .legacy_true_jedi import (
     DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
 )
 from .locations import LegoStarWarsTCSShopLocation

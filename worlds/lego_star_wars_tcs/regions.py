@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 
 from BaseClasses import Region, LocationProgressType, Location
 from rule_builder.rules import Rule, Has, True_, CanReachLocation, And, HasAll, HasFromListUnique
-from rule_builder.options import OptionFilter
 
 from .character_ability import CharacterAbility
-from .constants import GOLD_BRICK_EVENT_NAME, CHAPTER_SPECIFIC_FLAGS
+from .constants import GOLD_BRICK_EVENT_NAME
 
 from .data.areas import Area, PURCHASABLE_NON_POWER_BRICK_EXTRAS, VEHICLE_CHAPTERS, EPISODE_AREA_LOOKUP
 from .data.bosses import Boss
@@ -17,26 +16,16 @@ from .data.items.character_items import NON_VEHICLE_NORMAL_CHARACTER_TO_ITEM_DAT
 from .data.items.generic_items import NonDataItemName, EPISODE_UNLOCKS, CHAPTER_TO_CHAPTER_UNLOCK_ITEM
 from .data.items import GenericCharacterData
 from .data.logic import CHAPTERS_BY_AREA
-from .data.logic.rules import HasAnyAbilities, HasAllAbilities
-from .data.logic.types import ExitData, Chapter
+from .data.logic.gold_brick_bonuses import GOLD_BRICK_BONUSES
+from .data.logic.types import ExitData, Chapter, GoldBrickBonus, LogicArea
 from .data.shop import UNLOCK_REQUIREMENT_TO_CHARACTERS
-from .levels import (
-    BonusArea,
-    BONUS_AREAS,
-    DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI,
-    CHAPTER_SPECIFIC_REQUIREMENTS,
-)
 from .options import (
     GoalChapterLocationsMode,
     ChapterUnlockRequirement,
     EpisodeUnlockRequirement,
-    EasierTrueJedi,
     MinikitGoalCompletionMethod,
 )
-from .ridables import (
-    BONUS_TO_RIDABLES,
-    get_ridable_requirements,
-)
+from . import legacy_true_jedi
 
 if TYPE_CHECKING:
     from . import LegoStarWarsTCSWorld as TCSWorld
@@ -100,47 +89,6 @@ class _RegionBuilder:
         if isinstance(to_add, True_):
             return base_rule
         return to_add & base_rule
-
-    @staticmethod
-    def _get_legacy_true_jedi_rule(area: Area):
-        """True Jedi logic has not been defined yet, so a legacy rule based on the story characters is used."""
-        # The logic is not fully prepared for this currently, so the rule is set to require all the logical abilities of
-        # the Story characters of the Chapter, which will be overly restrictive for many locations, but overly
-        # restrictive logic cannot result in impossible seeds.
-        # A few chapters have chapter-specific logical requirements that get stripped from the requirements
-        # of other chapters.
-        base_abilities: CharacterAbility = CharacterAbility.NONE
-        for character in area.get_story_characters():
-            base_abilities |= NORMAL_CHARACTER_TO_ITEM_DATA[character].abilities
-        # Strip all chapter-specific flags. If there are any that are relevant to this chapter, they will be re-added in
-        # the next step.
-        base_abilities &= ~CHAPTER_SPECIFIC_FLAGS
-        # Add any chapter-specific flags and set possible alternatives
-        alt_ability_requirements: CharacterAbility | None = None
-        if chapter_specific_requirement := CHAPTER_SPECIFIC_REQUIREMENTS.get(area):
-            story_logic, alternative_ability = chapter_specific_requirement
-            main_ability_requirements = base_abilities | story_logic
-            if alternative_ability is not None and alternative_ability not in base_abilities:
-                # Define an alternative set of requirements.
-                alt_ability_requirements = (base_abilities & ~story_logic) | alternative_ability
-        else:
-            main_ability_requirements = base_abilities
-        if main_ability_requirements is CharacterAbility.NONE:
-            raise AssertionError("Every chapter should have at least one CharacterAbility requirement.")
-        if alt_ability_requirements is CharacterAbility.NONE:
-            raise AssertionError("Every chapter's alternate requiremenents should have at least one CharacterAbility"
-                                 " requirement.")
-
-        if alt_ability_requirements:
-            abilities_rule = HasAnyAbilities(main_ability_requirements) | HasAnyAbilities(alt_ability_requirements)
-        else:
-            abilities_rule =  HasAnyAbilities(main_ability_requirements)
-
-        if area in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI:
-            return abilities_rule & (Has(NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value)
-                                     | OptionFilter(EasierTrueJedi, EasierTrueJedi.option_true))
-        else:
-            return abilities_rule
 
     def _add_10_minikits_gold_brick_event(self, area: Area, minikit_locations: list[Location]) -> None:
         # Minikits are generally in order of appearance within a level, so put the event in the same region as
@@ -286,13 +234,17 @@ class _RegionBuilder:
 
         return rule, characters, character_count
 
-    def _create_chapter(self, chapter: Chapter) -> Region:
-        area = chapter.area
-        world = self.world
+    def _create_logic_area_regions(self, logic_area: LogicArea) -> tuple[Region, dict[str, Region]]:
+        """
+
+        :param logic_area:
+        :return: The start region and dict of regions by name
+        """
+        area = logic_area.area
 
         # Regions (and finding Entrances).
-        start_region_internal_name = chapter.start_region
-        start_region_exits = chapter.regions[start_region_internal_name]
+        start_region_internal_name = logic_area.start_region
+        start_region_exits = logic_area.regions[start_region_internal_name]
         region_data_stack: list[tuple[str, tuple[ExitData, ...]]] = [(start_region_internal_name, start_region_exits)]
         create_region = self.world.create_region
         prefix_name = area.prefix_name
@@ -316,13 +268,39 @@ class _RegionBuilder:
                 except KeyError:
                     # CanReachRegion rules cannot be resolved yet if the region they reference does not exist.
                     entrances_to_create.append((r, exit_.to_region, exit_.name, exit_.rule))
-                region_data_stack.append((exit_.to_region, chapter.regions[exit_.to_region]))
+                region_data_stack.append((exit_.to_region, logic_area.regions[exit_.to_region]))
         start_region = regions[start_region_internal_name]
 
         # Entrances.
         for r, to_region_name, entrance_name, rule in entrances_to_create:
             to_r = regions[to_region_name]
             r.connect(to_r, entrance_name, rule)
+
+        return start_region, regions
+
+    def _prepare_rideables_in_logic_area(self, logic_area: LogicArea, regions: dict[str, Region]) -> None:
+        """Prepare rideable locations within this logic area for later creation of all rideable locations.
+
+        Each rideable location exists only once, so everywhere that rideable character exists needs to connect to a
+        region containing that singular rideable location."""
+        # Locations for riding unique characters.
+        if self.world.options.ridesanity:
+            for rideable_character, rideable_location_data in logic_area.ridables.items():
+                if isinstance(rideable_location_data, tuple):
+                    rideable_location_data_tuple = rideable_location_data
+                else:
+                    rideable_location_data_tuple = (rideable_location_data,)
+                for rideable_location_datum in rideable_location_data_tuple:
+                    rideable_region = regions[rideable_location_datum.region]
+                    rideable_data = _RidableData(logic_area.area, rideable_region, rideable_location_datum.rule)
+                    self.ridable_character_regions.setdefault(rideable_character, []).append(rideable_data)
+
+    def _create_chapter(self, chapter: Chapter) -> Region:
+        start_region, regions = self._create_logic_area_regions(chapter)
+
+        area = chapter.area
+        world = self.world
+        create_region = world.create_region
 
         completion_region = regions["Chapter Completion"]
         create_gold_bricks = bool(self.world.options.enable_bonus_locations)
@@ -376,7 +354,7 @@ class _RegionBuilder:
             # With full True Jedi logic, the True Jedi location would likely end up in the start region because of score
             # multipliers when True Jedi is not set to scale with score multipliers.
             true_jedi_location = world.add_location(true_jedi_name, completion_region)
-            legacy_rule = self._get_legacy_true_jedi_rule(area)
+            legacy_rule = legacy_true_jedi.get_legacy_true_jedi_rule(area)
             world.set_rule(true_jedi_location, legacy_rule)
             if exclude_locations:
                 self._exclude_location(true_jedi_location)
@@ -437,7 +415,7 @@ class _RegionBuilder:
             minikit_locations: list[Location] = []
             for minikit_name, location_data in chapter.minikits.items():
                 r = regions[location_data.region]
-                loc = self.world.add_location(prefix_name(minikit_name), r)
+                loc = self.world.add_location(area.prefix_name(minikit_name), r)
                 self.world.set_rule(loc, location_data.rule)
                 minikit_locations.append(loc)
                 minikits_from_chapter += 1
@@ -466,17 +444,8 @@ class _RegionBuilder:
                 # completion event.
                 self.story_character_unlock_regions.setdefault(character, []).append(completion_region)
 
-        # Checks for riding unique characters.
-        if world.options.ridesanity:
-            for ridable_character, ridable_location_data in chapter.ridables.items():
-                if isinstance(ridable_location_data, tuple):
-                    ridable_location_data_tuple = ridable_location_data
-                else:
-                    ridable_location_data_tuple = (ridable_location_data,)
-                for ridable_location_datum in ridable_location_data_tuple:
-                    ridable_region = regions[ridable_location_datum.region]
-                    ridable_data = _RidableData(area, ridable_region, ridable_location_datum.rule)
-                    self.ridable_character_regions.setdefault(ridable_character, []).append(ridable_data)
+        # Locations for riding unique characters (if enabled).
+        self._prepare_rideables_in_logic_area(chapter, regions)
 
         # Boss.
         if chapter.area in world.enabled_bosses:
@@ -497,7 +466,7 @@ class _RegionBuilder:
                 boss_event_item_name,
             )
 
-        return regions[start_region_internal_name]
+        return start_region
 
     def _create_episode(self, episode_number: int) -> None:
         world = self.world
@@ -577,21 +546,21 @@ class _RegionBuilder:
 
         # Group Bonuses by gold brick costs so that the regions requiring progressively more Gold Bricks can be
         # chained together more easily.
-        gold_brick_costs: dict[int, list[BonusArea]] = {}
-        for legacy_area in BONUS_AREAS:
-            area = Area(legacy_area.area_id)
+        gold_brick_costs: dict[int, list[GoldBrickBonus]] = {}
+        for gold_brick_bonus in GOLD_BRICK_BONUSES:
+            area = gold_brick_bonus.area
             if area not in world.enabled_bonuses:
                 continue
-            gold_bricks_required = legacy_area.gold_bricks_required
+            gold_bricks_required = gold_brick_bonus.gold_brick_requirement
             if gold_bricks_required == 0:
                 # No Gold Bricks are required to watch the Indy Trailer, so put it in the Bonuses region directly.
-                assert legacy_area.name == "Indiana Jones Trailer"
+                assert area is Area.LOSTTEMPLE
                 world.add_location(area.get_completion_name(), bonuses)
             else:
-                gold_brick_costs.setdefault(gold_bricks_required, []).append(legacy_area)
+                gold_brick_costs.setdefault(gold_bricks_required, []).append(gold_brick_bonus)
 
         previous_gold_brick_region = bonuses
-        for gold_brick_cost, areas in sorted(gold_brick_costs.items(), key=lambda t: t[0]):
+        for gold_brick_cost, gold_brick_bonuses in sorted(gold_brick_costs.items(), key=lambda t: t[0]):
             region = world.create_region(f"{gold_brick_cost} Gold Bricks Collected")
             previous_gold_brick_region.connect(
                 region, f"Collect {gold_brick_cost} Gold Bricks",
@@ -599,58 +568,53 @@ class _RegionBuilder:
             )
             previous_gold_brick_region = region
 
-            for legacy_area in areas:
-                area = Area(legacy_area.area_id)
-                area_region = world.create_region(area.readable_name)
-                region.connect(area_region)
+            for gold_brick_bonus in gold_brick_bonuses:
+                start_region, regions = self._create_logic_area_regions(gold_brick_bonus)
+
+                area = gold_brick_bonus.area
+                region.connect(start_region, f"{gold_brick_cost} Gold Brick Door -> {start_region.name}")
 
                 # Completion location.
-                completion_rule = (
-                        HasAllAbilities(legacy_area.completion_ability_requirements)
-                        & HasAll(*legacy_area.item_requirements)
-                )
-                completion_location = world.add_location(area.get_completion_name(), area_region)
-                world.set_rule(completion_location, completion_rule)
+                completion_region = regions[gold_brick_bonus.COMPLETION_REGION_NAME]
+                world.add_location(area.get_completion_name(), completion_region)
 
                 if world.options.enable_story_character_unlock_locations:
-                    for character in sorted(legacy_area.story_characters):
-                        self.story_character_unlock_regions.setdefault(character, []).append(area_region)
-                # todo: Item requirements have been removed for now because it is not currently possible to lock
-                #  access to the bonus levels.
-                if legacy_area.item_requirements:
-                    raise Exception("Item requirements for legacy Bonus Areas are not implemented")
-                # if self.world.options.chapter_unlock_requirement == ChapterUnlockRequirement.option_vanilla_characters:
-                #     for item in legacy_area.item_requirements:
-                #         if item in CHARACTERS_AND_VEHICLES_BY_NAME:
-                #             world.character_chapter_access_counts[item] += 1
-                assert legacy_area.gold_brick, "Every bonus that requires Gold Bricks to access should award a Gold Brick"
+                    for character in sorted(area.get_story_characters()):
+                        self.story_character_unlock_regions.setdefault(character, []).append(completion_region)
+                # Note: There are currently no item requirements, e.g. Story characters, to gain access to bonus levels
+                #  because it is not currently possible to lock access to the bonus levels.
+                assert gold_brick_bonus.rewards_gold_brick, ("Every bonus that requires Gold Bricks to access should "
+                                                             "award a Gold Brick on completion")
 
                 if self.ut_deferred_events:
                     post_completion_region = world.create_region(area.get_completion_name() + " (UT Deferred)")
-                    to_post_completion = area_region.create_exit(area.get_completion_name() + " (Event)")
-                    world.set_rule(to_post_completion, completion_rule)
+                    to_post_completion = completion_region.create_exit(area.get_completion_name() + " (Event)")
                     world.ut_disconnected_bonus_completion_events[area] = (to_post_completion, post_completion_region)
                 else:
-                    post_completion_region = area_region
+                    post_completion_region = completion_region
 
-                gold_brick = world.add_gold_brick_event(area.get_completion_gold_brick_event_name(),
-                                                        post_completion_region)
-                world.set_rule(gold_brick, completion_rule)
+                # Completion Gold Brick
+                world.add_gold_brick_event(area.get_completion_gold_brick_event_name(), post_completion_region)
 
                 if self.goal_requires_area_completion:
                     # "Level" here is as a user-facing term, with the meaning of "Area" internally.
                     world.add_event_pair(area.get_completion_goal_progress_event_name(), post_completion_region,
                                          "Level Completion")
 
-                if world.options.ridesanity:
-                    # Checks for riding unique characters
-                    for ridable in BONUS_TO_RIDABLES.get(area, ()):
-                        rule = get_ridable_requirements(Area(legacy_area.area_id), ridable.character)
-                        ridable_data = _RidableData(area, area_region, rule)
-                        self.ridable_character_regions.setdefault(ridable.character, []).append(ridable_data)
+                # Locations for riding unique characters (if enabled).
+                self._prepare_rideables_in_logic_area(gold_brick_bonus, regions)
 
         # Indiana Jones shop purchase. Unlocks in the shop after watching the Lego Indiana Jones trailer.
-        indiana_jones_purchase = world.add_location(Character.INDIANA_JONES.get_purchase_location_name(), bonuses)
+        if self.ut_deferred_events:
+            entrance_name = Area.LOSTTEMPLE.get_completion_event_name()
+            post_trailer_watch_region = world.create_region(entrance_name)
+            entrance_to_post_watch = bonuses.create_exit(entrance_name)
+            self.world.ut_disconnected_bonus_completion_events[Area.LOSTTEMPLE] = (entrance_to_post_watch,
+                                                                                   post_trailer_watch_region)
+        else:
+            post_trailer_watch_region = bonuses
+        indiana_jones_purchase = world.add_location(
+            Character.INDIANA_JONES.get_purchase_location_name(), post_trailer_watch_region)
         purchase_cost = Character.INDIANA_JONES.purchase_cost
         assert purchase_cost is not None
         world.set_rule(indiana_jones_purchase, self._get_score_multiplier_rule(purchase_cost))
@@ -668,8 +632,18 @@ class _RegionBuilder:
 
         # Add the Cantina Car ridable found in the Cantina itself, it cannot be found anywhere else.
         cantina_car = Character.MAPCAR
+        # todo: lazy imports for now because this rule should be defined somewhere else and then imported, instead of
+        #  being defined here and cluttering up the imports in this module.
+        from rule_builder.rules import Or
+        from .data.logic.rules import HasAbility
+        from .data.logic.macros import CAN_DAMAGE_AT_CLOSE_RANGE
+        cantina_car_rule = Or(
+            HasAbility(CharacterAbility.CAN_PULL_LEVERS),
+            CAN_DAMAGE_AT_CLOSE_RANGE & HasAbility(CharacterAbility.CAN_BUILD_BRICKS),
+        )
+        del Or, HasAbility, CAN_DAMAGE_AT_CLOSE_RANGE
         # Add it to the dict of regions.
-        cantina_car_data = _RidableData(Area.MAP, self.cantina, get_ridable_requirements(Area.MAP, cantina_car))
+        cantina_car_data = _RidableData(Area.MAP, self.cantina, cantina_car_rule)
         self.ridable_character_regions[cantina_car] = [cantina_car_data]
 
         for ridable, ridable_data_list in self.ridable_character_regions.items():

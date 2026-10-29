@@ -3,8 +3,8 @@ from collections import defaultdict
 from .areas import PURCHASABLE_NON_POWER_BRICK_EXTRAS, BONUS_ROOM_BONUSES
 from .characters import UnlockMethod, Character, AREA_TO_PURCHASE_CHARACTERS, AREA_TO_STORY_CHARACTERS
 from .logic import EPISODES
+from .logic.gold_brick_bonuses import AREA_TO_GOLD_BRICK_BONUS
 from .shop import CHARACTER_SHOP_SLOTS
-from ..ridables import BONUS_TO_RIDABLES
 
 AREA_ID_OFFSET_MULTIPLIER: int = 10_000_000
 # ID 0 is skipped because all IDs must be greater than zero, and this just keeps things simpler.
@@ -104,9 +104,7 @@ def _make_location_name_to_id() -> dict[str, int]:
                  bonus_area.readable_name, "Bonus Completions")
 
         # Update ridables.
-        for legacy_ridable in BONUS_TO_RIDABLES.get(bonus_area, ()):
-            ridable_character = legacy_ridable.character
-            all_ridables.add(ridable_character)
+        all_ridables.update(AREA_TO_GOLD_BRICK_BONUS[bonus_area].ridables.keys())
 
         # Update story characters.
         all_level_completion_character_unlocks.update(AREA_TO_STORY_CHARACTERS.get(bonus_area, ()))

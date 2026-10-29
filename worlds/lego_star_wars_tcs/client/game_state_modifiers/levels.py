@@ -12,10 +12,11 @@ from ..common_addresses import (
     IS_CHARACTER_SWAPPING_ENABLED,
     ChallengeMode,
     AREA_DATA_ID,
+    CantinaRoom,
 )
 from ..type_aliases import TCSContext
 from ...items import ITEM_DATA_BY_ID
-from ...levels import DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI
+from ...legacy_true_jedi import DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI
 from ... import options
 
 from ...data.areas import Area, ALL_CHAPTER_AREAS
@@ -45,6 +46,14 @@ assert _SUB_GOAL_SPECIAL_ID not in _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL, (
 # Note that the fake item name is user-facing.
 _ITEM_DATA_BY_ID_PLUS_GOAL_SPECIAL[_SUB_GOAL_SPECIAL_ID] = GenericItemData(_SUB_GOAL_SPECIAL_ID,
                                                                            "all other goals completed")
+
+# The 'super bonus' areas, LEGO City and New Town, don't have Story mode, so are always completed in Free Play, and can
+# therefor be ignored.
+_FREE_PLAY_BONUSES = (
+    Area.ANAKINSFLIGHT,
+    Area.ANEWHOPE,
+)
+_ALL_FREE_PLAY_AREAS = ALL_CHAPTER_AREAS.union(_FREE_PLAY_BONUSES)
 
 
 @dataclass
@@ -131,6 +140,7 @@ class UnlockedChapterManager(ClientComponent):
     should_unlock_all_episodes_shop_slots: Callable[[TCSContext], bool] = staticmethod(lambda _ctx: False)
 
     enabled_chapter_areas: set[Area]
+    enabled_free_play_bonuses: set[Area]  # Anakin's Flight and A New Hope
     enabled_episodes: set[int]
     chapters_using_alt_characters: set[Area]
     characters_excluded_from_unlocking_chapters: set[Character]
@@ -149,6 +159,7 @@ class UnlockedChapterManager(ClientComponent):
         self.remaining_chapter_item_requirements = {}
         self.unlocked_chapters_per_episode = {}
         self.enabled_chapter_areas = set()
+        self.enabled_free_play_bonuses = set()
         self.chapters_using_alt_characters = set()
         self.characters_excluded_from_unlocking_chapters = set()
         self.per_chapter_required_character_count = {}
@@ -184,6 +195,8 @@ class UnlockedChapterManager(ClientComponent):
         num_enabled_episodes = len(enabled_episodes)
 
         self.enabled_chapter_areas = slot_data.enabled_chapters.value.copy()
+        self.enabled_free_play_bonuses = {area for area in slot_data.enabled_bonuses.value
+                                          if area in _FREE_PLAY_BONUSES}
 
         required_counts_option = slot_data.chapter_required_character_counts
         required_counts: dict[Area, int]
@@ -420,7 +433,7 @@ class UnlockedChapterManager(ClientComponent):
                     if area is not None and area in unlocked_areas_in_room:
                         # The player is standing in front of, or within a chapter door that is unlocked.
                         if ctx.read_uchar(OPENED_MENU_DEPTH_ADDRESS) > 0:
-                            # The player has a menu open (hopefully the menu within the chapter door.
+                            # The player has a menu open (hopefully the menu within the chapter door).
                             temporary_story_completion = {area}
                             if self.last_area_door != area:
                                 # Force the selection in the menu to "Free Play" instead of "Story" or "Challenge".
@@ -430,19 +443,35 @@ class UnlockedChapterManager(ClientComponent):
                                 self.last_area_door = area
                         else:
                             self.last_area_door = None
+            elif cantina_room == CantinaRoom.BONUSES.value:
+                area_id_of_door_the_player_is_in_front_of = ctx.read_uchar(_CURRENT_AREA_DOOR_ADDRESS)
+                if area_id_of_door_the_player_is_in_front_of in _FREE_PLAY_BONUSES:
+                    area = Area(area_id_of_door_the_player_is_in_front_of)
+                    # The player is standing in front of, or within a bonus door.
+                    if ctx.read_uchar(OPENED_MENU_DEPTH_ADDRESS) > 0:
+                        # The player has a menu open (hopefully the menu within the bonus door).
+                        temporary_story_completion = {area}
+                        if self.last_area_door != area:
+                            # Force the selection in the menu to "Free Play" instead of "Story".
+                            # This is only done when the Area changes, so that users can still choose "Story" if they
+                            # really want to (not currently useful).
+                            ChapterDoorGameMode.FREE_PLAY.set(ctx)
+                            self.last_area_door = area
+                    else:
+                        self.last_area_door = None
 
             # If the player is in a chapter, grant temporary Story mode completion so that they can Save and Exit to the
             # Cantina.
             current_area = self.current_area
-            if current_area is not None and current_area.is_chapter():
+            if current_area is not None and current_area in _ALL_FREE_PLAY_AREAS:
                 temporary_story_completion |= {current_area}
 
         completed_free_play = ctx.free_play_completion_checker.completed_free_play
 
-        # 36 writes on each game state update is undesirable, but necessary to easily allow for temporarily completing
+        # 38 writes on each game state update is undesirable, but necessary to easily allow for temporarily completing
         # Story modes.
-        for area in ALL_CHAPTER_AREAS:
-            enabled = area in self.enabled_chapter_areas
+        for area in _ALL_FREE_PLAY_AREAS:
+            enabled = area in self.enabled_chapter_areas or area in self.enabled_free_play_bonuses
             if enabled and area in completed_free_play:
                 # Set the chapter as unlocked and Story mode completed because Free Play has been completed.
                 # The second bit in the third byte is custom to the AP client and signifies that Free Play has been
@@ -452,7 +481,7 @@ class UnlockedChapterManager(ClientComponent):
                 # Set the chapter as unlocked and Story mode completed because Story mode for this chapter needs to be
                 # temporarily set as completed for some purpose.
                 ctx.write_bytes(area.save_data_address, b"\x01\x01", 2)
-            elif area not in self.enabled_chapter_areas:
+            elif area not in self.enabled_chapter_areas and area not in self.enabled_free_play_bonuses:
                 # Set the chapter as locked, with Story mode incomplete.
                 ctx.write_bytes(area.save_data_address, b"\x00\x00", 2)
             else:
@@ -515,12 +544,15 @@ class UnlockedChapterManager(ClientComponent):
             # _DEBUG_LOGGER.info("Current AreaData pointer is NULL. Nothing to do.")
             return
 
-        if not current_area.is_chapter():
-            # The current area is not a chapter area, so there is nothing to do.
-            _DEBUG_LOGGER.info("The current area is %s, which is not a chapter Area", repr(current_area))
+        if current_area not in _ALL_FREE_PLAY_AREAS:
+            # The current area is not a free play area, so there is nothing to do.
+            _DEBUG_LOGGER.info("The current area is %s, which is not a chapter Area of free play bonus area",
+                               repr(current_area))
             return
 
-        self._set_current_area_true_jedi_requirement(event.context, event.new_p_area_data, current_area)
+        is_chapter = current_area.is_chapter()
+        if is_chapter:
+            self._set_current_area_true_jedi_requirement(event.context, event.new_p_area_data, current_area)
         # Check that the chapter is being played in Free Play.
         if not IS_CHARACTER_SWAPPING_ENABLED.get(ctx):
             # todo: Can we block entry to Story in another way?
@@ -528,8 +560,12 @@ class UnlockedChapterManager(ClientComponent):
             # todo: Find a way to tell apart Story, Superstory and Bounty Hunter Missions while in the level itself.
             #  Currently, the client can only tell them apart on the 'status' screen.
             ctx.load_level(Level.MAP, hard_reset=True)
-            ctx.text_display.priority_messages("Chapters should only be played in Free Play",
-                                               "Other modes are not currently part of the randomizer.")
+            if is_chapter:
+                ctx.text_display.priority_messages("Chapters should only be played in Free Play",
+                                                   "Other modes are not currently part of the randomizer.")
+            else:
+                ctx.text_display.priority_messages("Bonuses with Free Play should only be played in Free Play",
+                                                   "Story mode is not currently part of the randomizer.")
         else:
             if not ChallengeMode.NO_CHALLENGE.is_set(ctx):
                 # The player is in Challenge mode.
