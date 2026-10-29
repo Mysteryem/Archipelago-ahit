@@ -520,6 +520,12 @@ def _create_possible_pool(world: LegoStarWarsTCSWorld) -> dict[Character, Generi
         for character in sorted(world.goal_chapter.get_story_characters()):
             if character not in possible_pool_character_items:
                 possible_pool_character_items[character] = SENDABLE_CHARACTER_TO_ITEM_DATA[character]
+    # Anakin's Flight could be enabled, but without any Vehicle chapters enabled. In that case, ensure it is beatable by
+    # adding its story characters (Naboo Starfighter) to the possible pool.
+    if not vehicle_chapters_enabled and Area.ANAKINSFLIGHT in world.enabled_bonuses:
+        for character in sorted(Area.ANAKINSFLIGHT.get_story_characters()):
+            if character not in possible_pool_character_items:
+                possible_pool_character_items[character] = SENDABLE_CHARACTER_TO_ITEM_DATA[character]
 
     return possible_pool_character_items
 
