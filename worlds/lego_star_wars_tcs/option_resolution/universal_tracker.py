@@ -28,9 +28,10 @@ class UTAttribute(Generic[T]):
     Unlike ``property``, also works for ClassVar attributes."""
     _default: T
     _private_name: str
+    _is_class_var: bool
 
     # noinspection PyUnusedLocal
-    def __init__(self, default: T = _MISSING, *, ut_api: bool = False):
+    def __init__(self, default: T = _MISSING, *, class_var: bool = False, ut_api: bool = False):
         """
 
         :param default: Default value for this attribute, set on the class itself.
@@ -38,6 +39,7 @@ class UTAttribute(Generic[T]):
         name must match the API in order to function correctly. Has no runtime effect.
         """
         self._default = default
+        self._is_class_var = class_var
 
     def __set_name__(self, owner, name):
         self._private_name = "_ut_attribute_" + name
@@ -45,7 +47,10 @@ class UTAttribute(Generic[T]):
             setattr(owner, self._private_name, self._default)
 
     def __get__(self, instance, owner=None) -> T:
-        return getattr(instance, self._private_name)
+        if self._is_class_var:
+            return getattr(owner, self._private_name)
+        else:
+            return getattr(instance, self._private_name)
 
     def __set__(self, instance, value: T):
         setattr(instance, self._private_name, value)

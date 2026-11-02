@@ -115,7 +115,8 @@ class LegoStarWarsTCSWorld(World):
     origin_region_name = "Cantina"
 
     # Universal Tracker 0.2.12 or newer is required because the game name contains a colon.
-    ut_can_gen_without_yaml: bool = UTAttribute(True, ut_api=True)
+    # noinspection PyClassVar
+    ut_can_gen_without_yaml: ClassVar[bool] = UTAttribute(True, class_var=True, ut_api=True)
     glitches_item_name: str = UTAttribute("UT_GLITCHED", ut_api=True)
     # Custom item name for use in UT with `/manually_collect` to adjust glitched logic to show all higher difficulties.
     glitches_all_item_name: str = UTAttribute("UT_GLITCHED_ALL")
@@ -128,8 +129,7 @@ class LegoStarWarsTCSWorld(World):
     ut_datastorage_key_to_disconnected_dict: dict[str, Iterable[dict[Area, tuple[Entrance, Region]]]] = UTAttribute()
     ut_minikit_goal_submitted_key: str = UTAttribute()
     ut_minikit_goal_disconnected_entrance: tuple[Entrance, Region] | None  = UTAttribute(None)
-    # noinspection PyClassVar
-    found_entrances_datastorage_key: ClassVar[tuple[str, ...]] = UTAttribute(
+    found_entrances_datastorage_key: tuple[str, ...] = UTAttribute(
         (
             COMPLETED_FREE_PLAY_KEY,
             COMPLETED_TRUE_JEDI_KEY,
