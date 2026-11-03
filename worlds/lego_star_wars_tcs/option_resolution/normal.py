@@ -794,9 +794,7 @@ class _NormalOptionsResolver:
 
     def _resolve_minikit_options(self, enabled_non_goal_chapter_count: int, bundle_size: int) -> tuple[str, int, int]:
         minikit_bundle_name = MINIKITS_BY_BUNDLE_SIZE[bundle_size].name
-        # todo?: Set self.available_minikits = 0 when self.options.minikit_goal_amount.value == 0 to remove minikits
-        #  from the item pool?
-        if self._minikit_goal_amount != 0 or self._enable_minikit_locations:
+        if self._minikit_goal_amount != 0:
             available_minikits = enabled_non_goal_chapter_count * 10  # 10 Minikits per chapter.
             minikit_bundle_count = available_minikits // bundle_size + (available_minikits % bundle_size != 0)
         else:

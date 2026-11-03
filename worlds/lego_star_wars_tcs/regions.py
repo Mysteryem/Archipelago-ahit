@@ -427,14 +427,14 @@ class _RegionBuilder:
                     self._add_ut_deferred_10_minikits_gold_brick_event(area, minikit_locations)
                 else:
                     self._add_10_minikits_gold_brick_event(area, minikit_locations)
-        elif world.options.minikit_goal_amount != 0:
+        else:
             # If Minikit locations are disabled, but the goal requires Minikits, the Chapter Completion location
             # is instead treated as if it was the vanilla location for a 10 Minikits bundle.
             minikits_from_chapter += 10
 
         # The goal chapter does not contribute Minikits because it is only accessible once the Minikits goal is
         # complete.
-        if not is_goal_chapter:
+        if not is_goal_chapter and world.options.minikit_goal_amount != 0:
             self.available_minikits_check += minikits_from_chapter
 
         # Story Character unlocks.
