@@ -736,7 +736,7 @@ def determine_random_character_requirements(
     if world.is_universal_tracker():
         # Should already be loaded from Universal Tracker.
         if not world.chapter_random_character_requirements:
-            world.raise_error(Exception, "Random Character requirements for Chapters were not loaded from"
+            world.raise_error(Exception, "Random Character requirements for Chapters were not loaded from "
                                          "slot_data")
     else:
         # If Bonus levels become locked by items again, then whether vehicle characters are added to the item pool
