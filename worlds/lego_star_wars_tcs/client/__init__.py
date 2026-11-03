@@ -928,7 +928,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
     def make_gui(self):
         ui = super().make_gui()
-        ui.base_title = f"Archipelago {self.game} Client"
+        ui.base_title = f"Archipelago {self.game} Client (APWorld v{'.'.join(map(str, AP_WORLD_VERSION))})"
         if __debug__ and not Utils.is_frozen():
             ui.logging_pairs.append(("TCS Debug", "Debug"))
         return ui
