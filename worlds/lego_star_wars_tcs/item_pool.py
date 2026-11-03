@@ -194,10 +194,12 @@ class ItemCreator:
             classification, effective_abilities = evaluate_effective_item(
                 self._world, item, effective_character_abilities, missing_item_counts)
             effective_item_classifications[item] = classification
-            # The returned `effective_abiltiies` should be the same as what was in `effective_character_abilities`.
+            # Unless generating under Universal Tracker, where all abilities are retained, the returned
+            # `effective_abiltiies` should be the same as what was in `effective_character_abilities`.
             # The returned `effective_abiltiies` is not actually needed here, but `effective_character_abilities` is not
             # always available when `evaluate_effective_item()` is called.
-            assert effective_abilities is effective_character_abilities.get(item, CharacterAbility.NONE)
+            assert (self._world.is_universal_tracker()
+                    or effective_abilities is effective_character_abilities.get(item, CharacterAbility.NONE))
             effective_item_abilities[item] = effective_abilities
 
         self._classification_lookup = effective_item_classifications

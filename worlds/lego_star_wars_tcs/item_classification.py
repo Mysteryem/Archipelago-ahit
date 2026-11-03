@@ -71,6 +71,11 @@ def _evaluate_effective_extra_data(world: LegoStarWarsTCSWorld,
                                    item_data: ExtraData,
                                    relevant_item_counts: dict[str, int] | None = None
                                    ) -> ItemClassification:
+    if world.is_universal_tracker():
+        # An Extra might only be relevant to logic in a higher logic difficulty. So for 'glitched' Universal Tracker
+        # logic to work correctly, all Extra items are marked as progression.
+        return ItemClassification.progression
+
     extra = item_data.extra
     if relevant_item_counts is not None:
         if relevant_item_counts.get(item_data.name, 0) > 0:
@@ -104,6 +109,11 @@ def _evaluate_effective_character_data(world: LegoStarWarsTCSWorld,
                                        effective_character_abilities_lookup: dict[str, CharacterAbility] | None = None,
                                        relevant_item_counts: dict[str, int] | None = None,
                                        ) -> tuple[ItemClassification, CharacterAbility]:
+    if world.is_universal_tracker():
+        # A Character might only be relevant to logic in a higher logic difficulty. So for 'glitched' Universal Tracker
+        # logic to work correctly, all Character items are marked as progression, and retain all abilities.
+        return ItemClassification.progression, item_data.abilities
+
     classification = ItemClassification.filler
     name = item_data.name
     if effective_character_abilities_lookup is not None:
