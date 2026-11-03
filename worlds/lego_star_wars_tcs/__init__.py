@@ -73,7 +73,9 @@ components.append(Component("Lego Star Wars: The Complete Saga Client",
                             func=launch_client,
                             supports_uri=True,
                             game_name=GAME_NAME,
-                            component_type=Type.CLIENT))
+                            component_type=Type.CLIENT,
+                            description=f"APWorld Version {'.'.join(map(str, constants.AP_WORLD_VERSION))}"
+))
 
 
 class TCSUniversalTrackerAPWorldVersionMismatchError(Exception):
