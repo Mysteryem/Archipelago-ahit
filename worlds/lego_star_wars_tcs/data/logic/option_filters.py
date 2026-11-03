@@ -3,7 +3,9 @@ from operator import and_, or_
 from typing import TYPE_CHECKING, Literal, Any
 from typing_extensions import override
 
-from rule_builder.rules import Rule, TWorld, Has, Or, And
+from BaseClasses import CollectionState
+from NetUtils import JSONMessagePart
+from rule_builder.rules import Rule, TWorld, Or, WrapperRule
 from rule_builder.options import OptionFilter
 
 from ...constants import GAME_NAME
@@ -53,6 +55,96 @@ _PLUS_DIFFICULTY_TO_SLICE = {
 }
 
 
+# _UTGlitchesRule.Resolved extends WrapperRule.Resolved so that logic extraction works without needing to add specific
+# handling for _UTGlitchesRule.
+# _UTGlitchesRule is marked as private because it should only ever be instantiated by a LogicOptions rule that is being
+# resolved.
+@dataclass
+class _UTGlitchesRule(WrapperRule[LegoStarWarsTCSWorld], game=GAME_NAME):
+    glitches: Rule
+    all_glitches: Rule
+
+    def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
+        if not world.is_universal_tracker():
+            raise Exception("Negative logic is not allowed in regular generation")
+        return self.Resolved(
+            child=self.child.resolve(world),
+            glitches=self.glitches.resolve(world),
+            all_glitches=self.all_glitches.resolve(world),
+            glitches_item_name=world.glitches_item_name,
+            all_glitches_item_name=world.glitches_all_item_name,
+            player=world.player,
+            caching_enabled=getattr(world, "rule_caching_enabled", False),
+        )
+
+    class Resolved(WrapperRule.Resolved):
+        glitches: Rule.Resolved
+        all_glitches: Rule.Resolved
+        glitches_item_name: str
+        all_glitches_item_name: str
+
+        @override
+        def _evaluate(self, state: CollectionState) -> bool:
+            # When the glitches item is collected, all previously accessible locations should still be accessible (if
+            # not, then there is a logic bug).
+            # Lower logic difficulties may require a certain item to reach a region, so locations within that region,
+            # that require that item, do not need to require that certain item. However, in higher logic difficulties,
+            # that certain item may not be required to reach the region, so the locations within the region have to have
+            # rules set to require that certain item.
+            # This means that when the glitches item is in the state, logic must not be allowed to use the logic rules
+            # from a lower logic difficulty.
+            if state.has(self.glitches_item_name, self.player):
+                if state.has(self.all_glitches_item_name, self.player):
+                    return self.all_glitches(state)
+                else:
+                    return self.glitches(state)
+            else:
+                return self.child(state)
+
+        @override
+        def explain_json(self, state: CollectionState | None = None) -> list[JSONMessagePart]:
+            if state is None:
+                return self.child.explain_json()
+            else:
+                messages: list[JSONMessagePart]
+                messages = self.child.explain_json(state).copy()
+                # Include either self.all_glitches or self.glitches depending on whether all_glitches_item_name is in
+                # the state.
+                if state.has(self.all_glitches_item_name, self.player):
+                    messages.append({"type": "text", "text": "AllGlitches(", "color": "yellow"})
+                    messages.extend(self.glitches.explain_json(state))
+                else:
+                    messages.append({"type": "text", "text": "Glitches(", "color": "yellow"})
+                    messages.extend(self.glitches.explain_json(state))
+                messages.append({"type": "text", "text": ")", "color": "yellow"})
+                return messages
+
+        @override
+        def explain_str(self, state: CollectionState | None = None) -> str:
+            if state is None:
+                return self.child.explain_str()
+            else:
+                s = f"({self.child.explain_str(state)})"
+                # Include either self.all_glitches or self.glitches depending on whether all_glitches_item_name is in
+                # the state.
+                if state.has(self.all_glitches_item_name, self.player):
+                    if self.all_glitches is not self.child:
+                        s += f" | AllGlitches({self.all_glitches.explain_str(state)})"
+                else:
+                    if self.glitches is not self.child:
+                        return s + f" | Glitches({self.glitches.explain_str(state)})"
+                return s
+
+        @override
+        def __str__(self):
+            s = f"({self.child})"
+            if self.glitches is not self.child:
+                s += f" | Glitches({self.glitches})"
+            if self.all_glitches is not self.glitches:
+                s += f" | AllGlitches({self.all_glitches})"
+            return s
+
+
 @dataclass
 class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
     base: Rule[TWorld]
@@ -70,45 +162,19 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         # of both, and ignoring the fact that lower logic locations should only be accessible when lower logic entrances
         # have been used.
         if logic_difficulty == LogicDifficulty.option_none:
-            # Disabled for now.
-            if False and world.is_universal_tracker():
-                rule = Or(
-                    self.base,
-                    And(
-                        Has(world.glitches_item_name),
-                        Or(
-                            self.normal,
-                            Has(world.glitches_all_item_name) & (self.moderate | self.hard),
-                        ),
-                    ),
-                )
-            else:
-                rule = self.base
+            if world.is_universal_tracker() and (self.base is not self.normal or self.base is not self.hard):
+                return _UTGlitchesRule(self.base, self.normal, self.hard).resolve(world)
+            rule = self.base
         elif logic_difficulty == LogicDifficulty.option_normal:
-            # Disabled for now.
-            if False and world.is_universal_tracker():
-                rule = Or(
-                    self.normal,
-                    And(
-                        Has(world.glitches_item_name),
-                        Or(
-                            self.moderate,
-                            Has(world.glitches_all_item_name) & self.hard,
-                        ),
-                    ),
-                )
-            else:
-                rule = self.normal
+            if world.is_universal_tracker() and (self.normal is not self.moderate or self.normal is not self.hard):
+                return _UTGlitchesRule(self.normal, self.moderate, self.hard).resolve(world)
+            rule = self.normal
         elif logic_difficulty == LogicDifficulty.option_moderate:
-            # Disabled for now.
-            if False and world.is_universal_tracker():
-                rule = Or(
-                    self.moderate,
-                    Has(world.glitches_item_name) & self.hard,
-                )
-            else:
-                rule = self.moderate
+            if world.is_universal_tracker() and self.moderate is not self.hard:
+                return _UTGlitchesRule(self.moderate, self.hard, self.hard).resolve(world)
+            rule = self.moderate
         elif logic_difficulty == LogicDifficulty.option_hard:
+            # Hard is the maximum logic difficulty currently.
             rule = self.hard
         else:
             raise Exception(f"Unrecognised logic difficulty {logic_difficulty}")
