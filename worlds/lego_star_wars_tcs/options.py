@@ -1239,7 +1239,7 @@ class StartingChapter(ChapterChoice):
     """
     display_name = "Starting Chapter"
     rich_text_doc = True
-    default = Area.NEGOTIATIONS.value
+    default = ChapterChoice.option_random_chapter
 
 
 class RandomStartingLevelMaxStartingCharacters(Range):
