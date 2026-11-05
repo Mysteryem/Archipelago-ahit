@@ -133,7 +133,8 @@ class ItemCreator:
         with multiple copies can be sped up.
         """
         world = self._world
-        starting_state = CollectionState(world.multiworld)
+        # UT may have disconnected entrances for Deferred Events support.
+        starting_state = CollectionState(world.multiworld, allow_partial_entrances=world.is_universal_tracker())
         if world.is_universal_tracker():
             # Remove starting items so that Universal Tracker does not remove abilities or demote the classification of
             # items based on starting inventory that UT is going to discard before re-creating by calling
