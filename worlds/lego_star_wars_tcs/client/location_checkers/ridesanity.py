@@ -10,6 +10,7 @@ from ...data.characters import Character
 from ...data.locations import LOCATION_NAME_TO_ID
 from ...data.logic import CHAPTERS_BY_AREA
 from ...data.logic.gold_brick_bonuses import AREA_TO_GOLD_BRICK_BONUS
+from ...data.logic.types import LogicArea
 
 
 class RidesanityChecker(ClientComponent):
@@ -26,7 +27,7 @@ class RidesanityChecker(ClientComponent):
         slot_data = event.slot_data
 
         # Find all ridables in enabled areas.
-        ridables_by_area = {}
+        ridables_by_area: dict[Area, dict[Character, ApLocationId]] = {}
 
         goal_chapter_locations_mode = slot_data.goal_chapter_locations_mode
         goal_locations_removed = goal_chapter_locations_mode == GoalChapterLocationsMode.option_removed
@@ -36,7 +37,7 @@ class RidesanityChecker(ClientComponent):
         else:
             goal_chapter = None
 
-        logic_areas = [
+        logic_areas: list[LogicArea] = [
             *(AREA_TO_GOLD_BRICK_BONUS[bonus_area] for bonus_area in slot_data.enabled_bonuses.value),
             *(CHAPTERS_BY_AREA[chapter_area] for chapter_area in slot_data.enabled_chapters.value),
         ]
@@ -48,7 +49,7 @@ class RidesanityChecker(ClientComponent):
             if logic_area.area is goal_chapter and goal_locations_removed:
                 # The Goal Chapter, with locations removed, should not send Ridesanity checks.
                 continue
-            ridables_by_area[logic_area] = {
+            ridables_by_area[logic_area.area] = {
                 character: LOCATION_NAME_TO_ID[character.get_ridesanity_location_name()]
                 for character in rideables.keys()
             }
