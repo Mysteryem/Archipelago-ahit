@@ -108,15 +108,20 @@ class _UTGlitchesRule(WrapperRule[LegoStarWarsTCSWorld], game=GAME_NAME):
             else:
                 messages: list[JSONMessagePart]
                 messages = self.child.explain_json(state).copy()
-                # Include either self.all_glitches or self.glitches depending on whether all_glitches_item_name is in
-                # the state.
-                if state.has(self.all_glitches_item_name, self.player):
-                    messages.append({"type": "text", "text": "AllGlitches(", "color": "yellow"})
+                if self.glitches is not self.child:
+                    messages.append({"type": "text", "text": "\nWith "})
+                    messages.append({"type": "color", "text": "Glitches", "color": "yellow"})
+                    messages.append({"type": "text", "text": ": "})
+                    messages.append({"type": "color", "text": "(", "color": "yellow"})
                     messages.extend(self.glitches.explain_json(state))
-                else:
-                    messages.append({"type": "text", "text": "Glitches(", "color": "yellow"})
-                    messages.extend(self.glitches.explain_json(state))
-                messages.append({"type": "text", "text": ")", "color": "yellow"})
+                    messages.append({"type": "color", "text": ")", "color": "yellow"})
+                if self.all_glitches is not self.glitches and state.has(self.all_glitches_item_name, self.player):
+                    messages.append({"type": "text", "text": "\nWith "})
+                    messages.append({"type": "color", "text": "All Glitches", "color": "yellow"})
+                    messages.append({"type": "text", "text": ": "})
+                    messages.append({"type": "color", "text": "(", "color": "yellow"})
+                    messages.extend(self.all_glitches.explain_json(state))
+                    messages.append({"type": "color", "text": ")", "color": "yellow"})
                 return messages
 
         @override
