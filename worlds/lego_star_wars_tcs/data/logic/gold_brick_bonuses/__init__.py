@@ -13,7 +13,7 @@ __all__ = [
     "AREA_TO_GOLD_BRICK_BONUS",
 ]
 
-GOLD_BRICK_BONUSES = (
+GOLD_BRICK_BONUSES: tuple[GoldBrickBonus, ...] = (
     INDY_TRAILER,
     POD_RACE_ORIGINAL,
     ANAKINS_FLIGHT,
