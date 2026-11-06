@@ -485,7 +485,10 @@ class UnlockedChapterManager(ClientComponent):
                 # Set the chapter as locked, with Story mode incomplete.
                 ctx.write_bytes(area.save_data_address, b"\x00\x00", 2)
             else:
-                if enabled and area in self.unlocked_chapters_per_episode[area.get_chapter_episode()]:
+                # Even if a Gold Brick Bonus is unlocked, it cannot be accessed without building the door, so it does
+                # not matter that Gold Brick Bonuses are technically considered 'unlocked' early.
+                if (enabled and (area in _FREE_PLAY_BONUSES
+                                or area in self.unlocked_chapters_per_episode[area.get_chapter_episode()])):
                     # Set the chapter as unlocked, but with Story mode incomplete because Free Play has not been
                     # completed. This prevents characters being for sale in the shop without completing Free Play for
                     # the chapter that unlocks those shop slots.
