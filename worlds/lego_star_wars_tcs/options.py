@@ -419,9 +419,9 @@ class GoalChapter(ChoiceFromStringExtension):
 
 class DefeatBossesGoalAmount(NamedRange):
     """
-    Choose how many bosses must be defeated to goal.
+    Choose how many bosses must be defeated as part of completing your goal.
 
-    If set to zero, bosses will not be part of the goal.
+    If set to disabled, bosses will not be part of the goal.
 
     **The Chapter a boss is in must be completed for defeating the boss to count.**
 
