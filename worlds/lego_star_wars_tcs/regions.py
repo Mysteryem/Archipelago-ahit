@@ -716,7 +716,11 @@ class _RegionBuilder:
             loc = world.add_shop_location(extra.get_purchase_location_name(), self.cantina, purchase_cost)
             world.set_rule(loc, self._get_score_multiplier_rule(purchase_cost))
             if not world.options.enable_starting_extras_locations:
-                loc.place_locked_item(world.create_item(extra.readable_name))
+                item = world.create_item(extra.readable_name)
+                loc.place_locked_item(item)
+                # Marking the locations as excluded allows Universal Tracker to show the locations as unimportant.
+                if item.excludable:
+                    loc.progress_type = LocationProgressType.EXCLUDED
 
     def create_non_goal_chapter_victory(self) -> None:
         """Create the Victory event for the goal when the goal does not require completing a Goal Chapter."""
