@@ -122,12 +122,12 @@ class _RegionBuilder:
         # location would suffice, rather than preferring a specific parent region.
         entrance_parent_region = minikit_locations[-1].parent_region
         assert entrance_parent_region is not None
-        region_name = area.get_all_minikits_gold_brick_event_name()
-        event_region = self.world.create_region(region_name)
+        event_name = area.get_all_minikits_gold_brick_event_name()
+        event_region = self.world.create_region(event_name + " (Region)")
         self.world.add_gold_brick_event(area.get_all_minikits_gold_brick_event_name(), event_region)
         # In UT deferred events, the rule is on the entrance instead of on the location.
         entrance_rule = Has(ut_event_item_name, len(minikit_locations))
-        entrance = entrance_parent_region.create_exit(name=region_name)
+        entrance = entrance_parent_region.create_exit(name=event_name)
         self.world.set_rule(entrance, entrance_rule)
         # Add the entrance and event region to the dict on the world.
         self.world.ut_disconnected_10_minikits_gold_brick_events[area] = (entrance, event_region)
@@ -147,15 +147,15 @@ class _RegionBuilder:
                     MinikitGoalCompletionMethod.option_junkyard_minikit_display):
                 # Create a deferred event for submitting the minikits goal.
                 submit_minikit_goal_event_name = "Submit Minikits at the Cantina Junkyard Minikit Display"
-                minikit_goal_submitted_region = world.create_region(submit_minikit_goal_event_name)
-                world.add_event_pair(submit_minikit_goal_event_name, minikit_goal_submitted_region)
+                minikit_goal_submitted_region = world.create_region(submit_minikit_goal_event_name + " (Region)")
+                world.add_event_pair(submit_minikit_goal_event_name + " (Event Item)", minikit_goal_submitted_region)
 
                 # Put the normal rule on the entrance to the region the deferred event is in.
                 entrance = minikit_goal_submitted_region.create_exit(submit_minikit_goal_event_name)
                 world.set_rule(entrance, Has(world.minikit_bundle_name, count=world.goal_minikit_bundle_count))
 
                 # Make the goal rule require the deferred event.
-                rule &= Has(submit_minikit_goal_event_name)
+                rule &= Has(submit_minikit_goal_event_name + " (Event Item)")
 
                 # Set the disconnected entrance on the world.
                 world.ut_minikit_goal_disconnected_entrance = (entrance, minikit_goal_submitted_region)
@@ -362,7 +362,7 @@ class _RegionBuilder:
                 # True Jedi Gold Brick event.
                 true_jedi_event_name = area.get_true_jedi_gold_brick_event_name()
                 if self.ut_deferred_events:
-                    true_jedi_event_region = create_region(area.get_true_jedi_gold_brick_event_name())
+                    true_jedi_event_region = create_region(true_jedi_event_name + " (Region)")
                     true_jedi_event_entrance = completion_region.create_exit(true_jedi_event_name)
                     self.world.ut_disconnected_true_jedi_gold_brick_events[area] = (true_jedi_event_entrance,
                                                                                     true_jedi_event_region)
@@ -381,9 +381,8 @@ class _RegionBuilder:
         studs_cost = extra.purchase_cost
         assert studs_cost is not None
         if self.ut_deferred_events:
-            power_brick_event_name = area.prefix_name("Power Brick (Event)")
-            extra_purchase_region = create_region(power_brick_event_name)
-            entrance_to_extra_purchase = power_brick_region.create_exit(power_brick_event_name)
+            extra_purchase_region = create_region(area.prefix_name("Power Brick (UT Deferred Event Region)"))
+            entrance_to_extra_purchase = power_brick_region.create_exit(area.prefix_name("Power Brick (Event)"))
             # Set the Power Brick's rule on the entrance.
             world.set_rule(entrance_to_extra_purchase, chapter.power_brick.rule)
             power_brick_loc = world.add_shop_location(power_brick_location_name, extra_purchase_region, studs_cost)
@@ -607,7 +606,7 @@ class _RegionBuilder:
         # Indiana Jones shop purchase. Unlocks in the shop after watching the Lego Indiana Jones trailer.
         if self.ut_deferred_events:
             entrance_name = Area.LOSTTEMPLE.get_completion_event_name()
-            post_trailer_watch_region = world.create_region(entrance_name)
+            post_trailer_watch_region = world.create_region(entrance_name + " (Region)")
             entrance_to_post_watch = bonuses.create_exit(entrance_name)
             self.world.ut_disconnected_bonus_completion_events[Area.LOSTTEMPLE] = (entrance_to_post_watch,
                                                                                    post_trailer_watch_region)
