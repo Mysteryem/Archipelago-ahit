@@ -415,6 +415,24 @@ class LegoStarWarsTheCompleteSagaCommandProcessor(ClientCommandProcessor):
         else:
             self._impl_cmd_debug_memory_peek(num_bytes_to_read, *addresses, delay=seconds_delay)
 
+    if UNIVERSAL_TRACKER_LOADED:
+        # noinspection PyUnresolvedReferences
+        def _cmd_ut_toggle_all_glitches(self):
+            """Toggle showing glitched logic for the highest logic difficulty instead of just the next logic difficulty
+            above the logic difficulty you chose in your YAML options (default)."""
+            item_name = "UT_GLITCHED_ALL"
+            if item_name not in self.ctx.tracker_core.manual_items:
+                self._cmd_manually_collect(item_name)
+                logger.info("Glitched logic from the highest logic difficulty will now be shown.")
+            else:
+                # Same as UT's _cmd_reset_manually_collect, but only removing the item that says all glitches should be
+                # used in glitched logic.
+                manual_items = self.ctx.tracker_core.manual_items.copy()
+                manual_items.remove(item_name)
+                self.ctx.tracker_core.manual_items = manual_items
+                self.ctx.persist_seed_data()
+                self.ctx.updateTracker()
+                logger.info("Glitched logic from only the next logic difficulty will now be shown.")
 
 
 class LegoStarWarsTheCompleteSagaContext(CommonContext):
