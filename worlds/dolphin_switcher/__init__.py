@@ -9,7 +9,11 @@ ENV_VAR = "DME_DOLPHIN_PROCESS_NAME"
 """Dolphin Memory Engine attempts to find the Dolphin process by matching against process names. By default, this
 matches against Dolphin.exe and some variations.
 
-By overriding this environment variable"""
+By setting this environment variable Dolphin Memory Engine will instead look for a process whose name matches the
+value of the environment variable.
+
+Game clients are expected to start a new process using multiprocessing, which will inherit the environment variables 
+from the Launcher process, where the environment variable has been set."""
 
 
 def _get_current_override_str() -> str:
@@ -42,6 +46,7 @@ def set_dolphin_exe_name(name: str):
 
 
 def set_dolphin_name_override_popup(*_args: str):
+    """Create a UI popup for setting the Dolphin name override (also displays the current override)."""
     if not gui_enabled or not is_kivy_running():
         messagebox("No Kivy GUI available:",
                    "Cannot set the dolphin name without GUI or kivy. You can set the DME_DOLPHIN_PROCESS_NAME "
