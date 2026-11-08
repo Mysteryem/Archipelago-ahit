@@ -73,8 +73,8 @@ def _extract():
             ("free_play_true_jedi_requirement", c_uint),
             # we don't care about anything else, and I don't know exactly what the remaining fields are anyway.
         ]
-    from ..levels import Level
-    from ..extras import Extra
+    from ...data.levels import Level
+    from ...data.extras import Extra
 
     process = pymem.Pymem("LegoStarWarsSaga")
     p_a_data_start = 0x00951374

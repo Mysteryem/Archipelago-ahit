@@ -1,6 +1,6 @@
 def _extract():
     import pymem
-    from ..levels import LevelFlag
+    from ...data.levels import LevelFlag
 
     process = pymem.Pymem("LegoStarWarsSaga")
     p_l_data_start = 0x00951b98
