@@ -63,10 +63,14 @@ _PLUS_DIFFICULTY_TO_SLICE = {
 class _UTGlitchesRule(WrapperRule[LegoStarWarsTCSWorld], game=GAME_NAME):
     glitches: Rule
     all_glitches: Rule
+    allow_outside_ut: bool = False
 
     def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
         if not world.is_universal_tracker():
-            raise Exception("Negative logic is not allowed in regular generation")
+            if not self.allow_outside_ut:
+                raise Exception("Negative logic is not allowed in regular generation")
+            else:
+                return self.child.resolve(world)
         return self.Resolved(
             child=self.child.resolve(world),
             glitches=self.glitches.resolve(world),
@@ -148,6 +152,10 @@ class _UTGlitchesRule(WrapperRule[LegoStarWarsTCSWorld], game=GAME_NAME):
             if self.all_glitches is not self.glitches:
                 s += f" | AllGlitches({self.all_glitches})"
             return s
+
+
+def ut_glitched_rule(normal_rule: Rule, glitched_rule: Rule):
+    return _UTGlitchesRule(normal_rule, glitched_rule, glitched_rule, True)
 
 
 @dataclass

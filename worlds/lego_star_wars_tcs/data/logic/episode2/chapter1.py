@@ -1,6 +1,7 @@
 from rule_builder.options import OptionFilter
+from rule_builder.rules import True_
 
-from ..option_filters import logic_options
+from ..option_filters import logic_options, ut_glitched_rule
 from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData, MinikitData
 
@@ -17,9 +18,9 @@ R_AFTER_FIRST_FORCEFIELD_TRAP = "After First Forcefield Trap"
 R_SECOND_FORCEFIELD_TRAP = "Second Forcefield Trap"
 
 # Either Infinite Torpedos [sic] is unlocked, or the player enabled gathering torpedoes within the level.
-CAN_DESTROY_OBJECTS_WITH_POD_RACERS = (
-        Extra.INFINITE_TORPEDOS.has()
-        | OptionFilter(LogicExpectNonInfiniteTorpedoesPodRacer21, True)
+CAN_DESTROY_OBJECTS_WITH_POD_RACERS = ut_glitched_rule(
+    normal_rule=Extra.INFINITE_TORPEDOS.has() | OptionFilter(LogicExpectNonInfiniteTorpedoesPodRacer21, True),
+    glitched_rule=True_(),
 )
 CAN_SHOOT_ALLOW_TORPEDOES = HasAbility(VEHICLE_BLASTER) | CAN_DESTROY_OBJECTS_WITH_POD_RACERS
 
