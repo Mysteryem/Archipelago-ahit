@@ -1,0 +1,2 @@
+# The distributed .apworld does not need a World class to function, only the Build APWorlds component does.
+dummy_world.py

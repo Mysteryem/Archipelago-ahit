@@ -4,6 +4,12 @@ import os
 from worlds.LauncherComponents import components, Component, Type
 from Utils import messagebox, gui_enabled, is_kivy_running
 
+try:
+    from . import dummy_world
+except ImportError:
+    # The dummy world is not distributed in the APWorld, and only exists to simplify packaging the tool as an .apworld.
+    pass
+
 
 ENV_VAR = "DME_DOLPHIN_PROCESS_NAME"
 """Dolphin Memory Engine attempts to find the Dolphin process by matching against process names. By default, this
