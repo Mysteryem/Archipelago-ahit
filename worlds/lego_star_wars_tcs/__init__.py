@@ -16,7 +16,7 @@ from BaseClasses import (
 from Options import OptionError
 from rule_builder.rules import Rule, Has
 from worlds.AutoWorld import WebWorld, World
-from worlds.LauncherComponents import components, Component, launch_subprocess, Type
+from worlds.LauncherComponents import components, Component, launch, Type
 from worlds.generic.Rules import CollectionRule
 
 from . import constants, regions, item_pool
@@ -65,8 +65,8 @@ __all__ = [
 
 def launch_client(*args: str):
     # Lazy import. Generation does not need to even load client modules, it would just be a waste of memory.
-    from .client import launch
-    launch_subprocess(launch, name="LegoStarWarsTheCompleteSagaClient", args=args)
+    from .client import launch as run_client
+    launch(run_client, name="LegoStarWarsTheCompleteSagaClient", args=args)
 
 
 components.append(Component("Lego Star Wars: The Complete Saga Client",
