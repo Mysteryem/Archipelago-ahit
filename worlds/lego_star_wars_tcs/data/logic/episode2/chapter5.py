@@ -1,12 +1,12 @@
 from rule_builder.rules import True_, Or, HasFromListUnique
 
+from ..macros import HAS_VEHICLE_LEVEL_CHARACTER_SWAPPING
 from ..option_filters import logic_options
 from ..rules import HasAbility
 from ..types import minikit_data, ExitData, Chapter, LocationData
 
 from ...areas import Area
 from ...extras import Extra
-from ...items.vehicle_items import VEHICLE_DATA
 from ...levels import Level
 
 from ....character_ability import *
@@ -31,7 +31,7 @@ GUNSHIP_CAVALRY = Chapter(
                     # This maybe could maybe be moved to Moderate logic.
                     hard=Or(
                         HasAbility(VEHICLE_TOW),
-                        HasFromListUnique(*(data.name for data in VEHICLE_DATA), count=2),
+                        HAS_VEHICLE_LEVEL_CHARACTER_SWAPPING,
                     )
                 ),
             ),
@@ -45,7 +45,7 @@ GUNSHIP_CAVALRY = Chapter(
                     base=HasAbility(VEHICLE_TOW),
                     hard=Or(
                         HasAbility(VEHICLE_TOW),
-                        HasFromListUnique(*(data.name for data in VEHICLE_DATA), count=2),
+                        HAS_VEHICLE_LEVEL_CHARACTER_SWAPPING,
                     )
                 ),
                 new_level=Level.GUNSHIP_B,

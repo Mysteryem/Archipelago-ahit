@@ -1,11 +1,54 @@
-from rule_builder.rules import True_, Or, False_, And
+from rule_builder.rules import True_, Or, False_, And, HasFromListUnique
 
 from .option_filters import logic_options, OT_HIGH_JUMP_ENABLED
 from .rules import HasAbility, HasAnyAbilities, HasAbilityExceptCharacters, HasSingleJumpDistance, HasAnyCharacterExcept
 from ..characters import Character
 from ..extras import Extra
 from ..items.character_items import NON_VEHICLE_CHARACTER_TO_ITEM_DATA
+from ..items.vehicle_items import VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA
 from ...character_ability import *
+
+__all__ = [
+    "CAN_USE_SELF_DESTRUCT",
+    "CAN_SUPER_EWOK_CATAPULT",
+    "HAS_FLUTTER_CHARACTER",
+    "CAN_JUMP_DISTANCE_0_56_BOBA_BOY_PLUS",
+    "CAN_JUMP_DISTANCE_0_7_CLONE_PLUS",
+    "CAN_JUMP_DISTANCE_0_77_DEXTER_PLUS",
+    "CAN_JUMP_DISTANCE_0_904_LANDO_PLUS",
+    "CAN_SITH_FORCE",
+    "CAN_DESTROY_CLOSE_SILVER_BRICKS",
+    "CAN_USE_DEFLECT_BOLTS",
+    "CAN_SUPER_ZAP",
+    "CAN_DAMAGE_AT_CLOSE_RANGE",
+    "CAN_DAMAGE_AT_CLOSE_RANGE_NO_SELF_DESTRUCT",
+    "CAN_DAMAGE_AT_CLOSE_RANGE_NO_BASIC_MELEE",
+    "CAN_DAMAGE_SHIELDED_DROIDEKA",
+    "CAN_DESTROY_FAR_SILVER_BRICKS",
+    "CAN_GRAPPLE",
+    "CAN_SITH_FORCE_AND_GRAPPLE",
+    "CAN_FIGHT_OR_BYPASS_SKIPPABLE_DROIDEKA",
+    "CAN_ACTIVATE_CLOSE_TARGET",
+    "CAN_ORIGINAL_TRILOGY_HIGH_JUMP",
+    "CAN_USE_BOUNTY_HUNTER_ROCKETS",
+    "HAS_ANY_YODA",
+    "CAN_YODA_CLIP",
+    "CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS",
+    "MODERATE_PLUS",
+    "HAS_DOUBLE_JUMP_EXCEPT_ACKBAR",
+    "HAS_P2_AI_DOUBLE_JUMP",
+    "HAS_EXTRA_DISTANCE_DOUBLE_JUMP",
+    "HAS_GAS_IMMUNE",
+    "HAS_GAS_IMMUNE_EXCEPT_GHOSTS",
+    "HAS_CAN_REFLECT_BLASTER_BOLTS",
+    "HAS_HIGH_JUMP_EXCEPT_BODYGUARD",
+    "HAS_HIGH_JUMP_EXCEPT_BODYGUARD_OT",
+    "HAS_WALL_CLIMB",
+    "HAS_0_53_JUMP_HEIGHT_CHARACTER",
+    "HAS_IMPERIAL_OR_CAN_WEAR_HAT_AND_GRAPPLE",
+    "HAS_CAN_WEAR_HAT_AND_GRAPPLE",
+    "HAS_VEHICLE_LEVEL_CHARACTER_SWAPPING",
+]
 
 # Implemented as a CharacterAbility for now.
 # can_jetpack_hover = Character.has_any(Character.BOBA_FETT, Character.JANGO_FETT)
@@ -204,20 +247,20 @@ CAN_YODA_CLIP_SKIP_OTHER_CHARACTERS = logic_options(
 """CAN_YODA_CLIP, but skip checking for other characters in cases where it is known that the player must have
 a non-Yoda character if they have managed to reach the current region."""
 
-NORMAL_PLUS = logic_options(
-    base=False_(),
-    normal=True_(),
-)
+# NORMAL_PLUS = logic_options(
+#     base=False_(),
+#     normal=True_(),
+# )
 
 MODERATE_PLUS = logic_options(
     base=False_(),
     moderate=True_(),
 )
 
-HARD_PLUS = logic_options(
-    base=False_(),
-    hard=True_(),
-)
+# HARD_PLUS = logic_options(
+#     base=False_(),
+#     hard=True_(),
+# )
 
 HAS_DOUBLE_JUMP_EXCEPT_ACKBAR = HasAbilityExceptCharacters(CAN_DOUBLE_JUMP, Character.ADMIRAL_ACKBAR)
 HAS_P2_AI_DOUBLE_JUMP = HAS_DOUBLE_JUMP_EXCEPT_ACKBAR
@@ -328,4 +371,8 @@ HAS_CAN_WEAR_HAT_AND_GRAPPLE = logic_options(
             HasAbility(CAN_WEAR_HAT_AND_DOUBLE_JUMP),
         )
     )
+)
+HAS_VEHICLE_LEVEL_CHARACTER_SWAPPING = HasFromListUnique(
+    *(data.name for data in VEHICLE_NORMAL_CHARACTER_TO_ITEM_DATA),
+    count=2
 )
