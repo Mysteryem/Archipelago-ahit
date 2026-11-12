@@ -131,19 +131,18 @@ class RuleReplacer:
         else:
             return rule
 
-    def _handle_filtered(self, rule: Filtered) -> Rule:
+    def _handle_wrapper_rule_subclass(self, rule: WrapperRule) -> WrapperRule:
         replaced = self.replace(rule.child)
         if replaced is not rule.child:
-            return Filtered(replaced, options=rule.options, filtered_resolution=rule.filtered_resolution)
+            return dataclasses.replace(rule, child=replaced)
         else:
             return rule
 
+    def _handle_filtered(self, rule: Filtered) -> Rule:
+        return self._handle_wrapper_rule_subclass(rule)
+
     def _handle_wrapper_rule(self, rule: WrapperRule) -> Rule:
-        replaced = self.replace(rule.child)
-        if replaced is not rule.child:
-            return WrapperRule(replaced, options=rule.options, filtered_resolution=rule.filtered_resolution)
-        else:
-            return rule
+        return self._handle_wrapper_rule_subclass(rule)
 
     def _handle_logic_options(self, rule: LogicOptions) -> Rule:
         if rule.options:
