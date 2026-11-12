@@ -55,22 +55,19 @@ _PLUS_DIFFICULTY_TO_SLICE = {
 }
 
 
-# _UTGlitchesRule.Resolved extends WrapperRule.Resolved so that logic extraction works without needing to add specific
-# handling for _UTGlitchesRule.
-# _UTGlitchesRule is marked as private because it should only ever be instantiated by a LogicOptions rule that is being
-# resolved.
 @dataclass
-class _UTGlitchesRule(WrapperRule[LegoStarWarsTCSWorld], game=GAME_NAME):
+class UTGlitchesRule(WrapperRule[LegoStarWarsTCSWorld], game=GAME_NAME):
     glitches: Rule
-    all_glitches: Rule
-    allow_outside_ut: bool = False
+    all_glitches: Rule = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.all_glitches is None:
+            self.all_glitches = self.glitches
 
     def _instantiate(self, world: LegoStarWarsTCSWorld) -> Rule.Resolved:
         if not world.is_universal_tracker():
-            if not self.allow_outside_ut:
-                raise Exception("Negative logic is not allowed in regular generation")
-            else:
-                return self.child.resolve(world)
+            return self.child.resolve(world)
         return self.Resolved(
             child=self.child.resolve(world),
             glitches=self.glitches.resolve(world),
@@ -82,6 +79,7 @@ class _UTGlitchesRule(WrapperRule[LegoStarWarsTCSWorld], game=GAME_NAME):
         )
 
     class Resolved(WrapperRule.Resolved):
+        """This class should only ever be instantiated when generation is occurring under Universal Tracker."""
         glitches: Rule.Resolved
         all_glitches: Rule.Resolved
         glitches_item_name: str
@@ -155,7 +153,10 @@ class _UTGlitchesRule(WrapperRule[LegoStarWarsTCSWorld], game=GAME_NAME):
 
 
 def ut_glitched_rule(normal_rule: Rule, glitched_rule: Rule):
-    return _UTGlitchesRule(normal_rule, glitched_rule, glitched_rule, True)
+    """This small helper function gives kwargs that are easier to understand, rather than 'child' being used for the
+    normal rule when instantiating a UTGlitchesRule directly. This also hides the `all_glitches` rule argument, which is
+    currently only relevant for Logic Difficulty rules."""
+    return UTGlitchesRule(normal_rule, glitched_rule)
 
 
 @dataclass
@@ -176,15 +177,15 @@ class LogicOptions(Rule[LegoStarWarsTCSWorld], game=GAME_NAME):
         # have been used.
         if logic_difficulty == LogicDifficulty.option_none:
             if world.is_universal_tracker() and (self.base is not self.normal or self.base is not self.hard):
-                return _UTGlitchesRule(self.base, self.normal, self.hard).resolve(world)
+                return UTGlitchesRule(self.base, self.normal, self.hard).resolve(world)
             rule = self.base
         elif logic_difficulty == LogicDifficulty.option_normal:
             if world.is_universal_tracker() and (self.normal is not self.moderate or self.normal is not self.hard):
-                return _UTGlitchesRule(self.normal, self.moderate, self.hard).resolve(world)
+                return UTGlitchesRule(self.normal, self.moderate, self.hard).resolve(world)
             rule = self.normal
         elif logic_difficulty == LogicDifficulty.option_moderate:
             if world.is_universal_tracker() and self.moderate is not self.hard:
-                return _UTGlitchesRule(self.moderate, self.hard, self.hard).resolve(world)
+                return UTGlitchesRule(self.moderate, self.hard).resolve(world)
             rule = self.moderate
         elif logic_difficulty == LogicDifficulty.option_hard:
             # Hard is the maximum logic difficulty currently.
