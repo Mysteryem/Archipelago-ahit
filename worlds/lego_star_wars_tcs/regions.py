@@ -17,6 +17,7 @@ from .data.items.generic_items import NonDataItemName, EPISODE_UNLOCKS, CHAPTER_
 from .data.items import GenericCharacterData
 from .data.logic import CHAPTERS_BY_AREA
 from .data.logic.gold_brick_bonuses import GOLD_BRICK_BONUSES
+from .data.logic.option_filters import ut_glitched_rule
 from .data.logic.types import ExitData, Chapter, GoldBrickBonus, LogicArea
 from .data.shop import UNLOCK_REQUIREMENT_TO_CHARACTERS
 from .options import (
@@ -77,12 +78,11 @@ class _RegionBuilder:
         count = self.world.get_score_multiplier_requirement(studs_cost)
         if count == 0:
             return True_()
-        rule = Has(NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value, count)
-        if self.world.is_universal_tracker():
-            # All purchases can be made with enough grinding for studs, it just might take a long time.
-            return rule | Has(self.world.glitches_item_name)
-        else:
-            return rule
+        # All purchases can be made with enough grinding for studs, it just might take a long time.
+        return ut_glitched_rule(
+            normal_rule=Has(NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value, count),
+            glitched_rule=True_(),
+        )
 
     def _add_score_multiplier_rule(self, base_rule: Rule, studs_cost: int) -> Rule:
         to_add = self._get_score_multiplier_rule(studs_cost)
