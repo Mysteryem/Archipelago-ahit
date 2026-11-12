@@ -4,7 +4,7 @@ from typing import Literal, TypeVar, Protocol
 from rule_builder.field_resolvers import FieldResolver
 from rule_builder.rules import Rule, And, Or, WrapperRule, Filtered, False_, True_
 
-from .option_filters import LogicOptions
+from .option_filters import LogicOptions, _UTGlitchesRule
 from .rules import HasAbility, HasAnyAbilities, HasAllAbilities, InLevelRule
 from ...character_ability import CharacterAbility, IMPLIED_ABILITIES, IMPLIED_BY_ABILITIES
 
@@ -34,6 +34,7 @@ class RuleReplacer:
             Filtered: self._handle_filtered,
             WrapperRule: self._handle_wrapper_rule,
             LogicOptions: self._handle_logic_options,
+            _UTGlitchesRule: self._handle_ut_glitches_rule,
             Or: self._handle_or,
             And: self._handle_and,
         }
@@ -143,6 +144,18 @@ class RuleReplacer:
 
     def _handle_wrapper_rule(self, rule: WrapperRule) -> Rule:
         return self._handle_wrapper_rule_subclass(rule)
+
+    def _handle_ut_glitches_rule(self, rule: _UTGlitchesRule) -> Rule:
+        replaced = self.replace(rule.child)
+        replaced_glitches = self.replace(rule.glitches)
+        replaced_all_glitches = self.replace(rule.all_glitches)
+        if (replaced is not rule.child
+                or replaced_glitches is not rule.glitches
+                or replaced_all_glitches is not rule.all_glitches):
+            return dataclasses.replace(rule,
+                                       child=replaced, glitches=replaced_glitches, all_glitches=replaced_all_glitches)
+        else:
+            return rule
 
     def _handle_logic_options(self, rule: LogicOptions) -> Rule:
         if rule.options:
