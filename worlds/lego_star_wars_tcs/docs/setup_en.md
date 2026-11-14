@@ -3,8 +3,6 @@
 ## Required Software
 - PC Release of Lego Star Wars: The Complete Saga
   - Both the Steam version and GOG version are supported.
-  - Running the 'steamless' executable is not expected to work currently, but is untested and should be supported in the
-future.
   - The retail PC release is not expected to work currently, unless it is identical to the GOG version.
 - Archipelago
 - Lego Star Wars: The Complete Saga apworld
@@ -12,10 +10,11 @@ future.
 ## Optional Software
 - [Lego Star Wars: The Complete Saga Archipelago Tracker](https://github.com/Mysteryem/TCS_AP_PopTracker/releases/latest), 
 for use with [PopTracker](https://github.com/black-sliver/PopTracker/releases)
-- [Dxwnd](https://dxwnd.org/) to play in a window instead of fullscreen (works better with the GOG version of the game)
+- [DxWnd](https://sourceforge.net/projects/dxwnd/) to play in a window instead of fullscreen (works better with the GOG version of the game) (only download DxWnd from the linked sourceforge site, dxwnd.org is an impersonation and could serve malware)
   - In Dxwnd, use `File`>`Import`, and then open the `Lego Star Wars - The Complete Saga` file in the `DxWnd\exports`
 folder. After importing, right click and `Modify`, then adjust the `Path` to your `LEGOStarWarsSaga.exe` and adjust the
 window size to your liking (`W` and `H` in `Main`>`Position`>`Window initial position & size`)
+  - In-game, change the game's resolution to match the window size (optional, but recommended) 
   - Additional steps for Steam version:
     - The Steam version can sometimes crash when starting when run through Dxwnd, but it is stable once it has managed
 to start. You should at least sometimes get to the TTGames logo screen before crashing if everything is set up
@@ -40,7 +39,7 @@ The Archipelago Launcher will need to be restarted if it was already open when t
 ## Connecting to the Archipelago server
 When connecting to a multiworld for the first time, a new game should be started. Save slots are bound to the first
 multiworld seed and slot name they were connected to. To resume playing a multiworld at a later time, the same save slot
-that initially connected to that multiworld should be loaded. 
+that initially connected to that multiworld should be loaded.
 
 To connect to the multiworld server, run the **Lego Star Wars: The Complete Saga Client** from the **Archipelago Launcher**
 and connect it to the Archipelago server. Lego Star Wars: The Complete Saga must be running before a connection can be
