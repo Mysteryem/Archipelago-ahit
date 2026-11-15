@@ -164,23 +164,6 @@ class NoProcessError(RuntimeError):
     pass
 
 
-# Each EpisodeGameLevelArea has an unused single-precision float that is written to the save file. The client writes
-# arbitrary data to these bytes.
-# The first normally unused area float bytes are used to store the expected item index.
-UNUSED_AREA_DWORD_EXPECTED_IDX = 0
-# The next 4 normally unused area float bytes are used to store an MD5 hash of the seed name.
-UNUSED_AREA_DWORD_SEED_NAME_HASH_START = UNUSED_AREA_DWORD_EXPECTED_IDX + 1
-UNUSED_AREA_DWORD_SEED_NAME_HASH_END = UNUSED_AREA_DWORD_SEED_NAME_HASH_START + 4
-UNUSED_AREA_DWORD_SEED_NAME_HASH_AREAS = slice(UNUSED_AREA_DWORD_SEED_NAME_HASH_START,
-                                               UNUSED_AREA_DWORD_SEED_NAME_HASH_END)
-# The next 16 normally unused area float bytes are used to store the slot name for automatic authentication.
-# Slot names are up to 16 UTF-8 characters, and a UTF-8 character can be up to 4 bytes, so the bytes of 16 unused floats
-# are used.
-UNUSED_AREA_DWORD_SLOT_NAME_START = UNUSED_AREA_DWORD_SEED_NAME_HASH_END
-UNUSED_AREA_DWORD_SLOT_NAME_END = UNUSED_AREA_DWORD_SLOT_NAME_START + 16
-UNUSED_AREA_DWORD_SLOT_NAME_AREAS = slice(UNUSED_AREA_DWORD_SLOT_NAME_START,
-                                          UNUSED_AREA_DWORD_SLOT_NAME_END)
-
 LEVEL_ID_KEY_PREFIX = "tcs_current_level_id_"
 CANTINA_ROOM_KEY_PREFIX = "tcs_cantina_room_"
 
