@@ -16,6 +16,8 @@ debug_logger = logging.getLogger("TCS Debug")
 class Event:
     _subclasses: "ClassVar[dict[str, type[Event]]]" = {}
     context: TCSContext
+    no_logging: ClassVar[bool] = False
+    """If true, logging will be disabled for this event type. This is useful for events that are fired frequently."""
 
     def __init_subclass__(cls, **kwargs):
         Event._subclasses[cls.__name__] = cls
@@ -38,8 +40,7 @@ class EventManager:
     def fire_event(self, event: Event):
         event_type = type(event)
 
-        # The tick event fires too frequently for logging.
-        if event_type is not OnGameWatcherTickEvent:
+        if not event_type.no_logging:
             debug_logger.info("Firing event %s", event)
 
         if event_type in self.async_subscriptions:
@@ -52,8 +53,7 @@ class EventManager:
         """Fire an event, but async, so that the loop awaits before calling each subscribed method."""
         event_type = type(event)
 
-        # The tick event fires too frequently for logging.
-        if event_type is not OnGameWatcherTickEvent:
+        if not event_type.no_logging:
             debug_logger.info("Firing async event %s", event)
 
         for async_subscriber in self.async_subscriptions.get(event_type, ()):
@@ -214,6 +214,9 @@ class OnReceiveSlotDataEvent(Event):
 @dataclass
 class OnGameWatcherTickEvent(Event):
     """Called on each tick of the game watcher loop, while loaded into the game."""
+    # The tick event fires too frequently for logging.
+    no_logging = True
+
     tick_count: int
     """
     A strictly increasing tick count of game watcher ticks while loaded into the game.
@@ -234,6 +237,9 @@ class OnGameWatcherTickEvent(Event):
 @dataclass
 class OnPlayerCharacterIdChangeEvent(Event):
     """Called whenever P1 or P2's character ID changes."""
+    # The event can fire quite frequently, especially when P2's AI gets stuck in some places and constantly spams
+    # character swaps.
+    no_logging = True
     old_p1_character_id: int | None
     old_p2_character_id: int | None
     new_p1_character_id: int | None
