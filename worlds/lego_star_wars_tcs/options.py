@@ -1567,6 +1567,22 @@ class MostExpensivePurchaseWithNoScoreMultiplier(NamedRange):
     }
 
 
+class CharacterMaxHealth(Range):
+    """Set the max health for non-vehicle characters."""
+    _VANILLA = 4
+    range_start = 1
+    range_end = 10
+    default = _VANILLA
+
+
+class VehicleMaxHealth(Range):
+    """Set the max health for vehicle characters."""
+    _VANILLA = 4
+    range_start = 1
+    range_end = 10
+    default = _VANILLA
+
+
 class ReceivedItemMessages(ChoiceFromStringExtension):
     """
     Determines whether an in-game notification is displayed when receiving an item.
@@ -1888,6 +1904,8 @@ class TCSDirectSlotDataOptions:
     checked_location_messages: CheckedLocationMessages
     shop_fake_trap_chance: ShopTrapAsFakeProgressionChance
     auto_collect_spawned_pickups: AutoCollectSpawnedPickups
+    character_max_health: CharacterMaxHealth
+    vehicle_max_health: VehicleMaxHealth
 
     # DeathLink.
     death_link_amnesty: DeathLinkAmnesty
@@ -2059,6 +2077,8 @@ OPTION_GROUPS: list[OptionGroup] = [
         ScaleTrueJediWithScoreMultipliers,
         MostExpensivePurchaseWithNoScoreMultiplier,
         LogicExpectNonInfiniteTorpedoesPodRacer21,
+        CharacterMaxHealth,
+        VehicleMaxHealth,
     ]),
     OptionGroup("Chapter Unlock Requirement: Characters (any)", [
         ChapterUnlockCharactersMinRequiredCount,

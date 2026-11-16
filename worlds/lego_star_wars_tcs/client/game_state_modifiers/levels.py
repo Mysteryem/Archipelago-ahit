@@ -4,7 +4,7 @@ from typing import AbstractSet, Callable, Iterable
 
 from .text_replacer import TextId
 from ..events import subscribe_event, OnAreaChangeEvent, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
-from ..common import ClientComponent, UintField
+from ..common import ClientComponent, UintField, StaticUChar
 from ..common_addresses import (
     OPENED_MENU_DEPTH_ADDRESS,
     CURRENT_P_AREA_DATA_ADDRESS,
@@ -29,6 +29,8 @@ from ...slot_data import EnabledFeature
 
 
 _DEBUG_LOGGER = logging.getLogger("TCS Debug")
+
+_DEFAULT_PLAYERHITPOINTS = StaticUChar(0x00802bd4)
 
 # Changes according to what Area door the player is stand in front of. It is 0xFF while in the rest of the Cantina, away
 # from an Area door.
@@ -154,6 +156,9 @@ class UnlockedChapterManager(ClientComponent):
     last_area_door: Area | None = None
     current_area: Area | None = None
 
+    character_max_health: int = 4
+    vehicle_max_health: int = 4
+
     def __init__(self) -> None:
         self.ap_item_id_to_dependent_game_chapters = {}
         self.remaining_chapter_item_requirements = {}
@@ -168,6 +173,10 @@ class UnlockedChapterManager(ClientComponent):
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         slot_data = event.slot_data
         ctx = event.context
+
+        self.character_max_health = slot_data.character_max_health.value
+        self.vehicle_max_health = slot_data.vehicle_max_health.value
+
 
         enabled_chapters: list[Area] = sorted(slot_data.enabled_chapters.value)
         enabled_episodes: list[int] = sorted(slot_data.enabled_episodes.value)
@@ -546,6 +555,11 @@ class UnlockedChapterManager(ClientComponent):
         if current_area is None:
             # _DEBUG_LOGGER.info("Current AreaData pointer is NULL. Nothing to do.")
             return
+
+        if current_area.is_vehicle_area():
+            _DEFAULT_PLAYERHITPOINTS.set(ctx, self.vehicle_max_health)
+        else:
+            _DEFAULT_PLAYERHITPOINTS.set(ctx, self.character_max_health)
 
         if current_area not in _ALL_FREE_PLAY_AREAS:
             # The current area is not a free play area, so there is nothing to do.
