@@ -2,9 +2,11 @@ import logging
 from dataclasses import dataclass
 from enum import IntEnum
 
+from pymem.exception import PymemError, WinAPIError
+
 from . import ClientComponent
 from ..common import StaticPointer
-from ..events import subscribe_event, OnGameWatcherTickEvent
+from ..events import subscribe_event, OnGameWatcherTickEvent, OnUnhookFromGameEvent
 from ..type_aliases import TCSContext
 
 
@@ -222,7 +224,8 @@ class TextReplacer(ClientComponent):
                                    " Wars: The Complete Saga, please try uninstalling the mods and try again.")
             self._initialized = True
 
-    def on_unhook_game_process(self):
+    @subscribe_event
+    def on_unhook_game_process(self, _event: OnUnhookFromGameEvent):
         data = self.localized_string_data
         try:
             # Write the vanilla strings to the allocated memory first as a precaution.
@@ -236,6 +239,10 @@ class TextReplacer(ClientComponent):
                 pointer = v.pointer_to_allocated_string
                 if pointer is not None:
                     self.ctx.free(pointer)
+        except (PymemError, WinAPIError):
+            # The event may be fired because the game has been closed, rather than because the client is closing, so
+            # reading/writing memory to try to clean up will fail in that case.
+            pass
         finally:
             self.localized_string_data = {}
 

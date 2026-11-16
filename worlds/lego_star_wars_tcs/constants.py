@@ -9,6 +9,7 @@ __all__ = [
     "UT_LOGIC_VERSION",
     "CHAPTER_SPECIFIC_FLAGS",
     "GOLD_BRICK_EVENT_NAME",
+    "SETTINGS_KEY",
 ]
 
 _MANIFEST = json.loads(get_data("worlds.lego_star_wars_tcs", "archipelago.json"))
@@ -39,3 +40,4 @@ only relevant to a limited number of chapters, where there are alternatives that
 """
 
 GOLD_BRICK_EVENT_NAME = "Gold Brick"
+SETTINGS_KEY = "lego_star_wars_tcs_settings"

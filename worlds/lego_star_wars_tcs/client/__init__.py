@@ -7,6 +7,7 @@ import Utils
 from BaseClasses import ItemClassification
 from MultiServer import mark_raw
 from NetUtils import ClientStatus
+from settings import get_settings
 from worlds._bizhawk.context import AuthStatus
 
 ModuleUpdate.update()
@@ -20,7 +21,8 @@ from pymem.exception import ProcessNotFound, ProcessError, PymemError, WinAPIErr
 from CommonClient import server_loop, gui_enabled, get_base_parser
 
 from .. import options, TCSUniversalTrackerAPWorldVersionMismatchError
-from ..constants import GAME_NAME, AP_WORLD_VERSION
+from ..constants import GAME_NAME, AP_WORLD_VERSION, SETTINGS_KEY
+from ..host_yaml_settings import LegoStarWarsTCSSettings
 from ..slot_data import TCSSlotDataOptions, ApWorldVersion, get_slot_data_name
 from .client_text import ClientText, clean_string
 from .common_addresses import (
@@ -43,9 +45,11 @@ from .events import (
     EventManager,
     OnLevelChangeEvent,
     OnAreaChangeEvent,
+    OnUnhookFromGameEvent,
     OnReceiveSlotDataEvent,
     OnGameWatcherTickEvent,
     OnPlayerCharacterIdChangeEvent,
+    OnGameWatcherDisconnectedTickEvent,
 )
 from .game_state_modifiers import ClientComponent
 from .game_state_modifiers.extras import AcquiredExtras
@@ -66,6 +70,7 @@ from .game_state_modifiers.uncap_high_jump import UncapHighJump
 from .game_state_modifiers.level_specific_fixes import LevelSpecificFixes
 from .game_state_modifiers.patches import apply_game_patches
 from .game_state_modifiers.auto_collect_pickups import AutoCollectPickups
+from .game_state_modifiers.run_in_a_window import RunInAWindow
 from .game_version_check import get_game_version, GameVersion, gog_to_steam
 
 from ..data.levels import Level
@@ -321,6 +326,19 @@ class LegoStarWarsTheCompleteSagaCommandProcessor(ClientCommandProcessor):
         else:
             self._impl_cmd_debug_memory_peek(num_bytes_to_read, *addresses, delay=seconds_delay)
 
+    def _cmd_toggle_windowed(self):
+        """Toggle whether the game should run in a window. You will need to enter the Video Settings menu and Confirm
+        for the game to update, or alt+tab out and back in. This toggle value is stored in your host.yaml and will be
+        applied by the client when connecting to the game (you will still need to enter the Video Settings menu or
+        alt-tab if the windowed toggle is enabled)."""
+        ctx = self.ctx
+        assert isinstance(ctx, LegoStarWarsTheCompleteSagaContext)
+        settings: LegoStarWarsTCSSettings = get_settings()[SETTINGS_KEY]
+        inverted = not settings.run_in_a_window
+        ctx.run_in_a_window.set_windowed(ctx, inverted)
+        settings.run_in_a_window = inverted
+        settings._changed = True
+
     if UNIVERSAL_TRACKER_LOADED:
         # noinspection PyUnresolvedReferences
         def _cmd_ut_toggle_all_glitches(self):
@@ -403,6 +421,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
     checked_location_messages: bool = True
     client_text: ClientText
     auto_collect_pickups: AutoCollectPickups
+    run_in_a_window: RunInAWindow
 
     # A few components are permanent and will need to be manually re-subscribed to receive events because the components
     # won't be re-created.
@@ -432,6 +451,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
         self.cantina_reloader = CantinaReloader()
         self.level_specific_fixes = LevelSpecificFixes()
         self.text_display = InGameTextDisplay()
+        self.run_in_a_window = RunInAWindow()
         # It is not ideal to leak `self` in __init__. The TextReplacer methods could be updated to include a TCSContext
         # parameter if needed, instead of leaking `self`. Alternatively, the TextReplacer could be created only when
         # successfully connecting to the game.
@@ -443,6 +463,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
             self.level_specific_fixes,
             self.text_replacer,
             self.text_display,
+            self.run_in_a_window,
         )
 
         self._reset_non_permanent_components()
@@ -935,6 +956,11 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
                                 " patches, so the connection has been aborted.")
                     self.game_process = None
                     return False
+            # Put the game into a window if the host.yaml settings request doing so. The vanilla game is always
+            # fullscreen, so there is nothing to do if host.yaml says to play in fullscreen.
+            settings: LegoStarWarsTCSSettings = get_settings()[SETTINGS_KEY]
+            if settings.run_in_a_window:
+                self.run_in_a_window.set_windowed(self, True)
             self.text_replacer = TextReplacer(self)
 
             if memory_offset != 0:
@@ -956,11 +982,7 @@ class LegoStarWarsTheCompleteSagaContext(CommonContext):
 
     async def unhook_game_process(self):
         try:
-            self.text_display.on_unhook_game_process()
-            try:
-                self.text_replacer.on_unhook_game_process()
-            except (PymemError, WinAPIError):
-                pass
+            await self.event_manager.fire_event_async(OnUnhookFromGameEvent(self))
         finally:
             if self.game_process is not None:
                 self.game_process.close_process()
@@ -1548,6 +1570,7 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                         # There is no previously loaded save file or seed/slot, so the player has just started the game.
                         log_message("Load into a save file or start a new game to continue.")
                     sleep_time = 1.0
+                    await ctx.event_manager.fire_event_async(OnGameWatcherDisconnectedTickEvent(ctx))
                     continue
 
                 # The save file check does some extra checks if the player was previously not loaded into a save
@@ -1572,6 +1595,7 @@ async def game_watcher(ctx: LegoStarWarsTheCompleteSagaContext):
                     else:
                         ctx.auth_status = AuthStatus.NOT_AUTHENTICATED
                         log_message("Connect to a server to continue")
+                    await ctx.event_manager.fire_event_async(OnGameWatcherDisconnectedTickEvent(ctx))
                     continue
 
                 # Even if the client has disconnected from the server, it is still important to run a number of

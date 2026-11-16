@@ -21,7 +21,7 @@ from worlds.generic.Rules import CollectionRule
 
 from . import constants, regions, item_pool
 from .character_ability import CharacterAbility
-from .constants import GOLD_BRICK_EVENT_NAME, GAME_NAME
+from .constants import GOLD_BRICK_EVENT_NAME, GAME_NAME, SETTINGS_KEY
 from .data.areas import Area
 from .data.bosses import Boss
 from .data.extras import Extra
@@ -34,6 +34,7 @@ from .items import (
 )
 from .item_classification import evaluate_effective_item
 from .locations import LegoStarWarsTCSLocation, LegoStarWarsTCSShopLocation
+from .host_yaml_settings import LegoStarWarsTCSSettings
 from .options import LegoStarWarsTCSOptions, OPTION_GROUPS
 from .option_resolution.common import resolve_options
 from .option_resolution.universal_tracker import UTAttribute
@@ -108,6 +109,9 @@ class LegoStarWarsTCSWorld(World):
     web = LegoStarWarsTCSWebWorld()
     options: LegoStarWarsTCSOptions
     options_dataclass = LegoStarWarsTCSOptions
+
+    settings_key = SETTINGS_KEY
+    settings: ClassVar[LegoStarWarsTCSSettings]
 
     item_name_to_id = ITEM_NAME_TO_ID
     location_name_to_id = LOCATION_NAME_TO_ID

@@ -244,3 +244,22 @@ class OnPlayerCharacterIdChangeEvent(Event):
     old_p2_character_id: int | None
     new_p1_character_id: int | None
     new_p2_character_id: int | None
+
+
+@dataclass
+class OnGameWatcherDisconnectedTickEvent(Event):
+    """Similar to OnGameWatcherTickEvent, but fired when there is no slot/seed info. This is fired much less frequently
+    than the tick event."""
+    # The event is still fired around once per second, so don't log it.
+    no_logging = True
+
+
+@dataclass
+class OnUnhookFromGameEvent(Event):
+    """Fired when disconnecting the client from the game.
+
+    This may happen when:
+    - The game has been closed
+    - An error has occurred when communicating with the game, so the connection will be re-established
+    - The client is closing
+    """

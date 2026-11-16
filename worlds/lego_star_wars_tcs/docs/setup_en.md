@@ -10,8 +10,14 @@
 ## Optional Software
 - [Lego Star Wars: The Complete Saga Archipelago Tracker](https://github.com/Mysteryem/TCS_AP_PopTracker/releases/latest), 
 for use with [PopTracker](https://github.com/black-sliver/PopTracker/releases)
-- [DxWnd](https://sourceforge.net/projects/dxwnd/) to play in a window instead of fullscreen (works better with the GOG version of the game) (only download DxWnd from the linked sourceforge site, dxwnd.org is an impersonation and could serve malware)
-  - In Dxwnd, use `File`>`Import`, and then open the `Lego Star Wars - The Complete Saga` file in the `DxWnd\exports`
+- [Universal Tracker](https://discord.com/channels/731205301247803413/1367270230635839539) for Archipelago (links to the
+Universal Tracker channel in the Archipelago discord server). Lego Star Wars: The Complete Saga Archipelago supports
+yamlless Universal Tracker tracking. The Lego Star Wars: The Complete Saga Client will embed Universal Tracker within
+the client when Universal Tracker is installed.
+- [DxWnd](https://sourceforge.net/projects/dxwnd/) for alternate or more control over playing in a window instead of using `/toggle_windowed` in the client
+  - DxWnd works better with the GOG version of the game because the Steam version has SteamStub DRM applied
+  - Only download DxWnd from the linked *sourceforge.net* site, dxwnd.org is an **impersonation** and could serve **malware**
+  - In DxWnd, use `File`>`Import`, and then open the `Lego Star Wars - The Complete Saga` file in the `DxWnd\exports`
 folder. After importing, right click and `Modify`, then adjust the `Path` to your `LEGOStarWarsSaga.exe` and adjust the
 window size to your liking (`W` and `H` in `Main`>`Position`>`Window initial position & size`)
   - In-game, change the game's resolution to match the window size (optional, but recommended) 
@@ -22,10 +28,6 @@ correctly. Crashes can occur as late as the title screen.
     - If Lego Star Wars: The Complete Saga is installed on a separate drive to Steam, and you get
 `Application load error 5:0000065434` when starting the game through DxWnd, copy your `Steam.exe` file into the same
 directory as your `LEGOStarWarsSaga.exe`.
-- [Universal Tracker](https://discord.com/channels/731205301247803413/1367270230635839539) for Archipelago (links to the
-Universal Tracker channel in the Archipelago discord server). Lego Star Wars: The Complete Saga Archipelago supports
-yamlless Universal Tracker tracking. The Lego Star Wars: The Complete Saga Client will embed Universal Tracker within
-the client when Universal Tracker is installed.
 
 ## Apworld Installation Instructions
 
