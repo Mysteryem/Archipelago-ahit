@@ -54,5 +54,5 @@ A_NEW_HOPE = GoldBrickBonus(
         ),
         "Fan Room": (),
     },
-    gold_brick_requirement=10,
+    gold_brick_requirement=20,
 )
