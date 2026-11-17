@@ -1538,6 +1538,8 @@ class MostExpensivePurchaseWithNoScoreMultiplier(NamedRange):
 
 class CharacterMaxHealth(Range):
     """Set the max health for non-vehicle characters. The vanilla max health for all characters is 4."""
+    display_name = "Character Max Health"
+    rich_text_doc = True
     _VANILLA = 4
     range_start = 1
     range_end = 10
@@ -1546,6 +1548,8 @@ class CharacterMaxHealth(Range):
 
 class VehicleMaxHealth(Range):
     """Set the max health for vehicle characters. The vanilla max health for all characters is 4."""
+    display_name = "Vehicle Max Health"
+    rich_text_doc = True
     _VANILLA = 4
     range_start = 1
     range_end = 10
