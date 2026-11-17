@@ -4,7 +4,7 @@ from typing import AbstractSet, Callable, Iterable
 
 from .text_replacer import TextId
 from ..events import subscribe_event, OnAreaChangeEvent, OnReceiveSlotDataEvent, OnGameWatcherTickEvent
-from ..common import ClientComponent, UintField, StaticUChar
+from ..common import ClientComponent, UintField, StaticUChar, RawArray, UCharField
 from ..common_addresses import (
     OPENED_MENU_DEPTH_ADDRESS,
     CURRENT_P_AREA_DATA_ADDRESS,
@@ -13,6 +13,7 @@ from ..common_addresses import (
     ChallengeMode,
     AREA_DATA_ID,
     CantinaRoom,
+    playable_character_entity_iter,
 )
 from ..type_aliases import TCSContext
 from ...items import ITEM_DATA_BY_ID
@@ -31,6 +32,12 @@ from ...slot_data import EnabledFeature
 _DEBUG_LOGGER = logging.getLogger("TCS Debug")
 
 _DEFAULT_PLAYERHITPOINTS = StaticUChar(0x00802bd4)
+_PLAYERPROGRESS = 0x0093d530
+_PLAYERPROGRESS_ELEMENT_SIZE = 0x10
+_PLAYERPROGRESS_INDICES = range(0, 8)
+_PLAYERPROGRESS_DEFAULT_PLAYER_HIT_POINTS = UCharField(0x8)
+_CHARACTER_MAX_HEALTH = UCharField(0x107e)
+_CHARACTER_HEALTH = UCharField(0x107f)
 
 # Changes according to what Area door the player is stand in front of. It is 0xFF while in the rest of the Cantina, away
 # from an Area door.
@@ -155,6 +162,7 @@ class UnlockedChapterManager(ClientComponent):
 
     last_area_door: Area | None = None
     current_area: Area | None = None
+    most_recent_real_area: Area | None = None
 
     character_max_health: int = 4
     vehicle_max_health: int = 4
@@ -546,9 +554,11 @@ class UnlockedChapterManager(ClientComponent):
     def on_area_change(self, event: OnAreaChangeEvent):
         ctx = event.context
 
+        previous_real_area = self.most_recent_real_area
         current_area_id = event.new_area_data_id
         if current_area_id in Area:
             current_area = Area(current_area_id)
+            self.most_recent_real_area = current_area
         else:
             current_area = None
         self.current_area = current_area
@@ -556,10 +566,42 @@ class UnlockedChapterManager(ClientComponent):
             # _DEBUG_LOGGER.info("Current AreaData pointer is NULL. Nothing to do.")
             return
 
+        # Adjust player character max health depending on whether they're going to a vehicle/non-vehicle Area.
+        set_player_health_to_max = False
         if current_area.is_vehicle_area():
-            _DEFAULT_PLAYERHITPOINTS.set(ctx, self.vehicle_max_health)
+            max_health_to_set = self.vehicle_max_health
+            if previous_real_area is Area.MAP and self.character_max_health < self.vehicle_max_health:
+                # The player has gone from a non-vehicle Area (the Cantina) to a vehicle Area, but vehicles have more
+                # max health than non-vehicle characters, so, if needed, set the playable character health in addition
+                # to max health.
+                set_player_health_to_max = True
         else:
-            _DEFAULT_PLAYERHITPOINTS.set(ctx, self.character_max_health)
+            max_health_to_set = self.character_max_health
+            if (
+                    previous_real_area is not None
+                    and previous_real_area.is_vehicle_area()
+                    and self.vehicle_max_health < self.character_max_health
+            ):
+                # The player has gone from a vehicle Area to a non-vehicle Area (the Cantina), but non-vehicle
+                # characters have more max health than vehicles, so, if needed, set the playable character health in
+                # addition to max health.
+                set_player_health_to_max = True
+        _DEFAULT_PLAYERHITPOINTS.set(ctx, max_health_to_set)
+        _DEBUG_LOGGER.info("Set player max health to %i", max_health_to_set)
+        # These _PLAYERPROGRESS element fields also get set when initializing players. I don't know what _PLAYERPROGRESS
+        # is actually used for.
+        arr = RawArray(ctx.adjust_gog_address(_PLAYERPROGRESS), _PLAYERPROGRESS_ELEMENT_SIZE)
+        for index in _PLAYERPROGRESS_INDICES:
+            _PLAYERPROGRESS_DEFAULT_PLAYER_HIT_POINTS.set(ctx, arr[index], max_health_to_set)
+        # Depending on when the client detects the area change, the characters may already have been created using the
+        # old _DEFAULT_PLAYERHITPOINTS value, so iterate the playable characters that exist, and adjust their max
+        # health, and health if necessary.
+        for character_index, character_addr in playable_character_entity_iter(ctx):
+            _CHARACTER_MAX_HEALTH.set(ctx, character_addr, max_health_to_set)
+            _DEBUG_LOGGER.info("Set character _Player[%i] max health to %i", character_index, max_health_to_set)
+            if set_player_health_to_max:
+                _CHARACTER_HEALTH.set(ctx, character_addr, max_health_to_set)
+                _DEBUG_LOGGER.info("Set character _Player[%i] health to %i", character_index, max_health_to_set)
 
         if current_area not in _ALL_FREE_PLAY_AREAS:
             # The current area is not a free play area, so there is nothing to do.

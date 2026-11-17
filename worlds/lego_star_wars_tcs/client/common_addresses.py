@@ -113,8 +113,9 @@ def steam_to_gog(address: int):
 
 
 # There are two pointers here, which are NULL when the player is dropped out.
-# The full array of all 8 'player' character pointers, that can be tagged, is found at 0x93d7f0
 HUMAN_CONTROLLED_PLAYER_CHARACTER_POINTERS = 0x93d830
+# The full array of all 8 'player' character pointers, that can be tagged.
+PLAYABLE_CHARACTER_POINTERS = 0x93d810
 
 
 class CharacterFlags1(IntFlag):
@@ -128,6 +129,13 @@ class CharacterFlags1(IntFlag):
 def player_character_entity_iter(ctx: TCSContext):
     for i in range(0, 2):
         character_address = ctx.read_uint(HUMAN_CONTROLLED_PLAYER_CHARACTER_POINTERS + i * 4)
+        if character_address != 0:
+            yield i + 1, character_address
+
+
+def playable_character_entity_iter(ctx: TCSContext):
+    for i in range(0, 8):
+        character_address = ctx.read_uint(PLAYABLE_CHARACTER_POINTERS + i * 4)
         if character_address != 0:
             yield i + 1, character_address
 
