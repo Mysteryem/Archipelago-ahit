@@ -407,6 +407,8 @@ JABBAS_PALACE = Chapter(
         ),
         "Sith Force Grate Minikit": minikit_data(
             R_OPEN_AREA_WITH_RAMP_FOR_C_3PO,
+            # TODO: This can be Yoda Grabbed on Hard+ logic. As with all Yoda Grabs, the characters that work will need
+            #  to be tested...Notably, this is an air-yoda-grba, so Dooku might be impossible.
             CAN_SITH_FORCE,
             pickup_name="mk_0",
         ),
