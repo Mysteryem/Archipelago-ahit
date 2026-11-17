@@ -151,7 +151,7 @@ class _RegionBuilder:
                 world.add_event_pair(submit_minikit_goal_event_name + " (Event Item)", minikit_goal_submitted_region)
 
                 # Put the normal rule on the entrance to the region the deferred event is in.
-                entrance = minikit_goal_submitted_region.create_exit(submit_minikit_goal_event_name)
+                entrance = world.get_region(world.origin_region_name).create_exit(submit_minikit_goal_event_name)
                 world.set_rule(entrance, Has(world.minikit_bundle_name, count=world.goal_minikit_bundle_count))
 
                 # Make the goal rule require the deferred event.
