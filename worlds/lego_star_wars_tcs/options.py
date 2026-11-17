@@ -234,7 +234,7 @@ class MinikitGoalAmount(NamedRange):
     Setting this option to **Use Percentage Option** will use the *Minikit Goal Amount Percentage* option's value to
     determine how many Minikit's are required to goal.
     """
-    display_name = "Minikit Goal Amount"
+    display_name = "Goal Requires Minikits"
     rich_text_doc = True
     range_start = 0
     range_end = 360
@@ -291,7 +291,7 @@ class CompleteLevelsGoalAmountPercentage(NamedRange):
     The final number of levels that must be completed to goal is rounded to the nearest integer, but will always be at
     least 1 if the percentage is greater than 0.
     """
-    display_name = "Goal Level Completion Percentage"
+    display_name = "Goal Requires Level Completion Percentage"
     rich_text_doc = True
     range_start = 0
     range_end = 100
@@ -354,8 +354,8 @@ class GoalChapterLocationsMode(ChoiceFromStringExtension):
 class GoalChapter(ChoiceFromStringExtension):
     """Choose a Goal Chapter that must be completed as the final part of your goal.
 
-    All other enabled goals must be completed to unlock the Goal Chapter, in addition to the Goal Chapter's usual unlock
-    requirements.
+    All other goal requirements must be completed to unlock the Goal Chapter, in addition to the Goal Chapter's usual
+    unlock requirements.
 
     The Goal Chapter, when enabled, is picked separately from regular Chapters, ignoring the Allowed Chapters option
     used when picking regular Chapters.
@@ -377,7 +377,7 @@ class GoalChapter(ChoiceFromStringExtension):
     are allowed to contain an Enabled Boss for the Defeat Bosses Goal.
 
     """
-    display_name = "Goal Chapter"
+    display_name = "Goal Requires a Goal Chapter"
     rich_text_doc = True
     option_no_goal_chapter = -1
     # Variable names cannot use hyphens, so the options for specific levels are set programmatically.
@@ -429,7 +429,7 @@ class DefeatBossesGoalAmount(NamedRange):
     Current progress towards the goal can be seen on the Pause screen. Individual progress within an Episode can be seen
     by standing in front of the door to that Episode once a Chapter within that Episode is unlocked.
     """
-    display_name = "Defeat Bosses Goal Amount"
+    display_name = "Goal Requires Bosses"
     rich_text_doc = True
     range_start = 0
     range_end = len(_BOSS_KEY_TO_BOSS)
@@ -1996,24 +1996,26 @@ def get_option_name(o: type[Option[Any]]) -> str:
 
 
 OPTION_GROUPS: list[OptionGroup] = [
-    OptionGroup("Minikit Goal", [
+    OptionGroup("Goal Requirements",[
         MinikitGoalAmount,
+        DefeatBossesGoalAmount,
+        CompleteLevelsGoalAmountPercentage,
+        GoalRequiresKyberBricks,
+        GoalChapter,
+    ]),
+    OptionGroup("Minikit Goal Options", [
         MinikitGoalAmountPercentage,
         MinikitGoalCompletionMethod,
     ]),
-    OptionGroup("Bosses Goal", [
-        DefeatBossesGoalAmount,
+    OptionGroup("Bosses Goal Options", [
         EnabledBossesCount,
         AllowedBosses,
         OnlyUniqueBossesCountTowardsGoal,
     ], True),
-    OptionGroup("Goal Chapter", [
-        GoalChapter,
+    OptionGroup("Goal Chapter Options", [
         GoalChapterLocationsMode,
     ], True),
-    OptionGroup("Other Goals", [
-        CompleteLevelsGoalAmountPercentage,
-        GoalRequiresKyberBricks,
+    OptionGroup("Other Goal Options", [
         KyberBrickGoalCompletionMethod,
     ], True),
     OptionGroup("Chapters", [
