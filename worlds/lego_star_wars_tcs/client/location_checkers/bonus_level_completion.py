@@ -47,6 +47,10 @@ class BonusAreaCompletionChecker(ClientComponent):
     def init_from_slot_data(self, event: OnReceiveSlotDataEvent) -> None:
         bonus_area_completion_locations: dict[Area, list[ApLocationId]] = {}
         for bonus_area in event.slot_data.enabled_bonuses.value:
+            if bonus_area not in _ALL_STORY_COMPLETION_CHECKS:
+                # Skip Anakin's Flight and A New Hope because they are completed in Free Play, and the
+                # free_play_completion.FreePlayAreaCompletionChecker will check those.
+                continue
             loc_ids = {LOCATION_NAME_TO_ID[character.get_level_completion_unlock_location_name()]
                         for character in bonus_area.get_story_characters()}
             server_locations = event.context.server_locations
