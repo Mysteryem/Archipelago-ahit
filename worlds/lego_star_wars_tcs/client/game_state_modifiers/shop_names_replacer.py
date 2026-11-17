@@ -173,6 +173,8 @@ class ShopNamesReplacer(ClientComponent):
         locations_info = ctx.locations_info.copy()
 
         # Create a deterministic Random instance by hashing the NetworkItem instances.
+        # todo: This is technically deterministic because it's not hashing strings, but this is brittle and should not
+        #  be relied on.
         shop_seed = hash(tuple([locations_info.get(scout_id) for scout_id in sorted(self._scout_locations)]))
         shop_random = Random(shop_seed)
 
