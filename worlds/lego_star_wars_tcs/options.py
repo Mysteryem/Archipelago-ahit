@@ -224,8 +224,7 @@ class MinikitGoalAmount(NamedRange):
 
     Current progress towards the goal can be seen on the Pause screen.
 
-    If set to zero, Minikits will not be part of the goal, but will still be in the item pool as filler items if Minikit
-    locations are enabled.
+    If set to zero, Minikits will not be part of the goal, and will not be included in the item pool.
 
     If set to non-zero, and Minikit locations are disabled, the *Minikit Bundle Size* will be forcefully set to 10.
 
@@ -355,7 +354,7 @@ class GoalChapterLocationsMode(ChoiceFromStringExtension):
 class GoalChapter(ChoiceFromStringExtension):
     """Choose a Goal Chapter that must be completed as the final part of your goal.
 
-    All other enabled goals must be completed to unlock the Goal Chapter, in addition to the Goal Chapter's usual
+    All other enabled goals must be completed to unlock the Goal Chapter, in addition to the Goal Chapter's usual unlock
     requirements.
 
     The Goal Chapter, when enabled, is picked separately from regular Chapters, ignoring the Allowed Chapters option
@@ -375,7 +374,7 @@ class GoalChapter(ChoiceFromStringExtension):
     Selecting ``Random Enabled Chapter`` will pick one of your enabled chapters at random.
 
     Selecting ``Random Enabled Non Boss Chapter`` will pick one of your enabled chapters at random, excluding those that
-    have a chance to contain an Enabled Boss for the Defeat Bosses Goal.
+    are allowed to contain an Enabled Boss for the Defeat Bosses Goal.
 
     """
     display_name = "Goal Chapter"
@@ -428,7 +427,7 @@ class DefeatBossesGoalAmount(NamedRange):
     The bosses that count towards your goal are shown in the Hints shop in the Cantina.
 
     Current progress towards the goal can be seen on the Pause screen. Individual progress within an Episode can be seen
-    by standing in front of the door to that Episode once the door is unlocked.
+    by standing in front of the door to that Episode once a Chapter within that Episode is unlocked.
     """
     display_name = "Defeat Bosses Goal Amount"
     rich_text_doc = True
@@ -495,8 +494,8 @@ class AllowedBosses(OptionSet):
 
 class OnlyUniqueBossesCountTowardsGoal(ChoiceFromStringExtension):
     """
-    When enabled, only unique bosses will count towards your goal. Defeating the same boss character in two separate
-    Chapters will only count as one boss kill.
+    When enabled, only unique boss characters will count towards your goal. Defeating the same boss character in two
+    separate Chapters will only count as one boss kill.
 
     When unique bosses are enabled, the maximum number of bosses that can count towards the goal will be reduced to 13,
     or 12 when Anakin Skywalker counts as the same boss as Darth Vader.
@@ -689,13 +688,6 @@ class EnableMinikitLocations(DefaultOnToggle):
     """
     Enable locations for collecting each Minikit in each Chapter that exists in your slot.
 
-    Minikit locations are progressive within each Chapter (to be changed in the future), so collecting 4 Minikits in any
-    order in a Chapter will send the location checks for Minikit 1, Minikit 2, Minikit 3 and Minikit 4, in that Chapter,
-    in order.
-
-    All Minikit locations in a Chapter enter logic at the same time, when it is logically possible to reach all Minikit
-    locations in that Chapter (to be changed in the future).
-
     If Minikit locations are not enabled, but the goal requires Minikit items, the Minikit Bundle Size will be
     forcefully set to 10.
 
@@ -733,26 +725,21 @@ class EnableTrueJediLocations(DefaultOnToggle):
     rich_text_doc = True
 
 
-class EnableChapterCompletionCharacterUnlockLocations(Removed):
-    pass
-
-
 class EnableStoryCharacterUnlockLocations(DefaultOnToggle):
     """
     Enable locations for unlocking Story mode characters that would normally unlock when completing a Chapter/Bonus in
     vanilla.
 
     In vanilla, completing any Chapter/Bonus with C-3PO as a playable Story mode character would unlock C-3PO. In
-    vanilla, this would mean completing either 2-3, 4-1, 5-2, 6-1 or A New Hope, because Chapters within an Episode
-    unlock in order in vanilla, but the AP randomizer allows for Chapters to be unlocked out-of-order, so, additionally,
-    completing any of 4-2, 4-3, 4-4, 4-5, 5-6, 6-2 or 6-4, would also send the Story Character Unlock location for
-    C-3PO.
+    vanilla, Chapters within an Episode unlock in order, so this would mean completing either 2-3, 4-1, 5-2, 6-1 or A
+    New Hope. However, the AP randomizer allows for Chapters to be unlocked out-of-order, so, additionally, completing
+    any of 4-2, 4-3, 4-4, 4-5, 5-6, 6-2 or 6-4, would also send the Story Character Unlock location for C-3PO.
 
-    The first Chapter/Bonus completed that would unlock a Story mode character will send the Unlock location for that
-    character.
+    Only the first Chapter/Bonus completed that would unlock a Story mode character will send the Unlock location for
+    that character.
 
     Because Story mode is skipped in the AP randomizer, these character unlock locations are sent when the Chapters are
-    completed in Free Play.
+    completed in Free Play, except the Pod Race and Gunship Cavalry bonus levels which only have Story mode.
 
     With all 36 Chapters enabled, this adds 56 locations.
     With all 36 Chapters and all Bonuses enabled, this adds 57 locations.
@@ -764,7 +751,7 @@ class EnableStoryCharacterUnlockLocations(DefaultOnToggle):
 class EnableBonusLocations(Toggle):
     """
     The Bonuses Door in the Cantina has a number of levels that require Gold Bricks to access. When this option is
-    enabled, completing each of these Bonus levels (in Story Mode if they have a Story mode) will be a location to
+    enabled, completing each of these Bonus levels (in Free Play if they have Free Play) will be a location to
     check.
 
     Additionally, watching the Lego Indiana Jones trailer (it can be skipped once started), and purchasing Indiana Jones
@@ -777,7 +764,7 @@ class EnableBonusLocations(Toggle):
     Depending on other options, not all Chapters could exist in your slot, so if there are not enough Gold Bricks
     logically available for a Bonus level to be accessible, that Bonus level will not be included in the multiworld.
 
-    With all Chapters enabled, this adds 8 locations.
+    With all Bonuses included in the multiworld, this adds 8 locations.
     """
     display_name = "Bonuses"
     rich_text_doc = True
@@ -808,7 +795,7 @@ class Ridesanity(Toggle):
     Enable locations for riding each unique type of ridable 'character' (creature, vehicle, turret, crane control) in
     the game.
 
-    This notably adds a few extra checks to the LEGO City and New Town bonus levels.
+    This notably adds a few extra locations to the LEGO City and New Town bonus levels.
 
     If none of your enabled levels contain a specific ridable character, then the location riding for that character
     will not exist in the generated world.
@@ -868,9 +855,8 @@ class EnableNonPowerBrickExtraLocations(DefaultOnToggle):
     - Purchase Tow Death Star
     - Purchase Beep Beep
 
-    They are all classified as Filler items, except Extra Toggle, which is classified as Useful because of Mouse Droid's
-    high movement speed and a few Extra Toggle characters having abilities (in the future Extra Toggle will be
-    Progression).
+    They are all classified as Filler items, except Extra Toggle, which may be Useful or Progression depending on your
+    logic options.
 
     If this option is not enabled, the locations will still exist in the multiworld, but will always contain their
     vanilla items.
@@ -879,6 +865,7 @@ class EnableNonPowerBrickExtraLocations(DefaultOnToggle):
     rich_text_doc = True
 
 
+# Not Implemented.
 class EnableCompletionPointLocations(Toggle):
     """
     Enable locations for progressively increasing your total completion points. Completion points are how the game
@@ -1192,7 +1179,7 @@ class EpisodeUnlockRequirement(ChoiceFromStringExtension):
 
     **Episode Item:** Each Episode will unlock after receiving an unlock item for that Episode, e.g. "Episode 5 Unlock".
     Warning: Episode unlock items typically lock access to about 1/6 of your game each, which can result in long periods
-    of not being able to do any checks, when playing in multiworlds with other players.
+    of not being able to do any checks when playing in multiworlds with other players.
 
     """
     display_name = "Episode Unlock Requirements"
@@ -1225,23 +1212,18 @@ class AllEpisodesCharacterPurchaseRequirements(ChoiceFromStringExtension):
     default = 2
 
 
-# Ideally wants Extra Toggle to be randomized, and needs support for per-chapter abilities because different chapters
-# have access to different extra characters. I think most of the logic relevant characters are the blaster/grapple ones.
-# class ExtraToggleLogic(DefaultOnToggle):
-#     """Extra Toggle characters are included in logic"""
-
-
 class StartingChapter(ChapterChoice):
     """
     Choose the starting chapter.
 
-    All items required to access and complete the starting chapter will be given to you from the start.
+    Items required to access and complete the starting chapter will be given to you from the start.
     """
     display_name = "Starting Chapter"
     rich_text_doc = True
     default = ChapterChoice.option_random_chapter
 
 
+# Not Implemented. Todo: Remove all requirements from the starting chapter.
 class RandomStartingLevelMaxStartingCharacters(Range):
     """Specify the maximum number of starting characters allowed when picking a random starting level.
 
@@ -1299,28 +1281,28 @@ class PreferredExtras(OptionSet):
     Score Multipliers that are logically required, due to the Most Expensive Purchase With No Score Multiplier option,
     will always be included in the item pool.
 
-    When Progressive Score Multiplier items are enabled (always enabled currently), preferring "Score x{number}" to be
-    included in the item pool will try to ensure there are enough Progressive Score Multiplier items to unlock that
-    score multiplier.
+    Preferring "Score x{number}" to be included in the item pool will try to ensure there are enough Progressive Score
+    Multiplier items to unlock that score multiplier.
     """
     display_name = "Preferred Extras"
     rich_text_doc = True
     # Progressive Score Multiplier is an AP-specific item, and this option does not support specifying multiple of
     # an item, so the individual "Score x{number}" Extras are included as valid keys instead.
     valid_keys = {extra.readable_name for extra in Extra if extra.is_purchasable()}
+    # todo: Use a default the maintains order.
     default = frozenset({
-        # Out-of-logic access:
-        # Out-of-logic SITH access
+        # todo: Replace the string literals with Extra.<name>.readable_name
+        # SITH access
         "Dark Side",
-        # Out-of-logic BOUNTY_HUNTER access (silver bricks only)
+        # BOUNTY_HUNTER access (silver bricks only)
         "Exploding Blaster Bolts",
-        # Out-of-logic BLASTER access (grapple only)
+        # BLASTER access (grapple only)
         "Force Grapple Leap",
-        # Out-of-logic BOUNTY_HUNTER access (silver bricks only)
+        # BOUNTY_HUNTER access (silver bricks only)
         "Self Destruct",
-        # Out-of-logic BOUNTY_HUNTER access (silver bricks only)
+        # BOUNTY_HUNTER access (silver bricks only)
         "Super Ewok Catapult",
-        # BLASTER and IMPERIAL out-of-logic, also speeds up levels with Mouse Droids
+        # BLASTER, GRAPPLE and IMPERIAL access, also speeds up levels with Mouse Droids
         "Extra Toggle",
 
         # Speed up playing:
@@ -1386,12 +1368,6 @@ class FillerWeightCharacters(Range):
     This option controls the weight of characters when choosing which items to fill out the rest of the space in the
     item pool. A higher weight in comparison to the other Filler Weight options results in more characters in the item
     pool, compared to other items used to fill out the rest of the item pool.
-
-    The generator tries to fill the item pool with as many Characters and Extras as would be unlocked, in vanilla, by
-    all the enabled locations.
-
-    Archipelago locations that don't have a corresponding vanilla item, and Minikits being bundled, results in some free
-    space in the item pool for any kind of item.
     """
     # Many characters are just reskins of another character, and the generator already guarantees that the item pool
     # contains enough characters to reach every location. There are also often many character unlocks for each chapter
@@ -1408,12 +1384,6 @@ class FillerWeightExtras(Range):
     This option controls the weight of Extras when choosing which items to fill out the rest of the space in the
     item pool. A higher weight in comparison to the other Filler Weight options results in more Extras in the item
     pool, compared to other items used to fill out the rest of the item pool.
-
-    The generator tries to fill the item pool with as many Characters and Extras as would be unlocked, in vanilla, by
-    all the enabled locations.
-
-    Archipelago locations that don't have a corresponding vanilla item, and Minikits being bundled, results in some free
-    space in the item pool for any kind of item.
     """
     # There is only one Extra reserved in the item pool per chapter and Extras tend to have unique effects, so the
     # default weight is higher.
@@ -1432,12 +1402,6 @@ class FillerWeightJunk(Range):
     fill out the rest of the item pool.
 
     The weight of each Junk Filler item can be controlled with the separate Junk Weights option.
-
-    The generator tries to fill the item pool with as many Characters and Extras as would be unlocked, in vanilla, by
-    all the enabled locations.
-
-    Archipelago locations that don't have a corresponding vanilla item, and Minikits being bundled, results in some free
-    space in the item pool for any kind of item.
     """
     display_name = "Filler Weight: Junk"
     rich_text_doc = True
@@ -1516,11 +1480,16 @@ class ScaleTrueJediWithScoreMultipliers(Toggle):
 
     The scaling is applied only when entering a Chapter and will not adjust dynamically if you receive/find additional
     Progressive Score Multiplier items while within the entered Chapter.
+
+    Very high True Jedi requirements will visually break the True Jedi bar shown on screen, but progress towards True
+    Jedi is still being counted.
     """
     display_name = "Scale True Jedi With Multipliers"
     rich_text_doc = True
 
 
+# todo: Override random behaviour to be logarithmic, or just reject 'random' for this option because it will too often
+#  pick way too high values.
 class MostExpensivePurchaseWithNoScoreMultiplier(NamedRange):
     """
     The most expensive individual purchase the player can be expected to make without any score multipliers, *in
@@ -1568,7 +1537,7 @@ class MostExpensivePurchaseWithNoScoreMultiplier(NamedRange):
 
 
 class CharacterMaxHealth(Range):
-    """Set the max health for non-vehicle characters."""
+    """Set the max health for non-vehicle characters. The vanilla max health for all characters is 4."""
     _VANILLA = 4
     range_start = 1
     range_end = 10
@@ -1576,7 +1545,7 @@ class CharacterMaxHealth(Range):
 
 
 class VehicleMaxHealth(Range):
-    """Set the max health for vehicle characters."""
+    """Set the max health for vehicle characters. The vanilla max health for all characters is 4."""
     _VANILLA = 4
     range_start = 1
     range_end = 10
@@ -1687,6 +1656,8 @@ class AutoCollectSpawnedPickups(ChoiceFromStringExtension):
     """Automatically collect pickups (studs and hearts) spawned by destroying objects/enemies, using the force on
     objects, or spawned by other means, such as from dying or from the Character Studs Extra.
 
+    This option can be adjusted at any time in the client with ``/auto_collect_pickups <on/off/vehicles>``.
+
     Minikits, and other pickups that internally start off hidden, and get unhidden, rather than spawned in, are not
     affected.
 
@@ -1713,11 +1684,11 @@ class AutoCollectSpawnedPickups(ChoiceFromStringExtension):
 
 class LogicDifficulty(ChoiceFromStringExtension):
     """
-    - None:
+    - None - For players new to the game:
       - Tries to match developer intended strategies.
       - Includes some combat logic for avoidable/ignorable enemies.
       - Extras (except Score Multipliers for expensive purchases) are not included in logic.
-    - Normal:
+    - Normal - For players that have played most of the vanilla content:
       - No glitches expected.
       - Players that have played most of the vanilla game should be able to play with this difficulty.
       - Expects more platforming that probably wasn't developer intended, but is generally quite obvious and simple.
@@ -1732,7 +1703,7 @@ class LogicDifficulty(ChoiceFromStringExtension):
       - 1P2C can expect teleporting one player to the other through a drop-in, to activate buttons etc. where the
       AI won't follow you due to the AI only being able to use specific characters, and then dropping out again to let
       the AI continue as normal.
-    - Moderate:
+    - Moderate - For players that play the Archipelago randomizer often and are willing to learn simpler tricks:
       - Simpler glitches expected.
       - Players that play the AP randomizer often should be able to perform all tricks in this difficulty efficiency,
       after some practice and/or learning.
@@ -1742,10 +1713,7 @@ class LogicDifficulty(ChoiceFromStringExtension):
       a Stormtrooper into position.
       - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling only one character at a time,
       taking turns between controlling each character, e.g. button platforms in 2-2 and 2-6 when the AI won't follow you
-      - 1P2C usage additionally includes simpler use of controlling both characters simultaneously, e.g. completing the
-      collapsing hallway at the start of 3-6 by holding the down key/button on both controllers and pressing the jump
-      button/key at the correct times for each character.
-    - Hard:
+    - Hard - For players starting to learn speedrun tricks (installing BrickBench to assist in learning tricks is recommended):
       - More difficult jumps and tricks.
       - Some out-of-bounds tricks may be in logic (mostly Yoda Clips through ceilings). Full out-of-bounds movement,
       e.g. walking around under the level, is *not* included.
@@ -1763,7 +1731,7 @@ class LogicDifficulty(ChoiceFromStringExtension):
     """
     display_name = "Logic Difficulty"
     rich_text_doc = True
-    # - Expert: Includes out-of-bounds clips and 1P2C that is more than just holding down a single button for P2.
+    # - Expert: Includes many out-of-bounds clips and more difficult 1P2C.
     # Comparable to Glitched logic in ViolaGuy's TCS randomizer.
     # - Super Expert: Super Jumps, DV3 Skip, CCT door clip and more. Comparable to Super Glitched logic in ViolaGuy's
     # standalone TCS randomizer.
