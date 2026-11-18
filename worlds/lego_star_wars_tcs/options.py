@@ -290,6 +290,8 @@ class CompleteLevelsGoalAmountPercentage(NamedRange):
 
     The final number of levels that must be completed to goal is rounded to the nearest integer, but will always be at
     least 1 if the percentage is greater than 0.
+
+    Current progress towards the goal can be seen on the Pause screen.
     """
     display_name = "Goal Requires Level Completion Percentage"
     rich_text_doc = True
@@ -309,6 +311,8 @@ class GoalRequiresKyberBricks(Toggle):
     when this option is enabled.
 
     It is recommended to enable a Goal Chapter when the Kyber Bricks Goal is enabled.
+
+    Current progress towards the goal can be seen on the Pause screen.
     """
     display_name = "Goal Requires 7 Kyber Bricks"
     rich_text_doc = True
@@ -357,8 +361,8 @@ class GoalChapter(ChoiceFromStringExtension):
     All other goal requirements must be completed to unlock the Goal Chapter, in addition to the Goal Chapter's usual
     unlock requirements.
 
-    The Goal Chapter, when enabled, is picked separately from regular Chapters, ignoring the Allowed Chapters option
-    used when picking regular Chapters.
+    The Goal Chapter, when enabled, is picked separately from regular Chapters, ignoring the *Chapters To Pick From*
+    option used when picking regular Chapters.
 
     The Goal Chapter is enabled in addition to your *Enabled Chapter Count*, when possible.
 
@@ -448,9 +452,9 @@ class EnabledBossesCount(Range):
 
     This will automatically be set at least as high as the number of bosses required to goal.
 
-    This will automatically be set no higher than the maximum of the number of allowed bosses in allowed Chapters.
+    This will automatically be set no higher than the maximum of the number of boss chapters in *Chapters To Pick From*.
     """
-    display_name = "Enabled Bosses Count"
+    display_name = "Bosses To Enable"
     rich_text_doc = True
     range_start = 0
     range_end = len(_BOSS_KEY_TO_BOSS)
@@ -460,8 +464,8 @@ class AllowedBosses(OptionSet):
     """
     Choose bosses that count towards the Defeat Bosses Goal.
 
-    When bosses must be defeated as part of the goal, the Chapters for the bosses in this list will be added to Allowed
-    Chapters list if they are not already in Allowed Chapters list.
+    When bosses must be defeated as part of the goal, the Chapters for the bosses in this list will be added to the
+    *Chapters To Pick From* list if they are not already in the *Chapters To Pick From* list.
 
     ::
 
@@ -484,7 +488,7 @@ class AllowedBosses(OptionSet):
         - Darth Sidious (6-5) # Jedi Destiny
         - Death Star II (6-6) # Into The Death Star
     """
-    display_name = "Allowed Bosses"
+    display_name = "Bosses To Pick From"
     rich_text_doc = True
     valid_keys = list(_BOSS_KEY_TO_BOSS.keys())
     default = list(_BOSS_KEY_TO_BOSS.keys())
@@ -534,10 +538,10 @@ class EnabledChaptersCount(Range):
     Chapters, other than the Starting Chapter and Goal Chapter, if enabled, will be randomly picked from the Allowed
     Chapters list.
 
-    If there are fewer allowed chapters than the count to enable, all the allowed chapters will be enabled, and the
-    count will be reduced to the maximum possible.
+    If there are fewer *Chapters To Pick From* than the count to enable, all the *Chapters To Pick From* will be
+    enabled, and the count will be reduced to the maximum possible.
     """
-    display_name = "Enabled Chapter Count"
+    display_name = "Chapters To Enable"
     rich_text_doc = True
     range_start = 1
     range_end = 36
@@ -545,9 +549,10 @@ class EnabledChaptersCount(Range):
 
 
 class AllowedChapterTypes(ChoiceFromStringExtension):
-    """Specify additional filtering of the allowed chapters that can exist in your slot.
+    """Specify additional filtering of the chapters that can exist in your slot.
 
-    **All:** No additional filtering, all chapters specified in the Allowed Chapters option are allowed.
+    **All:** No additional filtering, all chapters specified in the *Chapters To Pick From* option are allowed.
+
     **No Vehicles:** No vehicle chapters (1-4, 2-1, 2-5, 3-1, 4-6, 5-1, 5-3, 6-6) will be allowed to exist in your slot.
     """
     display_name = "Allowed Chapter Types"
@@ -579,29 +584,12 @@ class AllowedChapters(ChapterOptionSet):
     Examples::
 
         # Enable only 1-1 (Negotiations)
-        allowed_chapters: ["1-1"]
-
-        # Enable only 1-1 (Negotiations) (alt.)
         allowed_chapters:
           - 1-1
 
         # Enable all
-        allowed_chapters: ["All"]
-
-        # Enable all (alt.)
         allowed_chapters:
           - All
-
-        # Enable only vehicle levels
-        allowed_chapters:
-          - 1-4
-          - 2-1
-          - 2-5
-          - 3-1
-          - 4-6
-          - 5-1
-          - 5-3
-          - 6-6
 
         # A mix of values
         allowed_chapters:
@@ -611,7 +599,7 @@ class AllowedChapters(ChapterOptionSet):
           - 5-3
           - 6-5
     """
-    display_name = "Allowed Chapters"
+    display_name = "Chapters To Pick From"
     rich_text_doc = True
     default = frozenset({"All"})
 
@@ -620,8 +608,8 @@ class PreferredChapters(ChapterOptionSet):
     """
     When the generator picks which chapters should exist in your slot, it will pick from these preferred chapters first.
 
-    If a preferred chapter is not allowed to be picked because it is not included in the Allowed Chapters option, it
-    will not be picked.
+    If a preferred chapter is not allowed to be picked because it is not included in the *Chapters To Pick From* option,
+    it will not be picked.
 
     This option can be used to guarantee that certain chapters are present in a generated world.
 
@@ -634,13 +622,6 @@ class PreferredChapters(ChapterOptionSet):
     - "Episode {number}": e.g. "Episode 3" will make all chapters in Episode 3, so 3-1 through to 3-6, be preferred.
 
     Examples::
-
-        # Prefer 1-1 (Negotiations)
-        preferred_chapters: ["1-1"]
-
-        # Prefer 1-1 (Negotiations) (alt.)
-        preferred_chapters:
-          - 1-1
 
         # Prefer vehicle levels
         preferred_chapters:
@@ -670,11 +651,12 @@ class PreferredChapters(ChapterOptionSet):
 
 class PreferEntireEpisodes(Toggle):
     """
-    When enabled, after the generator has picked a chapter to exist in your slot, out of the allowed chapters, it will
-    continue picking additional chapters from the same episode until it runs out of allowed chapters in that episode.
+    When enabled, after the generator has picked a chapter to exist in your slot, out of the *Chapters To Pick From*, it
+    will continue picking additional chapters from the same episode until it runs out of chapters to pick from that
+    episode.
 
     For example, if the generator picks 3-2 as the first enabled chapter, its next picked chapters will be guaranteed to
-    be picked from the allowed chapters out of 3-1, 3-3, 3-4, 3-5 and 3-6.
+    be picked from the *Chapters To Pick From* out of 3-1, 3-3, 3-4, 3-5 and 3-6.
 
     The Starting Chapter is always the first picked enabled chapter.
 
@@ -695,7 +677,7 @@ class EnableMinikitLocations(DefaultOnToggle):
     When Minikit locations are not enabled, Bonus levels will not consider the Gold Bricks, awarded for getting all 10
     Minikit locations in a Chapter, as part of Gold Brick logic.
     """
-    display_name = "Enable Minikit Locations"
+    display_name = "Minikit Locations"
     rich_text_doc = True
 
 
@@ -722,7 +704,7 @@ class EnableTrueJediLocations(DefaultOnToggle):
     When True Jedi locations are not enabled, Bonus levels will not consider True Jedi Gold Bricks as part of Gold Brick
     logic.
     """
-    display_name = "Enable True Jedi Locations"
+    display_name = "True Jedi Locations"
     rich_text_doc = True
 
 
@@ -1203,6 +1185,7 @@ class AllEpisodesCharacterPurchaseRequirements(ChoiceFromStringExtension):
     **Episodes Unlocked:** The shop purchases will unlock when the "Episode # Unlock" item for each Episode with enabled
     Chapters has been received. If the Episode Unlock Requirement is set to Open or there is only 1 enabled Episode,
     this will be forcefully changed to "Episodes Tokens" instead.
+
     **Episodes Tokens:** 6 "Episode Completion Token" items need to be acquired to unlock the characters for purchase.
     The number of "Episode Completion Token" items in the item pool is equal to your number of enabled chapters divided
     by 6 and rounded to the nearest integer, but always at least 1. The remaining "Episode Completion Token" items will
@@ -2005,6 +1988,14 @@ def get_option_name(o: type[Option[Any]]) -> str:
 
 
 OPTION_GROUPS: list[OptionGroup] = [
+    OptionGroup("Chapters", [
+        EnabledChaptersCount,
+        AllowedChapters,
+        AllowedChapterTypes,
+        StartingChapter,
+        PreferredChapters,
+        PreferEntireEpisodes,
+    ]),
     OptionGroup("Goal Requirements",[
         MinikitGoalAmount,
         DefeatBossesGoalAmount,
@@ -2027,14 +2018,6 @@ OPTION_GROUPS: list[OptionGroup] = [
     OptionGroup("Other Goal Options", [
         KyberBrickGoalCompletionMethod,
     ], True),
-    OptionGroup("Chapters", [
-        EnabledChaptersCount,
-        AllowedChapters,
-        AllowedChapterTypes,
-        StartingChapter,
-        PreferredChapters,
-        PreferEntireEpisodes,
-    ]),
     OptionGroup("Enabled Locations", [
         EnableMinikitLocations,
         EnableTrueJediLocations,
