@@ -87,7 +87,7 @@ class RunInAWindow(ClientComponent):
 
         Resizing the window manually is a pain. So, using Windows APIs, the client can update the size of the game
         window to match the change in resolution."""
-        if not not self._do_auto_resize:
+        if not self._do_auto_resize:
             # There is a host.yaml option to disable auto-resizing, in-case it
             return
         if not _C_D3D_CORE_WINDOWED.get(ctx):
