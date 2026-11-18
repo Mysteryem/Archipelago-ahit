@@ -178,7 +178,7 @@ class HasAllAbilities(InLevelRule, game=GAME_NAME):
             messages = [
                 {"type": "text", "text": "Has " if not missing else "Missing "},
                 {"type": "color", "color": "cyan", "text": "all" if not missing else "some"},
-                {"type": "text", "text": " of abilities ("},
+                {"type": "text", "text": " Abilities ("},
             ]
             if found:
                 messages.append({"type": "text", "text": "Found: "})
@@ -206,7 +206,7 @@ class HasAllAbilities(InLevelRule, game=GAME_NAME):
             state_abilities = CharacterAbility(state.prog_items[self.player]["COMBINED_ABILITIES"])
             found = abilities & state_abilities
             missing = abilities & ~state_abilities
-            prefix = "Has all abilities" if self(state) else "Missing some abilities"
+            prefix = "Has all Abilities" if self(state) else "Missing some Abilities"
             found_str = f"Found: {found.to_readable_list()}" if found else ""
             missing_str = f"Missing: {missing.to_readable_list()}" if missing else ""
             infix = "; " if found and missing else ""
@@ -214,7 +214,7 @@ class HasAllAbilities(InLevelRule, game=GAME_NAME):
 
         @override
         def __str__(self) -> str:
-            return f"Has all of abilities ({CharacterAbility(self.abilities_as_int).to_readable_list()})"
+            return f"Has all Abilities ({CharacterAbility(self.abilities_as_int).to_readable_list()})"
 
     def __and__(self, other: "Rule[Any] | Iterable[OptionFilter] | OptionFilter") -> "Rule[TWorld]":
         if isinstance(other, OptionFilter):
@@ -277,7 +277,7 @@ class HasAnyAbilities(InLevelRule, game=GAME_NAME):
                 messages = [
                     {"type": "text", "text": "Has "},
                     {"type": "color", "color": "cyan", "text": "any"},
-                    {"type": "text", "text": " of abilities ("},
+                    {"type": "text", "text": " Ability ("},
                 ]
                 for i, ability in enumerate(abilities):
                     if i > 0:
@@ -291,8 +291,8 @@ class HasAnyAbilities(InLevelRule, game=GAME_NAME):
             missing = abilities & ~state_abilities
             messages = [
                 {"type": "text", "text": "Has " if found else "Missing "},
-                {"type": "color", "color": "cyan", "text": "some" if found else "all"},
-                {"type": "text", "text": " of abilities ("},
+                {"type": "color", "color": "cyan", "text": "any"},
+                {"type": "text", "text": " Ability (" if found else " "},
             ]
             if found:
                 messages.append({"type": "text", "text": "Found: "})
@@ -320,7 +320,7 @@ class HasAnyAbilities(InLevelRule, game=GAME_NAME):
             state_abilities = CharacterAbility(state.prog_items[self.player]["COMBINED_ABILITIES"])
             found = abilities & state_abilities
             missing = abilities & ~state_abilities
-            prefix = "Has some abilities" if self(state) else "Missing all abilities"
+            prefix = "Has any Ability" if self(state) else "Missing any Ability"
             found_str = f"Found: {found.to_readable_list()}" if found else ""
             missing_str = f"Missing: {missing.to_readable_list()}" if missing else ""
             infix = "; " if found and missing else ""
@@ -328,7 +328,7 @@ class HasAnyAbilities(InLevelRule, game=GAME_NAME):
 
         @override
         def __str__(self) -> str:
-            return f"Has any of abilities ({CharacterAbility(self.abilities_as_int).to_readable_list()})"
+            return f"Has any Ability ({CharacterAbility(self.abilities_as_int).to_readable_list()})"
 
 
 @dataclasses.dataclass
