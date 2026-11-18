@@ -788,7 +788,7 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
             # Higher triple jumps (Yoda/swap to astromech droid/triple-high-jump) can make this easier, or even triple
             # jump directly over the back wall from the right handrail in the case of triple-high-jump.
             # todo: Dooku can grab this Power Brick through the force field. Maybe other characters can too and this
-            #  could be relevant for Moderate logic?
+            #  could be relevant for Moderate logic? I grabbed this through the forcefield as Ewok...
             hard=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
         ),
     ),
