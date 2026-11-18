@@ -3,8 +3,15 @@
 Instead, the AP client is able to manually flip a BOOL in the D3D Core struct used by the game."""
 import logging
 import struct
-import win32gui
-import win32con
+
+# Tests may try to import client modules that import this module, but the win32 modules won't exist on the ubuntu/macos
+# test runners. The client is expected to always be run through Windows Archipelago, where these modules should exist.
+try:
+    import win32gui
+    import win32con
+    _WIN32_PRESENT = True
+except ModuleNotFoundError:
+    _WIN32_PRESENT = False
 
 from settings import get_settings
 
@@ -57,13 +64,14 @@ class RunInAWindow(ClientComponent):
         #  I have tried to use Windows APIs (through win32gui) to hide/show the window, but they do not seem to have the
         #  same effect. For now, users will just have to alt-tab or use the video/effects menu.
 
-    @subscribe_event
-    async def on_tick(self, event: OnGameWatcherTickEvent):
-        self.check_and_update_window_size_if_resolution_changed(event.context)
+    if _WIN32_PRESENT:
+        @subscribe_event
+        async def on_tick(self, event: OnGameWatcherTickEvent):
+            self._check_and_update_window_size_if_resolution_changed(event.context)
 
-    @subscribe_event
-    async def on_disconnected_tick(self, event: OnGameWatcherDisconnectedTickEvent):
-        self.check_and_update_window_size_if_resolution_changed(event.context)
+        @subscribe_event
+        async def on_disconnected_tick(self, event: OnGameWatcherDisconnectedTickEvent):
+            self._check_and_update_window_size_if_resolution_changed(event.context)
 
     @subscribe_event
     async def on_disconnected_from_game(self, event: OnUnhookFromGameEvent):
@@ -73,7 +81,7 @@ class RunInAWindow(ClientComponent):
         self._last_width = None
         self._last_height = None
 
-    def check_and_update_window_size_if_resolution_changed(self, ctx: TCSContext):
+    def _check_and_update_window_size_if_resolution_changed(self, ctx: TCSContext):
         """When Windowed mode is forced by the client, changing the resolution in-game does not automatically resize the
         window to match unless the player restarts their game.
 
