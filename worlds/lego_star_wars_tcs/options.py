@@ -463,25 +463,26 @@ class AllowedBosses(OptionSet):
     When bosses must be defeated as part of the goal, the Chapters for the bosses in this list will be added to Allowed
     Chapters list if they are not already in Allowed Chapters list.
 
-    allowed_bosses:
+    ::
 
-    - Darth Maul (1-6) # Darth Maul
-    - Zam Wesell (2-1) # Bounty Hunter Pursuit
-    - Jango Fett (2-2) # Discovery On Kamino
-    - Jango Fett (2-4) # Jedi Battle
-    - Count Dooku (2-6) # Count Dooku
-    - Count Dooku (3-2) # Chancellor In Peril
-    - General Grievous (3-3) # General Grievous
-    - Anakin Skywalker (3-6) # Darth Vader
-    - Imperial Spy (4-3) # Mos Eisley Spaceport
-    - Death Star (4-6) # Rebel Attack
-    - Darth Vader (5-4) # Dagobah
-    - Darth Vader (5-5) # Cloud City Trap
-    - Boba Fett (5-6) # Betrayal Over Bespin
-    - Rancor (6-1) # Jabba's Palace
-    - Boba Fett (6-2) # The Great Pit Of Carkoon
-    - Darth Sidious (6-5) # Jedi Destiny
-    - Death Star II (6-6) # Into The Death Star
+        allowed_bosses:
+        - Darth Maul (1-6) # Darth Maul
+        - Zam Wesell (2-1) # Bounty Hunter Pursuit
+        - Jango Fett (2-2) # Discovery On Kamino
+        - Jango Fett (2-4) # Jedi Battle
+        - Count Dooku (2-6) # Count Dooku
+        - Count Dooku (3-2) # Chancellor In Peril
+        - General Grievous (3-3) # General Grievous
+        - Anakin Skywalker (3-6) # Darth Vader
+        - Imperial Spy (4-3) # Mos Eisley Spaceport
+        - Death Star (4-6) # Rebel Attack
+        - Darth Vader (5-4) # Dagobah
+        - Darth Vader (5-5) # Cloud City Trap
+        - Boba Fett (5-6) # Betrayal Over Bespin
+        - Rancor (6-1) # Jabba's Palace
+        - Boba Fett (6-2) # The Great Pit Of Carkoon
+        - Darth Sidious (6-5) # Jedi Destiny
+        - Death Star II (6-6) # Into The Death Star
     """
     display_name = "Allowed Bosses"
     rich_text_doc = True
@@ -872,12 +873,14 @@ class EnableCompletionPointLocations(Toggle):
     tracks your completion percentage. There are 816 completion points earned across many actions in the game:
 
     Episodes:
+
     - 6 points per chapter (see below)
     - Completing the Minikit bonus
     - Completing the Character bonus
     - Completing Superstory
 
     Chapters:
+
     - Completing a chapter in Story mode
     - Getting all 10 Minikits in a chapter
     - Completing True Jedi for a chapter (worth 2 points instead of 1)
@@ -885,9 +888,11 @@ class EnableCompletionPointLocations(Toggle):
     - Getting the Power Brick for a chapter
 
     Shop:
+
     -
 
     Other:
+
     - Completing a Bonus level
     """
 
@@ -1070,7 +1075,7 @@ class ChapterStoryUnlockCharactersNotRequired(OptionSet):
     Note that the ``{episode}-{chapter} Story Unlock Characters`` item groups will still include these characters, even
     if the characters are set to not be required.
 
-    Example that disables all three:
+    Example that disables all three::
 
     - R2-D2 # can lock up to 15 Chapters.
     - C-3PO # can lock up to 11 Chapters.
@@ -1109,7 +1114,7 @@ class ChaptersThatCanRequirePurchaseCharacters(OptionSet):
     - 5-5
     - 6-3
 
-    All other Chapters can be specified using their shorthand names, for example:
+    All other Chapters can be specified using their shorthand names, for example::
 
     - 1-2  # Change 1-2 to require Captain Tarpals and Boss Nass
     - 3-5  # Change 3-5 to require Mace Windu (Episode III) and Disguised Clone
@@ -1686,53 +1691,52 @@ class AutoCollectSpawnedPickups(ChoiceFromStringExtension):
     default = option_disabled
 
 
+# Expert/Super Expert text kept for future use.
+# - Expert (not implemented):
+#
+#   - This difficulty, if implemented, will probably try to match Expert difficulty in ViolaGuy's standalone TCS
+#     randomizer.
+#
+# - Super Expert (not implemented):
+#
+#   - This difficulty, if implemented, will probably try to match Super Expert difficulty in ViolaGuy's standalone TCS
+#     randomizer.
 class LogicDifficulty(ChoiceFromStringExtension):
+    # noinspection LongLine
     """
-    - None - For players new to the game:
-      - Tries to match developer intended strategies.
-      - Includes some combat logic for avoidable/ignorable enemies.
-      - Extras (except Score Multipliers for expensive purchases) are not included in logic.
-    - Normal - For players that have played most of the vanilla content:
-      - No glitches expected.
-      - Players that have played most of the vanilla game should be able to play with this difficulty.
-      - Expects more platforming that probably wasn't developer intended, but is generally quite obvious and simple.
-      - Logic expects the use of Extras, for example:
-        - Self Destruct, Exploding Blaster Bolts, and Super Ewok Catapult can be expected for destroying Silver Brick
-        objects.
-        - Force Grapple Leap can be expected to use Grapple points.
-        - Dark Side can be expected to use Sith Force.
-      - 1P2C (1 Player, 2 Controllers) usage is limited to pressing only a single button on each controller
-      simultaneously. E.g. 2-player Sith Force puzzles when Dark Side is unlocked, but no Sith are unlocked (e.g. the last
-      Minikit in Discovery On Kamino (2-2)).
-      - 1P2C can expect teleporting one player to the other through a drop-in, to activate buttons etc. where the
-      AI won't follow you due to the AI only being able to use specific characters, and then dropping out again to let
-      the AI continue as normal.
-    - Moderate - For players that play the Archipelago randomizer often and are willing to learn simpler tricks:
-      - Simpler glitches expected.
-      - Players that play the AP randomizer often should be able to perform all tricks in this difficulty efficiency,
-      after some practice and/or learning.
-      - Slam-jumps, e.g. Jedi-Triple-Jump included in logic.
-      - Expects more platforming off of terrain.
-      - Easy 'oil glitches' (getting a Stormtrooper to activate an Imperial panel for you) that don't require coercing
-      a Stormtrooper into position.
-      - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling only one character at a time,
-      taking turns between controlling each character, e.g. button platforms in 2-2 and 2-6 when the AI won't follow you
-    - Hard - For players starting to learn speedrun tricks (installing BrickBench to assist in learning tricks is recommended):
-      - More difficult jumps and tricks.
-      - Some out-of-bounds tricks may be in logic (mostly Yoda Clips through ceilings). Full out-of-bounds movement,
-      e.g. walking around under the level, is *not* included.
-      - Yoda Grabs.
-      - Drop-in warps (none are currently present in the logic).
-      - TIE gate, and drag bomb wall, skips using loop drop-ins.
-      - More difficult 'oil glitches' (getting a Stormtrooper to activate an Imperial panel for you).
-      - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling both characters simultaneously
-    - Expert (not implemented):
-      - This difficulty, if implemented, will probably try to match Expert difficulty in ViolaGuy's standalone TCS
-      randomizer.
-    - Super Expert (not implemented):
-      - This difficulty, if implemented, will probably try to match Super Expert difficulty in ViolaGuy's standalone TCS
-      randomizer.
-    """
+        - **None** - Tries to match developer intended strategies, for players new to the game:
+
+          - Includes some combat logic for avoidable/ignorable enemies.
+          - Extras (except Score Multipliers for expensive purchases) are not included in logic.
+
+        - **Normal** - No glitches expected, for players that have played most of the vanilla content:
+
+          - Expects more platforming that probably wasn't developer intended, but is generally quite obvious and simple.
+          - Logic expects the use of Extras, for example:
+
+            - *Self Destruct*, *Exploding Blaster Bolts*, and *Super Ewok Catapult* can be expected for destroying Silver Brick objects.
+            - *Force Grapple Leap* can be expected to use Grapple points.
+            - *Dark Side* can be expected to use Sith Force.
+
+          - 1P2C (1 Player, 2 Controllers) usage is limited to pressing only a single button on each controller simultaneously. E.g. 2-player Sith Force puzzles when *Dark Side* is unlocked, but no Sith are unlocked (e.g. the last Minikit in *Discovery On Kamino* (2-2)).
+          - 1P2C can expect teleporting one player to the other through a drop-in, to activate buttons etc. where the AI won't follow you due to the AI only being able to use specific characters, and then dropping out again to let the AI continue as normal.
+
+        - **Moderate** - Simpler glitches expected, for players that play the Archipelago randomizer often and are willing to learn simpler tricks:
+
+          - Slam-jumps, e.g. Jedi-Triple-Jump, included in logic.
+          - Expects more platforming off of terrain.
+          - Easy 'oil glitches' (getting a Stormtrooper to activate an Imperial panel for you) that don't require coercing a Stormtrooper into position.
+          - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling only one character at a time, taking turns between controlling each character, e.g. button platforms in 2-2 and 2-6 when the AI won't follow you
+
+        - **Hard** - More difficult jumps and tricks, for players starting to learn speedrun tricks (installing *BrickBench* to assist in learning tricks is recommended):
+
+          - Some out-of-bounds tricks may be in logic (mostly Yoda Clips through ceilings). Full out-of-bounds movement, e.g. walking around under the level, is *not* included.
+          - Yoda Grabs.
+          - Drop-in warps (none are currently present in the logic).
+          - TIE gate, and drag bomb wall, skips using loop drop-ins.
+          - More difficult 'oil glitches' that require coercing a Stormtrooper into position.
+          - 1P2C (1 Player, 2 Controllers) usage additionally includes fully controlling both characters simultaneously.
+        """
     display_name = "Logic Difficulty"
     rich_text_doc = True
     # - Expert: Includes many out-of-bounds clips and more difficult 1P2C.
@@ -1773,8 +1777,9 @@ class LegoStarWarsTCSDeathLink(DeathLink):
     Death Link can be toggled on/off in the client with ``/toggle_death_link``.
 
     Known issues:
+
     - Studs are not dropped when receiving a death, however, you can use the Death Link Studs Loss option to cause a
-    loss of studs when receiving a death.
+      loss of studs when receiving a death.
     - Using the Self Destruct Extra counts as dying.
     """
     display_name = "Death Link"
