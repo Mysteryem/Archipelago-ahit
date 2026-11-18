@@ -1,5 +1,5 @@
 import dataclasses
-from typing import Literal, TypeVar, Protocol
+from typing import Literal, TypeVar, Protocol, Sequence
 
 from rule_builder.field_resolvers import FieldResolver
 from rule_builder.rules import Rule, And, Or, WrapperRule, Filtered, False_, True_
@@ -22,6 +22,23 @@ class RuleData(Protocol):
 
 
 TRuleData = TypeVar("TRuleData", bound=RuleData)
+
+
+def rule_children_are_the_same(rule1_children: Sequence[Rule], rule2_children: Sequence[Rule]):
+    if len(rule1_children) != len(rule2_children):
+        return False
+    # First check that the type of each rule is the same, this is a fairly fast check.
+    for rule1_child, rule2_child in zip(rule1_children, rule2_children):
+        # The type check eliminates cases where a complex rule's .to_dict() reduces itself to a simpler rule and calls
+        # .to_dict() on that simpler rule.
+        if type(rule1_child) is not type(rule2_child):
+            return False
+    # Now check that the rules are the same by comparing their .to_dict(). This is much slower than the type check, so
+    # is in its own loop.
+    for rule1_child, rule2_child in zip(rule1_children, rule2_children):
+        if rule1_child.to_dict() != rule2_child.to_dict():
+            return False
+    return True
 
 
 class RuleReplacer:
@@ -240,7 +257,7 @@ class NestedOptimizerRuleReplacer(RuleReplacer):
         # todo: When extending this to also apply to nested rule, this will have some potential issues with how the
         #  memodict is used, because a rule could be handle differently depending on what nested rules we are within.
         # Some early basic ability rule combinations.
-        final_new_children = []
+        final_new_children: list[Rule] = []
         any_abilities = CharacterAbility.NONE
         all_abilities_set: set[CharacterAbility] = set()
         for child in initial_new_children:
@@ -336,6 +353,12 @@ class NestedOptimizerRuleReplacer(RuleReplacer):
                 new_has_any_abilities = HasAnyAbilities(any_abilities_simplified)
             final_new_children.insert(0, new_has_any_abilities)
 
+        # There could be either zero or one 'any abilities rule' and/or either zero or one 'all abilities rule' that,
+        # when processed, produces the same rules as before. In that case, the original rule can be returned instead,
+        # reducing memory usage.
+        if changed and rule_children_are_the_same(rule.children, final_new_children):
+            changed = False
+
         if changed:
             if len(final_new_children) == 1:
                 child = final_new_children[0]
@@ -366,7 +389,7 @@ class NestedOptimizerRuleReplacer(RuleReplacer):
                 initial_new_children.append(replaced)
 
         # Some early basic ability rule combinations.
-        final_new_children = []
+        final_new_children: list[Rule] = []
         all_abilities = CharacterAbility.NONE
         any_abilities_set: set[CharacterAbility] = set()
         for child in initial_new_children:
@@ -461,6 +484,12 @@ class NestedOptimizerRuleReplacer(RuleReplacer):
             else:
                 new_has_all_abilities = HasAllAbilities(all_abilities_simplified)
             final_new_children.insert(0, new_has_all_abilities)
+
+        # There could be either zero or one 'all abilities rule' and/or either zero or one 'any abilities rule' that,
+        # when processed, produces the same rules as before. In that case, the original rule can be returned instead,
+        # reducing memory usage.
+        if changed and rule_children_are_the_same(rule.children, final_new_children):
+            changed = False
 
         if changed:
             if len(final_new_children) == 1:
