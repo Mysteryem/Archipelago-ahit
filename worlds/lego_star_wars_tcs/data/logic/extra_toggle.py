@@ -236,13 +236,22 @@ class ExtraToggleRuleReplacer(RuleReplacer):
                     # This child is partially satisfied by having "Extra Toggle", so some reduced version of this child,
                     # in addition to having "Extra Toggle", would be an alternative to satisfy this child.
                     partial_rules.append(prepare)
-            else:
-                other_rules.append(child)
-        if len(other_rules) != len(rule.children):
-            partial_rule = Or(*[partial.make_replacement_rule() for partial in partial_rules],
-                              options=rule.options, filtered_resolution=rule.filtered_resolution)
-            base_rule = Or(*other_rules, options=rule.options, filtered_resolution=rule.filtered_resolution)
-            return super()._handle_or(base_rule) | partial_rule
+        if partial_rules:
+            # Combine the partial rules together as
+            #  Or(
+            #     super()._handle_or(Or(*rule.children)),
+            #     And(
+            #         Has("Extra Toggle"),
+            #         Or(*partial_reduced_rules),  # Any one of these satisfies the original rule with Extra Toggle.
+            #     )
+            #  )
+            partial_and_rule = And(
+                Has(Extra.EXTRA_TOGGLE.readable_name),
+                Or(*[partial.extra_and_rule for partial in partial_rules]),
+                options=rule.options,
+                filtered_resolution=rule.filtered_resolution,
+            )
+            return super()._handle_or(rule) | partial_and_rule
         else:
             return super()._handle_or(rule)
 
