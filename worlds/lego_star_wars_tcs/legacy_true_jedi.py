@@ -9,7 +9,7 @@ from .constants import CHAPTER_SPECIFIC_FLAGS
 from .data.areas import Area
 from .data.items.all_character_items import NORMAL_CHARACTER_TO_ITEM_DATA
 from .data.items.generic_items import NonDataItemName
-from .data.logic.rules import HasAnyAbilities
+from .data.logic.rules import HasAllAbilities
 from .options import EasierTrueJedi
 
 
@@ -124,9 +124,9 @@ def get_legacy_true_jedi_rule(area: Area):
                              " requirement.")
 
     if alt_ability_requirements:
-        abilities_rule = HasAnyAbilities(main_ability_requirements) | HasAnyAbilities(alt_ability_requirements)
+        abilities_rule = HasAllAbilities(main_ability_requirements) | HasAllAbilities(alt_ability_requirements)
     else:
-        abilities_rule = HasAnyAbilities(main_ability_requirements)
+        abilities_rule = HasAllAbilities(main_ability_requirements)
 
     if area in DIFFICULT_OR_IMPOSSIBLE_TRUE_JEDI:
         return abilities_rule & (Has(NonDataItemName.PROGRESSIVE_SCORE_MULTIPLIER.value)
