@@ -88,8 +88,14 @@ class ExtraToggleRuleReplacer(RuleReplacer):
         if difficulty == "base":
             return self.shared_replacer.start_replace(rule, difficulty)
         else:
+            # Un-nest rules so that an Or(Or(Or(...), ...), ...) collapses into a single Or()
             base = PRE_RULE_OPTIMIZER.start_replace(rule, difficulty)
+            # Apply Extra Toggle rules, the previous un-nesting is important so that if a single rule within the Or()
+            # can be satisfied with Extra Toggle, the Extra Toggle rule can be added as a new child of the Or() instead
+            # of applying to each child that can be satisfied with Extra Toggle.
             extra_toggle_applied = super().start_replace(base, difficulty)
+            # Simplify rules that had to be kept in more complex forms to determine if Extra Toggle can satisfy them,
+            # and then un-nest again, since the simpler forms often use Or or And rules.
             return self.shared_replacer.start_replace(extra_toggle_applied, difficulty)
 
     @staticmethod
@@ -227,6 +233,8 @@ class ExtraToggleRuleReplacer(RuleReplacer):
                     return Or(*rule.children, Has(Extra.EXTRA_TOGGLE.readable_name),
                               options=rule.options, filtered_resolution=rule.filtered_resolution)
                 else:
+                    # This child is partially satisfied by having "Extra Toggle", so some reduced version of this child,
+                    # in addition to having "Extra Toggle", would be an alternative to satisfy this child.
                     partial_rules.append(prepare)
             else:
                 other_rules.append(child)
