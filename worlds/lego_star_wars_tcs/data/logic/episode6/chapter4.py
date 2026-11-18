@@ -746,7 +746,10 @@ THE_BATTLE_OF_ENDOR = _helper.make_chapter(
                 moderate=ot_high_jump_ternary(
                     uncapped=HasAnyAbilities(JEDI | HIGH_JUMP),
                     capped=HasAnyAbilities(JEDI | CAN_HIGH_JUMP_SLAM),
-                )
+                ),
+                # Use one AT-ST to push a second AT-ST up to the elevated area beneath the Minikit platform. Get into
+                # that second AT-ST and then jump out to the Minikit platform.
+                hard=True_(),
             ),
             pickup_name="mk_1",
         ),
