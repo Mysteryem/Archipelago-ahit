@@ -56,7 +56,7 @@ _CHAPTER_AREA_OPTIONS = {
 
 
 _BOSS_KEY_TO_BOSS = {
-    f"{boss.unique_name} ({boss.area.get_short_name()})": boss for boss in Boss if Boss is not boss.is_alt_boss
+    f"{boss.unique_name} ({boss.area.get_short_name()})": boss for boss in Boss if not boss.is_alt_boss
 }
 
 
