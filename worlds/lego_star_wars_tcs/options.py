@@ -485,7 +485,7 @@ class AllowedBosses(OptionSet):
         - Boba Fett (5-6) # Betrayal Over Bespin
         - Rancor (6-1) # Jabba's Palace
         - Boba Fett (6-2) # The Great Pit Of Carkoon
-        - Darth Sidious (6-5) # Jedi Destiny
+        - The Emperor (6-5) # Jedi Destiny
         - Death Star II (6-6) # Into The Death Star
     """
     display_name = "Bosses To Pick From"
