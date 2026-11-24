@@ -594,15 +594,27 @@ class LegoStarWarsTCSWorld(World):
 
     @staticmethod
     def interpret_slot_data(slot_data: dict[str, Any]) -> dict[str, Any] | None:
-        slot_data_version = tuple(slot_data["apworld_version"])
-        # Allow connecting only if the APWorld major and minor version matches, and if there are no logic changes in the
-        # case that the APWorld versions are not the same.
-        if (slot_data_version[:2] != constants.AP_WORLD_VERSION[:2]
-                or slot_data["logic_version"] != constants.UT_LOGIC_VERSION):
-            raise TCSUniversalTrackerAPWorldVersionMismatchError(
-                f"LSW TCS version error: The version of the apworld used to generate this world ({slot_data_version})"
-                f" does not have matching logic with the version of your installed apworld ({constants.AP_WORLD_VERSION})."
-            )
+        slot_data_options = TCSSlotDataOptions.from_slot_data(slot_data)
+        ut_logic_version = slot_data_options.logic_version
+        if not ut_logic_version.matches_client():
+            client_logger = logging.getLogger("Client")
+            slot_data_version = slot_data_options.apworld_version.value
+            if ut_logic_version.is_close_enough():
+                client_logger.warning(
+                    "LSW TCS Logic Version Warning: The version of the APWorld used to generate this multiworld (%s) "
+                    "does not have matching logic with the version of your installed APWorld (%s), so Universal "
+                    "Tracker may be inaccurate in some places.",
+                    slot_data_version,
+                    constants.AP_WORLD_VERSION,
+                )
+            else:
+                # The client catches this exception. Universal Tracker will be effectively disabled, but the client will
+                # still run.
+                raise TCSUniversalTrackerAPWorldVersionMismatchError(
+                    f"LSW TCS Logic Version Error: The version of the apworld used to generate this world "
+                    f"({slot_data_version}) does not have compatible logic with the version of your installed apworld "
+                    f"({constants.AP_WORLD_VERSION}). Universal Tracker support will be disabled."
+                )
         return slot_data
 
     def _ut_connect_deferred_area_events(self, unformatted_key: str, data_storage_value: Iterable[Any]) -> None:
